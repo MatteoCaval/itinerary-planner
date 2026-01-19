@@ -350,12 +350,30 @@ function App() {
               onDateRangeChange={handleDateRangeChange}
             />
 
+            {pendingAddToDay && (
+              <div className="alert alert-info py-2 px-3 small mb-2 d-flex justify-content-between align-items-center">
+                <span>
+                  Adding to <strong>Day {days.findIndex(d => d.id === pendingAddToDay.dayId) + 1}</strong>
+                  {pendingAddToDay.slot && ` (${pendingAddToDay.slot})`}
+                </span>
+                <Button 
+                  variant="link" 
+                  size="sm" 
+                  className="p-0 text-decoration-none" 
+                  onClick={() => setPendingAddToDay(null)}
+                >
+                  Cancel
+                </Button>
+              </div>
+            )}
+
             <Form onSubmit={handleSearch} className="d-flex gap-2 mb-3">
               <Form.Control
                 type="text"
-                placeholder="Search place..."
+                placeholder={pendingAddToDay ? "Search place to add..." : "Search place..."}
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
+                autoFocus={!!pendingAddToDay}
               />
               <Button type="submit" variant="primary" disabled={isSearching}>
                 {isSearching ? '...' : <Search size={18} />}
@@ -363,7 +381,9 @@ function App() {
             </Form>
 
             <p className="text-muted small">
-              Search to add places. Drag items between days to reorder.
+              {pendingAddToDay 
+                ? "Search above to add a location to the selected day." 
+                : "Search to add places. Drag items between days to reorder."}
             </p>
           </div>
 
