@@ -1,25 +1,13 @@
-import React, { useState, useEffect } from 'react';
-import { Container, Row, Col, Button, Form } from 'react-bootstrap';
-import { 
-  DndContext, 
-  closestCenter, 
-  KeyboardSensor, 
-  PointerSensor, 
-  useSensor, 
-  useSensors,
-  DragEndEvent
-} from '@dnd-kit/core';
-import { 
-  arrayMove, 
-  SortableContext, 
-  sortableKeyboardCoordinates, 
-  verticalListSortingStrategy 
-} from '@dnd-kit/sortable';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Row, Col, Button, Form } from 'react-bootstrap';
 import { v4 as uuidv4 } from 'uuid';
-import { Plus, Trash2, Map as MapIcon, Search } from 'lucide-react';
+import { Trash2, Map as MapIcon, Search } from 'lucide-react';
 import MapDisplay from './components/MapDisplay';
-import { SortableItem } from './components/SortableItem';
-import { Location } from './types';
+import { DateRangePicker } from './components/DateRangePicker';
+import { DaySidebar } from './components/DaySidebar';
+import { RouteEditor } from './components/RouteEditor';
+import { DayAssignmentModal } from './components/DayAssignmentModal';
+import { Location, Day, Route } from './types';
 
 // Nominatim OpenStreetMap Search Service
 const searchPlace = async (query: string) => {
@@ -34,63 +22,177 @@ const searchPlace = async (query: string) => {
 };
 
 const reverseGeocode = async (lat: number, lng: number) => {
-    try {
-        const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
-        const data = await response.json();
-        return data.display_name || `Location at ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
-    } catch {
-        return `Location at ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
-    }
+  try {
+    const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+    const data = await response.json();
+    return data.display_name || `Location at ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+  } catch {
+    return `Location at ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+  }
 }
 
+// Generate days between two dates
+const generateDays = (startDate: string, endDate: string): Day[] => {
+  if (!startDate || !endDate) return [];
+
+  const days: Day[] = [];
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+
+  let current = new Date(start);
+  while (current <= end) {
+    days.push({
+      id: uuidv4(),
+      date: current.toISOString().split('T')[0],
+    });
+    current.setDate(current.getDate() + 1);
+  }
+
+  return days;
+};
+
+// Migrate old data format to new format
+interface OldLocation {
+  id: string;
+  name: string;
+  lat: number;
+  lng: number;
+  notes?: string;
+}
+
+const migrateLocations = (oldLocations: OldLocation[]): Location[] => {
+  return oldLocations.map((loc, index) => ({
+    ...loc,
+    dayIds: [],
+    order: index,
+  }));
+};
+
+// Storage keys
+const STORAGE_KEY_LOCATIONS = 'itinerary-locations';
+const STORAGE_KEY_ROUTES = 'itinerary-routes';
+const STORAGE_KEY_DATES = 'itinerary-dates';
+const STORAGE_KEY_DAYS = 'itinerary-days';
+
 function App() {
-  const [locations, setLocations] = useState<Location[]>(() => {
-    const saved = localStorage.getItem('itinerary-locations');
+  // Date range state
+  const [startDate, setStartDate] = useState<string>(() => {
+    const saved = localStorage.getItem(STORAGE_KEY_DATES);
+    if (saved) {
+      const { startDate } = JSON.parse(saved);
+      return startDate || '';
+    }
+    return '';
+  });
+
+  const [endDate, setEndDate] = useState<string>(() => {
+    const saved = localStorage.getItem(STORAGE_KEY_DATES);
+    if (saved) {
+      const { endDate } = JSON.parse(saved);
+      return endDate || '';
+    }
+    return '';
+  });
+
+  // Days state
+  const [days, setDays] = useState<Day[]>(() => {
+    const saved = localStorage.getItem(STORAGE_KEY_DAYS);
     return saved ? JSON.parse(saved) : [];
   });
-  
+
+  // Locations state with migration
+  const [locations, setLocations] = useState<Location[]>(() => {
+    const saved = localStorage.getItem(STORAGE_KEY_LOCATIONS);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      // Check if migration is needed
+      if (parsed.length > 0 && !('dayIds' in parsed[0])) {
+        return migrateLocations(parsed);
+      }
+      return parsed;
+    }
+    return [];
+  });
+
+  // Routes state
+  const [routes, setRoutes] = useState<Route[]>(() => {
+    const saved = localStorage.getItem(STORAGE_KEY_ROUTES);
+    return saved ? JSON.parse(saved) : [];
+  });
+
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
 
+  // Modal states
+  const [editingRoute, setEditingRoute] = useState<{ fromId: string; toId: string } | null>(null);
+  const [editingDayAssignment, setEditingDayAssignment] = useState<Location | null>(null);
+  const [pendingAddToDay, setPendingAddToDay] = useState<string | null>(null);
+
+  // Persist state
   useEffect(() => {
-    localStorage.setItem('itinerary-locations', JSON.stringify(locations));
+    localStorage.setItem(STORAGE_KEY_LOCATIONS, JSON.stringify(locations));
   }, [locations]);
 
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY_ROUTES, JSON.stringify(routes));
+  }, [routes]);
 
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY_DATES, JSON.stringify({ startDate, endDate }));
+  }, [startDate, endDate]);
 
-    if (over && active.id !== over.id) {
-      setLocations((items) => {
-        const oldIndex = items.findIndex((item) => item.id === active.id);
-        const newIndex = items.findIndex((item) => item.id === over.id);
-        return arrayMove(items, oldIndex, newIndex);
-      });
-    }
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY_DAYS, JSON.stringify(days));
+  }, [days]);
+
+  // Handle date range change
+  const handleDateRangeChange = (newStart: string, newEnd: string) => {
+    setStartDate(newStart);
+    setEndDate(newEnd);
+
+    // Generate new days
+    const newDays = generateDays(newStart, newEnd);
+
+    // Preserve day assignments where possible by matching dates
+    const oldDateToId = new Map(days.map(d => [d.date, d.id]));
+
+    // Update days, reusing IDs where dates match
+    const updatedDays = newDays.map(day => {
+      const existingId = oldDateToId.get(day.date);
+      return existingId ? { ...day, id: existingId } : day;
+    });
+
+    setDays(updatedDays);
+
+    // Update location dayIds to remove references to deleted days
+    const newDayIds = new Set(updatedDays.map(d => d.id));
+    setLocations(prev => prev.map(loc => ({
+      ...loc,
+      dayIds: loc.dayIds.filter(id => newDayIds.has(id)),
+    })));
   };
 
-  const addLocation = async (lat: number, lng: number, name?: string) => {
+  const addLocation = async (lat: number, lng: number, name?: string, targetDayId?: string) => {
     const resolvedName = name || await reverseGeocode(lat, lng);
+    // Use target day if specified, otherwise pending day, otherwise first day
+    const assignedDayId = targetDayId || pendingAddToDay || (days.length > 0 ? days[0].id : null);
     const newLocation: Location = {
       id: uuidv4(),
-      name: resolvedName.split(',')[0], // Keep it short initially
+      name: resolvedName.split(',')[0],
       lat,
       lng,
-      notes: ''
+      notes: '',
+      dayIds: assignedDayId ? [assignedDayId] : [],
+      order: locations.length,
     };
     setLocations([...locations, newLocation]);
+    setPendingAddToDay(null); // Clear pending day after adding
   };
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!searchQuery.trim()) return;
-    
+
     setIsSearching(true);
     const results = await searchPlace(searchQuery);
     setIsSearching(false);
@@ -106,10 +208,92 @@ function App() {
 
   const removeLocation = (id: string) => {
     setLocations(locations.filter(l => l.id !== id));
+    // Also remove routes involving this location
+    setRoutes(routes.filter(r => r.fromLocationId !== id && r.toLocationId !== id));
   };
 
   const updateLocation = (id: string, updates: Partial<Location>) => {
     setLocations(locations.map(l => l.id === id ? { ...l, ...updates } : l));
+  };
+
+  const handleReorderLocations = (activeId: string, overId: string | null, newDayId: string | null) => {
+    setLocations(prev => {
+      const activeLocation = prev.find(l => l.id === activeId);
+      if (!activeLocation) return prev;
+
+      let newLocations = [...prev];
+
+      // Update the day assignment
+      const updatedDayIds = newDayId ? [newDayId] : [];
+      const activeIndex = newLocations.findIndex(l => l.id === activeId);
+      newLocations[activeIndex] = { ...newLocations[activeIndex], dayIds: updatedDayIds };
+
+      // If dropped on another location, reorder
+      if (overId && overId !== activeId) {
+        const oldIndex = newLocations.findIndex(l => l.id === activeId);
+        const newIndex = newLocations.findIndex(l => l.id === overId);
+
+        if (oldIndex !== -1 && newIndex !== -1) {
+          const [moved] = newLocations.splice(oldIndex, 1);
+          newLocations.splice(newIndex, 0, moved);
+        }
+      }
+
+      // Update order values
+      return newLocations.map((loc, idx) => ({ ...loc, order: idx }));
+    });
+  };
+
+  // Handle adding a new location to a specific day
+  const handleAddToDay = (dayId: string) => {
+    setPendingAddToDay(dayId);
+  };
+
+  // Route editing
+  const handleEditRoute = (fromId: string, toId: string) => {
+    setEditingRoute({ fromId, toId });
+  };
+
+  const currentEditingRoute = useMemo(() => {
+    if (!editingRoute) return null;
+
+    const existing = routes.find(r =>
+      (r.fromLocationId === editingRoute.fromId && r.toLocationId === editingRoute.toId) ||
+      (r.fromLocationId === editingRoute.toId && r.toLocationId === editingRoute.fromId)
+    );
+
+    if (existing) return existing;
+
+    // Create a new route template
+    return {
+      id: uuidv4(),
+      fromLocationId: editingRoute.fromId,
+      toLocationId: editingRoute.toId,
+      transportType: 'car' as const,
+    };
+  }, [editingRoute, routes]);
+
+  const handleSaveRoute = (route: Route) => {
+    setRoutes(prev => {
+      const existingIndex = prev.findIndex(r => r.id === route.id);
+      if (existingIndex >= 0) {
+        const updated = [...prev];
+        updated[existingIndex] = route;
+        return updated;
+      }
+      return [...prev, route];
+    });
+    setEditingRoute(null);
+  };
+
+  // Day assignment
+  const handleSaveDayAssignment = (locationId: string, dayIds: string[]) => {
+    updateLocation(locationId, { dayIds });
+    setEditingDayAssignment(null);
+  };
+
+  const getLocationName = (id: string) => {
+    return locations.find(l => l.id === id)?.name || 'Unknown';
   };
 
   return (
@@ -117,15 +301,22 @@ function App() {
       <Row className="g-0">
         {/* Sidebar */}
         <Col md={4} lg={3} className="sidebar d-flex flex-column">
-          <div className="mb-4">
+          <div className="mb-3">
             <h3 className="d-flex align-items-center gap-2 mb-3">
               <MapIcon /> Itinerary
             </h3>
-            
+
+            {/* Date Range Picker */}
+            <DateRangePicker
+              startDate={startDate}
+              endDate={endDate}
+              onDateRangeChange={handleDateRangeChange}
+            />
+
             <Form onSubmit={handleSearch} className="d-flex gap-2 mb-3">
-              <Form.Control 
-                type="text" 
-                placeholder="Search place..." 
+              <Form.Control
+                type="text"
+                placeholder="Search place..."
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
               />
@@ -133,59 +324,65 @@ function App() {
                 {isSearching ? '...' : <Search size={18} />}
               </Button>
             </Form>
-            
+
             <p className="text-muted small">
-              Click map to add stops. Drag items to reorder.
+              Search to add places. Drag items between days to reorder.
             </p>
           </div>
 
           <div className="flex-grow-1 overflow-auto">
-            <DndContext 
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragEnd={handleDragEnd}
-            >
-              <SortableContext 
-                items={locations.map(l => l.id)}
-                strategy={verticalListSortingStrategy}
-              >
-                {locations.length === 0 ? (
-                  <div className="text-center text-muted mt-5">
-                    <p>No stops yet.</p>
-                    <p>Search or click the map to start your journey!</p>
-                  </div>
-                ) : (
-                  locations.map((location) => (
-                    <SortableItem 
-                      key={location.id} 
-                      id={location.id} 
-                      location={location} 
-                      onRemove={removeLocation}
-                      onUpdate={updateLocation}
-                    />
-                  ))
-                )}
-              </SortableContext>
-            </DndContext>
+            <DaySidebar
+              days={days}
+              locations={locations}
+              routes={routes}
+              onReorderLocations={handleReorderLocations}
+              onRemoveLocation={removeLocation}
+              onUpdateLocation={updateLocation}
+              onEditRoute={handleEditRoute}
+              onAddToDay={handleAddToDay}
+            />
           </div>
 
           <div className="mt-3 pt-3 border-top">
-             <div className="d-flex justify-content-between align-items-center">
-                <strong>Total Stops: {locations.length}</strong>
-                {locations.length > 0 && (
-                    <Button variant="outline-danger" size="sm" onClick={() => setLocations([])}>
-                        <Trash2 size={16} className="me-1" /> Clear
-                    </Button>
-                )}
-             </div>
+            <div className="d-flex justify-content-between align-items-center">
+              <strong>Total Stops: {locations.length}</strong>
+              {locations.length > 0 && (
+                <Button variant="outline-danger" size="sm" onClick={() => setLocations([])}>
+                  <Trash2 size={16} className="me-1" /> Clear
+                </Button>
+              )}
+            </div>
           </div>
         </Col>
 
         {/* Map */}
         <Col md={8} lg={9}>
-          <MapDisplay locations={locations} onAddLocation={addLocation} />
+          <MapDisplay
+            locations={locations}
+            routes={routes}
+            onEditRoute={handleEditRoute}
+          />
         </Col>
       </Row>
+
+      {/* Route Editor Modal */}
+      <RouteEditor
+        show={!!editingRoute}
+        route={currentEditingRoute}
+        fromName={editingRoute ? getLocationName(editingRoute.fromId) : ''}
+        toName={editingRoute ? getLocationName(editingRoute.toId) : ''}
+        onSave={handleSaveRoute}
+        onClose={() => setEditingRoute(null)}
+      />
+
+      {/* Day Assignment Modal */}
+      <DayAssignmentModal
+        show={!!editingDayAssignment}
+        location={editingDayAssignment}
+        days={days}
+        onSave={handleSaveDayAssignment}
+        onClose={() => setEditingDayAssignment(null)}
+      />
     </div>
   );
 }

@@ -1,4 +1,6 @@
-html, body, #root {
+html,
+body,
+#root {
   height: 100%;
   margin: 0;
   padding: 0;
@@ -23,18 +25,23 @@ html, body, #root {
   width: 100%;
 }
 
+/* Sortable Items */
+.sortable-item-wrapper {
+  margin-bottom: 4px;
+}
+
 .sortable-item {
   touch-action: none;
   background: white;
   border: 1px solid #dee2e6;
-  border-radius: 4px;
+  border-radius: 6px;
   padding: 10px;
-  margin-bottom: 8px;
   cursor: grab;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .sortable-item.dragging {
@@ -44,15 +51,213 @@ html, body, #root {
 
 .sortable-item:hover {
   border-color: #adb5bd;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
 }
 
 .drag-handle {
   cursor: grab;
   color: #6c757d;
-  margin-right: 10px;
+  margin-right: 8px;
+  flex-shrink: 0;
 }
 
 .btn-icon {
   padding: 0.25rem 0.5rem;
   font-size: 0.875rem;
+}
+
+.min-width-0 {
+  min-width: 0;
+}
+
+/* Route connector between items */
+.route-connector {
+  margin-left: 28px;
+  padding: 4px 0;
+}
+
+.route-edit-btn {
+  opacity: 0.6;
+  transition: opacity 0.2s;
+  text-decoration: none !important;
+}
+
+.route-edit-btn:hover {
+  opacity: 1;
+}
+
+/* Route info bar in sidebar */
+.route-info-bar {
+  background: linear-gradient(90deg, transparent, rgba(0, 0, 0, 0.02), transparent);
+  border-radius: 4px;
+  transition: background 0.2s;
+  margin: 4px 0;
+}
+
+.route-info-bar:hover {
+  background: linear-gradient(90deg, transparent, rgba(13, 110, 253, 0.08), transparent);
+}
+
+.route-info-content {
+  font-size: 0.8rem;
+}
+
+.route-transport-badge {
+  font-weight: 600;
+}
+
+.route-duration,
+.route-cost {
+  opacity: 0.8;
+}
+
+/* Date Range Picker */
+.date-range-picker {
+  background: white;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #dee2e6;
+}
+
+/* Day Sidebar */
+.day-section {
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #dee2e6;
+}
+
+/* Drop zone visual feedback */
+.day-drop-zone {
+  transition: all 0.2s ease;
+}
+
+.day-drop-zone.drag-over .day-section {
+  border-color: #0d6efd;
+  box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.25);
+}
+
+.day-drop-zone.drag-over .drop-placeholder {
+  background: rgba(13, 110, 253, 0.1);
+  border-radius: 4px;
+}
+
+.day-header {
+  cursor: pointer;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  transition: background 0.2s;
+}
+
+.day-header:hover {
+  background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%);
+}
+
+.day-locations {
+  border-top: 1px solid #e9ecef;
+  padding-bottom: 8px;
+}
+
+/* Unassigned section */
+.unassigned-section {
+  background: rgba(255, 193, 7, 0.1);
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px dashed #ffc107;
+}
+
+/* Route Editor Modal */
+.transport-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.transport-btn {
+  font-size: 0.8rem;
+  padding: 4px 10px;
+}
+
+/* Route tooltip on map */
+.route-tooltip {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border: 1px solid #dee2e6 !important;
+  border-radius: 6px !important;
+  padding: 6px 10px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+  font-size: 12px !important;
+}
+
+.route-tooltip::before {
+  display: none !important;
+}
+
+.route-tooltip-content {
+  white-space: nowrap;
+}
+
+/* Day assignment modal */
+.day-selection-item {
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.day-selection-item:hover {
+  background: #e3f2fd !important;
+}
+
+.day-selection-item.bg-primary-subtle {
+  background: rgba(13, 110, 253, 0.15) !important;
+  border-color: #0d6efd !important;
+}
+
+.check-box {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #dee2e6;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  transition: all 0.2s;
+}
+
+.check-box.checked {
+  background: #0d6efd;
+  border-color: #0d6efd;
+  color: white;
+}
+
+/* Location index badge */
+.location-index .badge {
+  font-size: 0.7rem;
+  min-width: 20px;
+}
+
+/* Transport type colors legend */
+.transport-walk {
+  color: #22c55e;
+}
+
+.transport-car {
+  color: #3b82f6;
+}
+
+.transport-bus {
+  color: #f97316;
+}
+
+.transport-train {
+  color: #a855f7;
+}
+
+.transport-flight {
+  color: #ef4444;
+}
+
+.transport-ferry {
+  color: #06b6d4;
+}
+
+.transport-other {
+  color: #6b7280;
 }

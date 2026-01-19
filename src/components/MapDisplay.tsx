@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap, useMapEvents } from 'react-leaflet';
-import { Location } from '../types';
+import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap, Tooltip } from 'react-leaflet';
+import { Location, Route, TRANSPORT_COLORS, TRANSPORT_LABELS } from '../types';
 import L from 'leaflet';
 
 // Fix Leaflet default icon issue
@@ -8,33 +8,26 @@ import icon from 'leaflet/dist/images/marker-icon.png';
 import iconShadow from 'leaflet/dist/images/marker-shadow.png';
 
 let DefaultIcon = L.icon({
-    iconUrl: icon,
-    shadowUrl: iconShadow,
-    iconSize: [25, 41],
-    iconAnchor: [12, 41]
+  iconUrl: icon,
+  shadowUrl: iconShadow,
+  iconSize: [25, 41],
+  iconAnchor: [12, 41]
 });
 
 L.Marker.prototype.options.icon = DefaultIcon;
 
 interface MapDisplayProps {
   locations: Location[];
-  onAddLocation: (lat: number, lng: number) => void;
+  routes: Route[];
+  onEditRoute: (fromId: string, toId: string) => void;
 }
 
-// Component to handle map clicks
-function AddMarkerOnClick({ onAdd }: { onAdd: (lat: number, lng: number) => void }) {
-  useMapEvents({
-    click(e) {
-      onAdd(e.latlng.lat, e.latlng.lng);
-    },
-  });
-  return null;
-}
+
 
 // Component to fit bounds
 function FitBounds({ locations }: { locations: Location[] }) {
   const map = useMap();
-  
+
   useEffect(() => {
     if (locations.length > 0) {
       const bounds = L.latLngBounds(locations.map(l => [l.lat, l.lng]));
@@ -45,10 +38,69 @@ function FitBounds({ locations }: { locations: Location[] }) {
   return null;
 }
 
-export default function MapDisplay({ locations, onAddLocation }: MapDisplayProps) {
+// Route segment component with tooltip
+interface RouteSegmentProps {
+  from: Location;
+  to: Location;
+  route?: Route;
+  onEditRoute: () => void;
+}
+
+function RouteSegment({ from, to, route, onEditRoute }: RouteSegmentProps) {
+  const positions: [number, number][] = [
+    [from.lat, from.lng],
+    [to.lat, to.lng]
+  ];
+
+  const color = route ? TRANSPORT_COLORS[route.transportType] : '#6b7280';
+  const transportLabel = route ? TRANSPORT_LABELS[route.transportType] : '🔗';
+
+  // Build tooltip content
+  const buildTooltipContent = () => {
+    const parts: string[] = [transportLabel];
+    if (route?.duration) parts.push(`⏱ ${route.duration}`);
+    if (route?.cost) parts.push(`💰 ${route.cost}`);
+    return parts.join(' • ');
+  };
+
+  return (
+    <Polyline
+      positions={positions}
+      color={color}
+      weight={4}
+      opacity={0.8}
+      eventHandlers={{
+        click: (e) => {
+          L.DomEvent.stopPropagation(e);
+          onEditRoute();
+        },
+      }}
+    >
+      <Tooltip permanent={false} direction="center" className="route-tooltip">
+        <div className="route-tooltip-content" style={{ cursor: 'pointer' }}>
+          {buildTooltipContent()}
+          {(!route?.duration && !route?.cost) && (
+            <span className="text-muted"> Click to add details</span>
+          )}
+        </div>
+      </Tooltip>
+    </Polyline>
+  );
+}
+
+export default function MapDisplay({ locations, routes, onEditRoute }: MapDisplayProps) {
   const position: [number, number] = [51.505, -0.09]; // Default center (London)
 
-  const polylinePositions = locations.map(l => [l.lat, l.lng] as [number, number]);
+  // Get ordered locations for drawing routes
+  const sortedLocations = [...locations].sort((a, b) => a.order - b.order);
+
+  // Get route between two locations
+  const getRoute = (fromId: string, toId: string): Route | undefined => {
+    return routes.find(r =>
+      (r.fromLocationId === fromId && r.toLocationId === toId) ||
+      (r.fromLocationId === toId && r.toLocationId === fromId)
+    );
+  };
 
   return (
     <div className="map-container">
@@ -57,26 +109,34 @@ export default function MapDisplay({ locations, onAddLocation }: MapDisplayProps
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        <AddMarkerOnClick onAdd={onAddLocation} />
-        
-        {locations.map((loc, index) => (
+
+
+        {sortedLocations.map((loc, index) => (
           <Marker key={loc.id} position={[loc.lat, loc.lng]}>
             <Popup>
               <strong>{index + 1}. {loc.name}</strong><br />
-              {loc.notes}
+              {loc.notes && <span className="text-muted">{loc.notes}</span>}
             </Popup>
           </Marker>
         ))}
 
-        {locations.length > 1 && (
-          <Polyline 
-            positions={polylinePositions} 
-            color="blue" 
-            weight={4}
-            opacity={0.6}
-            dashArray="10, 10" 
-          />
-        )}
+        {/* Draw route segments between consecutive locations */}
+        {sortedLocations.length > 1 && sortedLocations.map((loc, index) => {
+          if (index === sortedLocations.length - 1) return null;
+
+          const nextLoc = sortedLocations[index + 1];
+          const route = getRoute(loc.id, nextLoc.id);
+
+          return (
+            <RouteSegment
+              key={`route-${loc.id}-${nextLoc.id}`}
+              from={loc}
+              to={nextLoc}
+              route={route}
+              onEditRoute={() => onEditRoute(loc.id, nextLoc.id)}
+            />
+          );
+        })}
 
         <FitBounds locations={locations} />
       </MapContainer>
