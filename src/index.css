@@ -262,28 +262,21 @@ body,
   color: #6b7280;
 }
 
-/* Timeline / Ruler View */
+/* Grid Layout Styles */
+.grid-cell {
+  border-right: 1px solid #dee2e6;
+  background-color: white; /* Default background */
+}
+
+/* Timeline / Ruler View Colors */
 .bg-light-yellow {
-  background-color: #fffdf0; /* Very light yellow */
+  background-color: #fffdf0;
 }
 .bg-light-orange {
-  background-color: #fff8f0; /* Very light orange */
+  background-color: #fff8f0;
 }
 .bg-light-indigo {
-  background-color: #f5f7ff; /* Very light indigo */
-}
-
-.timeline-slot {
-  border-bottom: 1px solid #e9ecef;
-  transition: background-color 0.2s;
-}
-.timeline-slot:last-child {
-  border-bottom: none;
-}
-
-.slot-content.drag-over {
-  background-color: rgba(13, 110, 253, 0.1);
-  box-shadow: inset 0 0 0 2px rgba(13, 110, 253, 0.3);
+  background-color: #f5f7ff;
 }
 
 .text-orange {
@@ -295,6 +288,5 @@ body,
 
 .dragging-overlay {
   z-index: 9999;
-  width: 300px; /* Fixed width for consistency during drag */
   cursor: grabbing;
 }

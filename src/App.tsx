@@ -337,7 +337,7 @@ function App() {
     <div className="container-fluid p-0">
       <Row className="g-0">
         {/* Sidebar */}
-        <Col md={4} lg={3} className="sidebar d-flex flex-column">
+        <Col md={5} lg={4} className="sidebar d-flex flex-column">
           <div className="mb-3">
             <h3 className="d-flex align-items-center gap-2 mb-3">
               <MapIcon /> Itinerary
@@ -413,7 +413,7 @@ function App() {
         </Col>
 
         {/* Map */}
-        <Col md={8} lg={9}>
+        <Col md={7} lg={8}>
           <MapDisplay
             locations={locations}
             routes={routes}

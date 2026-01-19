@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Button } from 'react-bootstrap';
-import { Calendar, MapPin, Plus, Clock, Euro, Sun, Moon, Coffee } from 'lucide-react';
+import { Plus, Sun, Moon, Coffee } from 'lucide-react';
 import {
     DndContext,
     closestCenter,
@@ -9,16 +9,16 @@ import {
     useSensor,
     useSensors,
     DragEndEvent,
+    DragStartEvent,
     DragOverlay,
-    useDroppable,
-    DragStartEvent
+    useDroppable
 } from '@dnd-kit/core';
 import {
     SortableContext,
     sortableKeyboardCoordinates,
     verticalListSortingStrategy
 } from '@dnd-kit/sortable';
-import { Day, Location, Route, TRANSPORT_LABELS, TRANSPORT_COLORS, DaySection } from '../types';
+import { Day, Location, Route, DaySection } from '../types';
 import { SortableItem } from './SortableItem';
 
 interface DaySidebarProps {
@@ -32,6 +32,13 @@ interface DaySidebarProps {
     onAddToDay: (dayId: string, slot?: DaySection) => void;
 }
 
+// Helper to map section to index
+const SECTION_ORDER: DaySection[] = ['morning', 'afternoon', 'evening'];
+const getSectionIndex = (section?: DaySection) => {
+    if (!section) return 0;
+    return SECTION_ORDER.indexOf(section);
+};
+
 // Format date for display
 const formatDate = (dateStr: string) => {
     const date = new Date(dateStr + 'T00:00:00');
@@ -42,117 +49,86 @@ const formatDate = (dateStr: string) => {
     });
 };
 
-// Get day number from start
-const getDayNumber = (dateStr: string, startDate: string) => {
-    const date = new Date(dateStr);
-    const start = new Date(startDate);
-    const diffTime = date.getTime() - start.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays + 1;
-};
-
-// Droppable slot container
-interface DroppableSlotProps {
-    id: string;
-    daySection?: DaySection;
-    label?: string;
-    icon?: React.ReactNode;
-    className?: string;
-    children: React.ReactNode;
-}
-
-function DroppableSlot({ id, daySection, label, icon, className = '', children }: DroppableSlotProps) {
+// Droppable Cell Component
+function DroppableCell({ id, section, row, isFirstInDay, children }: { id: string, section: DaySection, row: number, isFirstInDay: boolean, children?: React.ReactNode }) {
     const { isOver, setNodeRef } = useDroppable({ id });
 
-    let displayIcon = icon;
-    let displayLabel = label;
+    let icon;
+    let label;
     let bgClass = '';
 
-    if (daySection) {
-        switch (daySection) {
-            case 'morning':
-                if (!displayIcon) displayIcon = <Coffee size={14} className="text-warning" />;
-                if (!displayLabel) displayLabel = "Morning";
-                bgClass = 'bg-light-yellow';
-                break;
-            case 'afternoon':
-                if (!displayIcon) displayIcon = <Sun size={14} className="text-orange" />;
-                if (!displayLabel) displayLabel = "Afternoon";
-                bgClass = 'bg-light-orange';
-                break;
-            case 'evening':
-                if (!displayIcon) displayIcon = <Moon size={14} className="text-indigo" />;
-                if (!displayLabel) displayLabel = "Evening";
-                bgClass = 'bg-light-indigo';
-                break;
-        }
+    switch (section) {
+        case 'morning':
+            icon = <Coffee size={14} className="text-warning" />;
+            label = "Morning";
+            bgClass = 'bg-light-yellow';
+            break;
+        case 'afternoon':
+            icon = <Sun size={14} className="text-orange" />;
+            label = "Afternoon";
+            bgClass = 'bg-light-orange';
+            break;
+        case 'evening':
+            icon = <Moon size={14} className="text-indigo" />;
+            label = "Evening";
+            bgClass = 'bg-light-indigo';
+            break;
     }
 
-    return (
-        <div className={`timeline-slot d-flex ${bgClass} ${className}`}>
-            <div className="slot-label d-flex flex-column align-items-center justify-content-center border-end p-2 text-muted small" style={{ width: '80px', minWidth: '80px' }}>
-                {displayIcon}
-                <span style={{ fontSize: '0.7rem' }}>{displayLabel}</span>
-            </div>
-            <div
-                ref={setNodeRef}
-                className={`slot-content flex-grow-1 p-2 ${isOver ? 'drag-over' : ''}`}
-                style={{ minHeight: '60px' }}
-            >
-                {children}
-            </div>
-        </div>
-    );
-}
-
-// Route info display between locations
-interface RouteInfoProps {
-    route?: Route;
-    onEdit: () => void;
-}
-
-function RouteInfo({ route, onEdit }: RouteInfoProps) {
-    const transportLabel = route ? TRANSPORT_LABELS[route.transportType] : null;
-    const transportColor = route ? TRANSPORT_COLORS[route.transportType] : '#6b7280';
+    const borderClass = isFirstInDay ? 'border-top' : '';
 
     return (
-        <div
-            className="route-info-bar d-flex align-items-center justify-content-center py-1 px-2 my-1"
-            onClick={onEdit}
-            style={{ cursor: 'pointer' }}
+        <div 
+            ref={setNodeRef}
+            className={`grid-cell ${bgClass} ${borderClass} d-flex align-items-center ${isOver ? 'drag-over' : ''}`}
+            style={{ 
+                gridColumn: '2 / -1', // Start after DayLabel
+                gridRow: `${row} / span 1`,
+                borderBottom: '1px solid #e9ecef',
+                minHeight: '80px',
+                zIndex: 0
+            }}
         >
-            <div className="route-info-content d-flex align-items-center gap-2 small">
-                {route ? (
-                    <>
-                        <span
-                            className="route-transport-badge"
-                            style={{ color: transportColor }}
-                        >
-                            {transportLabel}
-                        </span>
-                        {route.duration && (
-                            <span className="route-duration text-muted d-flex align-items-center gap-1">
-                                <Clock size={12} />
-                                {route.duration}
-                            </span>
-                        )}
-                        {route.cost && (
-                            <span className="route-cost text-muted d-flex align-items-center gap-1">
-                                <Euro size={12} />
-                                {route.cost}
-                            </span>
-                        )}
-                        {!route.duration && !route.cost && (
-                            <span className="text-muted opacity-75">Click to add details</span>
-                        )}
-                    </>
-                ) : (
-                    <span className="text-muted opacity-50">+ Add route info</span>
-                )}
+            <div className="d-flex align-items-center justify-content-center p-2 text-muted small border-end" style={{ width: '80px', minWidth: '80px', height: '100%' }}>
+                 <div className="d-flex flex-column align-items-center">
+                    {icon}
+                    <span style={{ fontSize: '0.7rem' }}>{label}</span>
+                 </div>
             </div>
+            {/* Content area is implicit in the rest of the cell width */}
+            {children}
         </div>
     );
 }
+
+// Day Label Component (Left Sidebar for the Day group)
+function DayLabel({ day, startRow, dayNum, onAdd }: { day: Day, startRow: number, dayNum: number, onAdd: () => void }) {
+    return (
+        <div 
+            className="day-label bg-light border-end border-top border-bottom d-flex flex-column align-items-center justify-content-center text-center p-2"
+            style={{
+                gridColumn: '1 / span 1', // Sidebar column
+                gridRow: `${startRow} / span 3`, // Spans 3 slots
+                zIndex: 2,
+                marginRight: '1px' // separation
+            }}
+        >
+            <div className="fw-bold small">Day {dayNum}</div>
+            <div className="text-muted small mb-2" style={{ fontSize: '0.7rem' }}>{formatDate(day.date)}</div>
+            <Button
+                variant="outline-secondary"
+                size="sm"
+                className="p-1 rounded-circle d-flex align-items-center justify-content-center"
+                style={{ width: '24px', height: '24px' }}
+                onClick={onAdd}
+                title="Add to Day"
+            >
+                <Plus size={14} />
+            </Button>
+        </div>
+    );
+}
+
 
 export function DaySidebar({
     days,
@@ -177,28 +153,60 @@ export function DaySidebar({
         })
     );
 
-    // Get locations for a specific day and slot
-    const getLocationsForSlot = (dayId: string, slot: DaySection) => {
-        return locations
-            .filter(loc => loc.startDayId === dayId && loc.startSlot === slot)
-            .sort((a, b) => a.order - b.order);
-    };
+    // Layout Engine: Calculate grid positions
+    const layout = useMemo(() => {
+        const itemPositions = new Map<string, { row: number, col: number, span: number }>();
+        const lanes: number[][] = []; // lanes[col_index] = [last_occupied_row]
 
-    // Get unassigned locations
-    const getUnassignedLocations = () => {
-        return locations.filter(loc => !loc.startDayId);
-    };
+        // 1. Map days/slots to rows
+        const dayRowMap = new Map<string, number>();
+        days.forEach((d, i) => dayRowMap.set(d.id, i * 3 + 1)); // 1-based index
 
-    // Find location info
+        // 2. Sort locations by start time
+        const sortedLocs = [...locations].sort((a, b) => {
+            if (a.startDayId !== b.startDayId) {
+                // Ensure days exist
+                const rowA = dayRowMap.get(a.startDayId || '') || 9999;
+                const rowB = dayRowMap.get(b.startDayId || '') || 9999;
+                return rowA - rowB;
+            }
+            // Same day, compare slots
+            const slotA = getSectionIndex(a.startSlot);
+            const slotB = getSectionIndex(b.startSlot);
+            return slotA - slotB;
+        });
+
+        // 3. Assign lanes
+        sortedLocs.forEach(loc => {
+            if (!loc.startDayId) return; // Skip unassigned
+            
+            const startRowBase = dayRowMap.get(loc.startDayId);
+            if (startRowBase === undefined) return;
+
+            const startRow = startRowBase + getSectionIndex(loc.startSlot);
+            const span = Math.max(1, loc.duration || 1);
+            const endRow = startRow + span;
+
+            // Find first available lane
+            let laneIndex = 0;
+            while (true) {
+                if (!lanes[laneIndex]) lanes[laneIndex] = [];
+                const lastEnd = lanes[laneIndex][0] || 0; 
+                
+                if (lastEnd <= startRow) {
+                    // Fits!
+                    lanes[laneIndex][0] = endRow;
+                    itemPositions.set(loc.id, { row: startRow, col: laneIndex, span });
+                    break;
+                }
+                laneIndex++;
+            }
+        });
+
+        return { itemPositions, totalLanes: lanes.length || 1 };
+    }, [days, locations]);
+
     const findLocation = (id: string) => locations.find(l => l.id === id);
-
-    // Get route between two locations
-    const getRoute = (fromId: string, toId: string): Route | undefined => {
-        return routes.find(r =>
-            (r.fromLocationId === fromId && r.toLocationId === toId) ||
-            (r.fromLocationId === toId && r.toLocationId === fromId)
-        );
-    };
 
     const handleDragStart = (event: DragStartEvent) => {
         setActiveId(event.active.id as string);
@@ -213,16 +221,12 @@ export function DaySidebar({
         const activeIdStr = active.id as string;
         const overId = over.id as string;
 
-        // Parse overId to see if it's a slot
+        // Parse overId (Cell ID: slot-{dayId}-{section})
         if (overId.startsWith('slot-')) {
-            // Format is slot-{UUID}-{Section}
-            // Section is always the last part (morning, afternoon, evening)
             const lastHyphenIndex = overId.lastIndexOf('-');
             if (lastHyphenIndex !== -1) {
                 const slot = overId.substring(lastHyphenIndex + 1) as DaySection;
-                // dayId is between "slot-" (length 5) and the last hyphen
                 const dayId = overId.substring(5, lastHyphenIndex);
-                
                 if (dayId && slot) {
                     onReorderLocations(activeIdStr, null, dayId, slot);
                 }
@@ -230,8 +234,7 @@ export function DaySidebar({
         } else if (overId === 'unassigned-zone') {
             onReorderLocations(activeIdStr, null, null, null);
         } else {
-            // Dropped on another location
-            // Find that location's day and slot
+            // Dropped on another item? dnd-kit might return the item ID
             const targetLoc = findLocation(overId);
             if (targetLoc) {
                 onReorderLocations(activeIdStr, overId, targetLoc.startDayId || null, targetLoc.startSlot || null);
@@ -239,135 +242,135 @@ export function DaySidebar({
         }
     };
 
-    const startDate = days.length > 0 ? days[0].date : '';
-    const unassignedLocations = getUnassignedLocations();
     const activeLocation = activeId ? locations.find(l => l.id === activeId) : null;
     const allLocationIds = locations.map(l => l.id);
+    const unassignedLocations = locations.filter(l => !l.startDayId);
 
+    // CSS Grid Template
+    const gridTemplateCols = `80px 80px repeat(${Math.max(1, layout.totalLanes)}, 1fr)`; 
+    
     return (
-        <div className="day-sidebar">
-            <DndContext
+        <div className="day-sidebar h-100 d-flex flex-column">
+             <DndContext
                 sensors={sensors}
                 collisionDetection={closestCenter}
                 onDragStart={handleDragStart}
                 onDragEnd={handleDragEnd}
             >
-                <SortableContext
-                    items={allLocationIds}
-                    strategy={verticalListSortingStrategy}
-                >
-                    {days.length === 0 ? (
-                        <div className="text-center text-muted py-4">
-                            <Calendar size={32} className="mb-2 opacity-50" />
-                            <p className="mb-0">Select dates above to start planning</p>
-                        </div>
-                    ) : (
-                        <>
-                            {days.map((day) => {
-                                const dayNum = getDayNumber(day.date, startDate);
-                                const sections: DaySection[] = ['morning', 'afternoon', 'evening'];
+                <div className="flex-grow-1 overflow-auto bg-white position-relative" style={{ 
+                    display: 'grid',
+                    gridTemplateColumns: gridTemplateCols,
+                    gridAutoRows: 'minmax(80px, auto)',
+                    paddingBottom: '100px' // Space for unassigned
+                }}>
+                    {/* Render Grid Structure */}
+                    {days.map((day, dayIndex) => {
+                        const startRow = dayIndex * 3 + 1;
+                        const dayNum = dayIndex + 1; // Assuming sorted days
+
+                        return (
+                            <React.Fragment key={day.id}>
+                                {/* Day Sidebar */}
+                                <DayLabel day={day} startRow={startRow} dayNum={dayNum} onAdd={() => onAddToDay(day.id)} />
+
+                                {/* Slots (Background Layer) */}
+                                {SECTION_ORDER.map((section, secIndex) => (
+                                    <DroppableCell 
+                                        key={`slot-${day.id}-${section}`}
+                                        id={`slot-${day.id}-${section}`}
+                                        section={section}
+                                        row={startRow + secIndex}
+                                        isFirstInDay={secIndex === 0}
+                                    />
+                                ))}
+                            </React.Fragment>
+                        );
+                    })}
+
+                    {/* Render Items (Overlay Layer) */}
+                    <SortableContext items={allLocationIds} strategy={verticalListSortingStrategy}>
+                        {(() => {
+                            // Compute sorted list for route linkage
+                            const dayRowMap = new Map<string, number>();
+                            days.forEach((d, i) => dayRowMap.set(d.id, i * 3 + 1));
+
+                            const sortedLocs = [...locations].sort((a, b) => {
+                                if (a.startDayId !== b.startDayId) {
+                                    const rowA = dayRowMap.get(a.startDayId || '') || 9999;
+                                    const rowB = dayRowMap.get(b.startDayId || '') || 9999;
+                                    return rowA - rowB;
+                                }
+                                const slotA = getSectionIndex(a.startSlot);
+                                const slotB = getSectionIndex(b.startSlot);
+                                if (slotA !== slotB) return slotA - slotB;
+                                return a.order - b.order;
+                            });
+
+                            return locations.map(loc => {
+                                if (!loc.startDayId) return null; // Unassigned handled separately
+                                const pos = layout.itemPositions.get(loc.id);
+                                if (!pos) return null;
+
+                                // Find route to next location
+                                const currentIndex = sortedLocs.findIndex(l => l.id === loc.id);
+                                const nextLoc = sortedLocs[currentIndex + 1];
+                                const route = nextLoc ? routes.find(r => 
+                                    (r.fromLocationId === loc.id && r.toLocationId === nextLoc.id) ||
+                                    (r.fromLocationId === nextLoc.id && r.toLocationId === loc.id)
+                                ) : undefined;
+
+                                // Grid positioning
+                                const style: React.CSSProperties = {
+                                    gridColumn: `${3 + pos.col} / span 1`, // 1=DayLabel, 2=SlotLabel (in cell), 3=Start of lanes
+                                    gridRow: `${pos.row} / span ${pos.span}`,
+                                    zIndex: 1,
+                                    height: '100%',
+                                    marginBottom: 0 // Flush
+                                };
 
                                 return (
-                                    <div key={day.id} className="day-section mb-3 border rounded overflow-hidden">
-                                        <div className="day-header bg-secondary text-white p-2 d-flex justify-content-between align-items-center">
-                                            <div>
-                                                <strong>Day {dayNum}</strong>
-                                                <span className="ms-2 small opacity-75">{formatDate(day.date)}</span>
-                                            </div>
-                                            <Button
-                                                variant="link"
-                                                className="text-white p-0"
-                                                size="sm"
-                                                onClick={() => onAddToDay(day.id)}
-                                                title="Add to Day"
-                                            >
-                                                <Plus size={16} />
-                                            </Button>
-                                        </div>
-
-                                        <div className="day-slots">
-                                            {sections.map(section => {
-                                                const slotId = `slot-${day.id}-${section}`;
-                                                const slotLocations = getLocationsForSlot(day.id, section);
-
-                                                return (
-                                                    <DroppableSlot key={slotId} id={slotId} daySection={section}>
-                                                        {slotLocations.map((location, locIndex) => {
-                                                            // Logic to show route connection if next location exists IN THIS SLOT
-                                                            // Cross-slot routes are harder to visualize in this list view without connecting lines
-                                                            const nextLoc = slotLocations[locIndex + 1];
-                                                            const route = nextLoc ? getRoute(location.id, nextLoc.id) : undefined;
-
-                                                            return (
-                                                                <div key={location.id} className="mb-2">
-                                                                    <SortableItem
-                                                                        id={location.id}
-                                                                        location={location}
-                                                                        index={undefined} // Don't show index in slot view to avoid confusion
-                                                                        onRemove={onRemoveLocation}
-                                                                        onUpdate={onUpdateLocation}
-                                                                        duration={location.duration}
-                                                                    />
-                                                                    {locIndex < slotLocations.length - 1 && (
-                                                                        <RouteInfo
-                                                                            route={route}
-                                                                            onEdit={() => onEditRoute(location.id, nextLoc.id)}
-                                                                        />
-                                                                    )}
-                                                                </div>
-                                                            );
-                                                        })}
-                                                        {slotLocations.length === 0 && (
-                                                            <div className="text-muted small opacity-25 text-center p-1" style={{ fontSize: '0.7em' }}>
-                                                                Drop item here
-                                                            </div>
-                                                        )}
-                                                    </DroppableSlot>
-                                                );
-                                            })}
-                                        </div>
+                                    <div key={loc.id} style={style} className="p-1">
+                                        <SortableItem
+                                            id={loc.id}
+                                            location={loc}
+                                            onRemove={onRemoveLocation}
+                                            onUpdate={onUpdateLocation}
+                                            duration={loc.duration}
+                                            route={route}
+                                            onEditRoute={() => onEditRoute(loc.id, nextLoc?.id || "")}
+                                        />
                                     </div>
                                 );
-                            })}
+                            });
+                        })()}
+                    </SortableContext>
+                </div>
 
-                            <div className="p-2 border-top mt-3">
-                                <div className="text-muted small mb-2">
-                                    <strong>Unassigned Places</strong>
-                                </div>
-                                <DroppableSlot 
-                                    id="unassigned-zone" 
-                                    label="Pending" 
-                                    icon={<MapPin size={14} />}
-                                    className="bg-light"
-                                > 
-                                     {unassignedLocations.length === 0 ? (
-                                         <div className="text-muted small text-center">No unassigned places</div>
-                                     ) : (
-                                         unassignedLocations.map((location) => (
-                                             <SortableItem
-                                                 key={location.id}
-                                                 id={location.id}
-                                                 location={location}
-                                                 onRemove={onRemoveLocation}
-                                                 onUpdate={onUpdateLocation}
-                                                 duration={location.duration}
-                                             />
-                                         ))
-                                     )}
-                                </DroppableSlot>
-                            </div>
-                        </>
-                    )}
-                </SortableContext>
+                {/* Unassigned Zone (Fixed at bottom) */}
+                <div className="p-3 border-top bg-light" style={{ position: 'sticky', bottom: 0, zIndex: 10 }}>
+                    <strong>Unassigned</strong>
+                    <DroppableCell id="unassigned-zone" section="morning" row={9999} isFirstInDay={false}>
+                         <div className="d-flex flex-wrap gap-2 w-100 ps-2">
+                             {unassignedLocations.map(loc => (
+                                 <div key={loc.id} style={{ width: '100%' }}>
+                                     <SortableItem
+                                         id={loc.id}
+                                         location={loc}
+                                         onRemove={onRemoveLocation}
+                                         onUpdate={onUpdateLocation}
+                                         duration={loc.duration}
+                                     />
+                                 </div>
+                             ))}
+                             {unassignedLocations.length === 0 && <div className="text-muted small">No unassigned places</div>}
+                         </div>
+                    </DroppableCell>
+                </div>
 
                 <DragOverlay>
                     {activeLocation ? (
-                        <div className="sortable-item dragging-overlay bg-white border shadow p-2 rounded">
-                            <div className="d-flex align-items-center w-100">
-                                <div className="flex-grow-1">
-                                    <div className="fw-bold text-truncate">{activeLocation.name}</div>
-                                </div>
-                            </div>
+                        <div className="sortable-item dragging-overlay bg-white border shadow p-2 rounded" style={{ height: '80px' }}>
+                             <div className="fw-bold">{activeLocation.name}</div>
                         </div>
                     ) : null}
                 </DragOverlay>
