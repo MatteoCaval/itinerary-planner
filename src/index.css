@@ -144,12 +144,12 @@ body,
 
 .day-header {
   cursor: pointer;
-  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  background: #495057; /* Dark gray for high contrast with white text */
   transition: background 0.2s;
 }
 
 .day-header:hover {
-  background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%);
+  background: #343a40; /* Even darker on hover */
 }
 
 .day-locations {
