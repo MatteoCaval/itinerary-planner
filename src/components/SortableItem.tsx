@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { GripVertical, X, Calendar, Route } from 'lucide-react';
@@ -11,7 +11,7 @@ interface SortableItemProps {
   index?: number;
   onRemove: (id: string) => void;
   onUpdate: (id: string, updates: Partial<Location>) => void;
-  dayCount?: number;
+  duration?: number;
   showRouteButton?: boolean;
   onEditRoute?: () => void;
   onEditDays?: () => void;
@@ -23,7 +23,8 @@ export function SortableItem({
   index,
   onRemove,
   onUpdate,
-  dayCount = 0,
+  // dayCount removed
+  duration = 1,
   showRouteButton = false,
   onEditRoute,
   onEditDays
@@ -87,9 +88,9 @@ export function SortableItem({
             )}
             <div className="text-muted small d-flex align-items-center gap-2">
               <span>{location.lat.toFixed(4)}, {location.lng.toFixed(4)}</span>
-              {dayCount > 1 && (
+              {duration > 1 && (
                 <Badge bg="info" pill className="small">
-                  {dayCount} days
+                  {duration} slots
                 </Badge>
               )}
             </div>

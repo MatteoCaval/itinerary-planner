@@ -1,4 +1,5 @@
 export type TransportType = 'walk' | 'car' | 'bus' | 'train' | 'flight' | 'ferry' | 'other';
+export type DaySection = 'morning' | 'afternoon' | 'evening';
 
 export interface Route {
   id: string;
@@ -30,8 +31,11 @@ export interface Location {
   lat: number;
   lng: number;
   notes?: string;
-  dayIds: string[];       // Can span multiple days
-  order: number;          // Order within the itinerary
+  dayIds: string[];       // Deprecated: kept for backward compatibility if needed, but primary source of truth should be startDayId + duration
+  startDayId?: string;    // The day this location/activity starts
+  startSlot?: DaySection; // The section of the day it starts
+  duration?: number;      // Duration in "slots" (1 slot = 1 section of a day). Default 1.
+  order: number;          // Order within the itinerary (global or per slot?)
 }
 
 // Transport type colors for map routes

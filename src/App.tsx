@@ -7,7 +7,7 @@ import { DateRangePicker } from './components/DateRangePicker';
 import { DaySidebar } from './components/DaySidebar';
 import { RouteEditor } from './components/RouteEditor';
 import { DayAssignmentModal } from './components/DayAssignmentModal';
-import { Location, Day, Route } from './types';
+import { Location, Day, Route, DaySection } from './types';
 
 // Nominatim OpenStreetMap Search Service
 const searchPlace = async (query: string) => {
@@ -58,14 +58,30 @@ interface OldLocation {
   lat: number;
   lng: number;
   notes?: string;
+  dayIds?: string[];
+  startDayId?: string;
+  startSlot?: DaySection;
+  duration?: number;
 }
 
 const migrateLocations = (oldLocations: OldLocation[]): Location[] => {
-  return oldLocations.map((loc, index) => ({
-    ...loc,
-    dayIds: [],
-    order: index,
-  }));
+  return oldLocations.map((loc, index) => {
+    const dayIds = loc.dayIds || [];
+    const startDayId = loc.startDayId || (dayIds.length > 0 ? dayIds[0] : undefined);
+    
+    return {
+      id: loc.id,
+      name: loc.name,
+      lat: loc.lat,
+      lng: loc.lng,
+      notes: loc.notes,
+      dayIds: dayIds, // Keep for now
+      startDayId: startDayId,
+      startSlot: loc.startSlot || 'morning',
+      duration: loc.duration || (dayIds.length > 0 ? dayIds.length * 3 : 1),
+      order: index,
+    };
+  });
 };
 
 // Storage keys
@@ -105,11 +121,8 @@ function App() {
     const saved = localStorage.getItem(STORAGE_KEY_LOCATIONS);
     if (saved) {
       const parsed = JSON.parse(saved);
-      // Check if migration is needed
-      if (parsed.length > 0 && !('dayIds' in parsed[0])) {
-        return migrateLocations(parsed);
-      }
-      return parsed;
+      // Always run migration to ensure new fields exist
+      return migrateLocations(parsed);
     }
     return [];
   });
@@ -126,7 +139,7 @@ function App() {
   // Modal states
   const [editingRoute, setEditingRoute] = useState<{ fromId: string; toId: string } | null>(null);
   const [editingDayAssignment, setEditingDayAssignment] = useState<Location | null>(null);
-  const [pendingAddToDay, setPendingAddToDay] = useState<string | null>(null);
+  const [pendingAddToDay, setPendingAddToDay] = useState<{ dayId: string, slot?: DaySection } | null>(null);
 
   // Persist state
   useEffect(() => {
@@ -164,29 +177,48 @@ function App() {
 
     setDays(updatedDays);
 
-    // Update location dayIds to remove references to deleted days
+    // Cleanup invalid startDayIds
     const newDayIds = new Set(updatedDays.map(d => d.id));
-    setLocations(prev => prev.map(loc => ({
-      ...loc,
-      dayIds: loc.dayIds.filter(id => newDayIds.has(id)),
-    })));
+    setLocations(prev => prev.map(loc => {
+      const validStartDay = loc.startDayId && newDayIds.has(loc.startDayId) ? loc.startDayId : undefined;
+      return {
+        ...loc,
+        startDayId: validStartDay,
+        // If start day is gone, it becomes unassigned
+      };
+    }));
   };
 
-  const addLocation = async (lat: number, lng: number, name?: string, targetDayId?: string) => {
+  const addLocation = async (lat: number, lng: number, name?: string, targetDayId?: string, targetSlot?: DaySection) => {
     const resolvedName = name || await reverseGeocode(lat, lng);
-    // Use target day if specified, otherwise pending day, otherwise first day
-    const assignedDayId = targetDayId || pendingAddToDay || (days.length > 0 ? days[0].id : null);
+    
+    let assignedDayId = undefined;
+    let assignedSlot: DaySection = 'morning';
+
+    if (targetDayId) {
+      assignedDayId = targetDayId;
+      if (targetSlot) assignedSlot = targetSlot;
+    } else if (pendingAddToDay) {
+      assignedDayId = pendingAddToDay.dayId;
+      if (pendingAddToDay.slot) assignedSlot = pendingAddToDay.slot;
+    } else if (days.length > 0) {
+      assignedDayId = days[0].id;
+    }
+
     const newLocation: Location = {
       id: uuidv4(),
       name: resolvedName.split(',')[0],
       lat,
       lng,
       notes: '',
-      dayIds: assignedDayId ? [assignedDayId] : [],
+      dayIds: [], // Deprecated
+      startDayId: assignedDayId,
+      startSlot: assignedSlot,
+      duration: 1,
       order: locations.length,
     };
     setLocations([...locations, newLocation]);
-    setPendingAddToDay(null); // Clear pending day after adding
+    setPendingAddToDay(null); // Clear pending
   };
 
   const handleSearch = async (e: React.FormEvent) => {
@@ -216,20 +248,25 @@ function App() {
     setLocations(locations.map(l => l.id === id ? { ...l, ...updates } : l));
   };
 
-  const handleReorderLocations = (activeId: string, overId: string | null, newDayId: string | null) => {
+  const handleReorderLocations = (activeId: string, overId: string | null, newDayId: string | null, newSlot: DaySection | null = null) => {
     setLocations(prev => {
       const activeLocation = prev.find(l => l.id === activeId);
       if (!activeLocation) return prev;
 
       let newLocations = [...prev];
-
-      // Update the day assignment
-      const updatedDayIds = newDayId ? [newDayId] : [];
       const activeIndex = newLocations.findIndex(l => l.id === activeId);
-      newLocations[activeIndex] = { ...newLocations[activeIndex], dayIds: updatedDayIds };
+
+      // Update the day/slot assignment
+      if (newDayId !== undefined) { // Allow null to mean unassigned
+         newLocations[activeIndex] = { 
+           ...newLocations[activeIndex], 
+           startDayId: newDayId || undefined,
+           startSlot: newSlot || newLocations[activeIndex].startSlot || 'morning'
+         };
+      }
 
       // If dropped on another location, reorder
-      if (overId && overId !== activeId) {
+      if (overId && overId !== activeId && overId !== 'unassigned-zone' && !overId.startsWith('slot-')) {
         const oldIndex = newLocations.findIndex(l => l.id === activeId);
         const newIndex = newLocations.findIndex(l => l.id === overId);
 
@@ -245,8 +282,8 @@ function App() {
   };
 
   // Handle adding a new location to a specific day
-  const handleAddToDay = (dayId: string) => {
-    setPendingAddToDay(dayId);
+  const handleAddToDay = (dayId: string, slot?: DaySection) => {
+    setPendingAddToDay({ dayId, slot });
   };
 
   // Route editing
