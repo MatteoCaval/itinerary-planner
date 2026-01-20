@@ -5,8 +5,6 @@ import { GripVertical, X } from 'lucide-react';
 import { Button, Form, Badge } from 'react-bootstrap';
 import { Location } from '../types';
 
-import { Route, TRANSPORT_LABELS, TRANSPORT_COLORS } from '../types';
-
 interface SortableItemProps {
   id: string;
   location: Location;
@@ -14,28 +12,15 @@ interface SortableItemProps {
   onRemove: (id: string) => void;
   onUpdate: (id: string, updates: Partial<Location>) => void;
   duration?: number;
-  route?: Route;
-  onEditRoute?: () => void;
 }
 
 export function SortableItem({
-
   id,
-
   location,
-
   index,
-
   onRemove,
-
   onUpdate,
-
   duration = 1,
-
-  route,
-
-  onEditRoute
-
 }: SortableItemProps) {
 
   const {
@@ -247,37 +232,7 @@ export function SortableItem({
 
 
           <div className="mt-auto pt-1">
-
-              {route && (
-
-                <div 
-
-                    className="mt-1 pt-1 border-top text-muted d-flex align-items-center justify-content-between" 
-
-                    style={{ fontSize: '0.7rem', cursor: 'pointer' }}
-
-                    onClick={(e) => {
-
-                        e.stopPropagation();
-
-                        if (onEditRoute) onEditRoute();
-
-                    }}
-
-                >
-
-                    <span style={{ color: TRANSPORT_COLORS[route.transportType] }}>
-
-                        {TRANSPORT_LABELS[route.transportType]}
-
-                    </span>
-
-                    <span>{route.duration || 'Add travel info'}</span>
-
-                </div>
-
-              )}
-
+              {/* Route info removed, will be rendered between items */}
           </div>
 
         </div>

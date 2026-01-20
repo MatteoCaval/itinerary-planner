@@ -18,7 +18,7 @@ import {
     sortableKeyboardCoordinates,
     verticalListSortingStrategy
 } from '@dnd-kit/sortable';
-import { Day, Location, Route, DaySection } from '../types';
+import { Day, Location, Route, DaySection, TRANSPORT_COLORS, TRANSPORT_LABELS } from '../types';
 import { SortableItem } from './SortableItem';
 
 interface DaySidebarProps {
@@ -95,7 +95,6 @@ function DroppableCell({ id, section, row, isFirstInDay, children }: { id: strin
                     <span style={{ fontSize: '0.7rem' }}>{label}</span>
                  </div>
             </div>
-            {/* Content area is implicit in the rest of the cell width */}
             {children}
         </div>
     );
@@ -129,6 +128,42 @@ function DayLabel({ day, startRow, dayNum, onAdd }: { day: Day, startRow: number
     );
 }
 
+// Route Connector Component
+function RouteConnector({ route, row, col, onEdit }: { route: Route, row: number, col: number, onEdit: () => void }) {
+    const transportLabel = TRANSPORT_LABELS[route.transportType];
+    const transportColor = TRANSPORT_COLORS[route.transportType];
+
+    return (
+        <div 
+            className="route-connector-grid d-flex align-items-center justify-content-center"
+            style={{
+                gridColumn: `${3 + col} / span 1`,
+                gridRow: `${row} / span 1`,
+                zIndex: 10, // Higher than destinations
+                pointerEvents: 'none',
+                height: '0' // Take no physical row space
+            }}
+        >
+            <div 
+                className="route-badge shadow border bg-white rounded-pill px-2 d-flex align-items-center gap-1"
+                style={{ 
+                    cursor: 'pointer', 
+                    pointerEvents: 'auto',
+                    fontSize: '0.65rem',
+                    transform: 'translateY(-50%)',
+                    whiteSpace: 'nowrap'
+                }}
+                onClick={(e) => {
+                    e.stopPropagation();
+                    onEdit();
+                }}
+            >
+                <span style={{ color: transportColor, fontWeight: 'bold' }}>{transportLabel}</span>
+                {route.duration && <span className="text-muted">{route.duration}</span>}
+            </div>
+        </div>
+    );
+}
 
 export function DaySidebar({
     days,
@@ -156,29 +191,25 @@ export function DaySidebar({
     // Layout Engine: Calculate grid positions
     const layout = useMemo(() => {
         const itemPositions = new Map<string, { row: number, col: number, span: number }>();
-        const lanes: number[][] = []; // lanes[col_index] = [last_occupied_row]
+        const lanes: number[][] = []; 
 
-        // 1. Map days/slots to rows
         const dayRowMap = new Map<string, number>();
-        days.forEach((d, i) => dayRowMap.set(d.id, i * 3 + 1)); // 1-based index
+        days.forEach((d, i) => dayRowMap.set(d.id, i * 3 + 1));
 
-        // 2. Sort locations by start time
         const sortedLocs = [...locations].sort((a, b) => {
             if (a.startDayId !== b.startDayId) {
-                // Ensure days exist
                 const rowA = dayRowMap.get(a.startDayId || '') || 9999;
                 const rowB = dayRowMap.get(b.startDayId || '') || 9999;
                 return rowA - rowB;
             }
-            // Same day, compare slots
             const slotA = getSectionIndex(a.startSlot);
             const slotB = getSectionIndex(b.startSlot);
-            return slotA - slotB;
+            if (slotA !== slotB) return slotA - slotB;
+            return a.order - b.order;
         });
 
-        // 3. Assign lanes
         sortedLocs.forEach(loc => {
-            if (!loc.startDayId) return; // Skip unassigned
+            if (!loc.startDayId) return; 
             
             const startRowBase = dayRowMap.get(loc.startDayId);
             if (startRowBase === undefined) return;
@@ -187,14 +218,12 @@ export function DaySidebar({
             const span = Math.max(1, loc.duration || 1);
             const endRow = startRow + span;
 
-            // Find first available lane
             let laneIndex = 0;
             while (true) {
                 if (!lanes[laneIndex]) lanes[laneIndex] = [];
                 const lastEnd = lanes[laneIndex][0] || 0; 
                 
                 if (lastEnd <= startRow) {
-                    // Fits!
                     lanes[laneIndex][0] = endRow;
                     itemPositions.set(loc.id, { row: startRow, col: laneIndex, span });
                     break;
@@ -221,7 +250,6 @@ export function DaySidebar({
         const activeIdStr = active.id as string;
         const overId = over.id as string;
 
-        // Parse overId (Cell ID: slot-{dayId}-{section})
         if (overId.startsWith('slot-')) {
             const lastHyphenIndex = overId.lastIndexOf('-');
             if (lastHyphenIndex !== -1) {
@@ -234,7 +262,6 @@ export function DaySidebar({
         } else if (overId === 'unassigned-zone') {
             onReorderLocations(activeIdStr, null, null, null);
         } else {
-            // Dropped on another item? dnd-kit might return the item ID
             const targetLoc = findLocation(overId);
             if (targetLoc) {
                 onReorderLocations(activeIdStr, overId, targetLoc.startDayId || null, targetLoc.startSlot || null);
@@ -246,7 +273,6 @@ export function DaySidebar({
     const allLocationIds = locations.map(l => l.id);
     const unassignedLocations = locations.filter(l => !l.startDayId);
 
-    // CSS Grid Template
     const gridTemplateCols = `80px 80px repeat(${Math.max(1, layout.totalLanes)}, 1fr)`; 
     
     return (
@@ -261,19 +287,15 @@ export function DaySidebar({
                     display: 'grid',
                     gridTemplateColumns: gridTemplateCols,
                     gridAutoRows: 'minmax(80px, auto)',
-                    paddingBottom: '100px' // Space for unassigned
+                    paddingBottom: '100px' 
                 }}>
-                    {/* Render Grid Structure */}
                     {days.map((day, dayIndex) => {
                         const startRow = dayIndex * 3 + 1;
-                        const dayNum = dayIndex + 1; // Assuming sorted days
+                        const dayNum = dayIndex + 1;
 
                         return (
                             <React.Fragment key={day.id}>
-                                {/* Day Sidebar */}
                                 <DayLabel day={day} startRow={startRow} dayNum={dayNum} onAdd={() => onAddToDay(day.id)} />
-
-                                {/* Slots (Background Layer) */}
                                 {SECTION_ORDER.map((section, secIndex) => (
                                     <DroppableCell 
                                         key={`slot-${day.id}-${section}`}
@@ -287,10 +309,8 @@ export function DaySidebar({
                         );
                     })}
 
-                    {/* Render Items (Overlay Layer) */}
                     <SortableContext items={allLocationIds} strategy={verticalListSortingStrategy}>
                         {(() => {
-                            // Compute sorted list for route linkage
                             const dayRowMap = new Map<string, number>();
                             days.forEach((d, i) => dayRowMap.set(d.id, i * 3 + 1));
 
@@ -307,46 +327,53 @@ export function DaySidebar({
                             });
 
                             return locations.map(loc => {
-                                if (!loc.startDayId) return null; // Unassigned handled separately
+                                if (!loc.startDayId) return null; 
                                 const pos = layout.itemPositions.get(loc.id);
                                 if (!pos) return null;
 
-                                // Find route to next location
                                 const currentIndex = sortedLocs.findIndex(l => l.id === loc.id);
                                 const nextLoc = sortedLocs[currentIndex + 1];
+                                const nextPos = nextLoc ? layout.itemPositions.get(nextLoc.id) : null;
+                                
                                 const route = nextLoc ? routes.find(r => 
                                     (r.fromLocationId === loc.id && r.toLocationId === nextLoc.id) ||
                                     (r.fromLocationId === nextLoc.id && r.toLocationId === loc.id)
                                 ) : undefined;
 
-                                // Grid positioning
                                 const style: React.CSSProperties = {
-                                    gridColumn: `${3 + pos.col} / span 1`, // 1=DayLabel, 2=SlotLabel (in cell), 3=Start of lanes
+                                    gridColumn: `${3 + pos.col} / span 1`, 
                                     gridRow: `${pos.row} / span ${pos.span}`,
                                     zIndex: 1,
                                     height: '100%',
-                                    marginBottom: 0 // Flush
+                                    marginBottom: 0 
                                 };
 
                                 return (
-                                    <div key={loc.id} style={style} className="p-1">
-                                        <SortableItem
-                                            id={loc.id}
-                                            location={loc}
-                                            onRemove={onRemoveLocation}
-                                            onUpdate={onUpdateLocation}
-                                            duration={loc.duration}
-                                            route={route}
-                                            onEditRoute={() => onEditRoute(loc.id, nextLoc?.id || "")}
-                                        />
-                                    </div>
+                                    <React.Fragment key={loc.id}>
+                                        <div style={style} className="p-1">
+                                            <SortableItem
+                                                id={loc.id}
+                                                location={loc}
+                                                onRemove={onRemoveLocation}
+                                                onUpdate={onUpdateLocation}
+                                                duration={loc.duration}
+                                            />
+                                        </div>
+                                        {route && nextPos && (
+                                            <RouteConnector 
+                                                route={route} 
+                                                row={pos.row + pos.span} 
+                                                col={pos.col} 
+                                                onEdit={() => onEditRoute(loc.id, nextLoc.id)}
+                                            />
+                                        )}
+                                    </React.Fragment>
                                 );
                             });
                         })()}
                     </SortableContext>
                 </div>
 
-                {/* Unassigned Zone (Fixed at bottom) */}
                 <div className="p-3 border-top bg-light" style={{ position: 'sticky', bottom: 0, zIndex: 10 }}>
                     <strong>Unassigned</strong>
                     <DroppableCell id="unassigned-zone" section="morning" row={9999} isFirstInDay={false}>
