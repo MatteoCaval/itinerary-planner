@@ -1,9 +1,17 @@
 import { useState } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical, X } from 'lucide-react';
+import { GripVertical, X, Map as SightseeingIcon, Utensils, Bed, Train, Globe } from 'lucide-react';
 import { Button, Form, Badge } from 'react-bootstrap';
-import { Location } from '../types';
+import { Location, LocationCategory } from '../types';
+
+const CATEGORY_ICONS: Record<LocationCategory, React.ReactNode> = {
+  sightseeing: <SightseeingIcon size={14} />,
+  dining: <Utensils size={14} />,
+  hotel: <Bed size={14} />,
+  transit: <Train size={14} />,
+  other: <Globe size={14} />
+};
 
 interface SortableItemProps {
   id: string;
@@ -47,7 +55,7 @@ export function SortableItem({
 
     transition,
 
-    height: '100%', 
+    height: '100%',
 
   };
 
@@ -56,6 +64,15 @@ export function SortableItem({
   const [isEditing, setIsEditing] = useState(false);
 
   const [isResizing, setIsResizing] = useState(false);
+
+
+  const toggleCategory = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const categories: LocationCategory[] = ['sightseeing', 'dining', 'hotel', 'transit', 'other'];
+    const currentIndex = categories.indexOf(location.category || 'sightseeing');
+    const nextIndex = (currentIndex + 1) % categories.length;
+    onUpdate(id, { category: categories[nextIndex] });
+  };
 
 
 
@@ -157,8 +174,16 @@ export function SortableItem({
 
 
 
-            <div className="flex-grow-1 min-width-0">
+            <div 
+              className="category-icon-wrapper me-2 text-muted" 
+              onClick={toggleCategory}
+              title="Click to change category"
+              style={{ cursor: 'pointer' }}
+            >
+              {CATEGORY_ICONS[location.category || 'sightseeing']}
+            </div>
 
+            <div className="flex-grow-1 min-width-0">
               {isEditing ? (
 
                 <Form.Control

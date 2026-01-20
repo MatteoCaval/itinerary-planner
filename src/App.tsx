@@ -140,6 +140,7 @@ function App() {
   const [editingRoute, setEditingRoute] = useState<{ fromId: string; toId: string } | null>(null);
   const [editingDayAssignment, setEditingDayAssignment] = useState<Location | null>(null);
   const [pendingAddToDay, setPendingAddToDay] = useState<{ dayId: string, slot?: DaySection } | null>(null);
+  const [hoveredLocationId, setHoveredLocationId] = useState<string | null>(null);
 
   // Persist state
   useEffect(() => {
@@ -397,6 +398,8 @@ function App() {
               onUpdateLocation={updateLocation}
               onEditRoute={handleEditRoute}
               onAddToDay={handleAddToDay}
+              hoveredLocationId={hoveredLocationId}
+              onHoverLocation={setHoveredLocationId}
             />
           </div>
 
@@ -418,6 +421,8 @@ function App() {
             locations={locations}
             routes={routes}
             onEditRoute={handleEditRoute}
+            hoveredLocationId={hoveredLocationId}
+            onHoverLocation={setHoveredLocationId}
           />
         </Col>
       </Row>

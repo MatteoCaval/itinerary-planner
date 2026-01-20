@@ -1,5 +1,6 @@
 export type TransportType = 'walk' | 'car' | 'bus' | 'train' | 'flight' | 'ferry' | 'other';
 export type DaySection = 'morning' | 'afternoon' | 'evening';
+export type LocationCategory = 'sightseeing' | 'dining' | 'hotel' | 'transit' | 'other';
 
 export interface Route {
   id: string;
@@ -31,6 +32,7 @@ export interface Location {
   lat: number;
   lng: number;
   notes?: string;
+  category?: LocationCategory;
   dayIds: string[];       // Deprecated: kept for backward compatibility if needed, but primary source of truth should be startDayId + duration
   startDayId?: string;    // The day this location/activity starts
   startSlot?: DaySection; // The section of the day it starts

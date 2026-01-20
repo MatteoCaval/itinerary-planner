@@ -20,9 +20,28 @@ interface MapDisplayProps {
   locations: Location[];
   routes: Route[];
   onEditRoute: (fromId: string, toId: string) => void;
+  hoveredLocationId?: string | null;
+  onHoverLocation?: (id: string | null) => void;
 }
 
-
+// Custom Marker icons
+const createIcon = (color: string, isHovered: boolean) => {
+  return L.divIcon({
+    className: 'custom-marker',
+    html: `<div style="
+      background-color: ${color}; 
+      width: ${isHovered ? '24px' : '18px'}; 
+      height: ${isHovered ? '24px' : '18px'}; 
+      border-radius: 50%; 
+      border: 3px solid white; 
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+      transition: all 0.2s;
+      ${isHovered ? 'transform: scale(1.3); border-color: #0d6efd;' : ''}
+    "></div>`,
+    iconSize: [24, 24],
+    iconAnchor: [12, 12],
+  });
+};
 
 // Component to fit bounds
 function FitBounds({ locations }: { locations: Location[] }) {
@@ -88,7 +107,7 @@ function RouteSegment({ from, to, route, onEditRoute }: RouteSegmentProps) {
   );
 }
 
-export default function MapDisplay({ locations, routes, onEditRoute }: MapDisplayProps) {
+export default function MapDisplay({ locations, routes, onEditRoute, hoveredLocationId, onHoverLocation }: MapDisplayProps) {
   const position: [number, number] = [51.505, -0.09]; // Default center (London)
 
   // Get ordered locations for drawing routes
@@ -111,14 +130,25 @@ export default function MapDisplay({ locations, routes, onEditRoute }: MapDispla
         />
 
 
-        {sortedLocations.map((loc, index) => (
-          <Marker key={loc.id} position={[loc.lat, loc.lng]}>
-            <Popup>
-              <strong>{index + 1}. {loc.name}</strong><br />
-              {loc.notes && <span className="text-muted">{loc.notes}</span>}
-            </Popup>
-          </Marker>
-        ))}
+        {sortedLocations.map((loc, index) => {
+          const isHovered = hoveredLocationId === loc.id;
+          return (
+            <Marker 
+              key={loc.id} 
+              position={[loc.lat, loc.lng]}
+              icon={createIcon(isHovered ? '#0d6efd' : '#6c757d', isHovered)}
+              eventHandlers={{
+                mouseover: () => onHoverLocation?.(loc.id),
+                mouseout: () => onHoverLocation?.(null),
+              }}
+            >
+              <Popup>
+                <strong>{index + 1}. {loc.name}</strong><br />
+                {loc.notes && <span className="text-muted">{loc.notes}</span>}
+              </Popup>
+            </Marker>
+          );
+        })}
 
         {/* Draw route segments between consecutive locations */}
         {sortedLocations.length > 1 && sortedLocations.map((loc, index) => {

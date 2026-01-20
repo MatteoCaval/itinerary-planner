@@ -269,14 +269,32 @@ body,
 }
 
 /* Timeline / Ruler View Colors */
+.bg-zebra-odd {
+  background-color: white;
+}
+.bg-zebra-even {
+  background-color: #f8f9fa; /* Subtle light gray */
+}
+
 .bg-light-yellow {
-  background-color: #fffdf0;
+  background-color: rgba(255, 253, 240, 0.5);
 }
 .bg-light-orange {
-  background-color: #fff8f0;
+  background-color: rgba(255, 248, 240, 0.5);
 }
 .bg-light-indigo {
-  background-color: #f5f7ff;
+  background-color: rgba(245, 247, 255, 0.5);
+}
+
+.item-hover-wrapper {
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.item-hover-wrapper.hovered .sortable-item {
+  border-color: #0d6efd;
+  box-shadow: 0 4px 12px rgba(13, 110, 253, 0.2);
+  transform: translateY(-2px);
+  z-index: 10;
 }
 
 .text-orange {

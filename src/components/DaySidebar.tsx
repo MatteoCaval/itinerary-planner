@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useRef } from 'react';
 import { Button } from 'react-bootstrap';
 import { Plus, Sun, Moon, Coffee } from 'lucide-react';
 import {
@@ -9,7 +9,6 @@ import {
     useSensor,
     useSensors,
     DragEndEvent,
-    DragStartEvent,
     DragOverlay,
     useDroppable
 } from '@dnd-kit/core';
@@ -30,16 +29,16 @@ interface DaySidebarProps {
     onUpdateLocation: (id: string, updates: Partial<Location>) => void;
     onEditRoute: (fromId: string, toId: string) => void;
     onAddToDay: (dayId: string, slot?: DaySection) => void;
+    hoveredLocationId?: string | null;
+    onHoverLocation?: (id: string | null) => void;
 }
 
-// Helper to map section to index
 const SECTION_ORDER: DaySection[] = ['morning', 'afternoon', 'evening'];
 const getSectionIndex = (section?: DaySection) => {
     if (!section) return 0;
     return SECTION_ORDER.indexOf(section);
 };
 
-// Format date for display
 const formatDate = (dateStr: string) => {
     const date = new Date(dateStr + 'T00:00:00');
     return date.toLocaleDateString('en-US', {
@@ -49,47 +48,43 @@ const formatDate = (dateStr: string) => {
     });
 };
 
-// Droppable Cell Component
-function DroppableCell({ id, section, row, isFirstInDay, children }: { id: string, section: DaySection, row: number, isFirstInDay: boolean, children?: React.ReactNode }) {
+function DroppableCell({ id, section, row, isEvenDay, onClick, children }: { id: string, section: DaySection, row: number, isEvenDay: boolean, onClick?: () => void, children?: React.ReactNode }) {
     const { isOver, setNodeRef } = useDroppable({ id });
 
     let icon;
     let label;
-    let bgClass = '';
-
     switch (section) {
         case 'morning':
             icon = <Coffee size={14} className="text-warning" />;
             label = "Morning";
-            bgClass = 'bg-light-yellow';
             break;
         case 'afternoon':
             icon = <Sun size={14} className="text-orange" />;
             label = "Afternoon";
-            bgClass = 'bg-light-orange';
             break;
         case 'evening':
             icon = <Moon size={14} className="text-indigo" />;
             label = "Evening";
-            bgClass = 'bg-light-indigo';
             break;
     }
 
-    const borderClass = isFirstInDay ? 'border-top' : '';
+    const bgClass = isEvenDay ? 'bg-zebra-even' : 'bg-zebra-odd';
 
     return (
         <div 
             ref={setNodeRef}
-            className={`grid-cell ${bgClass} ${borderClass} d-flex align-items-center ${isOver ? 'drag-over' : ''}`}
+            className={`grid-cell ${bgClass} d-flex align-items-center ${isOver ? 'drag-over' : ''}`}
+            onClick={onClick}
             style={{ 
-                gridColumn: '2 / -1', // Start after DayLabel
+                gridColumn: '2 / -1',
                 gridRow: `${row} / span 1`,
                 borderBottom: '1px solid #e9ecef',
                 minHeight: '80px',
-                zIndex: 0
+                zIndex: 0,
+                cursor: 'pointer'
             }}
         >
-            <div className="d-flex align-items-center justify-content-center p-2 text-muted small border-end" style={{ width: '80px', minWidth: '80px', height: '100%' }}>
+            <div className="d-flex align-items-center justify-content-center p-2 text-muted small border-end" style={{ width: '80px', minWidth: '80px', height: '100%', pointerEvents: 'none' }}>
                  <div className="d-flex flex-column align-items-center">
                     {icon}
                     <span style={{ fontSize: '0.7rem' }}>{label}</span>
@@ -100,16 +95,15 @@ function DroppableCell({ id, section, row, isFirstInDay, children }: { id: strin
     );
 }
 
-// Day Label Component (Left Sidebar for the Day group)
-function DayLabel({ day, startRow, dayNum, onAdd }: { day: Day, startRow: number, dayNum: number, onAdd: () => void }) {
+function DayLabel({ day, startRow, dayNum, isEvenDay, onAdd }: { day: Day, startRow: number, dayNum: number, isEvenDay: boolean, onAdd: () => void }) {
     return (
         <div 
-            className="day-label bg-light border-end border-top border-bottom d-flex flex-column align-items-center justify-content-center text-center p-2"
+            className={`day-label border-end border-bottom d-flex flex-column align-items-center justify-content-center text-center p-2 ${isEvenDay ? 'bg-zebra-even' : 'bg-zebra-odd'}`}
             style={{
-                gridColumn: '1 / span 1', // Sidebar column
-                gridRow: `${startRow} / span 3`, // Spans 3 slots
+                gridColumn: '1 / span 1',
+                gridRow: `${startRow} / span 3`,
                 zIndex: 2,
-                marginRight: '1px' // separation
+                borderTop: '1px solid #dee2e6'
             }}
         >
             <div className="fw-bold small">Day {dayNum}</div>
@@ -119,7 +113,7 @@ function DayLabel({ day, startRow, dayNum, onAdd }: { day: Day, startRow: number
                 size="sm"
                 className="p-1 rounded-circle d-flex align-items-center justify-content-center"
                 style={{ width: '24px', height: '24px' }}
-                onClick={onAdd}
+                onClick={(e) => { e.stopPropagation(); onAdd(); }}
                 title="Add to Day"
             >
                 <Plus size={14} />
@@ -128,10 +122,22 @@ function DayLabel({ day, startRow, dayNum, onAdd }: { day: Day, startRow: number
     );
 }
 
-// Route Connector Component
-function RouteConnector({ route, row, col, onEdit }: { route: Route, row: number, col: number, onEdit: () => void }) {
-    const transportLabel = TRANSPORT_LABELS[route.transportType];
-    const transportColor = TRANSPORT_COLORS[route.transportType];
+// Helper to calculate distance in KM between two points
+const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+    const R = 6371; // Earth's radius
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = 
+        Math.sin(dLat/2) * Math.sin(dLat/2) +
+        Math.cos(lat1 * Math.PI/180) * Math.cos(lat2 * Math.PI/180) * 
+        Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return (R * c).toFixed(1);
+};
+
+function RouteConnector({ route, distance, row, col, onEdit }: { route: Route | null, distance: string, row: number, col: number, onEdit: () => void }) {
+    const transportLabel = route ? TRANSPORT_LABELS[route.transportType] : '🔗';
+    const transportColor = route ? TRANSPORT_COLORS[route.transportType] : '#adb5bd';
 
     return (
         <div 
@@ -139,9 +145,9 @@ function RouteConnector({ route, row, col, onEdit }: { route: Route, row: number
             style={{
                 gridColumn: `${3 + col} / span 1`,
                 gridRow: `${row} / span 1`,
-                zIndex: 10, // Higher than destinations
+                zIndex: 10,
                 pointerEvents: 'none',
-                height: '0' // Take no physical row space
+                height: '0'
             }}
         >
             <div 
@@ -159,7 +165,7 @@ function RouteConnector({ route, row, col, onEdit }: { route: Route, row: number
                 }}
             >
                 <span style={{ color: transportColor, fontWeight: 'bold' }}>{transportLabel}</span>
-                {route.duration && <span className="text-muted">{route.duration}</span>}
+                <span className="text-muted">{route?.duration || `${distance}km`}</span>
             </div>
         </div>
     );
@@ -173,30 +179,26 @@ export function DaySidebar({
     onRemoveLocation,
     onUpdateLocation,
     onEditRoute,
-    onAddToDay
+    onAddToDay,
+    hoveredLocationId,
+    onHoverLocation
 }: DaySidebarProps) {
     const [activeId, setActiveId] = useState<string | null>(null);
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
 
     const sensors = useSensors(
-        useSensor(PointerSensor, {
-            activationConstraint: {
-                distance: 8,
-            },
-        }),
-        useSensor(KeyboardSensor, {
-            coordinateGetter: sortableKeyboardCoordinates,
-        })
+        useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+        useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
     );
 
-    // Layout Engine: Calculate grid positions
-    const layout = useMemo(() => {
-        const itemPositions = new Map<string, { row: number, col: number, span: number }>();
-        const lanes: number[][] = []; 
+    const dayRowMap = useMemo(() => {
+        const map = new Map<string, number>();
+        days.forEach((d, i) => map.set(d.id, i * 3 + 1));
+        return map;
+    }, [days]);
 
-        const dayRowMap = new Map<string, number>();
-        days.forEach((d, i) => dayRowMap.set(d.id, i * 3 + 1));
-
-        const sortedLocs = [...locations].sort((a, b) => {
+    const sortedLocs = useMemo(() => {
+        return [...locations].sort((a, b) => {
             if (a.startDayId !== b.startDayId) {
                 const rowA = dayRowMap.get(a.startDayId || '') || 9999;
                 const rowB = dayRowMap.get(b.startDayId || '') || 9999;
@@ -207,10 +209,14 @@ export function DaySidebar({
             if (slotA !== slotB) return slotA - slotB;
             return a.order - b.order;
         });
+    }, [locations, dayRowMap]);
+
+    const layout = useMemo(() => {
+        const itemPositions = new Map<string, { row: number, col: number, span: number }>();
+        const lanes: number[][] = []; 
 
         sortedLocs.forEach(loc => {
             if (!loc.startDayId) return; 
-            
             const startRowBase = dayRowMap.get(loc.startDayId);
             if (startRowBase === undefined) return;
 
@@ -222,7 +228,6 @@ export function DaySidebar({
             while (true) {
                 if (!lanes[laneIndex]) lanes[laneIndex] = [];
                 const lastEnd = lanes[laneIndex][0] || 0; 
-                
                 if (lastEnd <= startRow) {
                     lanes[laneIndex][0] = endRow;
                     itemPositions.set(loc.id, { row: startRow, col: laneIndex, span });
@@ -231,20 +236,12 @@ export function DaySidebar({
                 laneIndex++;
             }
         });
-
         return { itemPositions, totalLanes: lanes.length || 1 };
-    }, [days, locations]);
-
-    const findLocation = (id: string) => locations.find(l => l.id === id);
-
-    const handleDragStart = (event: DragStartEvent) => {
-        setActiveId(event.active.id as string);
-    };
+    }, [sortedLocs, dayRowMap]);
 
     const handleDragEnd = (event: DragEndEvent) => {
         const { active, over } = event;
         setActiveId(null);
-
         if (!over) return;
 
         const activeIdStr = active.id as string;
@@ -255,17 +252,13 @@ export function DaySidebar({
             if (lastHyphenIndex !== -1) {
                 const slot = overId.substring(lastHyphenIndex + 1) as DaySection;
                 const dayId = overId.substring(5, lastHyphenIndex);
-                if (dayId && slot) {
-                    onReorderLocations(activeIdStr, null, dayId, slot);
-                }
+                if (dayId && slot) onReorderLocations(activeIdStr, null, dayId, slot);
             }
         } else if (overId === 'unassigned-zone') {
             onReorderLocations(activeIdStr, null, null, null);
         } else {
-            const targetLoc = findLocation(overId);
-            if (targetLoc) {
-                onReorderLocations(activeIdStr, overId, targetLoc.startDayId || null, targetLoc.startSlot || null);
-            }
+            const targetLoc = locations.find(l => l.id === overId);
+            if (targetLoc) onReorderLocations(activeIdStr, overId, targetLoc.startDayId || null, targetLoc.startSlot || null);
         }
     };
 
@@ -280,10 +273,10 @@ export function DaySidebar({
              <DndContext
                 sensors={sensors}
                 collisionDetection={closestCenter}
-                onDragStart={handleDragStart}
+                onDragStart={(e) => setActiveId(e.active.id as string)}
                 onDragEnd={handleDragEnd}
             >
-                <div className="flex-grow-1 overflow-auto bg-white position-relative" style={{ 
+                <div ref={scrollContainerRef} className="flex-grow-1 overflow-auto bg-white position-relative" style={{ 
                     display: 'grid',
                     gridTemplateColumns: gridTemplateCols,
                     gridAutoRows: 'minmax(80px, auto)',
@@ -291,18 +284,18 @@ export function DaySidebar({
                 }}>
                     {days.map((day, dayIndex) => {
                         const startRow = dayIndex * 3 + 1;
-                        const dayNum = dayIndex + 1;
-
+                        const isEvenDay = dayIndex % 2 === 1;
                         return (
                             <React.Fragment key={day.id}>
-                                <DayLabel day={day} startRow={startRow} dayNum={dayNum} onAdd={() => onAddToDay(day.id)} />
+                                <DayLabel day={day} startRow={startRow} dayNum={dayIndex + 1} isEvenDay={isEvenDay} onAdd={() => onAddToDay(day.id)} />
                                 {SECTION_ORDER.map((section, secIndex) => (
                                     <DroppableCell 
                                         key={`slot-${day.id}-${section}`}
                                         id={`slot-${day.id}-${section}`}
                                         section={section}
                                         row={startRow + secIndex}
-                                        isFirstInDay={secIndex === 0}
+                                        isEvenDay={isEvenDay}
+                                        onClick={() => onAddToDay(day.id, section)}
                                     />
                                 ))}
                             </React.Fragment>
@@ -310,47 +303,35 @@ export function DaySidebar({
                     })}
 
                     <SortableContext items={allLocationIds} strategy={verticalListSortingStrategy}>
-                        {(() => {
-                            const dayRowMap = new Map<string, number>();
-                            days.forEach((d, i) => dayRowMap.set(d.id, i * 3 + 1));
+                        {locations.map(loc => {
+                            if (!loc.startDayId) return null; 
+                            const pos = layout.itemPositions.get(loc.id);
+                            if (!pos) return null;
 
-                            const sortedLocs = [...locations].sort((a, b) => {
-                                if (a.startDayId !== b.startDayId) {
-                                    const rowA = dayRowMap.get(a.startDayId || '') || 9999;
-                                    const rowB = dayRowMap.get(b.startDayId || '') || 9999;
-                                    return rowA - rowB;
-                                }
-                                const slotA = getSectionIndex(a.startSlot);
-                                const slotB = getSectionIndex(b.startSlot);
-                                if (slotA !== slotB) return slotA - slotB;
-                                return a.order - b.order;
-                            });
+                            const currentIndex = sortedLocs.findIndex(l => l.id === loc.id);
+                            const nextLoc = sortedLocs[currentIndex + 1];
+                            const nextPos = nextLoc ? layout.itemPositions.get(nextLoc.id) : null;
+                            const route = nextLoc ? routes.find(r => 
+                                (r.fromLocationId === loc.id && r.toLocationId === nextLoc.id) ||
+                                (r.fromLocationId === nextLoc.id && r.toLocationId === loc.id)
+                            ) : undefined;
 
-                            return locations.map(loc => {
-                                if (!loc.startDayId) return null; 
-                                const pos = layout.itemPositions.get(loc.id);
-                                if (!pos) return null;
-
-                                const currentIndex = sortedLocs.findIndex(l => l.id === loc.id);
-                                const nextLoc = sortedLocs[currentIndex + 1];
-                                const nextPos = nextLoc ? layout.itemPositions.get(nextLoc.id) : null;
-                                
-                                const route = nextLoc ? routes.find(r => 
-                                    (r.fromLocationId === loc.id && r.toLocationId === nextLoc.id) ||
-                                    (r.fromLocationId === nextLoc.id && r.toLocationId === loc.id)
-                                ) : undefined;
-
-                                const style: React.CSSProperties = {
-                                    gridColumn: `${3 + pos.col} / span 1`, 
-                                    gridRow: `${pos.row} / span ${pos.span}`,
-                                    zIndex: 1,
-                                    height: '100%',
-                                    marginBottom: 0 
-                                };
+                            const style: React.CSSProperties = {
+                                gridColumn: `${3 + pos.col} / span 1`, 
+                                gridRow: `${pos.row} / span ${pos.span}`,
+                                zIndex: 1,
+                                height: '100%',
+                                marginBottom: 0 
+                            };
 
                                 return (
                                     <React.Fragment key={loc.id}>
-                                        <div style={style} className="p-1">
+                                        <div 
+                                            style={style} 
+                                            className={`p-1 item-hover-wrapper ${hoveredLocationId === loc.id ? 'hovered' : ''}`}
+                                            onMouseEnter={() => onHoverLocation?.(loc.id)}
+                                            onMouseLeave={() => onHoverLocation?.(null)}
+                                        >
                                             <SortableItem
                                                 id={loc.id}
                                                 location={loc}
@@ -362,6 +343,7 @@ export function DaySidebar({
                                         {route && nextPos && (
                                             <RouteConnector 
                                                 route={route} 
+                                                distance={calculateDistance(loc.lat, loc.lng, nextLoc.lat, nextLoc.lng)}
                                                 row={pos.row + pos.span} 
                                                 col={pos.col} 
                                                 onEdit={() => onEditRoute(loc.id, nextLoc.id)}
@@ -369,14 +351,13 @@ export function DaySidebar({
                                         )}
                                     </React.Fragment>
                                 );
-                            });
-                        })()}
+                        })}
                     </SortableContext>
                 </div>
 
                 <div className="p-3 border-top bg-light" style={{ position: 'sticky', bottom: 0, zIndex: 10 }}>
                     <strong>Unassigned</strong>
-                    <DroppableCell id="unassigned-zone" section="morning" row={9999} isFirstInDay={false}>
+                    <DroppableCell id="unassigned-zone" section="morning" row={9999} isEvenDay={false}>
                          <div className="d-flex flex-wrap gap-2 w-100 ps-2">
                              {unassignedLocations.map(loc => (
                                  <div key={loc.id} style={{ width: '100%' }}>
