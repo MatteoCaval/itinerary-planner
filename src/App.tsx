@@ -141,6 +141,7 @@ function App() {
   const [editingDayAssignment, setEditingDayAssignment] = useState<Location | null>(null);
   const [pendingAddToDay, setPendingAddToDay] = useState<{ dayId: string, slot?: DaySection } | null>(null);
   const [hoveredLocationId, setHoveredLocationId] = useState<string | null>(null);
+  const [zoomLevel, setZoomLevel] = useState(1.0);
 
   const handleScrollToLocation = (id: string) => {
     const element = document.getElementById(`item-${id}`);
@@ -388,6 +389,19 @@ function App() {
               </Button>
             </Form>
 
+            <div className="d-flex align-items-center gap-2 mb-3 px-1">
+              <span className="text-muted small fw-bold">Zoom:</span>
+              <Form.Range 
+                min={0.5} 
+                max={2.5} 
+                step={0.1} 
+                value={zoomLevel} 
+                onChange={(e) => setZoomLevel(parseFloat(e.target.value))}
+                className="flex-grow-1"
+              />
+              <span className="text-muted small" style={{ minWidth: '35px' }}>{Math.round(zoomLevel * 100)}%</span>
+            </div>
+
             <p className="text-muted small">
               {pendingAddToDay 
                 ? "Search above to add a location to the selected day." 
@@ -407,6 +421,7 @@ function App() {
               onAddToDay={handleAddToDay}
               hoveredLocationId={hoveredLocationId}
               onHoverLocation={setHoveredLocationId}
+              zoomLevel={zoomLevel}
             />
           </div>
 

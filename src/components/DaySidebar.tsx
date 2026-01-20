@@ -31,6 +31,7 @@ interface DaySidebarProps {
     onAddToDay: (dayId: string, slot?: DaySection) => void;
     hoveredLocationId?: string | null;
     onHoverLocation?: (id: string | null) => void;
+    zoomLevel: number;
 }
 
 const SECTION_ORDER: DaySection[] = ['morning', 'afternoon', 'evening'];
@@ -48,7 +49,7 @@ const formatDate = (dateStr: string) => {
     });
 };
 
-function DroppableCell({ id, section, row, isEvenDay, onClick, children }: { id: string, section: DaySection, row: number, isEvenDay: boolean, onClick?: () => void, children?: React.ReactNode }) {
+function DroppableCell({ id, section, row, isEvenDay, zoomLevel, onClick, children }: { id: string, section: DaySection, row: number, isEvenDay: boolean, zoomLevel: number, onClick?: () => void, children?: React.ReactNode }) {
     const { isOver, setNodeRef } = useDroppable({ id });
 
     let icon;
@@ -79,7 +80,7 @@ function DroppableCell({ id, section, row, isEvenDay, onClick, children }: { id:
                 gridColumn: '2 / -1',
                 gridRow: `${row} / span 1`,
                 borderBottom: '1px solid #e9ecef',
-                minHeight: '80px',
+                minHeight: `${80 * zoomLevel}px`,
                 zIndex: 0,
                 cursor: 'pointer'
             }}
@@ -122,9 +123,8 @@ function DayLabel({ day, startRow, dayNum, isEvenDay, onAdd }: { day: Day, start
     );
 }
 
-// Helper to calculate distance in KM between two points
 const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
-    const R = 6371; // Earth's radius
+    const R = 6371; 
     const dLat = (lat2 - lat1) * Math.PI / 180;
     const dLon = (lon2 - lon1) * Math.PI / 180;
     const a = 
@@ -158,7 +158,7 @@ function RouteConnector({ route, distance, row, col, onEdit }: { route: Route | 
                     pointerEvents: 'auto',
                     fontSize: '0.75rem',
                     padding: '4px 12px',
-                    transform: 'translateY(-50%)', // Pull half-up to center on the row boundary
+                    transform: 'translateY(-50%)',
                     whiteSpace: 'nowrap',
                     transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
                     borderStyle: route ? 'solid' : 'dashed',
@@ -207,16 +207,16 @@ function CurrentTimeLine({ days }: { days: Day[] }) {
     let slotOffset = 0;
     let percentInSlot = 0;
 
-    if (totalMinutes < 480) { // Before Morning
+    if (totalMinutes < 480) { 
         slotOffset = 0;
         percentInSlot = 0;
-    } else if (totalMinutes < 720) { // Morning
+    } else if (totalMinutes < 720) { 
         slotOffset = 0;
         percentInSlot = (totalMinutes - 480) / 240;
-    } else if (totalMinutes < 1080) { // Afternoon
+    } else if (totalMinutes < 1080) { 
         slotOffset = 1;
         percentInSlot = (totalMinutes - 720) / 360;
-    } else { // Evening
+    } else { 
         slotOffset = 2;
         percentInSlot = (totalMinutes - 1080) / 360;
     }
@@ -248,7 +248,8 @@ export function DaySidebar({
     onEditRoute,
     onAddToDay,
     hoveredLocationId,
-    onHoverLocation
+    onHoverLocation,
+    zoomLevel
 }: DaySidebarProps) {
     const [activeId, setActiveId] = useState<string | null>(null);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -346,7 +347,7 @@ export function DaySidebar({
                 <div ref={scrollContainerRef} className="flex-grow-1 overflow-auto bg-white position-relative" style={{ 
                     display: 'grid',
                     gridTemplateColumns: gridTemplateCols,
-                    gridAutoRows: 'minmax(80px, auto)',
+                    gridAutoRows: `minmax(${80 * zoomLevel}px, auto)`,
                     paddingBottom: '100px' 
                 }}>
                     <CurrentTimeLine days={days} />
@@ -363,6 +364,7 @@ export function DaySidebar({
                                         section={section}
                                         row={startRow + secIndex}
                                         isEvenDay={isEvenDay}
+                                        zoomLevel={zoomLevel}
                                         onClick={() => onAddToDay(day.id, section)}
                                     />
                                 ))}
@@ -407,6 +409,7 @@ export function DaySidebar({
                                                 onRemove={onRemoveLocation}
                                                 onUpdate={onUpdateLocation}
                                                 duration={loc.duration}
+                                                zoomLevel={zoomLevel}
                                             />
                                         </div>
                                         {nextPos && (
@@ -426,7 +429,7 @@ export function DaySidebar({
 
                 <div className="p-3 border-top bg-light" style={{ position: 'sticky', bottom: 0, zIndex: 10 }}>
                     <strong>Unassigned</strong>
-                    <DroppableCell id="unassigned-zone" section="morning" row={9999} isEvenDay={false}>
+                    <DroppableCell id="unassigned-zone" section="morning" row={9999} isEvenDay={false} zoomLevel={1.0}>
                          <div className="d-flex flex-wrap gap-2 w-100 ps-2">
                              {unassignedLocations.map(loc => (
                                  <div key={loc.id} style={{ width: '100%' }}>
@@ -436,6 +439,7 @@ export function DaySidebar({
                                          onRemove={onRemoveLocation}
                                          onUpdate={onUpdateLocation}
                                          duration={loc.duration}
+                                         zoomLevel={1.0}
                                      />
                                  </div>
                              ))}
