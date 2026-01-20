@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Row, Col, Button, Form } from 'react-bootstrap';
 import { v4 as uuidv4 } from 'uuid';
-import { Map as MapIcon, Search } from 'lucide-react';
+import { Map as MapIcon, Search, Download, Upload, Trash2 } from 'lucide-react';
 import MapDisplay from './components/MapDisplay';
 import { DateRangePicker } from './components/DateRangePicker';
 import { DaySidebar } from './components/DaySidebar';
@@ -107,6 +107,48 @@ function App() {
   const [hoveredLocationId, setHoveredLocationId] = useState<string | null>(null);
   const [selectedLocationId, setSelectedLocationId] = useState<string | null>(null);
   const [zoomLevel, setZoomLevel] = useState(1.0);
+
+  const handleExport = () => {
+    const data = {
+      startDate,
+      endDate,
+      days,
+      locations,
+      routes,
+      version: '1.0'
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `itinerary-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const data = JSON.parse(event.target?.result as string);
+        if (data.startDate) setStartDate(data.startDate);
+        if (data.endDate) setEndDate(data.endDate);
+        if (data.days) setDays(data.days);
+        if (data.locations) setLocations(migrateLocations(data.locations));
+        if (data.routes) setRoutes(data.routes);
+        alert('Itinerary imported successfully!');
+      } catch (err) {
+        alert('Error importing file. Please ensure it is a valid JSON itinerary.');
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
 
   useEffect(() => { localStorage.setItem(STORAGE_KEY_LOCATIONS, JSON.stringify(locations)); }, [locations]);
   useEffect(() => { localStorage.setItem(STORAGE_KEY_ROUTES, JSON.stringify(routes)); }, [routes]);
@@ -236,6 +278,28 @@ function App() {
               hoveredLocationId={hoveredLocationId} onHoverLocation={setHoveredLocationId} zoomLevel={zoomLevel} 
               selectedLocationId={selectedLocationId} onSelectLocation={setSelectedLocationId}
             />
+          </div>
+
+          <div className="p-3 border-top bg-white">
+            <div className="d-flex justify-content-between align-items-center mb-2">
+              <strong className="small text-muted text-uppercase">Total Stops: {locations.length}</strong>
+              {locations.length > 0 && (
+                <Button variant="outline-danger" size="sm" className="py-0 px-2 small" onClick={() => {
+                  if(confirm('Are you sure you want to clear all data?')) setLocations([]);
+                }}>
+                  <Trash2 size={14} className="me-1" /> Clear
+                </Button>
+              )}
+            </div>
+            <div className="d-flex gap-2">
+              <Button variant="outline-primary" size="sm" className="flex-grow-1 d-flex align-items-center justify-content-center gap-1" onClick={handleExport}>
+                <Download size={14} /> Export
+              </Button>
+              <label className="btn btn-outline-primary btn-sm flex-grow-1 d-flex align-items-center justify-content-center gap-1 mb-0 cursor-pointer">
+                <Upload size={14} /> Import
+                <input type="file" accept=".json" onChange={handleImport} style={{ display: 'none' }} />
+              </label>
+            </div>
           </div>
         </Col>
 
