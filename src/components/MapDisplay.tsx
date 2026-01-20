@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap, Tooltip } from 'react-leaflet';
 import { Location, Route, TRANSPORT_COLORS, TRANSPORT_LABELS } from '../types';
 import L from 'leaflet';

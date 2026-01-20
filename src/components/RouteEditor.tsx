@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Modal, Button, Form, InputGroup, Row, Col } from 'react-bootstrap';
+import { useState, useEffect } from 'react';
+import { Modal, Button, Form, Row, Col } from 'react-bootstrap';
 import { Route, TransportType, TRANSPORT_LABELS } from '../types';
 import { Clock, Euro, FileText } from 'lucide-react';
 
