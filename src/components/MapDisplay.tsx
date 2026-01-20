@@ -22,6 +22,7 @@ interface MapDisplayProps {
   onEditRoute: (fromId: string, toId: string) => void;
   hoveredLocationId?: string | null;
   onHoverLocation?: (id: string | null) => void;
+  onSelectLocation?: (id: string) => void;
 }
 
 // Custom Marker icons
@@ -107,7 +108,7 @@ function RouteSegment({ from, to, route, onEditRoute }: RouteSegmentProps) {
   );
 }
 
-export default function MapDisplay({ locations, routes, onEditRoute, hoveredLocationId, onHoverLocation }: MapDisplayProps) {
+export default function MapDisplay({ locations, routes, onEditRoute, hoveredLocationId, onHoverLocation, onSelectLocation }: MapDisplayProps) {
   const position: [number, number] = [51.505, -0.09]; // Default center (London)
 
   // Get ordered locations for drawing routes
@@ -140,6 +141,7 @@ export default function MapDisplay({ locations, routes, onEditRoute, hoveredLoca
               eventHandlers={{
                 mouseover: () => onHoverLocation?.(loc.id),
                 mouseout: () => onHoverLocation?.(null),
+                click: () => onSelectLocation?.(loc.id),
               }}
             >
               <Popup>

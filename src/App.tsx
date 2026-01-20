@@ -142,6 +142,13 @@ function App() {
   const [pendingAddToDay, setPendingAddToDay] = useState<{ dayId: string, slot?: DaySection } | null>(null);
   const [hoveredLocationId, setHoveredLocationId] = useState<string | null>(null);
 
+  const handleScrollToLocation = (id: string) => {
+    const element = document.getElementById(`item-${id}`);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  };
+
   // Persist state
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY_LOCATIONS, JSON.stringify(locations));
@@ -415,7 +422,6 @@ function App() {
           </div>
         </Col>
 
-        {/* Map */}
         <Col md={7} lg={8}>
           <MapDisplay
             locations={locations}
@@ -423,6 +429,7 @@ function App() {
             onEditRoute={handleEditRoute}
             hoveredLocationId={hoveredLocationId}
             onHoverLocation={setHoveredLocationId}
+            onSelectLocation={handleScrollToLocation}
           />
         </Col>
       </Row>

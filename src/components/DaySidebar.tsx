@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useRef } from 'react';
+import React, { useMemo, useState, useRef, useEffect } from 'react';
 import { Button } from 'react-bootstrap';
 import { Plus, Sun, Moon, Coffee } from 'lucide-react';
 import {
@@ -171,6 +171,62 @@ function RouteConnector({ route, distance, row, col, onEdit }: { route: Route | 
     );
 }
 
+function CurrentTimeLine({ days }: { days: Day[] }) {
+    const [now, setNow] = useState(new Date());
+
+    useEffect(() => {
+        const timer = setInterval(() => setNow(new Date()), 60000);
+        return () => clearInterval(timer);
+    }, []);
+
+    const nowStr = now.toISOString().split('T')[0];
+    const dayIndex = days.findIndex(d => d.date === nowStr);
+    
+    if (dayIndex === -1) return null;
+
+    const hours = now.getHours();
+    const minutes = now.getMinutes();
+    const totalMinutes = hours * 60 + minutes;
+
+    // Define slot boundaries in minutes from midnight
+    // Morning: 8am-12pm (480-720)
+    // Afternoon: 12pm-6pm (720-1080)
+    // Evening: 6pm-12am (1080-1440)
+    
+    let slotOffset = 0;
+    let percentInSlot = 0;
+
+    if (totalMinutes < 480) { // Before Morning
+        slotOffset = 0;
+        percentInSlot = 0;
+    } else if (totalMinutes < 720) { // Morning
+        slotOffset = 0;
+        percentInSlot = (totalMinutes - 480) / 240;
+    } else if (totalMinutes < 1080) { // Afternoon
+        slotOffset = 1;
+        percentInSlot = (totalMinutes - 720) / 360;
+    } else { // Evening
+        slotOffset = 2;
+        percentInSlot = (totalMinutes - 1080) / 360;
+    }
+
+    const startRow = dayIndex * 3 + 1 + slotOffset;
+    
+    return (
+        <div 
+            className="current-time-line"
+            style={{
+                gridColumn: '2 / -1',
+                gridRow: `${startRow} / span 1`,
+                top: `${percentInSlot * 100}%`,
+                zIndex: 15
+            }}
+        >
+            <div className="time-label">{now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+        </div>
+    );
+}
+
 export function DaySidebar({
     days,
     locations,
@@ -282,6 +338,7 @@ export function DaySidebar({
                     gridAutoRows: 'minmax(80px, auto)',
                     paddingBottom: '100px' 
                 }}>
+                    <CurrentTimeLine days={days} />
                     {days.map((day, dayIndex) => {
                         const startRow = dayIndex * 3 + 1;
                         const isEvenDay = dayIndex % 2 === 1;
@@ -327,6 +384,7 @@ export function DaySidebar({
                                 return (
                                     <React.Fragment key={loc.id}>
                                         <div 
+                                            id={`item-${loc.id}`}
                                             style={style} 
                                             className={`p-1 item-hover-wrapper ${hoveredLocationId === loc.id ? 'hovered' : ''}`}
                                             onMouseEnter={() => onHoverLocation?.(loc.id)}
