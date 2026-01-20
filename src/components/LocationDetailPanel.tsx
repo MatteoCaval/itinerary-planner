@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Form, Button, ListGroup, InputGroup } from 'react-bootstrap';
-import { X, Plus, Trash2, ExternalLink, CheckSquare, Link as LinkIcon } from 'lucide-react';
+import { X, Plus, Trash2, ExternalLink, CheckSquare, Link as LinkIcon, Map as MapIcon } from 'lucide-react';
 import { Location } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -58,10 +58,27 @@ export function LocationDetailPanel({ location, onUpdate, onClose }: LocationDet
   return (
     <div className="location-detail-panel shadow-lg border-start bg-white d-flex flex-column">
       <div className="p-3 border-bottom d-flex justify-content-between align-items-center bg-light">
-        <h5 className="mb-0 text-truncate">{location.name}</h5>
-        <Button variant="link" className="p-0 text-muted" onClick={onClose}>
-          <X size={24} />
-        </Button>
+        <div className="flex-grow-1 min-width-0">
+          <h5 className="mb-0 text-truncate">{location.name}</h5>
+          <div className="text-muted small" style={{ fontSize: '0.65rem' }}>
+            {location.lat.toFixed(4)}, {location.lng.toFixed(4)}
+          </div>
+        </div>
+        <div className="d-flex align-items-center gap-2">
+          <Button 
+            variant="outline-primary" 
+            size="sm" 
+            className="d-flex align-items-center gap-1 py-1"
+            onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location.name)}`, '_blank')}
+            title="Open in Google Maps"
+          >
+            <MapIcon size={14} />
+            Maps
+          </Button>
+          <Button variant="link" className="p-0 text-muted" onClick={onClose}>
+            <X size={24} />
+          </Button>
+        </div>
       </div>
 
       <div className="p-3 flex-grow-1 overflow-auto">
