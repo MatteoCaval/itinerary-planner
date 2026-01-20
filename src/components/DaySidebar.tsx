@@ -31,6 +31,8 @@ interface DaySidebarProps {
     onAddToDay: (dayId: string, slot?: DaySection) => void;
     hoveredLocationId?: string | null;
     onHoverLocation?: (id: string | null) => void;
+    selectedLocationId?: string | null;
+    onSelectLocation?: (id: string | null) => void;
     zoomLevel: number;
 }
 
@@ -249,6 +251,8 @@ export function DaySidebar({
     onAddToDay,
     hoveredLocationId,
     onHoverLocation,
+    selectedLocationId,
+    onSelectLocation,
     zoomLevel
 }: DaySidebarProps) {
     const [activeId, setActiveId] = useState<string | null>(null);
@@ -399,15 +403,18 @@ export function DaySidebar({
                                         <div 
                                             id={`item-${loc.id}`}
                                             style={style} 
-                                            className={`px-1 py-4 item-hover-wrapper ${hoveredLocationId === loc.id ? 'hovered' : ''}`}
+                                            className={`px-1 py-4 item-hover-wrapper ${hoveredLocationId === loc.id ? 'hovered' : ''} ${selectedLocationId === loc.id ? 'selected' : ''}`}
                                             onMouseEnter={() => onHoverLocation?.(loc.id)}
                                             onMouseLeave={() => onHoverLocation?.(null)}
+                                            onClick={() => onSelectLocation?.(loc.id)}
                                         >
                                             <SortableItem
                                                 id={loc.id}
                                                 location={loc}
                                                 onRemove={onRemoveLocation}
                                                 onUpdate={onUpdateLocation}
+                                                onSelect={onSelectLocation}
+                                                isSelected={selectedLocationId === loc.id}
                                                 duration={loc.duration}
                                                 zoomLevel={zoomLevel}
                                             />
@@ -438,6 +445,8 @@ export function DaySidebar({
                                          location={loc}
                                          onRemove={onRemoveLocation}
                                          onUpdate={onUpdateLocation}
+                                         onSelect={onSelectLocation}
+                                         isSelected={selectedLocationId === loc.id}
                                          duration={loc.duration}
                                          zoomLevel={1.0}
                                      />

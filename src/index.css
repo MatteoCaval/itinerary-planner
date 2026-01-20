@@ -297,6 +297,12 @@ body,
   z-index: 10;
 }
 
+.sortable-item.selected {
+  border-color: #0d6efd;
+  border-width: 2px;
+  background-color: #f0f7ff !important;
+}
+
 .text-orange {
   color: #fd7e14;
 }
@@ -423,6 +429,26 @@ body,
 
 .route-hint:hover {
   background-color: white !important;
+}
+
+/* Location Detail Panel */
+.location-detail-panel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 350px;
+  height: 100%;
+  z-index: 1000;
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+.hover-opacity-100:hover {
+  opacity: 1 !important;
 }
 
 .dragging-overlay {

@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Row, Col, Button, Form } from 'react-bootstrap';
 import { v4 as uuidv4 } from 'uuid';
-import { Trash2, Map as MapIcon, Search } from 'lucide-react';
+import { Map as MapIcon, Search } from 'lucide-react';
 import MapDisplay from './components/MapDisplay';
 import { DateRangePicker } from './components/DateRangePicker';
 import { DaySidebar } from './components/DaySidebar';
 import { RouteEditor } from './components/RouteEditor';
 import { DayAssignmentModal } from './components/DayAssignmentModal';
+import { LocationDetailPanel } from './components/LocationDetailPanel';
 import { Location, Day, Route, DaySection } from './types';
 
 // Nominatim OpenStreetMap Search Service
@@ -31,14 +32,11 @@ const reverseGeocode = async (lat: number, lng: number) => {
   }
 }
 
-// Generate days between two dates
 const generateDays = (startDate: string, endDate: string): Day[] => {
   if (!startDate || !endDate) return [];
-
   const days: Day[] = [];
   const start = new Date(startDate);
   const end = new Date(endDate);
-
   let current = new Date(start);
   while (current <= end) {
     days.push({
@@ -47,87 +45,55 @@ const generateDays = (startDate: string, endDate: string): Day[] => {
     });
     current.setDate(current.getDate() + 1);
   }
-
   return days;
 };
 
-// Migrate old data format to new format
-interface OldLocation {
-  id: string;
-  name: string;
-  lat: number;
-  lng: number;
-  notes?: string;
-  dayIds?: string[];
-  startDayId?: string;
-  startSlot?: DaySection;
-  duration?: number;
-}
-
-const migrateLocations = (oldLocations: OldLocation[]): Location[] => {
-  return oldLocations.map((loc, index) => {
-    const dayIds = loc.dayIds || [];
-    const startDayId = loc.startDayId || (dayIds.length > 0 ? dayIds[0] : undefined);
-    
-    return {
-      id: loc.id,
-      name: loc.name,
-      lat: loc.lat,
-      lng: loc.lng,
-      notes: loc.notes,
-      dayIds: dayIds, // Keep for now
-      startDayId: startDayId,
-      startSlot: loc.startSlot || 'morning',
-      duration: loc.duration || (dayIds.length > 0 ? dayIds.length * 3 : 1),
-      order: index,
-    };
-  });
+const migrateLocations = (oldLocations: any[]): Location[] => {
+  return oldLocations.map((loc, index) => ({
+    id: loc.id,
+    name: loc.name,
+    lat: loc.lat,
+    lng: loc.lng,
+    notes: loc.notes,
+    dayIds: loc.dayIds || [],
+    startDayId: loc.startDayId || (loc.dayIds?.length > 0 ? loc.dayIds[0] : undefined),
+    startSlot: loc.startSlot || 'morning',
+    duration: loc.duration || 1,
+    order: loc.order ?? index,
+    category: loc.category || 'sightseeing',
+    checklist: loc.checklist || [],
+    links: loc.links || [],
+    cost: loc.cost || 0,
+    targetTime: loc.targetTime || ''
+  }));
 };
 
-// Storage keys
 const STORAGE_KEY_LOCATIONS = 'itinerary-locations';
 const STORAGE_KEY_ROUTES = 'itinerary-routes';
 const STORAGE_KEY_DATES = 'itinerary-dates';
 const STORAGE_KEY_DAYS = 'itinerary-days';
 
 function App() {
-  // Date range state
   const [startDate, setStartDate] = useState<string>(() => {
     const saved = localStorage.getItem(STORAGE_KEY_DATES);
-    if (saved) {
-      const { startDate } = JSON.parse(saved);
-      return startDate || '';
-    }
-    return '';
+    return saved ? JSON.parse(saved).startDate : '';
   });
 
   const [endDate, setEndDate] = useState<string>(() => {
     const saved = localStorage.getItem(STORAGE_KEY_DATES);
-    if (saved) {
-      const { endDate } = JSON.parse(saved);
-      return endDate || '';
-    }
-    return '';
+    return saved ? JSON.parse(saved).endDate : '';
   });
 
-  // Days state
   const [days, setDays] = useState<Day[]>(() => {
     const saved = localStorage.getItem(STORAGE_KEY_DAYS);
     return saved ? JSON.parse(saved) : [];
   });
 
-  // Locations state with migration
   const [locations, setLocations] = useState<Location[]>(() => {
     const saved = localStorage.getItem(STORAGE_KEY_LOCATIONS);
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      // Always run migration to ensure new fields exist
-      return migrateLocations(parsed);
-    }
-    return [];
+    return saved ? migrateLocations(JSON.parse(saved)) : [];
   });
 
-  // Routes state
   const [routes, setRoutes] = useState<Route[]>(() => {
     const saved = localStorage.getItem(STORAGE_KEY_ROUTES);
     return saved ? JSON.parse(saved) : [];
@@ -135,122 +101,74 @@ function App() {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
-
-  // Modal states
   const [editingRoute, setEditingRoute] = useState<{ fromId: string; toId: string } | null>(null);
   const [editingDayAssignment, setEditingDayAssignment] = useState<Location | null>(null);
   const [pendingAddToDay, setPendingAddToDay] = useState<{ dayId: string, slot?: DaySection } | null>(null);
   const [hoveredLocationId, setHoveredLocationId] = useState<string | null>(null);
+  const [selectedLocationId, setSelectedLocationId] = useState<string | null>(null);
   const [zoomLevel, setZoomLevel] = useState(1.0);
 
-  const handleScrollToLocation = (id: string) => {
-    const element = document.getElementById(`item-${id}`);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
-  };
+  useEffect(() => { localStorage.setItem(STORAGE_KEY_LOCATIONS, JSON.stringify(locations)); }, [locations]);
+  useEffect(() => { localStorage.setItem(STORAGE_KEY_ROUTES, JSON.stringify(routes)); }, [routes]);
+  useEffect(() => { localStorage.setItem(STORAGE_KEY_DATES, JSON.stringify({ startDate, endDate })); }, [startDate, endDate]);
+  useEffect(() => { localStorage.setItem(STORAGE_KEY_DAYS, JSON.stringify(days)); }, [days]);
 
-  // Persist state
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY_LOCATIONS, JSON.stringify(locations));
-  }, [locations]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY_ROUTES, JSON.stringify(routes));
-  }, [routes]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY_DATES, JSON.stringify({ startDate, endDate }));
-  }, [startDate, endDate]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY_DAYS, JSON.stringify(days));
-  }, [days]);
-
-  // Handle date range change
   const handleDateRangeChange = (newStart: string, newEnd: string) => {
     setStartDate(newStart);
     setEndDate(newEnd);
-
-    // Generate new days
     const newDays = generateDays(newStart, newEnd);
-
-    // Preserve day assignments where possible by matching dates
     const oldDateToId = new Map(days.map(d => [d.date, d.id]));
-
-    // Update days, reusing IDs where dates match
     const updatedDays = newDays.map(day => {
       const existingId = oldDateToId.get(day.date);
       return existingId ? { ...day, id: existingId } : day;
     });
-
     setDays(updatedDays);
-
-    // Cleanup invalid startDayIds
     const newDayIds = new Set(updatedDays.map(d => d.id));
-    setLocations(prev => prev.map(loc => {
-      const validStartDay = loc.startDayId && newDayIds.has(loc.startDayId) ? loc.startDayId : undefined;
-      return {
-        ...loc,
-        startDayId: validStartDay,
-        // If start day is gone, it becomes unassigned
-      };
-    }));
+    setLocations(prev => prev.map(loc => ({
+      ...loc,
+      startDayId: loc.startDayId && newDayIds.has(loc.startDayId) ? loc.startDayId : undefined,
+    })));
   };
 
   const addLocation = async (lat: number, lng: number, name?: string, targetDayId?: string, targetSlot?: DaySection) => {
     const resolvedName = name || await reverseGeocode(lat, lng);
-    
-    let assignedDayId = undefined;
-    let assignedSlot: DaySection = 'morning';
-
-    if (targetDayId) {
-      assignedDayId = targetDayId;
-      if (targetSlot) assignedSlot = targetSlot;
-    } else if (pendingAddToDay) {
-      assignedDayId = pendingAddToDay.dayId;
-      if (pendingAddToDay.slot) assignedSlot = pendingAddToDay.slot;
-    } else if (days.length > 0) {
-      assignedDayId = days[0].id;
-    }
+    let assignedDayId = targetDayId || pendingAddToDay?.dayId || (days.length > 0 ? days[0].id : undefined);
+    let assignedSlot = targetSlot || pendingAddToDay?.slot || 'morning';
 
     const newLocation: Location = {
       id: uuidv4(),
       name: resolvedName.split(',')[0],
-      lat,
-      lng,
-      notes: '',
-      dayIds: [], // Deprecated
+      lat, lng, notes: '', dayIds: [],
       startDayId: assignedDayId,
       startSlot: assignedSlot,
       duration: 1,
       order: locations.length,
+      category: 'sightseeing',
+      checklist: [],
+      links: [],
+      cost: 0,
+      targetTime: ''
     };
     setLocations([...locations, newLocation]);
-    setPendingAddToDay(null); // Clear pending
+    setPendingAddToDay(null);
   };
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!searchQuery.trim()) return;
-
     setIsSearching(true);
     const results = await searchPlace(searchQuery);
     setIsSearching(false);
-
-    if (results && results.length > 0) {
-      const first = results[0];
-      await addLocation(parseFloat(first.lat), parseFloat(first.lon), first.display_name);
+    if (results?.length > 0) {
+      await addLocation(parseFloat(results[0].lat), parseFloat(results[0].lon), results[0].display_name);
       setSearchQuery('');
-    } else {
-      alert('Place not found');
     }
   };
 
   const removeLocation = (id: string) => {
     setLocations(locations.filter(l => l.id !== id));
-    // Also remove routes involving this location
     setRoutes(routes.filter(r => r.fromLocationId !== id && r.toLocationId !== id));
+    if (selectedLocationId === id) setSelectedLocationId(null);
   };
 
   const updateLocation = (id: string, updates: Partial<Location>) => {
@@ -259,215 +177,87 @@ function App() {
 
   const handleReorderLocations = (activeId: string, overId: string | null, newDayId: string | null, newSlot: DaySection | null = null) => {
     setLocations(prev => {
-      const activeLocation = prev.find(l => l.id === activeId);
-      if (!activeLocation) return prev;
-
+      const activeIndex = prev.findIndex(l => l.id === activeId);
+      if (activeIndex === -1) return prev;
       let newLocations = [...prev];
-      const activeIndex = newLocations.findIndex(l => l.id === activeId);
-
-      // Update the day/slot assignment
-      if (newDayId !== undefined) { // Allow null to mean unassigned
-         newLocations[activeIndex] = { 
-           ...newLocations[activeIndex], 
-           startDayId: newDayId || undefined,
-           startSlot: newSlot || newLocations[activeIndex].startSlot || 'morning'
-         };
-      }
-
-      // If dropped on another location, reorder
+      newLocations[activeIndex] = { 
+        ...newLocations[activeIndex], 
+        startDayId: newDayId || undefined,
+        startSlot: newSlot || newLocations[activeIndex].startSlot || 'morning'
+      };
       if (overId && overId !== activeId && overId !== 'unassigned-zone' && !overId.startsWith('slot-')) {
-        const oldIndex = newLocations.findIndex(l => l.id === activeId);
-        const newIndex = newLocations.findIndex(l => l.id === overId);
-
-        if (oldIndex !== -1 && newIndex !== -1) {
-          const [moved] = newLocations.splice(oldIndex, 1);
-          newLocations.splice(newIndex, 0, moved);
-        }
+        const overIndex = newLocations.findIndex(l => l.id === overId);
+        const [moved] = newLocations.splice(activeIndex, 1);
+        newLocations.splice(overIndex, 0, moved);
       }
-
-      // Update order values
       return newLocations.map((loc, idx) => ({ ...loc, order: idx }));
     });
   };
 
-  // Handle adding a new location to a specific day
-  const handleAddToDay = (dayId: string, slot?: DaySection) => {
-    setPendingAddToDay({ dayId, slot });
+  const handleScrollToLocation = (id: string) => {
+    setSelectedLocationId(id);
+    setTimeout(() => {
+      const element = document.getElementById(`item-${id}`);
+      element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 100);
   };
 
-  // Route editing
-  const handleEditRoute = (fromId: string, toId: string) => {
-    setEditingRoute({ fromId, toId });
-  };
-
-  const currentEditingRoute = useMemo(() => {
-    if (!editingRoute) return null;
-
-    const existing = routes.find(r =>
-      (r.fromLocationId === editingRoute.fromId && r.toLocationId === editingRoute.toId) ||
-      (r.fromLocationId === editingRoute.toId && r.toLocationId === editingRoute.fromId)
-    );
-
-    if (existing) return existing;
-
-    // Create a new route template
-    return {
-      id: uuidv4(),
-      fromLocationId: editingRoute.fromId,
-      toLocationId: editingRoute.toId,
-      transportType: 'car' as const,
-    };
-  }, [editingRoute, routes]);
-
-  const handleSaveRoute = (route: Route) => {
-    setRoutes(prev => {
-      const existingIndex = prev.findIndex(r => r.id === route.id);
-      if (existingIndex >= 0) {
-        const updated = [...prev];
-        updated[existingIndex] = route;
-        return updated;
-      }
-      return [...prev, route];
-    });
-    setEditingRoute(null);
-  };
-
-  // Day assignment
-  const handleSaveDayAssignment = (locationId: string, dayIds: string[]) => {
-    updateLocation(locationId, { dayIds });
-    setEditingDayAssignment(null);
-  };
-
-  const getLocationName = (id: string) => {
-    return locations.find(l => l.id === id)?.name || 'Unknown';
-  };
+  const selectedLocation = useMemo(() => locations.find(l => l.id === selectedLocationId) || null, [locations, selectedLocationId]);
 
   return (
-    <div className="container-fluid p-0">
-      <Row className="g-0">
-        {/* Sidebar */}
-        <Col md={5} lg={4} className="sidebar d-flex flex-column">
-          <div className="mb-3">
-            <h3 className="d-flex align-items-center gap-2 mb-3">
-              <MapIcon /> Itinerary
-            </h3>
-
-            {/* Date Range Picker */}
-            <DateRangePicker
-              startDate={startDate}
-              endDate={endDate}
-              onDateRangeChange={handleDateRangeChange}
-            />
-
+    <div className="container-fluid p-0 h-100 overflow-hidden" style={{ height: '100vh' }}>
+      <Row className="g-0 h-100">
+        <Col md={5} lg={4} className="sidebar d-flex flex-column h-100 shadow-sm" style={{ zIndex: 100 }}>
+          <div className="p-3 border-bottom">
+            <h3 className="d-flex align-items-center gap-2 mb-3"><MapIcon /> Itinerary</h3>
+            <DateRangePicker startDate={startDate} endDate={endDate} onDateRangeChange={handleDateRangeChange} />
             {pendingAddToDay && (
               <div className="alert alert-info py-2 px-3 small mb-2 d-flex justify-content-between align-items-center">
-                <span>
-                  Adding to <strong>Day {days.findIndex(d => d.id === pendingAddToDay.dayId) + 1}</strong>
-                  {pendingAddToDay.slot && ` (${pendingAddToDay.slot})`}
-                </span>
-                <Button 
-                  variant="link" 
-                  size="sm" 
-                  className="p-0 text-decoration-none" 
-                  onClick={() => setPendingAddToDay(null)}
-                >
-                  Cancel
-                </Button>
+                <span>Adding to Day {days.findIndex(d => d.id === pendingAddToDay.dayId) + 1} ({pendingAddToDay.slot})</span>
+                <Button variant="link" size="sm" className="p-0 text-decoration-none" onClick={() => setPendingAddToDay(null)}>Cancel</Button>
               </div>
             )}
-
-            <Form onSubmit={handleSearch} className="d-flex gap-2 mb-3">
-              <Form.Control
-                type="text"
-                placeholder={pendingAddToDay ? "Search place to add..." : "Search place..."}
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                autoFocus={!!pendingAddToDay}
-              />
-              <Button type="submit" variant="primary" disabled={isSearching}>
-                {isSearching ? '...' : <Search size={18} />}
-              </Button>
+            <Form onSubmit={handleSearch} className="d-flex gap-2 mb-2">
+              <Form.Control type="text" placeholder={pendingAddToDay ? "Search place to add..." : "Search place..."} value={searchQuery} onChange={e => setSearchQuery(e.target.value)} autoFocus={!!pendingAddToDay} />
+              <Button type="submit" variant="primary" disabled={isSearching}>{isSearching ? '...' : <Search size={18} />}</Button>
             </Form>
-
-            <div className="d-flex align-items-center gap-2 mb-3 px-1">
+            <div className="d-flex align-items-center gap-2 mb-2 px-1">
               <span className="text-muted small fw-bold">Zoom:</span>
-              <Form.Range 
-                min={0.5} 
-                max={2.5} 
-                step={0.1} 
-                value={zoomLevel} 
-                onChange={(e) => setZoomLevel(parseFloat(e.target.value))}
-                className="flex-grow-1"
-              />
+              <Form.Range min={0.5} max={2.5} step={0.1} value={zoomLevel} onChange={e => setZoomLevel(parseFloat(e.target.value))} className="flex-grow-1" />
               <span className="text-muted small" style={{ minWidth: '35px' }}>{Math.round(zoomLevel * 100)}%</span>
             </div>
-
-            <p className="text-muted small">
-              {pendingAddToDay 
-                ? "Search above to add a location to the selected day." 
-                : "Search to add places. Drag items between days to reorder."}
-            </p>
           </div>
-
-          <div className="flex-grow-1 overflow-auto">
-            <DaySidebar
-              days={days}
-              locations={locations}
-              routes={routes}
-              onReorderLocations={handleReorderLocations}
-              onRemoveLocation={removeLocation}
-              onUpdateLocation={updateLocation}
-              onEditRoute={handleEditRoute}
-              onAddToDay={handleAddToDay}
-              hoveredLocationId={hoveredLocationId}
-              onHoverLocation={setHoveredLocationId}
-              zoomLevel={zoomLevel}
+          <div className="flex-grow-1 overflow-auto bg-light">
+            <DaySidebar 
+              days={days} locations={locations} routes={routes} 
+              onReorderLocations={handleReorderLocations} onRemoveLocation={removeLocation} 
+              onUpdateLocation={updateLocation} onEditRoute={(from, to) => setEditingRoute({ fromId: from, toId: to })} 
+              onAddToDay={(dayId, slot) => setPendingAddToDay({ dayId, slot })}
+              hoveredLocationId={hoveredLocationId} onHoverLocation={setHoveredLocationId} zoomLevel={zoomLevel} 
+              selectedLocationId={selectedLocationId} onSelectLocation={setSelectedLocationId}
             />
-          </div>
-
-          <div className="mt-3 pt-3 border-top">
-            <div className="d-flex justify-content-between align-items-center">
-              <strong>Total Stops: {locations.length}</strong>
-              {locations.length > 0 && (
-                <Button variant="outline-danger" size="sm" onClick={() => setLocations([])}>
-                  <Trash2 size={16} className="me-1" /> Clear
-                </Button>
-              )}
-            </div>
           </div>
         </Col>
 
-        <Col md={7} lg={8}>
-          <MapDisplay
-            days={days}
-            locations={locations}
-            routes={routes}
-            onEditRoute={handleEditRoute}
-            hoveredLocationId={hoveredLocationId}
-            onHoverLocation={setHoveredLocationId}
-            onSelectLocation={handleScrollToLocation}
+        <Col md={7} lg={8} className="position-relative h-100">
+          <MapDisplay 
+            days={days} locations={locations} routes={routes} 
+            onEditRoute={(from, to) => setEditingRoute({ fromId: from, toId: to })}
+            hoveredLocationId={hoveredLocationId} onHoverLocation={setHoveredLocationId} onSelectLocation={handleScrollToLocation} 
           />
+          {selectedLocation && (
+            <LocationDetailPanel location={selectedLocation} onUpdate={updateLocation} onClose={() => setSelectedLocationId(null)} />
+          )}
         </Col>
       </Row>
 
-      {/* Route Editor Modal */}
-      <RouteEditor
-        show={!!editingRoute}
-        route={currentEditingRoute}
-        fromName={editingRoute ? getLocationName(editingRoute.fromId) : ''}
-        toName={editingRoute ? getLocationName(editingRoute.toId) : ''}
-        onSave={handleSaveRoute}
-        onClose={() => setEditingRoute(null)}
+      <RouteEditor 
+        show={!!editingRoute} route={routes.find(r => (r.fromLocationId === editingRoute?.fromId && r.toLocationId === editingRoute?.toId) || (r.fromLocationId === editingRoute?.toId && r.toLocationId === editingRoute?.fromId)) || (editingRoute ? { id: uuidv4(), fromLocationId: editingRoute.fromId, toLocationId: editingRoute.toId, transportType: 'car' } : null)} 
+        fromName={locations.find(l => l.id === editingRoute?.fromId)?.name || ''} toName={locations.find(l => l.id === editingRoute?.toId)?.name || ''} 
+        onSave={route => { setRoutes(prev => { const idx = prev.findIndex(r => r.id === route.id); if (idx >= 0) { const u = [...prev]; u[idx] = route; return u; } return [...prev, route]; }); setEditingRoute(null); }} 
+        onClose={() => setEditingRoute(null)} 
       />
-
-      {/* Day Assignment Modal */}
-      <DayAssignmentModal
-        show={!!editingDayAssignment}
-        location={editingDayAssignment}
-        days={days}
-        onSave={handleSaveDayAssignment}
-        onClose={() => setEditingDayAssignment(null)}
-      />
+      <DayAssignmentModal show={!!editingDayAssignment} location={editingDayAssignment} days={days} onSave={(id, ids) => { updateLocation(id, { dayIds: ids }); setEditingDayAssignment(null); }} onClose={() => setEditingDayAssignment(null)} />
     </div>
   );
 }
