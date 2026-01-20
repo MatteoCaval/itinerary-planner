@@ -141,13 +141,14 @@ function RouteConnector({ route, distance, row, col, onEdit }: { route: Route | 
 
     return (
         <div 
-            className="route-connector-grid d-flex align-items-center justify-content-center"
+            className="route-connector-grid d-flex justify-content-center"
             style={{
                 gridColumn: `${3 + col} / span 1`,
                 gridRow: `${row} / span 1`,
                 zIndex: 10,
                 pointerEvents: 'none',
-                height: '0'
+                height: '0',
+                position: 'relative'
             }}
         >
             <div 
@@ -157,11 +158,13 @@ function RouteConnector({ route, distance, row, col, onEdit }: { route: Route | 
                     pointerEvents: 'auto',
                     fontSize: '0.75rem',
                     padding: '4px 12px',
-                    transform: 'translateY(-50%)',
+                    transform: 'translateY(-50%)', // Pull half-up to center on the row boundary
                     whiteSpace: 'nowrap',
                     transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
                     borderStyle: route ? 'solid' : 'dashed',
-                    borderWidth: '2px'
+                    borderWidth: '2px',
+                    position: 'absolute',
+                    top: '0'
                 }}
                 onClick={(e) => {
                     e.stopPropagation();
