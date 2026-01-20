@@ -304,6 +304,79 @@ body,
   color: #6610f2;
 }
 
+/* Map Enhanced Visualization */
+.custom-marker-wrapper {
+  background: none;
+  border: none;
+}
+
+.map-marker-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.marker-circle {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid white;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.map-marker-container.hovered .marker-circle {
+  transform: scale(1.2);
+  border-color: #0d6efd;
+  box-shadow: 0 4px 8px rgba(13, 110, 253, 0.4);
+}
+
+.marker-number {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background: white;
+  color: #333;
+  font-size: 10px;
+  font-weight: bold;
+  padding: 1px 4px;
+  border-radius: 10px;
+  border: 1px solid #ccc;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+  z-index: 5;
+}
+
+.transport-midpoint-icon {
+  background: none;
+  border: none;
+}
+
+.midpoint-badge {
+  background: white;
+  border: 1px solid #dee2e6;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.midpoint-badge.hovered {
+  transform: scale(1.2);
+  border-color: #0d6efd;
+  background-color: #f0f7ff;
+}
+
 /* Now Indicator */
 .current-time-line {
   position: absolute;

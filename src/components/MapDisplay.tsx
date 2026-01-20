@@ -1,7 +1,9 @@
 import { useEffect, useMemo } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap, Tooltip } from 'react-leaflet';
-import { Location, Route, TRANSPORT_COLORS, TRANSPORT_LABELS, Day, DaySection } from '../types';
+import { Location, Route, TRANSPORT_COLORS, TRANSPORT_LABELS, Day, DaySection, LocationCategory } from '../types';
 import L from 'leaflet';
+import { Map as SightseeingIcon, Utensils, Bed, Train, Globe } from 'lucide-react';
+import { renderToStaticMarkup } from 'react-dom/server';
 
 // Fix Leaflet default icon issue
 import icon from 'leaflet/dist/images/marker-icon.png';
@@ -26,22 +28,42 @@ interface MapDisplayProps {
   onSelectLocation?: (id: string) => void;
 }
 
-// Custom Marker icons
-const createIcon = (color: string, isHovered: boolean) => {
+const CATEGORY_ICONS: Record<LocationCategory, any> = {
+  sightseeing: SightseeingIcon,
+  dining: Utensils,
+  hotel: Bed,
+  transit: Train,
+  other: Globe
+};
+
+// Custom Marker icons with category and number
+const createIcon = (loc: Location, index: number, isHovered: boolean) => {
+  const IconComponent = CATEGORY_ICONS[loc.category || 'sightseeing'];
+  const iconHtml = renderToStaticMarkup(<IconComponent size={12} color="white" />);
+  
   return L.divIcon({
-    className: 'custom-marker',
-    html: `<div style="
-      background-color: ${color}; 
-      width: ${isHovered ? '24px' : '18px'}; 
-      height: ${isHovered ? '24px' : '18px'}; 
-      border-radius: 50%; 
-      border: 3px solid white; 
-      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-      transition: all 0.2s;
-      ${isHovered ? 'transform: scale(1.3); border-color: #0d6efd;' : ''}
-    "></div>`,
-    iconSize: [24, 24],
-    iconAnchor: [12, 12],
+    className: 'custom-marker-wrapper',
+    html: `
+      <div class="map-marker-container ${isHovered ? 'hovered' : ''}">
+        <div class="marker-circle" style="background-color: ${isHovered ? '#0d6efd' : '#6c757d'}">
+          ${iconHtml}
+        </div>
+        <div class="marker-number">${index + 1}</div>
+      </div>
+    `,
+    iconSize: [30, 30],
+    iconAnchor: [15, 15],
+  });
+};
+
+// Route midpoint icon
+const createTransportIcon = (route: Route | undefined, isHovered: boolean) => {
+  const label = route ? TRANSPORT_LABELS[route.transportType].split(' ')[0] : '🔗';
+  return L.divIcon({
+    className: 'transport-midpoint-icon',
+    html: `<div class="midpoint-badge ${isHovered ? 'hovered' : ''}">${label}</div>`,
+    iconSize: [20, 20],
+    iconAnchor: [10, 10],
   });
 };
 
@@ -65,12 +87,18 @@ interface RouteSegmentProps {
   to: Location;
   route?: Route;
   onEditRoute: () => void;
+  isHovered: boolean;
 }
 
-function RouteSegment({ from, to, route, onEditRoute }: RouteSegmentProps) {
+function RouteSegment({ from, to, route, onEditRoute, isHovered }: RouteSegmentProps) {
   const positions: [number, number][] = [
     [from.lat, from.lng],
     [to.lat, to.lng]
+  ];
+
+  const midpoint: [number, number] = [
+    (from.lat + to.lat) / 2,
+    (from.lng + to.lng) / 2
   ];
 
   const color = route ? TRANSPORT_COLORS[route.transportType] : '#6b7280';
@@ -85,27 +113,35 @@ function RouteSegment({ from, to, route, onEditRoute }: RouteSegmentProps) {
   };
 
   return (
-    <Polyline
-      positions={positions}
-      color={color}
-      weight={4}
-      opacity={0.8}
-      eventHandlers={{
-        click: (e) => {
-          L.DomEvent.stopPropagation(e);
-          onEditRoute();
-        },
-      }}
-    >
-      <Tooltip permanent={false} direction="center" className="route-tooltip">
-        <div className="route-tooltip-content" style={{ cursor: 'pointer' }}>
-          {buildTooltipContent()}
-          {(!route?.duration && !route?.cost) && (
-            <span className="text-muted"> Click to add details</span>
-          )}
-        </div>
-      </Tooltip>
-    </Polyline>
+    <>
+      <Polyline
+        positions={positions}
+        color={isHovered ? '#0d6efd' : color}
+        weight={isHovered ? 6 : 4}
+        opacity={isHovered ? 1 : 0.6}
+        dashArray={route ? undefined : "5, 10"}
+        eventHandlers={{
+          click: (e) => {
+            L.DomEvent.stopPropagation(e);
+            onEditRoute();
+          },
+        }}
+      >
+        <Tooltip permanent={false} direction="center" className="route-tooltip">
+          <div className="route-tooltip-content" style={{ cursor: 'pointer' }}>
+            {buildTooltipContent()}
+            {(!route?.duration && !route?.cost) && (
+              <span className="text-muted"> Click to add details</span>
+            )}
+          </div>
+        </Tooltip>
+      </Polyline>
+      <Marker 
+        position={midpoint} 
+        icon={createTransportIcon(route, isHovered)}
+        eventHandlers={{ click: onEditRoute }}
+      />
+    </>
   );
 }
 
@@ -166,7 +202,7 @@ export default function MapDisplay({ days, locations, routes, onEditRoute, hover
             <Marker 
               key={loc.id} 
               position={[loc.lat, loc.lng]}
-              icon={createIcon(isHovered ? '#0d6efd' : '#6c757d', isHovered)}
+              icon={createIcon(loc, index, isHovered)}
               eventHandlers={{
                 mouseover: () => onHoverLocation?.(loc.id),
                 mouseout: () => onHoverLocation?.(null),
@@ -190,6 +226,7 @@ export default function MapDisplay({ days, locations, routes, onEditRoute, hover
           if (!loc.startDayId || !nextLoc.startDayId) return null;
 
           const route = getRoute(loc.id, nextLoc.id);
+          const isHovered = hoveredLocationId === loc.id || hoveredLocationId === nextLoc.id;
 
           return (
             <RouteSegment
@@ -198,6 +235,7 @@ export default function MapDisplay({ days, locations, routes, onEditRoute, hover
               to={nextLoc}
               route={route}
               onEditRoute={() => onEditRoute(loc.id, nextLoc.id)}
+              isHovered={isHovered}
             />
           );
         })}
