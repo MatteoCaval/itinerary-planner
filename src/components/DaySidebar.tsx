@@ -136,8 +136,8 @@ const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: numbe
 };
 
 function RouteConnector({ route, distance, row, col, onEdit }: { route: Route | null, distance: string, row: number, col: number, onEdit: () => void }) {
-    const transportLabel = route ? TRANSPORT_LABELS[route.transportType] : '🔗';
-    const transportColor = route ? TRANSPORT_COLORS[route.transportType] : '#adb5bd';
+    const transportLabel = route ? TRANSPORT_LABELS[route.transportType] : null;
+    const transportColor = route ? TRANSPORT_COLORS[route.transportType] : '#0d6efd';
 
     return (
         <div 
@@ -151,21 +151,34 @@ function RouteConnector({ route, distance, row, col, onEdit }: { route: Route | 
             }}
         >
             <div 
-                className="route-badge shadow border bg-white rounded-pill px-2 d-flex align-items-center gap-1"
+                className={`route-badge shadow-sm border bg-white rounded-pill d-flex align-items-center gap-2 ${!route ? 'route-hint' : ''}`}
                 style={{ 
                     cursor: 'pointer', 
                     pointerEvents: 'auto',
-                    fontSize: '0.65rem',
+                    fontSize: '0.75rem',
+                    padding: '4px 12px',
                     transform: 'translateY(-50%)',
-                    whiteSpace: 'nowrap'
+                    whiteSpace: 'nowrap',
+                    transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                    borderStyle: route ? 'solid' : 'dashed',
+                    borderWidth: '2px'
                 }}
                 onClick={(e) => {
                     e.stopPropagation();
                     onEdit();
                 }}
             >
-                <span style={{ color: transportColor, fontWeight: 'bold' }}>{transportLabel}</span>
-                <span className="text-muted">{route?.duration || `${distance}km`}</span>
+                {route ? (
+                    <>
+                        <span style={{ color: transportColor, fontWeight: 'bold' }}>{transportLabel}</span>
+                        <span className="text-muted fw-medium border-start ps-2">{route.duration || `${distance}km`}</span>
+                    </>
+                ) : (
+                    <>
+                        <span className="text-primary fw-bold" style={{ fontSize: '1rem', lineHeight: '1' }}>+</span>
+                        <span className="text-dark fw-medium">Set travel <span className="text-muted small">({distance}km)</span></span>
+                    </>
+                )}
             </div>
         </div>
     );
@@ -188,11 +201,6 @@ function CurrentTimeLine({ days }: { days: Day[] }) {
     const minutes = now.getMinutes();
     const totalMinutes = hours * 60 + minutes;
 
-    // Define slot boundaries in minutes from midnight
-    // Morning: 8am-12pm (480-720)
-    // Afternoon: 12pm-6pm (720-1080)
-    // Evening: 6pm-12am (1080-1440)
-    
     let slotOffset = 0;
     let percentInSlot = 0;
 
@@ -398,9 +406,9 @@ export function DaySidebar({
                                                 duration={loc.duration}
                                             />
                                         </div>
-                                        {route && nextPos && (
+                                        {nextPos && (
                                             <RouteConnector 
-                                                route={route} 
+                                                route={route || null} 
                                                 distance={calculateDistance(loc.lat, loc.lng, nextLoc.lat, nextLoc.lng)}
                                                 row={pos.row + pos.span} 
                                                 col={pos.col} 

@@ -337,6 +337,21 @@ body,
   font-weight: bold;
 }
 
+.route-badge:hover {
+  transform: translateY(-50%) scale(1.05) !important;
+  border-color: #0d6efd !important;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15) !important;
+}
+
+.route-hint {
+  background-color: #f0f7ff !important; /* Very light blue hint */
+  border-color: #bfdbfe !important;
+}
+
+.route-hint:hover {
+  background-color: white !important;
+}
+
 .dragging-overlay {
   z-index: 9999;
   cursor: grabbing;
