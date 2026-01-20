@@ -1,6 +1,6 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap, Tooltip } from 'react-leaflet';
-import { Location, Route, TRANSPORT_COLORS, TRANSPORT_LABELS } from '../types';
+import { Location, Route, TRANSPORT_COLORS, TRANSPORT_LABELS, Day, DaySection } from '../types';
 import L from 'leaflet';
 
 // Fix Leaflet default icon issue
@@ -17,6 +17,7 @@ let DefaultIcon = L.icon({
 L.Marker.prototype.options.icon = DefaultIcon;
 
 interface MapDisplayProps {
+  days: Day[];
   locations: Location[];
   routes: Route[];
   onEditRoute: (fromId: string, toId: string) => void;
@@ -108,11 +109,39 @@ function RouteSegment({ from, to, route, onEditRoute }: RouteSegmentProps) {
   );
 }
 
-export default function MapDisplay({ locations, routes, onEditRoute, hoveredLocationId, onHoverLocation, onSelectLocation }: MapDisplayProps) {
+export default function MapDisplay({ days, locations, routes, onEditRoute, hoveredLocationId, onHoverLocation, onSelectLocation }: MapDisplayProps) {
   const position: [number, number] = [51.505, -0.09]; // Default center (London)
 
-  // Get ordered locations for drawing routes
-  const sortedLocations = [...locations].sort((a, b) => a.order - b.order);
+  // Get ordered locations for drawing routes, matching sidebar chronological logic
+  const sortedLocations = useMemo(() => {
+    const dayRowMap = new Map<string, number>();
+    days.forEach((d, i) => dayRowMap.set(d.id, i * 3 + 1));
+
+    const SECTION_ORDER: DaySection[] = ['morning', 'afternoon', 'evening'];
+    const getSectionIndex = (section?: DaySection) => {
+        if (!section) return 0;
+        return SECTION_ORDER.indexOf(section);
+    };
+
+    return [...locations].sort((a, b) => {
+        // Handle unassigned at the end
+        if (!a.startDayId && b.startDayId) return 1;
+        if (a.startDayId && !b.startDayId) return -1;
+        if (!a.startDayId && !b.startDayId) return a.order - b.order;
+
+        if (a.startDayId !== b.startDayId) {
+            const rowA = dayRowMap.get(a.startDayId || '') || 9999;
+            const rowB = dayRowMap.get(b.startDayId || '') || 9999;
+            return rowA - rowB;
+        }
+        
+        const slotA = getSectionIndex(a.startSlot);
+        const slotB = getSectionIndex(b.startSlot);
+        if (slotA !== slotB) return slotA - slotB;
+        
+        return a.order - b.order;
+    });
+  }, [locations, days]);
 
   // Get route between two locations
   const getRoute = (fromId: string, toId: string): Route | undefined => {
@@ -157,6 +186,9 @@ export default function MapDisplay({ locations, routes, onEditRoute, hoveredLoca
           if (index === sortedLocations.length - 1) return null;
 
           const nextLoc = sortedLocations[index + 1];
+          // Only draw lines between assigned locations
+          if (!loc.startDayId || !nextLoc.startDayId) return null;
+
           const route = getRoute(loc.id, nextLoc.id);
 
           return (

@@ -424,6 +424,7 @@ function App() {
 
         <Col md={7} lg={8}>
           <MapDisplay
+            days={days}
             locations={locations}
             routes={routes}
             onEditRoute={handleEditRoute}
