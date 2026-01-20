@@ -2,7 +2,7 @@ import { useEffect, useMemo } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap, Tooltip } from 'react-leaflet';
 import { Location, Route, TRANSPORT_COLORS, TRANSPORT_LABELS, Day, DaySection, LocationCategory } from '../types';
 import L from 'leaflet';
-import { Map as SightseeingIcon, Utensils, Bed, Train, Globe } from 'lucide-react';
+import { Map as SightseeingIcon, Utensils, Bed, Train, Globe, ChevronRight } from 'lucide-react';
 import { renderToStaticMarkup } from 'react-dom/server';
 
 // Fix Leaflet default icon issue
@@ -67,6 +67,18 @@ const createTransportIcon = (route: Route | undefined, isHovered: boolean) => {
   });
 };
 
+// Directional Arrow Icon
+const createArrowIcon = (angle: number, color: string, isHovered: boolean) => {
+  return L.divIcon({
+    className: 'route-arrow-icon',
+    html: `<div style="transform: rotate(${angle}deg); color: ${color}; display: flex; align-items: center; justify-content: center; opacity: 0.9;">
+      ${renderToStaticMarkup(<ChevronRight size={isHovered ? 24 : 20} strokeWidth={5} />)}
+    </div>`,
+    iconSize: [24, 24],
+    iconAnchor: [12, 12],
+  });
+};
+
 // Component to fit bounds
 function FitBounds({ locations }: { locations: Location[] }) {
   const map = useMap();
@@ -101,6 +113,19 @@ function RouteSegment({ from, to, route, onEditRoute, isHovered }: RouteSegmentP
     (from.lng + to.lng) / 2
   ];
 
+  // Multiple arrow positions for better visibility
+  const arrowOffsets = [0.2, 0.4, 0.6, 0.8];
+  const arrowPoints = arrowOffsets.map(offset => ({
+    pos: [
+      from.lat + (to.lat - from.lat) * offset,
+      from.lng + (to.lng - from.lng) * offset
+    ] as [number, number],
+    id: offset
+  }));
+
+  // Calculate rotation angle
+  const angle = Math.atan2(to.lat - from.lat, to.lng - from.lng) * (180 / Math.PI);
+
   const color = route ? TRANSPORT_COLORS[route.transportType] : '#6b7280';
   const transportLabel = route ? TRANSPORT_LABELS[route.transportType] : '🔗';
 
@@ -117,7 +142,7 @@ function RouteSegment({ from, to, route, onEditRoute, isHovered }: RouteSegmentP
       <Polyline
         positions={positions}
         color={isHovered ? '#0d6efd' : color}
-        weight={isHovered ? 6 : 4}
+        weight={4}
         opacity={isHovered ? 1 : 0.6}
         dashArray={route ? undefined : "5, 10"}
         eventHandlers={{
@@ -141,6 +166,14 @@ function RouteSegment({ from, to, route, onEditRoute, isHovered }: RouteSegmentP
         icon={createTransportIcon(route, isHovered)}
         eventHandlers={{ click: onEditRoute }}
       />
+      {arrowPoints.map(point => (
+        <Marker 
+          key={point.id}
+          position={point.pos} 
+          icon={createArrowIcon(-angle, isHovered ? '#0d6efd' : color, isHovered)}
+          interactive={false}
+        />
+      ))}
     </>
   );
 }
