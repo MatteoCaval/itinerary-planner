@@ -397,7 +397,7 @@ export function DaySidebar({
                                         <div 
                                             id={`item-${loc.id}`}
                                             style={style} 
-                                            className={`p-1 item-hover-wrapper ${hoveredLocationId === loc.id ? 'hovered' : ''}`}
+                                            className={`px-1 py-4 item-hover-wrapper ${hoveredLocationId === loc.id ? 'hovered' : ''}`}
                                             onMouseEnter={() => onHoverLocation?.(loc.id)}
                                             onMouseLeave={() => onHoverLocation?.(null)}
                                         >
