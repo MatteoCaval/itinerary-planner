@@ -41,6 +41,7 @@ export function CloudSyncModal({ show, onClose, getData, onLoadData }: CloudSync
     
     setIsLoading(false);
     if (result.success) {
+      localStorage.setItem('last-trip-passcode', passcode.trim());
       setStatus({ type: 'success', message: 'Itinerary saved successfully!' });
     } else {
       setStatus({ type: 'danger', message: 'Failed to save. Check your connection.' });
@@ -61,6 +62,7 @@ export function CloudSyncModal({ show, onClose, getData, onLoadData }: CloudSync
     
     setIsLoading(false);
     if (result.success && result.data) {
+      localStorage.setItem('last-trip-passcode', passcode.trim());
       onLoadData(result.data);
       setStatus({ type: 'success', message: 'Itinerary loaded successfully!' });
       setTimeout(onClose, 1500);
@@ -70,9 +72,14 @@ export function CloudSyncModal({ show, onClose, getData, onLoadData }: CloudSync
   };
 
   const resetState = () => {
-    setPasscode('');
+    const savedCode = localStorage.getItem('last-trip-passcode');
     setStatus(null);
-    if (activeTab === 'save' && !passcode) generatePasscode();
+    if (savedCode) {
+      setPasscode(savedCode);
+    } else {
+      setPasscode('');
+      if (activeTab === 'save') generatePasscode();
+    }
   };
 
   return (
