@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Row, Col, Button, Form, ButtonGroup } from 'react-bootstrap';
 import { v4 as uuidv4 } from 'uuid';
-import { Map as MapIcon, Search, Download, Upload, Trash2, Calendar as CalendarIcon, List as ListIcon } from 'lucide-react';
+import { Map as MapIcon, Search, Download, Upload, Trash2, Calendar as CalendarIcon, List as ListIcon, Cloud } from 'lucide-react';
 import MapDisplay from './components/MapDisplay';
 import { DateRangePicker } from './components/DateRangePicker';
 import { DaySidebar } from './components/DaySidebar';
@@ -9,6 +9,7 @@ import { RouteEditor } from './components/RouteEditor';
 import { DayAssignmentModal } from './components/DayAssignmentModal';
 import { LocationDetailPanel } from './components/LocationDetailPanel';
 import { CalendarView } from './components/CalendarView';
+import { CloudSyncModal } from './components/CloudSyncModal';
 import { Location, Day, Route, DaySection } from './types';
 
 // Nominatim OpenStreetMap Search Service
@@ -110,6 +111,7 @@ function App() {
   const [zoomLevel, setZoomLevel] = useState(1.0);
   const [sidebarView, setSidebarView] = useState<'timeline' | 'calendar'>('timeline');
   const [mobileView, setMobileView] = useState<'timeline' | 'map'>('timeline');
+  const [showCloudModal, setShowCloudModal] = useState(false);
 
   useEffect(() => { localStorage.setItem(STORAGE_KEY_LOCATIONS, JSON.stringify(locations)); }, [locations]);
   useEffect(() => { localStorage.setItem(STORAGE_KEY_ROUTES, JSON.stringify(routes)); }, [routes]);
@@ -205,15 +207,20 @@ function App() {
     }, 100);
   };
 
+  const getExportData = () => ({
+    startDate, endDate, days, locations, routes, version: '1.0'
+  });
+
+  const handleCloudLoad = (data: any) => {
+    if (data.startDate) setStartDate(data.startDate);
+    if (data.endDate) setEndDate(data.endDate);
+    if (data.days) setDays(data.days);
+    if (data.locations) setLocations(migrateLocations(data.locations));
+    if (data.routes) setRoutes(data.routes);
+  };
+
   const handleExport = () => {
-    const data = {
-      startDate,
-      endDate,
-      days,
-      locations,
-      routes,
-      version: '1.0'
-    };
+    const data = getExportData();
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -233,11 +240,7 @@ function App() {
     reader.onload = (event) => {
       try {
         const data = JSON.parse(event.target?.result as string);
-        if (data.startDate) setStartDate(data.startDate);
-        if (data.endDate) setEndDate(data.endDate);
-        if (data.days) setDays(data.days);
-        if (data.locations) setLocations(migrateLocations(data.locations));
-        if (data.routes) setRoutes(data.routes);
+        handleCloudLoad(data);
         alert('Itinerary imported successfully!');
       } catch (err) {
         alert('Error importing file. Please ensure it is a valid JSON itinerary.');
@@ -307,20 +310,23 @@ function App() {
           <div className="p-3 border-top bg-white">
             <div className="d-flex justify-content-between align-items-center mb-2">
               <strong className="small text-muted text-uppercase">Total Stops: {locations.length}</strong>
-              {locations.length > 0 && (
+              <div className="d-flex gap-1">
                 <Button variant="outline-danger" size="sm" className="py-0 px-2 small" onClick={() => {
                   if(confirm('Are you sure you want to clear all data?')) setLocations([]);
                 }}>
-                  <Trash2 size={14} className="me-1" /> Clear
+                  <Trash2 size={14} /> Clear
                 </Button>
-              )}
+              </div>
             </div>
             <div className="d-flex gap-2">
-              <Button variant="outline-primary" size="sm" className="flex-grow-1 d-flex align-items-center justify-content-center gap-1" onClick={handleExport}>
-                <Download size={14} /> Export
+              <Button variant="outline-primary" size="sm" className="flex-grow-1 d-flex align-items-center justify-content-center gap-1" onClick={() => setShowCloudModal(true)}>
+                <Cloud size={14} /> Cloud Sync
               </Button>
-              <label className="btn btn-outline-primary btn-sm flex-grow-1 d-flex align-items-center justify-content-center gap-1 mb-0 cursor-pointer">
-                <Upload size={14} /> Import
+              <Button variant="outline-secondary" size="sm" className="flex-grow-1 d-flex align-items-center justify-content-center gap-1" onClick={handleExport}>
+                <Download size={14} /> Json
+              </Button>
+              <label className="btn btn-outline-secondary btn-sm flex-grow-1 d-flex align-items-center justify-content-center gap-1 mb-0 cursor-pointer">
+                <Upload size={14} /> Load
                 <input type="file" accept=".json" onChange={handleImport} style={{ display: 'none' }} />
               </label>
             </div>
@@ -336,15 +342,13 @@ function App() {
             onEditRoute={(from, to) => setEditingRoute({ fromId: from, toId: to })}
             hoveredLocationId={hoveredLocationId} onHoverLocation={setHoveredLocationId} onSelectLocation={handleScrollToLocation} 
           />
+          {selectedLocation && (
+            <div className="position-absolute top-0 end-0 h-100 bg-white shadow-lg" style={{ zIndex: 1060, width: '100%', maxWidth: '350px' }}>
+              <LocationDetailPanel location={selectedLocation} onUpdate={updateLocation} onClose={() => setSelectedLocationId(null)} />
+            </div>
+          )}
         </Col>
       </Row>
-
-      {/* Side Panel Overlay - Rendered outside grid to be visible on mobile regardless of view */}
-      {selectedLocation && (
-        <div className="location-detail-panel shadow-lg bg-white" style={{ zIndex: 1060 }}>
-          <LocationDetailPanel location={selectedLocation} onUpdate={updateLocation} onClose={() => setSelectedLocationId(null)} />
-        </div>
-      )}
 
       {/* Mobile Bottom Navigation */}
       <div className="d-md-none fixed-bottom bg-white border-top d-flex justify-content-around p-2 shadow-lg" style={{ zIndex: 1050 }}>
@@ -364,6 +368,8 @@ function App() {
           Map
         </Button>
       </div>
+
+      <CloudSyncModal show={showCloudModal} onClose={() => setShowCloudModal(false)} getData={getExportData} onLoadData={handleCloudLoad} />
 
       <RouteEditor 
         show={!!editingRoute} route={routes.find(r => (r.fromLocationId === editingRoute?.fromId && r.toLocationId === editingRoute?.toId) || (r.fromLocationId === editingRoute?.toId && r.toLocationId === editingRoute?.fromId)) || (editingRoute ? { id: uuidv4(), fromLocationId: editingRoute.fromId, toLocationId: editingRoute.toId, transportType: 'car' } : null)} 
