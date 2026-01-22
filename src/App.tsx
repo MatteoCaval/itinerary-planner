@@ -336,11 +336,15 @@ function App() {
             onEditRoute={(from, to) => setEditingRoute({ fromId: from, toId: to })}
             hoveredLocationId={hoveredLocationId} onHoverLocation={setHoveredLocationId} onSelectLocation={handleScrollToLocation} 
           />
-          {selectedLocation && (
-            <LocationDetailPanel location={selectedLocation} onUpdate={updateLocation} onClose={() => setSelectedLocationId(null)} />
-          )}
         </Col>
       </Row>
+
+      {/* Side Panel Overlay - Rendered outside grid to be visible on mobile regardless of view */}
+      {selectedLocation && (
+        <div className="position-absolute top-0 end-0 h-100 bg-white shadow-lg" style={{ zIndex: 1060, width: '100%', maxWidth: '350px' }}>
+          <LocationDetailPanel location={selectedLocation} onUpdate={updateLocation} onClose={() => setSelectedLocationId(null)} />
+        </div>
+      )}
 
       {/* Mobile Bottom Navigation */}
       <div className="d-md-none fixed-bottom bg-white border-top d-flex justify-content-around p-2 shadow-lg" style={{ zIndex: 1050 }}>
