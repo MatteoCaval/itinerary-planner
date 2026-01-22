@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Row, Col, Button, Form } from 'react-bootstrap';
+import { Row, Col, Button, Form, ButtonGroup } from 'react-bootstrap';
 import { v4 as uuidv4 } from 'uuid';
-import { Map as MapIcon, Search, Download, Upload, Trash2 } from 'lucide-react';
+import { Map as MapIcon, Search, Download, Upload, Trash2, Calendar as CalendarIcon, List as ListIcon } from 'lucide-react';
 import MapDisplay from './components/MapDisplay';
 import { DateRangePicker } from './components/DateRangePicker';
 import { DaySidebar } from './components/DaySidebar';
 import { RouteEditor } from './components/RouteEditor';
 import { DayAssignmentModal } from './components/DayAssignmentModal';
 import { LocationDetailPanel } from './components/LocationDetailPanel';
+import { CalendarView } from './components/CalendarView';
 import { Location, Day, Route, DaySection } from './types';
 
 // Nominatim OpenStreetMap Search Service
@@ -107,48 +108,8 @@ function App() {
   const [hoveredLocationId, setHoveredLocationId] = useState<string | null>(null);
   const [selectedLocationId, setSelectedLocationId] = useState<string | null>(null);
   const [zoomLevel, setZoomLevel] = useState(1.0);
-
-  const handleExport = () => {
-    const data = {
-      startDate,
-      endDate,
-      days,
-      locations,
-      routes,
-      version: '1.0'
-    };
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `itinerary-${new Date().toISOString().split('T')[0]}.json`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  };
-
-  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      try {
-        const data = JSON.parse(event.target?.result as string);
-        if (data.startDate) setStartDate(data.startDate);
-        if (data.endDate) setEndDate(data.endDate);
-        if (data.days) setDays(data.days);
-        if (data.locations) setLocations(migrateLocations(data.locations));
-        if (data.routes) setRoutes(data.routes);
-        alert('Itinerary imported successfully!');
-      } catch (err) {
-        alert('Error importing file. Please ensure it is a valid JSON itinerary.');
-      }
-    };
-    reader.readAsText(file);
-    e.target.value = '';
-  };
+  const [sidebarView, setSidebarView] = useState<'timeline' | 'calendar'>('timeline');
+  const [mobileView, setMobileView] = useState<'timeline' | 'map'>('timeline');
 
   useEffect(() => { localStorage.setItem(STORAGE_KEY_LOCATIONS, JSON.stringify(locations)); }, [locations]);
   useEffect(() => { localStorage.setItem(STORAGE_KEY_ROUTES, JSON.stringify(routes)); }, [routes]);
@@ -244,40 +205,103 @@ function App() {
     }, 100);
   };
 
+  const handleExport = () => {
+    const data = {
+      startDate,
+      endDate,
+      days,
+      locations,
+      routes,
+      version: '1.0'
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `itinerary-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const data = JSON.parse(event.target?.result as string);
+        if (data.startDate) setStartDate(data.startDate);
+        if (data.endDate) setEndDate(data.endDate);
+        if (data.days) setDays(data.days);
+        if (data.locations) setLocations(migrateLocations(data.locations));
+        if (data.routes) setRoutes(data.routes);
+        alert('Itinerary imported successfully!');
+      } catch (err) {
+        alert('Error importing file. Please ensure it is a valid JSON itinerary.');
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
+
   const selectedLocation = useMemo(() => locations.find(l => l.id === selectedLocationId) || null, [locations, selectedLocationId]);
 
   return (
-    <div className="container-fluid p-0 h-100 overflow-hidden" style={{ height: '100vh' }}>
+    <div className="container-fluid p-0 h-100 overflow-hidden" style={{ height: '100vh', paddingBottom: '56px' }}>
       <Row className="g-0 h-100">
-        <Col md={5} lg={4} className="sidebar d-flex flex-column h-100 shadow-sm" style={{ zIndex: 100 }}>
+        <Col 
+          md={5} lg={4} 
+          className={`sidebar d-flex flex-column h-100 shadow-sm ${mobileView === 'map' ? 'd-none d-md-flex' : 'd-flex'}`}
+          style={{ zIndex: 100 }}
+        >
           <div className="p-3 border-bottom">
-            <h3 className="d-flex align-items-center gap-2 mb-3"><MapIcon /> Itinerary</h3>
+            <div className="d-flex justify-content-between align-items-center mb-3">
+              <h3 className="d-flex align-items-center gap-2 mb-0"><MapIcon /> Itinerary</h3>
+              <ButtonGroup size="sm">
+                <Button variant={sidebarView === 'timeline' ? 'secondary' : 'outline-secondary'} onClick={() => setSidebarView('timeline')}><ListIcon size={16} /></Button>
+                <Button variant={sidebarView === 'calendar' ? 'secondary' : 'outline-secondary'} onClick={() => setSidebarView('calendar')}><CalendarIcon size={16} /></Button>
+              </ButtonGroup>
+            </div>
+            
             <DateRangePicker startDate={startDate} endDate={endDate} onDateRangeChange={handleDateRangeChange} />
+            
             {pendingAddToDay && (
               <div className="alert alert-info py-2 px-3 small mb-2 d-flex justify-content-between align-items-center">
                 <span>Adding to Day {days.findIndex(d => d.id === pendingAddToDay.dayId) + 1} ({pendingAddToDay.slot})</span>
                 <Button variant="link" size="sm" className="p-0 text-decoration-none" onClick={() => setPendingAddToDay(null)}>Cancel</Button>
               </div>
             )}
+            
             <Form onSubmit={handleSearch} className="d-flex gap-2 mb-2">
               <Form.Control type="text" placeholder={pendingAddToDay ? "Search place to add..." : "Search place..."} value={searchQuery} onChange={e => setSearchQuery(e.target.value)} autoFocus={!!pendingAddToDay} />
               <Button type="submit" variant="primary" disabled={isSearching}>{isSearching ? '...' : <Search size={18} />}</Button>
             </Form>
-            <div className="d-flex align-items-center gap-2 mb-2 px-1">
-              <span className="text-muted small fw-bold">Zoom:</span>
-              <Form.Range min={0.5} max={2.5} step={0.1} value={zoomLevel} onChange={e => setZoomLevel(parseFloat(e.target.value))} className="flex-grow-1" />
-              <span className="text-muted small" style={{ minWidth: '35px' }}>{Math.round(zoomLevel * 100)}%</span>
-            </div>
+            
+            {sidebarView === 'timeline' && (
+              <div className="d-flex align-items-center gap-2 mb-2 px-1">
+                <span className="text-muted small fw-bold">Zoom:</span>
+                <Form.Range min={0.5} max={2.5} step={0.1} value={zoomLevel} onChange={e => setZoomLevel(parseFloat(e.target.value))} className="flex-grow-1" />
+                <span className="text-muted small" style={{ minWidth: '35px' }}>{Math.round(zoomLevel * 100)}%</span>
+              </div>
+            )}
           </div>
+
           <div className="flex-grow-1 overflow-auto bg-light">
-            <DaySidebar 
-              days={days} locations={locations} routes={routes} 
-              onReorderLocations={handleReorderLocations} onRemoveLocation={removeLocation} 
-              onUpdateLocation={updateLocation} onEditRoute={(from, to) => setEditingRoute({ fromId: from, toId: to })} 
-              onAddToDay={(dayId, slot) => setPendingAddToDay({ dayId, slot })}
-              hoveredLocationId={hoveredLocationId} onHoverLocation={setHoveredLocationId} zoomLevel={zoomLevel} 
-              selectedLocationId={selectedLocationId} onSelectLocation={setSelectedLocationId}
-            />
+            {sidebarView === 'timeline' ? (
+              <DaySidebar 
+                days={days} locations={locations} routes={routes} 
+                onReorderLocations={handleReorderLocations} onRemoveLocation={removeLocation} 
+                onUpdateLocation={updateLocation} onEditRoute={(from, to) => setEditingRoute({ fromId: from, toId: to })} 
+                onAddToDay={(dayId, slot) => setPendingAddToDay({ dayId, slot })}
+                hoveredLocationId={hoveredLocationId} onHoverLocation={setHoveredLocationId} zoomLevel={zoomLevel} 
+                selectedLocationId={selectedLocationId} onSelectLocation={setSelectedLocationId}
+              />
+            ) : (
+              <CalendarView days={days} locations={locations} onSelectLocation={handleScrollToLocation} />
+            )}
           </div>
 
           <div className="p-3 border-top bg-white">
@@ -303,7 +327,10 @@ function App() {
           </div>
         </Col>
 
-        <Col md={7} lg={8} className="position-relative h-100">
+        <Col 
+          md={7} lg={8} 
+          className={`position-relative h-100 ${mobileView === 'timeline' ? 'd-none d-md-block' : 'd-block'}`}
+        >
           <MapDisplay 
             days={days} locations={locations} routes={routes} 
             onEditRoute={(from, to) => setEditingRoute({ fromId: from, toId: to })}
@@ -314,6 +341,25 @@ function App() {
           )}
         </Col>
       </Row>
+
+      {/* Mobile Bottom Navigation */}
+      <div className="d-md-none fixed-bottom bg-white border-top d-flex justify-content-around p-2 shadow-lg" style={{ zIndex: 1050 }}>
+        <Button 
+          variant={mobileView === 'timeline' ? 'primary' : 'link'} 
+          className="flex-grow-1 text-decoration-none"
+          onClick={() => setMobileView('timeline')}
+        >
+          Timeline
+        </Button>
+        <div className="vr my-2"></div>
+        <Button 
+          variant={mobileView === 'map' ? 'primary' : 'link'} 
+          className="flex-grow-1 text-decoration-none"
+          onClick={() => setMobileView('map')}
+        >
+          Map
+        </Button>
+      </div>
 
       <RouteEditor 
         show={!!editingRoute} route={routes.find(r => (r.fromLocationId === editingRoute?.fromId && r.toLocationId === editingRoute?.toId) || (r.fromLocationId === editingRoute?.toId && r.toLocationId === editingRoute?.fromId)) || (editingRoute ? { id: uuidv4(), fromLocationId: editingRoute.fromId, toLocationId: editingRoute.toId, transportType: 'car' } : null)} 
