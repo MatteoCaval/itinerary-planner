@@ -1,4 +1,4 @@
-import { Day, Location, LocationCategory } from '../types';
+import { Day, Location, LocationCategory, DaySection } from '../types';
 
 interface CalendarViewProps {
   days: Day[];
@@ -7,17 +7,22 @@ interface CalendarViewProps {
 }
 
 const CATEGORY_COLORS: Record<LocationCategory, string> = {
-  sightseeing: '#0d6efd', // Blue
-  dining: '#fd7e14',      // Orange
-  hotel: '#6f42c1',       // Purple
-  transit: '#20c997',     // Teal
-  other: '#6c757d'        // Gray
+  sightseeing: '#0d6efd',
+  dining: '#fd7e14',
+  hotel: '#6f42c1',
+  transit: '#20c997',
+  other: '#6c757d'
+};
+
+const SECTION_ORDER: DaySection[] = ['morning', 'afternoon', 'evening'];
+const getSectionIndex = (section?: DaySection) => {
+    if (!section) return 0;
+    return SECTION_ORDER.indexOf(section);
 };
 
 export function CalendarView({ days, locations, onSelectLocation }: CalendarViewProps) {
   if (days.length === 0) return <div className="p-4 text-center text-muted">No dates selected</div>;
 
-  // Group days by month
   const months: { [key: string]: Day[] } = {};
   days.forEach(day => {
     const d = new Date(day.date);
@@ -25,6 +30,37 @@ export function CalendarView({ days, locations, onSelectLocation }: CalendarView
     if (!months[key]) months[key] = [];
     months[key].push(day);
   });
+
+  // Map day ID to index for quick lookups
+  const dayIndexMap = new Map<string, number>();
+  days.forEach((d, i) => dayIndexMap.set(d.id, i));
+
+  const getLocationsForDay = (dayId: string) => {
+    const currentDayIndex = dayIndexMap.get(dayId);
+    if (currentDayIndex === undefined) return [];
+
+    return locations.filter(loc => {
+      if (!loc.startDayId) return false;
+      const startDayIndex = dayIndexMap.get(loc.startDayId);
+      if (startDayIndex === undefined) return false;
+
+      // Calculate span in days
+      // 3 slots per day.
+      // Total slots from start of trip = startDayIndex * 3 + startSlotIndex
+      // End slot = Start total + duration - 1
+      // Current day covers slots: currentDayIndex * 3 to currentDayIndex * 3 + 2
+      
+      const startSlotIndex = getSectionIndex(loc.startSlot);
+      const absStartSlot = startDayIndex * 3 + startSlotIndex;
+      const absEndSlot = absStartSlot + (loc.duration || 1) - 1;
+
+      const dayStartSlot = currentDayIndex * 3;
+      const dayEndSlot = dayStartSlot + 2;
+
+      // Check intersection
+      return Math.max(absStartSlot, dayStartSlot) <= Math.min(absEndSlot, dayEndSlot);
+    });
+  };
 
   return (
     <div className="calendar-view p-3 h-100 overflow-auto">
@@ -40,18 +76,12 @@ export function CalendarView({ days, locations, onSelectLocation }: CalendarView
               <div key={d} className="text-center small text-muted fw-bold pb-2 border-bottom">{d}</div>
             ))}
             
-            {/* Pad Start */}
             {Array.from({ length: new Date(monthDays[0].date).getDay() }).map((_, i) => (
               <div key={`pad-${i}`} className="calendar-cell empty bg-light opacity-25 rounded"></div>
             ))}
 
             {monthDays.map(day => {
-              const dayLocs = locations.filter(l => l.startDayId === day.id);
-              // Check if dayLocs is empty, maybe check spanning items too?
-              // For simplicity, just startDay items.
-              // Actually, spanning items should appear. 
-              // Refined logic: check if day index is within item's span.
-              // We need global day index.
+              const dayLocs = getLocationsForDay(day.id);
               
               return (
                 <div key={day.id} className="calendar-cell border rounded p-1 bg-white" style={{ minHeight: '80px' }}>
@@ -65,12 +95,15 @@ export function CalendarView({ days, locations, onSelectLocation }: CalendarView
                         className="calendar-event rounded px-1 text-truncate"
                         style={{ 
                           fontSize: '0.65rem', 
-                          backgroundColor: `${CATEGORY_COLORS[loc.category || 'sightseeing']}20`, // 20 hex = 12% opacity
+                          backgroundColor: `${CATEGORY_COLORS[loc.category || 'sightseeing']}20`,
                           color: CATEGORY_COLORS[loc.category || 'sightseeing'],
-                          cursor: 'pointer'
+                          cursor: 'pointer',
+                          border: '1px solid transparent'
                         }}
                         onClick={() => onSelectLocation(loc.id)}
                         title={loc.name}
+                        onMouseEnter={(e) => e.currentTarget.style.borderColor = CATEGORY_COLORS[loc.category || 'sightseeing']}
+                        onMouseLeave={(e) => e.currentTarget.style.borderColor = 'transparent'}
                       >
                         {loc.name}
                       </div>
