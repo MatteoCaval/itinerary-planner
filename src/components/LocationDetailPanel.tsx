@@ -56,7 +56,7 @@ export function LocationDetailPanel({ location, onUpdate, onClose }: LocationDet
   };
 
   return (
-    <div className="location-detail-panel shadow-lg border-start bg-white d-flex flex-column">
+    <div className="d-flex flex-column h-100">
       <div className="p-3 border-bottom d-flex justify-content-between align-items-center bg-light">
         <div className="flex-grow-1 min-width-0">
           <h5 className="mb-0 text-truncate">{location.name}</h5>
