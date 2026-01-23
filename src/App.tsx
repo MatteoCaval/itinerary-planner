@@ -104,7 +104,21 @@ function App() {
   });
 
   const [searchQuery, setSearchQuery] = useState('');
+  const [suggestions, setSuggestions] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+
+  // Debounced search for suggestions
+  useEffect(() => {
+    const timer = setTimeout(async () => {
+      if (searchQuery.trim().length > 2) {
+        const results = await searchPlace(searchQuery);
+        setSuggestions(results || []);
+      } else {
+        setSuggestions([]);
+      }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
   const [editingRoute, setEditingRoute] = useState<{ fromId: string; toId: string } | null>(null);
   const [editingDayAssignment, setEditingDayAssignment] = useState<Location | null>(null);
   const [pendingAddToDay, setPendingAddToDay] = useState<{ dayId: string, slot?: DaySection } | null>(null);
@@ -169,6 +183,7 @@ function App() {
     if (results?.length > 0) {
       await addLocation(parseFloat(results[0].lat), parseFloat(results[0].lon), results[0].display_name);
       setSearchQuery('');
+      setSuggestions([]);
     }
   };
 
@@ -286,9 +301,36 @@ function App() {
               </div>
             )}
             
-            <Form onSubmit={handleSearch} className="d-flex gap-2 mb-2">
-              <Form.Control type="text" placeholder={pendingAddToDay ? "Search place to add..." : "Search place..."} value={searchQuery} onChange={e => setSearchQuery(e.target.value)} autoFocus={!!pendingAddToDay} />
-              <Button type="submit" variant="primary" disabled={isSearching}>{isSearching ? '...' : <Search size={18} />}</Button>
+            <Form onSubmit={handleSearch} className="position-relative mb-2">
+              <div className="d-flex gap-2">
+                <Form.Control 
+                  type="text" 
+                  placeholder={pendingAddToDay ? "Search place to add..." : "Search place..."} 
+                  value={searchQuery} 
+                  onChange={e => setSearchQuery(e.target.value)} 
+                  autoFocus={!!pendingAddToDay} 
+                />
+                <Button type="submit" variant="primary" disabled={isSearching}>{isSearching ? '...' : <Search size={18} />}</Button>
+              </div>
+              
+              {suggestions.length > 0 && (
+                <div className="position-absolute w-100 mt-1 shadow-lg rounded bg-white border overflow-auto" style={{ zIndex: 1100, maxHeight: '250px' }}>
+                  {suggestions.map((s, i) => (
+                    <div 
+                      key={i} 
+                      className="p-2 border-bottom cursor-pointer hover-bg-light small d-flex flex-column"
+                      onClick={async () => {
+                        await addLocation(parseFloat(s.lat), parseFloat(s.lon), s.display_name);
+                        setSearchQuery('');
+                        setSuggestions([]);
+                      }}
+                    >
+                      <span className="fw-bold">{s.display_name.split(',')[0]}</span>
+                      <span className="text-muted text-truncate" style={{ fontSize: '0.7rem' }}>{s.display_name}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </Form>
             
             {sidebarView === 'timeline' && (
