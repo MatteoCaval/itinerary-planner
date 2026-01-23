@@ -162,7 +162,7 @@ function App() {
       lat, lng, notes: '', dayIds: [],
       startDayId: assignedDayId,
       startSlot: assignedSlot,
-      duration: 1,
+      duration: 3,
       order: locations.length,
       category: 'sightseeing',
       checklist: [],

@@ -3,7 +3,7 @@
 > **CRITICAL RULES**
 > 1. **NEVER REMOVE THIS FILE.** It must remain in the project root as a permanent reference.
 > 2. **NEVER COMMIT WITHOUT EXPLICIT APPROVAL.** Do not perform `git commit` or `git push` unless the user specifically says "commit" or "ok to commit".
-> 3. **LOCAL CONFIG PROTECTION.** Never include `.env.local` or other sensitive environment files in git commits. If removed for safety during a commit, they must be restored immediately.
+> 3. **LOCAL CONFIG PROTECTION.** NEVER remove, modify, or touch the `.env.local` file. Leave it exactly as it is in the local environment.
 
 ## Project Overview
 A sophisticated travel itinerary planner featuring a synchronized **Gantt-style timeline view** (using CSS Grid) and an **interactive map**. The app supports multi-day planning, duration resizing, detailed destination notes, and cloud synchronization.

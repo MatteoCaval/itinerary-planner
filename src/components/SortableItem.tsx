@@ -101,7 +101,7 @@ export function SortableItem({
               </div>
             )}
 
-            <div className="flex-grow-1 min-width-0">
+            <div className="flex-grow-1 min-width-0 d-flex align-items-center gap-2">
               {isEditing ? (
                 <Form.Control
                   autoFocus
@@ -126,6 +126,11 @@ export function SortableItem({
                 >
                   {location.name}
                 </div>
+              )}
+              {duration > 1 && (
+                <Badge bg="light" text="dark" className="border fw-normal" style={{ fontSize: '0.65rem' }}>
+                  {(duration / 3).toFixed(1).replace('.0', '')}d
+                </Badge>
               )}
             </div>
 

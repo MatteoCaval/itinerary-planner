@@ -121,19 +121,28 @@ export function LocationDetailPanel({ location, days, allLocations, routes, onUp
 
   return (
     <div className="d-flex flex-column h-100">
-      {location.imageUrl && (
+      {location.imageUrl ? (
         <div className="w-100 position-relative" style={{ height: '160px' }}>
           <img 
             src={location.imageUrl} 
             alt={location.name} 
             className="w-100 h-100 object-fit-cover"
+            onLoad={() => setImageLoading(false)}
+            style={{ display: imageLoading ? 'none' : 'block' }}
           />
+          {imageLoading && (
+            <div className="w-100 h-100 bg-secondary opacity-25 animate-pulse position-absolute top-0 start-0"></div>
+          )}
           <div className="position-absolute top-0 end-0 p-2">
              <Button variant="light" size="sm" className="rounded-circle shadow-sm opacity-75" onClick={onClose}><X size={20} /></Button>
           </div>
         </div>
+      ) : imageLoading && (
+        <div className="w-100 position-relative bg-light" style={{ height: '160px' }}>
+           <div className="w-100 h-100 bg-secondary opacity-10 animate-pulse"></div>
+        </div>
       )}
-      <div className={`p-3 border-bottom d-flex justify-content-between align-items-center bg-light ${location.imageUrl ? '' : ''}`}>
+      <div className={`p-3 border-bottom d-flex justify-content-between align-items-center bg-light`}>
         <div className="flex-grow-1 min-width-0">
           <h5 className="mb-0 text-truncate">{location.name}</h5>
           <div className="text-muted small" style={{ fontSize: '0.65rem' }}>
