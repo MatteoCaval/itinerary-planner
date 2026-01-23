@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Row, Col, Button, Form, ButtonGroup } from 'react-bootstrap';
 import { v4 as uuidv4 } from 'uuid';
-import { Map as MapIcon, Search, Download, Upload, Trash2, Calendar as CalendarIcon, List as ListIcon, Cloud } from 'lucide-react';
+import { Map as MapIcon, Search, Download, Upload, Trash2, Calendar as CalendarIcon, List as ListIcon, Cloud, Printer } from 'lucide-react';
 import MapDisplay from './components/MapDisplay';
 import { DateRangePicker } from './components/DateRangePicker';
 import { DaySidebar } from './components/DaySidebar';
@@ -10,6 +10,7 @@ import { DayAssignmentModal } from './components/DayAssignmentModal';
 import { LocationDetailPanel } from './components/LocationDetailPanel';
 import { CalendarView } from './components/CalendarView';
 import { CloudSyncModal } from './components/CloudSyncModal';
+import { PrintableItinerary } from './components/PrintableItinerary';
 import { Location, Day, Route, DaySection } from './types';
 
 // Nominatim OpenStreetMap Search Service
@@ -57,6 +58,7 @@ const migrateLocations = (oldLocations: any[]): Location[] => {
     lat: loc.lat,
     lng: loc.lng,
     notes: loc.notes,
+    imageUrl: loc.imageUrl,
     dayIds: loc.dayIds || [],
     startDayId: loc.startDayId || (loc.dayIds?.length > 0 ? loc.dayIds[0] : undefined),
     startSlot: loc.startSlot || 'morning',
@@ -250,10 +252,16 @@ function App() {
     e.target.value = '';
   };
 
+  const handlePrint = () => {
+    window.print();
+  };
+
   const selectedLocation = useMemo(() => locations.find(l => l.id === selectedLocationId) || null, [locations, selectedLocationId]);
 
   return (
     <div className="container-fluid p-0 h-100 overflow-hidden" style={{ height: '100vh', paddingBottom: '56px' }}>
+      <PrintableItinerary days={days} locations={locations} routes={routes} startDate={startDate} endDate={endDate} />
+      
       <Row className="g-0 h-100">
         <Col 
           md={5} lg={4} 
@@ -320,13 +328,16 @@ function App() {
             </div>
             <div className="d-flex gap-2">
               <Button variant="outline-primary" size="sm" className="flex-grow-1 d-flex align-items-center justify-content-center gap-1" onClick={() => setShowCloudModal(true)}>
-                <Cloud size={14} /> Cloud Sync
+                <Cloud size={14} /> Cloud
               </Button>
-              <Button variant="outline-secondary" size="sm" className="flex-grow-1 d-flex align-items-center justify-content-center gap-1" onClick={handleExport}>
-                <Download size={14} /> Json
+              <Button variant="outline-secondary" size="sm" className="d-flex align-items-center justify-content-center gap-1" onClick={handlePrint} title="Print / Save as PDF">
+                <Printer size={14} />
               </Button>
-              <label className="btn btn-outline-secondary btn-sm flex-grow-1 d-flex align-items-center justify-content-center gap-1 mb-0 cursor-pointer">
-                <Upload size={14} /> Load
+              <Button variant="outline-secondary" size="sm" className="d-flex align-items-center justify-content-center gap-1" onClick={handleExport} title="Download JSON">
+                <Download size={14} />
+              </Button>
+              <label className="btn btn-outline-secondary btn-sm d-flex align-items-center justify-content-center gap-1 mb-0 cursor-pointer" title="Import JSON">
+                <Upload size={14} />
                 <input type="file" accept=".json" onChange={handleImport} style={{ display: 'none' }} />
               </label>
             </div>
@@ -342,6 +353,9 @@ function App() {
             onEditRoute={(from, to) => setEditingRoute({ fromId: from, toId: to })}
             hoveredLocationId={hoveredLocationId} onHoverLocation={setHoveredLocationId} onSelectLocation={handleScrollToLocation} 
           />
+        </Col>
+      </Row>
+
       {/* Side Panel Overlay - Rendered outside grid to be visible on mobile regardless of view */}
       {selectedLocation && (
         <div className="location-detail-panel shadow-lg bg-white" style={{ zIndex: 1060 }}>
@@ -355,8 +369,6 @@ function App() {
           />
         </div>
       )}
-        </Col>
-      </Row>
 
       {/* Mobile Bottom Navigation */}
       <div className="d-md-none fixed-bottom bg-white border-top d-flex justify-content-around p-2 shadow-lg" style={{ zIndex: 1050 }}>

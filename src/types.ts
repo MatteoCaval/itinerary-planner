@@ -37,6 +37,7 @@ export interface Location {
   links?: { id: string; label: string; url: string }[];
   cost?: number;
   targetTime?: string;    // e.g., "10:30"
+  imageUrl?: string;      // Unsplash or custom image URL
   dayIds: string[];       // Deprecated: kept for backward compatibility if needed, but primary source of truth should be startDayId + duration
   startDayId?: string;    // The day this location/activity starts
   startSlot?: DaySection; // The section of the day it starts

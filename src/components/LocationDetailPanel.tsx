@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Form, Button, ListGroup, InputGroup } from 'react-bootstrap';
 import { X, Plus, Trash2, ExternalLink, CheckSquare, Link as LinkIcon, Map as MapIcon, Calendar, ArrowRight, ArrowLeft } from 'lucide-react';
 import { Location, Day, Route, DaySection, TRANSPORT_LABELS } from '../types';
 import { v4 as uuidv4 } from 'uuid';
+import { searchPhoto } from '../unsplash';
 
 interface LocationDetailPanelProps {
   location: Location | null;
@@ -18,6 +19,21 @@ const SECTION_ORDER: DaySection[] = ['morning', 'afternoon', 'evening'];
 export function LocationDetailPanel({ location, days, allLocations, routes, onUpdate, onClose }: LocationDetailPanelProps) {
   const [newChecklistItem, setNewChecklistItem] = useState('');
   const [newLink, setNewLink] = useState({ label: '', url: '' });
+  const [imageLoading, setImageLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchImage = async () => {
+      if (location && !location.imageUrl && !imageLoading) {
+        setImageLoading(true);
+        const url = await searchPhoto(location.name);
+        if (url) {
+          onUpdate(location.id, { imageUrl: url });
+        }
+        setImageLoading(false);
+      }
+    };
+    fetchImage();
+  }, [location?.id]); // Only re-run if location ID changes
 
   if (!location) return null;
 
@@ -105,7 +121,19 @@ export function LocationDetailPanel({ location, days, allLocations, routes, onUp
 
   return (
     <div className="d-flex flex-column h-100">
-      <div className="p-3 border-bottom d-flex justify-content-between align-items-center bg-light">
+      {location.imageUrl && (
+        <div className="w-100 position-relative" style={{ height: '160px' }}>
+          <img 
+            src={location.imageUrl} 
+            alt={location.name} 
+            className="w-100 h-100 object-fit-cover"
+          />
+          <div className="position-absolute top-0 end-0 p-2">
+             <Button variant="light" size="sm" className="rounded-circle shadow-sm opacity-75" onClick={onClose}><X size={20} /></Button>
+          </div>
+        </div>
+      )}
+      <div className={`p-3 border-bottom d-flex justify-content-between align-items-center bg-light ${location.imageUrl ? '' : ''}`}>
         <div className="flex-grow-1 min-width-0">
           <h5 className="mb-0 text-truncate">{location.name}</h5>
           <div className="text-muted small" style={{ fontSize: '0.65rem' }}>
@@ -123,9 +151,11 @@ export function LocationDetailPanel({ location, days, allLocations, routes, onUp
             <MapIcon size={14} />
             Maps
           </Button>
-          <Button variant="link" className="p-0 text-muted" onClick={onClose}>
-            <X size={24} />
-          </Button>
+          {!location.imageUrl && (
+            <Button variant="link" className="p-0 text-muted" onClick={onClose}>
+              <X size={24} />
+            </Button>
+          )}
         </div>
       </div>
 
