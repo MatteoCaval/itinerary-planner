@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { AppShell, Burger, Group, Button, ActionIcon, TextInput, Tooltip, Text, Box, Paper, Stack, Slider, Menu } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { v4 as uuidv4 } from 'uuid';
-import { Map as MapIcon, Search, Download, Upload, Trash2, Calendar as CalendarIcon, List as ListIcon, Cloud, Printer, MoreHorizontal } from 'lucide-react';
+import { Map as MapIcon, Search, Download, Upload, Trash2, Calendar as CalendarIcon, List as ListIcon, Cloud, FileText, MoreHorizontal } from 'lucide-react';
 import MapDisplay from './components/MapDisplay';
 import { DateRangePicker } from './components/DateRangePicker';
 import { DaySidebar } from './components/DaySidebar';
@@ -11,7 +11,7 @@ import { DayAssignmentModal } from './components/DayAssignmentModal';
 import { LocationDetailPanel } from './components/LocationDetailPanel';
 import { CalendarView } from './components/CalendarView';
 import { CloudSyncModal } from './components/CloudSyncModal';
-import { PrintableItinerary } from './components/PrintableItinerary';
+import { generateMarkdown, downloadMarkdown } from './markdownExporter';
 import { Location, Day, Route, DaySection } from './types';
 
 // Nominatim OpenStreetMap Search Service
@@ -281,8 +281,10 @@ function App() {
     e.target.value = '';
   };
 
-  const handlePrint = () => {
-    window.print();
+  const handleExportMarkdown = () => {
+    const dateStr = new Date().toISOString().split('T')[0];
+    const md = generateMarkdown(days, locations, routes, startDate, endDate);
+    downloadMarkdown(md, `travel-itinerary-${dateStr}.md`);
   };
 
   const selectedLocation = useMemo(() => locations.find(l => l.id === selectedLocationId) || null, [locations, selectedLocationId]);
@@ -297,8 +299,6 @@ function App() {
       }}
       padding={0}
     >
-      <PrintableItinerary days={days} locations={locations} routes={routes} startDate={startDate} endDate={endDate} />
-
       <AppShell.Header style={{ zIndex: 1200 }}>
         <Group h="100%" px="md" justify="space-between">
           <Group>
@@ -308,7 +308,7 @@ function App() {
             </Text>
           </Group>
           <Group gap="xs" visibleFrom="sm">
-            <Button variant="default" size="xs" leftSection={<Printer size={16} />} onClick={handlePrint}>Print</Button>
+            <Button variant="default" size="xs" leftSection={<FileText size={16} />} onClick={handleExportMarkdown}>Markdown</Button>
             <Button variant="default" size="xs" leftSection={<Upload size={16} />} onClick={() => document.getElementById('import-file')?.click()}>Import</Button>
             <input type="file" id="import-file" style={{ display: 'none' }} onChange={handleImport} accept=".json" />
             <Button variant="default" size="xs" leftSection={<Download size={16} />} onClick={handleExport}>Export</Button>
@@ -328,8 +328,8 @@ function App() {
                 <Menu.Item leftSection={<Cloud size={16} />} onClick={() => setShowCloudModal(true)}>
                   Sync
                 </Menu.Item>
-                <Menu.Item leftSection={<Printer size={16} />} onClick={handlePrint}>
-                  Print
+                <Menu.Item leftSection={<FileText size={16} />} onClick={handleExportMarkdown}>
+                  Export Markdown
                 </Menu.Item>
                 <Menu.Divider />
                 <Menu.Label>Data</Menu.Label>
@@ -465,8 +465,8 @@ function App() {
             </Group>
             <Group gap="xs">
               <Button variant="light" size="xs" flex={1} leftSection={<Cloud size={14} />} onClick={() => setShowCloudModal(true)}>Cloud Sync</Button>
-              <Tooltip label="Print / Save PDF">
-                <ActionIcon variant="default" size="md" onClick={handlePrint}><Printer size={16} /></ActionIcon>
+              <Tooltip label="Export Markdown">
+                <ActionIcon variant="default" size="md" onClick={handleExportMarkdown}><FileText size={16} /></ActionIcon>
               </Tooltip>
               <Tooltip label="Download JSON">
                 <ActionIcon variant="default" size="md" onClick={handleExport}><Download size={16} /></ActionIcon>

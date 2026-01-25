@@ -440,46 +440,6 @@ body,
   background-color: white !important;
 }
 
-/* Default hidden for screen */
-.printable-itinerary {
-  display: none;
-}
-
-/* Print Styles */
-@media print {
-
-  .sidebar,
-  .map-container,
-  .navbar,
-  .modal,
-  .location-detail-panel,
-  .btn,
-  .form-control {
-    display: none !important;
-  }
-
-  .container-fluid {
-    height: auto !important;
-    overflow: visible !important;
-  }
-
-  .printable-itinerary {
-    display: block !important;
-  }
-
-  body,
-  html {
-    background-color: white !important;
-    height: auto !important;
-    overflow: visible !important;
-  }
-
-  /* Ensure page breaks don't cut content awkwardly */
-  .break-inside-avoid {
-    break-inside: avoid;
-  }
-}
-
 /* Location Detail Panel Container */
 .location-detail-panel-root {
   position: absolute;
