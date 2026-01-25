@@ -1,5 +1,5 @@
 import { useEffect, useMemo } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap, useMapEvents, Tooltip } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap, useMapEvents, Tooltip, ZoomControl } from 'react-leaflet';
 import { Location, Route, TRANSPORT_COLORS, TRANSPORT_LABELS, Day, DaySection, LocationCategory } from '../types';
 import L from 'leaflet';
 import { Map as SightseeingIcon, Utensils, Bed, Train, Globe, ChevronRight } from 'lucide-react';
@@ -26,6 +26,7 @@ interface MapDisplayProps {
   hoveredLocationId?: string | null;
   onHoverLocation?: (id: string | null) => void;
   onSelectLocation?: (id: string | null) => void;
+  hideControls?: boolean;
 }
 
 function MapClickHandler({ onSelect }: { onSelect?: (id: string | null) => void }) {
@@ -185,7 +186,7 @@ function RouteSegment({ from, to, route, onEditRoute, isHovered }: RouteSegmentP
   );
 }
 
-export default function MapDisplay({ days, locations, routes, onEditRoute, hoveredLocationId, onHoverLocation, onSelectLocation }: MapDisplayProps) {
+export default function MapDisplay({ days, locations, routes, onEditRoute, hoveredLocationId, onHoverLocation, onSelectLocation, hideControls }: MapDisplayProps) {
   const position: [number, number] = [51.505, -0.09]; // Default center (London)
 
   // Get ordered locations for drawing routes, matching sidebar chronological logic
@@ -229,7 +230,8 @@ export default function MapDisplay({ days, locations, routes, onEditRoute, hover
 
   return (
     <div className="map-container">
-      <MapContainer center={position} zoom={13} scrollWheelZoom={true} className="leaflet-container">
+      <MapContainer center={position} zoom={13} scrollWheelZoom={true} className="leaflet-container" zoomControl={false}>
+        {!hideControls && <ZoomControl position="topleft" />}
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
           url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"

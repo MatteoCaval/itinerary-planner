@@ -472,6 +472,7 @@ function App() {
           days={days} locations={locations} routes={routes}
           onEditRoute={(from, to) => setEditingRoute({ fromId: from, toId: to })}
           hoveredLocationId={hoveredLocationId} onHoverLocation={setHoveredLocationId} onSelectLocation={handleScrollToLocation}
+          hideControls={opened}
         />
 
         {selectedLocation && (
