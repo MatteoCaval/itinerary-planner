@@ -6,52 +6,104 @@
 > 3. **LOCAL CONFIG PROTECTION.** NEVER remove, modify, or touch the `.env.local` file. Leave it exactly as it is in the local environment.
 
 ## Project Overview
-A sophisticated travel itinerary planner featuring a synchronized **Gantt-style timeline view** (using CSS Grid) and an **interactive map**. The app supports multi-day planning, duration resizing, detailed destination notes, and cloud synchronization.
+A sophisticated travel itinerary planner featuring a synchronized **Gantt-style timeline view** and an **interactive map**. The app supports multi-day planning, duration resizing, detailed destination notes, and cloud synchronization.
 
 ## Tech Stack
 - **Framework:** React 18 (TypeScript)
 - **Build Tool:** Vite
-- **Styling:** Bootstrap 5 (React-Bootstrap)
+- **Styling:** Tailwind CSS v4 + Shadcn/UI ("Zinc" Theme)
 - **Icons:** Lucide React
-- **Map Library:** Leaflet + React Leaflet (OpenStreetMap)
+- **Map Library:** Leaflet + React Leaflet (CartoDB Voyager Tiles)
 - **Drag & Drop:** @dnd-kit (Core + Sortable)
 - **Backend:** Firebase Realtime Database (for Cloud Sync)
 - **Environment:** Docker & Docker Compose (Node 20-alpine)
 
-## Architecture & Core Logic
-- **Timeline Grid:** Implemented in `DaySidebar.tsx`. Uses a single CSS Grid container where rows represent time slots (Morning/Afternoon/Evening) across days. Items span multiple rows based on duration.
-- **Concurrent Items:** Arranges overlapping activities into dynamic side-by-side lanes within the grid.
-- **Cloud Sync:** Uses Firebase Realtime Database to save/load itineraries via passcodes. Persistence is managed via `localStorage` for the last used passcode.
-- **Mobile Responsiveness:** Features a tabbed navigation (Timeline vs Map) on small screens to optimize screen real estate.
-- **Data Model:** `Location` interface includes `startDayId`, `startSlot`, `duration` (in slots), `notes`, `checklist`, and `links`.
-- **Map Synchronization:** Automatically sorts destinations chronologically to draw accurate route polylines with directional arrows.
+## Comprehensive Feature List
+*Ensure these functionalities remain intact during any refactor.*
+
+### 1. Core Planning (Timeline & Grid)
+- **Gantt Layout:** A CSS Grid-based timeline where days are divided into 3 slots (Morning, Afternoon, Evening).
+- **Drag-to-Resize:** Destination blocks can be resized via a bottom handle. 1 slot = 1/3 day. Default duration for new items is 3 slots (1 day).
+- **Drag-and-Drop:** Items can be reordered within a day, moved between days, or moved to the "Unassigned" staging area.
+- **Visual Feedback:**
+    - **Duration Badge:** Shows length (e.g., "1.3d") inside the block.
+    - **Smart Preview:** Shows a preview of notes; expands lines based on block height.
+    - **Zebra Striping:** Alternate days have subtle background shading.
+- **View Modes:** Toggle between "Timeline" (List) and "Calendar" (Month Grid) via the sidebar header.
+- **Zoom:** Slider to adjust the vertical height of timeline slots.
+
+### 2. Map & Visualization
+- **Interactive Map:** Leaflet map with CartoDB Voyager (Light, English-friendly) tiles.
+- **Synchronization:** Map markers are numbered based on the chronological order of the timeline.
+- **Routing:** Dashed lines connect consecutive locations.
+    - **Mid-point Badges:** Show transport type and duration/distance on the connection line.
+    - **Directional Arrows:** Indicate flow of travel.
+- **Interaction:** Hovering a timeline item highlights the map marker/route, and vice versa. Clicking either opens the Detail Panel.
+
+### 3. Destination Details (Side Panel)
+- **Overlay:** Slides in from the right (absolute positioned, z-indexed high). Mobile-friendly (full width on small screens).
+- **Schedule Recap:** Displays calculated start/end time (e.g., "Mon, Jan 1 (Morning) - Tue, Jan 2 (Afternoon)").
+- **Travel Connections:** Explicitly lists "Arrive from [Prev]" and "Depart to [Next]" with transport details.
+- **Image Preview:** Fetches and displays a destination image via Unsplash API. Persists the URL to avoid re-fetching. Shows a skeleton loader while loading.
+- **Rich Content:**
+    - Notes (Multi-line text area).
+    - Checklist (Tasks with completion state).
+    - Links (External URLs with labels).
+- **Google Maps Integration:** "Maps" button searches for the location by name in a new tab.
+
+### 4. Route Editing
+- **Transport Logic:** Routes exist *between* two consecutive locations.
+- **Structured Input:** Duration is entered via specific "Hours" and "Minutes" inputs, or Quick Preset buttons (15m, 1h, etc.).
+- **Metadata:** Supports Transport Type (Car, Train, etc.), Cost, and Notes.
+
+### 5. Data Management & Persistence
+- **Local Storage:** `localStorage` automatically saves state (`itinerary-locations`, `itinerary-routes`, etc.).
+- **Cloud Sync (Firebase):**
+    - **Save:** Upload current state to Firebase Realtime Database with a generated or custom Passcode.
+    - **Load:** Retrieve itinerary by Passcode. Warning prompt before overwriting.
+    - **Persistence:** Remembers the last used passcode.
+- **File Export:**
+    - **JSON:** Download full state as `.json`.
+    - **PDF/Print:** dedicated "Print" button reformats the view into a clean document layout, hiding the UI.
+- **Clear All:** Reset functionality with confirmation.
+
+### 6. Search & Geocoding
+- **Autocomplete:** Debounced search against Nominatim (OpenStreetMap) API.
+- **Results Dropdown:** Shows matching places; clicking adds them to the timeline immediately.
+- **Auto-Geocoding:** Reverse geocoding used when adding points via map click.
+
+### 7. Layout & Responsiveness
+- **Desktop:** Split view (Sidebar + Map). Sidebar width is fixed/responsive (resize handle removed).
+- **Mobile:**
+    - **Tabbed Navigation:** Bottom bar switches between "Timeline" and "Map" views (mutually exclusive).
+    - **Detail Panel:** Overlays the entire screen when active.
 
 ## Folder Structure
 ```text
 itinerary-planner/
 ├── src/
 │   ├── components/
-│   │   ├── DaySidebar.tsx          # Core Gantt timeline logic and grid rendering
-│   │   ├── MapDisplay.tsx          # Leaflet map logic, markers, and chronological routes
-│   │   ├── LocationDetailPanel.tsx # Slide-out drawer for rich destination planning
-│   │   ├── CalendarView.tsx        # Month-grid overview of the itinerary
-│   │   ├── CloudSyncModal.tsx      # Modal for Firebase save/load logic
-│   │   ├── SortableItem.tsx        # Destination block with resize and preview logic
-│   │   └── RouteEditor.tsx         # Modal for editing transport types between stops
-│   ├── App.tsx                     # Main layout, view switching, and global state
-│   ├── firebase.ts                 # Firebase SDK initialization and DB helpers
-│   ├── types.ts                    # Shared TypeScript interfaces and constants
-│   ├── index.css                   # Grid layouts, animations, and zebra-striping
-│   └── main.tsx                    # Entry point
-├── Dockerfile                      # Node 20-alpine based image
-├── docker-compose.yaml             # Development service with full-root mounting
-├── package.json                    # Dependencies and scripts
-├── vite.config.ts                  # Vite configuration with subpath base and optimization
-└── GEMINI.md                       # THIS FILE (DO NOT REMOVE)
+│   │   ├── ui/                     # Shadcn/UI primitive components (Button, Dialog, etc.)
+│   │   ├── DaySidebar.tsx          # Timeline logic & rendering
+│   │   ├── MapDisplay.tsx          # Map rendering & routing logic
+│   │   ├── LocationDetailPanel.tsx # Right-side drawer for editing
+│   │   ├── CalendarView.tsx        # Alternative Month view
+│   │   ├── CloudSyncModal.tsx      # Firebase interactions
+│   │   ├── SortableItem.tsx        # Individual timeline block
+│   │   ├── RouteEditor.tsx         # Transport details modal
+│   │   └── PrintableItinerary.tsx  # Hidden component for PDF generation
+│   ├── lib/
+│   │   └── utils.ts                # Shadcn utility (cn)
+│   ├── App.tsx                     # Main layout & state orchestration
+│   ├── firebase.ts                 # Firebase config
+│   ├── unsplash.ts                 # Image API logic
+│   ├── types.ts                    # TypeScript interfaces
+│   ├── index.css                   # Tailwind imports & custom overrides
+│   └── main.tsx                    # Entry
+├── Dockerfile                      # Node 20-alpine
+├── docker-compose.yaml             # Dev environment
+├── vite.config.ts                  # Vite config (Tailwind, Alias, Base path)
+├── tailwind.config.js              # Tailwind theme config
+├── postcss.config.js               # PostCSS config
+└── GEMINI.md                       # THIS FILE
 ```
-
-## Usage Tips
-- **Gantt Resize:** Drag the bottom handle of any destination block in the timeline to change its duration.
-- **Smart Preview:** Timeline blocks show a preview of destination notes; extending the duration shows more lines.
-- **Cloud Sync:** Use the "Cloud Sync" button in the footer to share itineraries using passcodes.
-- **Zebra Striping:** Alternate days in the timeline have different background shades for better readability.
