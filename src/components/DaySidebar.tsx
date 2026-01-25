@@ -55,22 +55,18 @@ function DroppableCell({ id, section, row, isEvenDay, zoomLevel, onClick, childr
     const { isOver, setNodeRef } = useDroppable({ id });
 
     let icon;
-    let label;
     let color;
     switch (section) {
         case 'morning':
             icon = <Coffee size={14} />;
-            label = "Morning";
             color = "orange";
             break;
         case 'afternoon':
             icon = <Sun size={14} />;
-            label = "Afternoon";
             color = "yellow";
             break;
         case 'evening':
             icon = <Moon size={14} />;
-            label = "Evening";
             color = "indigo";
             break;
     }
@@ -94,13 +90,52 @@ function DroppableCell({ id, section, row, isEvenDay, zoomLevel, onClick, childr
                 transition: 'background-color 0.2s ease'
             }}
         >
-            <Box style={{ width: 80, minWidth: 80, height: '100%', pointerEvents: 'none', borderRight: '1px solid var(--mantine-color-gray-3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Box style={{ width: 40, minWidth: 40, height: '100%', pointerEvents: 'none', borderRight: '1px solid var(--mantine-color-gray-3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <Stack gap={2} align="center" c={color}>
                     {icon}
-                    <Text size="xs" c="dimmed">{label}</Text>
                 </Stack>
             </Box>
             {children}
+        </Box>
+    );
+}
+
+function UnassignedZone({ locations, onRemove, onUpdate, onSelect, selectedLocationId }: {
+    locations: Location[],
+    onRemove: (id: string) => void,
+    onUpdate: (id: string, updates: Partial<Location>) => void,
+    onSelect?: (id: string | null) => void,
+    selectedLocationId?: string | null
+}) {
+    const { isOver, setNodeRef } = useDroppable({ id: 'unassigned-zone' });
+    return (
+        <Box
+            ref={setNodeRef}
+            style={{
+                minHeight: 100,
+                backgroundColor: isOver ? 'var(--mantine-color-blue-0)' : 'transparent',
+                transition: 'background-color 0.2s ease',
+                borderRadius: '8px',
+                border: '2px dashed var(--mantine-color-gray-3)'
+            }}
+        >
+            <Group gap="xs" p="xs" w="100%" wrap="wrap">
+                {locations.map(loc => (
+                    <Box key={loc.id} style={{ width: '100%' }}>
+                        <SortableItem
+                            id={loc.id}
+                            location={loc}
+                            onRemove={onRemove}
+                            onUpdate={onUpdate}
+                            onSelect={(id) => onSelect?.(id)}
+                            isSelected={selectedLocationId === loc.id}
+                            duration={loc.duration}
+                            zoomLevel={1.0}
+                        />
+                    </Box>
+                ))}
+                {locations.length === 0 && <Text c="dimmed" size="xs" w="100%" ta="center">Drop places here to unassign them</Text>}
+            </Group>
         </Box>
     );
 }
@@ -388,7 +423,7 @@ export function DaySidebar({
     const allLocationIds = locations.map(l => l.id);
     const unassignedLocations = locations.filter(l => !l.startDayId);
 
-    const gridTemplateCols = `80px 80px repeat(${Math.max(1, layout.totalLanes)}, 1fr)`;
+    const gridTemplateCols = `80px 40px repeat(${Math.max(1, layout.totalLanes)}, 1fr)`;
 
     return (
         <Box className="day-sidebar" h="100%" display="flex" style={{ flexDirection: 'column' }}>
@@ -498,25 +533,13 @@ export function DaySidebar({
 
                 <Paper p="md" bg="gray.0" withBorder style={{ position: 'sticky', bottom: 0, zIndex: 10 }}>
                     <Text fw={700} mb="xs">Unassigned</Text>
-                    <DroppableCell id="unassigned-zone" section="morning" row={9999} isEvenDay={false} zoomLevel={1.0}>
-                        <Group gap="xs" p="xs" w="100%" wrap="wrap">
-                            {unassignedLocations.map(loc => (
-                                <Box key={loc.id} style={{ width: '100%' }}>
-                                    <SortableItem
-                                        id={loc.id}
-                                        location={loc}
-                                        onRemove={onRemoveLocation}
-                                        onUpdate={onUpdateLocation}
-                                        onSelect={onSelectLocation}
-                                        isSelected={selectedLocationId === loc.id}
-                                        duration={loc.duration}
-                                        zoomLevel={1.0}
-                                    />
-                                </Box>
-                            ))}
-                            {unassignedLocations.length === 0 && <Text c="dimmed" size="xs">No unassigned places</Text>}
-                        </Group>
-                    </DroppableCell>
+                    <UnassignedZone
+                        locations={unassignedLocations}
+                        onRemove={onRemoveLocation}
+                        onUpdate={onUpdateLocation}
+                        onSelect={onSelectLocation}
+                        selectedLocationId={selectedLocationId}
+                    />
                 </Paper>
 
                 <DragOverlay>

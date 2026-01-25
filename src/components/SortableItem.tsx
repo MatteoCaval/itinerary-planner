@@ -43,7 +43,6 @@ export function SortableItem({
     height: '100%',
   };
 
-  const [isEditing, setIsEditing] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
 
   // Resize logic
@@ -105,40 +104,22 @@ export function SortableItem({
               <Badge size="xs" circle color="blue">{index}</Badge>
             )}
 
-            <Box style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: '4px' }}>
-              {isEditing ? (
-                <TextInput
-                  autoFocus
-                  size="xs"
-                  value={location.name}
-                  onChange={(e) => onUpdate(id, { name: e.target.value })}
-                  onBlur={() => setIsEditing(false)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') setIsEditing(false);
-                  }}
-                  styles={{ input: { height: 24, paddingLeft: 6, paddingRight: 6 } }}
-                />
-              ) : (
-                <Text
-                  fw={600}
-                  size="sm"
-                  truncate
-                  style={{ cursor: 'text', flex: 1 }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setIsEditing(true);
-                  }}
-                  title="Click to edit name"
-                >
-                  {location.name}
-                </Text>
-              )}
+            <Box style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: '4px', paddingRight: 20 }}>
+              <Text
+                fw={600}
+                size="sm"
+                truncate
+                style={{ flex: 1 }}
+              >
+                {location.name}
+              </Text>
               {duration > 1 && (
                 <Badge variant="outline" color="gray" size="xs" style={{ fontWeight: 400 }}>
                   {(duration / 3).toFixed(1).replace('.0', '')}d
                 </Badge>
               )}
             </Box>
+
 
             <ActionIcon
               variant="subtle"
@@ -149,9 +130,11 @@ export function SortableItem({
                 onRemove(id);
               }}
               title="Remove location"
+              style={{ position: 'absolute', top: 4, right: 4 }}
             >
-              <X size={16} />
+              <X size={14} />
             </ActionIcon>
+
           </Group>
 
           {location.notes && (

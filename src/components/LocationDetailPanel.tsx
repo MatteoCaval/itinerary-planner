@@ -121,7 +121,7 @@ export function LocationDetailPanel({ location, days, allLocations, routes, onUp
 
   return (
     <Stack h="100%" gap={0}>
-      <Box w="100%" h={160} style={{ position: 'relative' }} bg="gray.1">
+      <Box w="100%" className="location-detail-panel-image" style={{ position: 'relative' }} bg="gray.1">
         {location.imageUrl && (
           <Image
             src={location.imageUrl}
@@ -138,7 +138,7 @@ export function LocationDetailPanel({ location, days, allLocations, routes, onUp
         </Box>
       </Box>
 
-      <Box p="md" style={{ borderBottom: '1px solid var(--mantine-color-gray-3)' }} bg="gray.0">
+      <Box className="location-detail-panel-header" p="md" style={{ borderBottom: '1px solid var(--mantine-color-gray-3)' }} bg="gray.0">
         <Group justify="space-between" align="start">
           <Box style={{ flex: 1, minWidth: 0 }}>
             <Text fw={700} size="lg" truncate>{location.name}</Text>

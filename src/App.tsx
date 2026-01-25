@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { AppShell, Burger, Group, Button, ActionIcon, TextInput, Tooltip, Text, Box, Paper, Stack, Slider } from '@mantine/core';
+import { AppShell, Burger, Group, Button, ActionIcon, TextInput, Tooltip, Text, Box, Paper, Stack, Slider, Menu } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { v4 as uuidv4 } from 'uuid';
-import { Map as MapIcon, Search, Download, Upload, Trash2, Calendar as CalendarIcon, List as ListIcon, Cloud, Printer } from 'lucide-react';
+import { Map as MapIcon, Search, Download, Upload, Trash2, Calendar as CalendarIcon, List as ListIcon, Cloud, Printer, MoreHorizontal } from 'lucide-react';
 import MapDisplay from './components/MapDisplay';
 import { DateRangePicker } from './components/DateRangePicker';
 import { DaySidebar } from './components/DaySidebar';
@@ -79,7 +79,7 @@ const STORAGE_KEY_DATES = 'itinerary-dates';
 const STORAGE_KEY_DAYS = 'itinerary-days';
 
 function App() {
-  const [opened, { toggle }] = useDisclosure();
+  const [opened, { toggle, close }] = useDisclosure();
   const [startDate, setStartDate] = useState<string>(() => {
     const saved = localStorage.getItem(STORAGE_KEY_DATES);
     return saved ? JSON.parse(saved).startDate : '';
@@ -220,11 +220,13 @@ function App() {
 
   const handleScrollToLocation = (id: string | null) => {
     setSelectedLocationId(id);
-    if (!id) return;
-    setTimeout(() => {
-      const element = document.getElementById(`item-${id}`);
-      element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }, 100);
+    if (id) {
+      close(); // Close sidebar on mobile when selecting a location
+      setTimeout(() => {
+        const element = document.getElementById(`item-${id}`);
+        element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 100);
+    }
   };
 
   const getExportData = () => ({
@@ -291,18 +293,46 @@ function App() {
       <AppShell.Header style={{ zIndex: 1200 }}>
         <Group h="100%" px="md" justify="space-between">
           <Group>
-            <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
+            <Burger opened={opened} onClick={() => { toggle(); if (!opened) setSelectedLocationId(null); }} hiddenFrom="sm" size="sm" />
             <Text fw={700} fz="lg" c="blue" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <MapIcon size={20} /> Itinerary Planner
             </Text>
           </Group>
-          <Group gap="xs">
+          <Group gap="xs" visibleFrom="sm">
             <Button variant="default" size="xs" leftSection={<Printer size={16} />} onClick={handlePrint}>Print</Button>
             <Button variant="default" size="xs" leftSection={<Upload size={16} />} onClick={() => document.getElementById('import-file')?.click()}>Import</Button>
             <input type="file" id="import-file" style={{ display: 'none' }} onChange={handleImport} accept=".json" />
             <Button variant="default" size="xs" leftSection={<Download size={16} />} onClick={handleExport}>Export</Button>
             <Button variant="filled" color="blue" size="xs" leftSection={<Cloud size={16} />} onClick={() => setShowCloudModal(true)}>Sync</Button>
           </Group>
+
+          <Box hiddenFrom="sm">
+            <Menu shadow="md" width={200} position="bottom-end" withinPortal>
+              <Menu.Target>
+                <ActionIcon variant="light" size="lg">
+                  <MoreHorizontal size={20} />
+                </ActionIcon>
+              </Menu.Target>
+
+              <Menu.Dropdown>
+                <Menu.Label>Actions</Menu.Label>
+                <Menu.Item leftSection={<Cloud size={16} />} onClick={() => setShowCloudModal(true)}>
+                  Sync
+                </Menu.Item>
+                <Menu.Item leftSection={<Printer size={16} />} onClick={handlePrint}>
+                  Print
+                </Menu.Item>
+                <Menu.Divider />
+                <Menu.Label>Data</Menu.Label>
+                <Menu.Item leftSection={<Upload size={16} />} onClick={() => document.getElementById('import-file')?.click()}>
+                  Import JSON
+                </Menu.Item>
+                <Menu.Item leftSection={<Download size={16} />} onClick={handleExport}>
+                  Export JSON
+                </Menu.Item>
+              </Menu.Dropdown>
+            </Menu>
+          </Box>
         </Group>
       </AppShell.Header>
 
@@ -447,16 +477,7 @@ function App() {
         {selectedLocation && (
           <Paper
             shadow="xl"
-            style={{
-              position: 'absolute',
-              top: 'var(--app-shell-header-height, 60px)',
-              right: 0,
-              height: 'calc(100% - var(--app-shell-header-height, 60px))',
-              width: 380,
-              zIndex: 1100,
-              maxWidth: '100%',
-              borderLeft: '1px solid var(--mantine-color-gray-3)'
-            }}
+            className="location-detail-panel-root"
           >
             <LocationDetailPanel
               location={selectedLocation}
