@@ -139,10 +139,10 @@ function App() {
     setStartDate(newStart);
     setEndDate(newEnd);
     const newDays = generateDays(newStart, newEnd);
-    const oldDateToId = new Map(days.map(d => [d.date, d.id]));
+    const oldDaysMap = new Map(days.map(d => [d.date, d]));
     const updatedDays = newDays.map(day => {
-      const existingId = oldDateToId.get(day.date);
-      return existingId ? { ...day, id: existingId } : day;
+      const existingDay = oldDaysMap.get(day.date);
+      return existingDay ? { ...existingDay } : day;
     });
     setDays(updatedDays);
     const newDayIds = new Set(updatedDays.map(d => d.id));
