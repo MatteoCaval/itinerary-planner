@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useRef, useEffect } from 'react';
 import { ActionIcon, Text, Group, Stack, Box, Paper, Tooltip } from '@mantine/core';
-import { Plus, Sun, Moon, Coffee } from 'lucide-react';
+import { Plus, Sun, Moon, Coffee, ChevronDown, ChevronUp } from 'lucide-react';
 import {
     DndContext,
     closestCenter,
@@ -341,6 +341,7 @@ export function DaySidebar({
     zoomLevel
 }: DaySidebarProps) {
     const [activeId, setActiveId] = useState<string | null>(null);
+    const [unassignedCollapsed, setUnassignedCollapsed] = useState(false);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
 
     const sensors = useSensors(
@@ -532,21 +533,30 @@ export function DaySidebar({
                 </Box>
 
                 <Paper p="md" bg="gray.0" withBorder style={{ position: 'sticky', bottom: 0, zIndex: 10 }}>
-                    <Group justify="space-between" mb="xs">
-                        <Text fw={700}>Unassigned</Text>
+                    <Group justify="space-between" mb={unassignedCollapsed ? 0 : "xs"}>
+                        <Group
+                            gap="xs"
+                            style={{ cursor: 'pointer', userSelect: 'none' }}
+                            onClick={() => setUnassignedCollapsed(!unassignedCollapsed)}
+                        >
+                            {unassignedCollapsed ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                            <Text fw={700}>Unassigned {unassignedCollapsed && unassignedLocations.length > 0 ? `(${unassignedLocations.length})` : ''}</Text>
+                        </Group>
                         <Tooltip label="Add to Unassigned">
                             <ActionIcon variant="light" size="sm" radius="xl" onClick={() => onAddToDay('unassigned')}>
                                 <Plus size={14} />
                             </ActionIcon>
                         </Tooltip>
                     </Group>
-                    <UnassignedZone
-                        locations={unassignedLocations}
-                        onRemove={onRemoveLocation}
-                        onUpdate={onUpdateLocation}
-                        onSelect={onSelectLocation}
-                        selectedLocationId={selectedLocationId}
-                    />
+                    {!unassignedCollapsed && (
+                        <UnassignedZone
+                            locations={unassignedLocations}
+                            onRemove={onRemoveLocation}
+                            onUpdate={onUpdateLocation}
+                            onSelect={onSelectLocation}
+                            selectedLocationId={selectedLocationId}
+                        />
+                    )}
                 </Paper>
 
                 <DragOverlay>
