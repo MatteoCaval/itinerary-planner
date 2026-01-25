@@ -203,6 +203,10 @@ function App() {
     setLocations(locations.map(l => l.id === id ? { ...l, ...updates } : l));
   };
 
+  const updateDay = (id: string, updates: Partial<Day>) => {
+    setDays(days.map(d => d.id === id ? { ...d, ...updates } : d));
+  };
+
 
   const handleReorderLocations = (activeId: string, overId: string | null, newDayId: string | null, newSlot: DaySection | null = null) => {
     setLocations(prev => {
@@ -372,7 +376,7 @@ function App() {
                   <Text size="sm">
                     {pendingAddToDay.dayId === 'unassigned'
                       ? 'Adding to Unassigned'
-                      : `Adding to Day ${days.findIndex(d => d.id === pendingAddToDay.dayId) + 1} ({pendingAddToDay.slot})`
+                      : `Adding to Day ${days.findIndex(d => d.id === pendingAddToDay.dayId) + 1}${pendingAddToDay.slot ? ` (${pendingAddToDay.slot})` : ''}`
                     }
                   </Text>
                   <Button variant="subtle" size="xs" color="red" onClick={() => setPendingAddToDay(null)}>Cancel</Button>
@@ -441,6 +445,7 @@ function App() {
                 onReorderLocations={handleReorderLocations} onRemoveLocation={removeLocation}
                 onUpdateLocation={updateLocation} onEditRoute={(from, to) => setEditingRoute({ fromId: from, toId: to })}
                 onAddToDay={(dayId, slot) => setPendingAddToDay({ dayId, slot })}
+                onUpdateDay={updateDay}
                 hoveredLocationId={hoveredLocationId} onHoverLocation={setHoveredLocationId} zoomLevel={zoomLevel}
                 selectedLocationId={selectedLocationId} onSelectLocation={setSelectedLocationId}
               />

@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useRef, useEffect } from 'react';
-import { ActionIcon, Text, Group, Stack, Box, Paper, Tooltip } from '@mantine/core';
-import { Plus, Sun, Moon, Coffee, ChevronDown, ChevronUp } from 'lucide-react';
+import { ActionIcon, Text, Group, Stack, Box, Paper, Tooltip, Popover, TextInput, Button, Autocomplete } from '@mantine/core';
+import { Plus, Sun, Moon, Coffee, ChevronDown, ChevronUp, Bed, Trash } from 'lucide-react';
 import {
     DndContext,
     closestCenter,
@@ -29,6 +29,7 @@ interface DaySidebarProps {
     onUpdateLocation: (id: string, updates: Partial<Location>) => void;
     onEditRoute: (fromId: string, toId: string) => void;
     onAddToDay: (dayId: string, slot?: DaySection) => void;
+    onUpdateDay: (id: string, updates: Partial<Day>) => void;
     hoveredLocationId?: string | null;
     onHoverLocation?: (id: string | null) => void;
     selectedLocationId?: string | null;
@@ -140,7 +141,41 @@ function UnassignedZone({ locations, onRemove, onUpdate, onSelect, selectedLocat
     );
 }
 
-function DayLabel({ day, startRow, dayNum, isEvenDay, onAdd }: { day: Day, startRow: number, dayNum: number, isEvenDay: boolean, onAdd: () => void }) {
+function DayLabel({ day, startRow, dayNum, isEvenDay, onAdd, onUpdateDay, existingAccommodations }: {
+    day: Day,
+    startRow: number,
+    dayNum: number,
+    isEvenDay: boolean,
+    onAdd: () => void,
+    onUpdateDay: (id: string, updates: Partial<Day>) => void,
+    existingAccommodations: string[]
+}) {
+    const [opened, setOpened] = useState(false);
+    const [tempName, setTempName] = useState(day.accommodation?.name || '');
+    const [tempNotes, setTempNotes] = useState(day.accommodation?.notes || '');
+
+    // Reset local state when day prop changes (e.g. if loaded from cloud)
+    useEffect(() => {
+        setTempName(day.accommodation?.name || '');
+        setTempNotes(day.accommodation?.notes || '');
+    }, [day.accommodation]);
+
+    const handleSave = () => {
+        onUpdateDay(day.id, {
+            accommodation: {
+                ...day.accommodation,
+                name: tempName,
+                notes: tempNotes
+            }
+        });
+        setOpened(false);
+    };
+
+    const handleRemove = () => {
+        onUpdateDay(day.id, { accommodation: undefined });
+        setOpened(false);
+    };
+
     return (
         <Box
             p="xs"
@@ -161,6 +196,58 @@ function DayLabel({ day, startRow, dayNum, isEvenDay, onAdd }: { day: Day, start
             <Stack gap={4} align="center">
                 <Text size="sm" fw={700}>Day {dayNum}</Text>
                 <Text size="xs" c="dimmed">{formatDate(day.date)}</Text>
+                
+                <Popover opened={opened} onChange={setOpened} withArrow trapFocus width={250} position="right" shadow="md" zIndex={2100} withinPortal>
+                    <Tooltip label={day.accommodation?.name ? `Staying at: ${day.accommodation.name}` : "Set Accommodation"}>
+                        <Popover.Target>
+                            <ActionIcon 
+                                variant={day.accommodation?.name ? "filled" : "light"} 
+                                color={day.accommodation?.name ? "indigo" : "gray"} 
+                                size="sm" 
+                                radius="sm" 
+                                onClick={(e) => { 
+                                    e.stopPropagation(); 
+                                    setOpened((o) => !o); 
+                                }}
+                            >
+                                <Bed size={14} />
+                            </ActionIcon>
+                        </Popover.Target>
+                    </Tooltip>
+                    <Popover.Dropdown onClick={(e) => e.stopPropagation()}>
+                        <Stack gap="xs">
+                            <Text size="sm" fw={700}>Accommodation</Text>
+                            <Autocomplete
+                                placeholder="Hotel / Airbnb Name"
+                                value={tempName}
+                                onChange={setTempName}
+                                size="xs"
+                                label="Name"
+                                data={existingAccommodations}
+                                comboboxProps={{ withinPortal: false }}
+                            />
+                            <TextInput 
+                                placeholder="Notes / Address" 
+                                value={tempNotes} 
+                                onChange={(e) => setTempNotes(e.currentTarget.value)}
+                                size="xs"
+                                label="Notes"
+                            />
+                            <Group justify="space-between" gap="xs">
+                                {day.accommodation?.name && (
+                                     <ActionIcon variant="subtle" color="red" size="sm" onClick={handleRemove} title="Remove Accommodation">
+                                        <Trash size={14} />
+                                     </ActionIcon>
+                                )}
+                                <Group gap="xs" style={{ flex: 1 }} justify="flex-end">
+                                    <Button variant="default" size="xs" onClick={() => setOpened(false)}>Cancel</Button>
+                                    <Button size="xs" onClick={handleSave}>Save</Button>
+                                </Group>
+                            </Group>
+                        </Stack>
+                    </Popover.Dropdown>
+                </Popover>
+
                 <Tooltip label="Add to Day">
                     <ActionIcon variant="light" size="sm" radius="xl" onClick={(e) => { e.stopPropagation(); onAdd(); }}>
                         <Plus size={14} />
@@ -334,6 +421,7 @@ export function DaySidebar({
     onUpdateLocation,
     onEditRoute,
     onAddToDay,
+    onUpdateDay,
     hoveredLocationId,
     onHoverLocation,
     selectedLocationId,
@@ -426,6 +514,14 @@ export function DaySidebar({
 
     const gridTemplateCols = `80px 40px repeat(${Math.max(1, layout.totalLanes)}, 1fr)`;
 
+    const existingAccommodations = useMemo(() => {
+        const names = new Set<string>();
+        days.forEach(d => {
+            if (d.accommodation?.name) names.add(d.accommodation.name);
+        });
+        return Array.from(names);
+    }, [days]);
+
     return (
         <Box className="day-sidebar" h="100%" display="flex" style={{ flexDirection: 'column' }}>
             <DndContext
@@ -455,6 +551,8 @@ export function DaySidebar({
                                     dayNum={dayIndex + 1}
                                     isEvenDay={isEvenDay}
                                     onAdd={() => onAddToDay(day.id)}
+                                    onUpdateDay={onUpdateDay}
+                                    existingAccommodations={existingAccommodations}
                                 />
                                 {SECTION_ORDER.map((section, secIndex) => (
                                     <DroppableCell

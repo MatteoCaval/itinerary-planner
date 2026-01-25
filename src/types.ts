@@ -12,10 +12,18 @@ export interface Route {
   notes?: string;
 }
 
+export interface Accommodation {
+  name: string;
+  cost?: number;
+  notes?: string;
+  link?: string;
+}
+
 export interface Day {
   id: string;
   date: string;           // ISO date string YYYY-MM-DD
   label?: string;         // Optional custom label like "Day 1 - Rome"
+  accommodation?: Accommodation;
 }
 
 export interface Itinerary {

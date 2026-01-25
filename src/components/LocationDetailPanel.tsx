@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { TextInput, Textarea, Button, ActionIcon, Paper, Group, Stack, Text, Badge, Image, Checkbox, LoadingOverlay, Box, Divider, ScrollArea, Anchor } from '@mantine/core';
-import { X, Plus, Trash2, ExternalLink, CheckSquare, Link as LinkIcon, Map as MapIcon, Calendar, ArrowRight, ArrowLeft } from 'lucide-react';
+import { X, Plus, Trash2, ExternalLink, CheckSquare, Link as LinkIcon, Map as MapIcon, Calendar, ArrowRight, ArrowLeft, Bed } from 'lucide-react';
 import { Location, Day, Route, DaySection, TRANSPORT_LABELS } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 import { searchPhoto } from '../unsplash';
@@ -56,10 +56,31 @@ export function LocationDetailPanel({ location, days, allLocations, routes, onUp
     const startStr = `${formatDate(startDay)} (${location.startSlot})`;
     const endStr = endDay ? `${formatDate(endDay)} (${SECTION_ORDER[endSlotIdx]})` : 'End of trip';
 
-    return { startStr, endStr };
+    return { startStr, endStr, endDayIdx };
   };
 
   const schedule = getScheduleRecap();
+
+  // Find Accommodations for this specific location (only if staying overnight)
+  const scheduledAccommodations = useMemo(() => {
+    if (!startDay || typeof schedule === 'string') return [];
+    
+    const startSlotIdx = SECTION_ORDER.indexOf(location.startSlot || 'morning');
+    const totalSlots = location.duration || 1;
+    const startAbsSlot = (startDayIdx * 3) + startSlotIdx;
+    const endAbsSlot = startAbsSlot + totalSlots - 1;
+
+    const accoms = new Set<string>();
+    for (let i = startDayIdx; i < days.length; i++) {
+      const eveningAbsSlot = i * 3 + 2;
+      if (eveningAbsSlot >= startAbsSlot && eveningAbsSlot <= endAbsSlot) {
+        if (days[i]?.accommodation?.name) {
+          accoms.add(days[i].accommodation!.name);
+        }
+      }
+    }
+    return Array.from(accoms);
+  }, [location, days, schedule, startDay, startDayIdx]);
 
   // Find Chronological Neighbors for Travel Info
   const sortedLocs = [...allLocations]
@@ -119,6 +140,47 @@ export function LocationDetailPanel({ location, days, allLocations, routes, onUp
     onUpdate(location.id, { links: updated });
   };
 
+  // Group accommodations for this specific destination's duration
+  const accommodationGroups = useMemo(() => {
+    const groups: { name: string; nights: number; startDay: number; endDay: number }[] = [];
+    if (!startDay || typeof schedule === 'string') return groups;
+
+    const startSlotIdx = SECTION_ORDER.indexOf(location.startSlot || 'morning');
+    const totalSlots = location.duration || 1;
+    const startAbsSlot = (startDayIdx * 3) + startSlotIdx;
+    const endAbsSlot = startAbsSlot + totalSlots - 1;
+
+    // A "night" is counted if the location covers the transition from Day i to i+1
+    // We define this as covering the "Evening" slot (index 2) of Day i
+    const nightsCovered: number[] = [];
+    for (let i = startDayIdx; i < days.length; i++) {
+        const eveningAbsSlot = i * 3 + 2;
+        if (eveningAbsSlot >= startAbsSlot && eveningAbsSlot <= endAbsSlot) {
+            nightsCovered.push(i);
+        }
+    }
+
+    if (nightsCovered.length === 0) return [];
+
+    let currentGroup: { name: string; nights: number; startDay: number; endDay: number } | null = null;
+
+    nightsCovered.forEach((dayIdx) => {
+        const day = days[dayIdx];
+        const name = day.accommodation?.name || 'No accommodation set';
+        
+        if (!currentGroup || currentGroup.name !== name) {
+            if (currentGroup) groups.push(currentGroup);
+            currentGroup = { name, nights: 1, startDay: dayIdx + 1, endDay: dayIdx + 1 };
+        } else {
+            currentGroup.nights++;
+            currentGroup.endDay = dayIdx + 1;
+        }
+    });
+
+    if (currentGroup) groups.push(currentGroup);
+    return groups;
+  }, [days, location, startDay, startDayIdx, schedule]);
+
   return (
     <Stack h="100%" gap={0}>
       <Box w="100%" className="location-detail-panel-image" style={{ position: 'relative' }} bg="gray.1">
@@ -170,6 +232,16 @@ export function LocationDetailPanel({ location, days, allLocations, routes, onUp
                   <Box>
                     <Text size="sm"><Text span fw={500}>From: </Text>{schedule.startStr}</Text>
                     <Text size="sm"><Text span fw={500}>To: </Text>{schedule.endStr}</Text>
+                    {scheduledAccommodations.length > 0 && (
+                      <Box mt={4} pt={4} style={{ borderTop: '1px dashed var(--mantine-color-gray-3)' }}>
+                        <Group gap={4}>
+                          <Bed size={12} color="var(--mantine-color-indigo-6)" />
+                          <Text size="xs" fw={500} c="indigo.7">
+                            Staying at: {scheduledAccommodations.join(', ')}
+                          </Text>
+                        </Group>
+                      </Box>
+                    )}
                   </Box>
                 )}
               </Box>
@@ -206,6 +278,30 @@ export function LocationDetailPanel({ location, days, allLocations, routes, onUp
               onChange={(e) => onUpdate(location.id, { notes: e.target.value })}
             />
           </Box>
+
+          {accommodationGroups.length > 0 && (
+            <Box mb="xl">
+              <Group gap={6} mb="xs">
+                <Bed size={14} />
+                <Text size="xs" fw={700} tt="uppercase" c="dimmed">Stay Overview</Text>
+              </Group>
+              <Stack gap="xs">
+                {accommodationGroups.map((group, i) => (
+                  <Paper key={i} p="xs" withBorder bg={group.name === 'No accommodation set' ? 'gray.0' : 'indigo.0'}>
+                    <Group justify="space-between" wrap="nowrap">
+                        <Box style={{ flex: 1, minWidth: 0 }}>
+                          <Text size="sm" fw={700} truncate>{group.name}</Text>
+                          <Text size="xs" c="dimmed">
+                            Day {group.startDay}{group.nights > 1 ? ` - ${group.endDay}` : ''}
+                          </Text>
+                        </Box>
+                        <Badge variant="light" color="indigo">{group.nights} {group.nights === 1 ? 'night' : 'nights'}</Badge>
+                    </Group>
+                  </Paper>
+                ))}
+              </Stack>
+            </Box>
+          )}
 
           <Box mb="xl">
             <Group justify="space-between" mb="xs">
