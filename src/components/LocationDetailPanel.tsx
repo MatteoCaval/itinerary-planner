@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Form, Button, ListGroup, InputGroup } from 'react-bootstrap';
+import { TextInput, Textarea, Button, ActionIcon, Paper, Group, Stack, Text, Badge, Image, Checkbox, LoadingOverlay, Box, Divider, ScrollArea, Anchor } from '@mantine/core';
 import { X, Plus, Trash2, ExternalLink, CheckSquare, Link as LinkIcon, Map as MapIcon, Calendar, ArrowRight, ArrowLeft } from 'lucide-react';
 import { Location, Day, Route, DaySection, TRANSPORT_LABELS } from '../types';
 import { v4 as uuidv4 } from 'uuid';
@@ -40,10 +40,10 @@ export function LocationDetailPanel({ location, days, allLocations, routes, onUp
   // Calculate Schedule Recap
   const startDay = days.find(d => d.id === location.startDayId);
   const startDayIdx = days.findIndex(d => d.id === location.startDayId);
-  
+
   const getScheduleRecap = () => {
     if (!startDay) return 'Unassigned';
-    
+
     const startSlotIdx = SECTION_ORDER.indexOf(location.startSlot || 'morning');
     const totalSlots = location.duration || 1;
     const endAbsSlot = (startDayIdx * 3) + startSlotIdx + totalSlots - 1;
@@ -52,10 +52,10 @@ export function LocationDetailPanel({ location, days, allLocations, routes, onUp
     const endDay = days[endDayIdx];
 
     const formatDate = (d: Day) => new Date(d.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-    
+
     const startStr = `${formatDate(startDay)} (${location.startSlot})`;
     const endStr = endDay ? `${formatDate(endDay)} (${SECTION_ORDER[endSlotIdx]})` : 'End of trip';
-    
+
     return { startStr, endStr };
   };
 
@@ -78,12 +78,12 @@ export function LocationDetailPanel({ location, days, allLocations, routes, onUp
   const prevLoc = currentIdx > 0 ? sortedLocs[currentIdx - 1] : null;
   const nextLoc = currentIdx < sortedLocs.length - 1 ? sortedLocs[currentIdx + 1] : null;
 
-  const arrivalRoute = prevLoc ? routes.find(r => 
+  const arrivalRoute = prevLoc ? routes.find(r =>
     (r.fromLocationId === prevLoc.id && r.toLocationId === location.id) ||
     (r.fromLocationId === location.id && r.toLocationId === prevLoc.id)
   ) : null;
 
-  const departureRoute = nextLoc ? routes.find(r => 
+  const departureRoute = nextLoc ? routes.find(r =>
     (r.fromLocationId === location.id && r.toLocationId === nextLoc.id) ||
     (r.fromLocationId === nextLoc.id && r.toLocationId === location.id)
   ) : null;
@@ -120,151 +120,147 @@ export function LocationDetailPanel({ location, days, allLocations, routes, onUp
   };
 
   return (
-    <div className="d-flex flex-column h-100">
-      {location.imageUrl ? (
-        <div className="w-100 position-relative" style={{ height: '160px' }}>
-          <img 
-            src={location.imageUrl} 
-            alt={location.name} 
-            className="w-100 h-100 object-fit-cover"
+    <Stack h="100%" gap={0}>
+      <Box w="100%" h={160} style={{ position: 'relative' }} bg="gray.1">
+        {location.imageUrl && (
+          <Image
+            src={location.imageUrl}
+            alt={location.name}
+            h="100%"
+            w="100%"
+            fit="cover"
             onLoad={() => setImageLoading(false)}
-            style={{ display: imageLoading ? 'none' : 'block' }}
           />
-          {imageLoading && (
-            <div className="w-100 h-100 bg-secondary opacity-25 animate-pulse position-absolute top-0 start-0"></div>
-          )}
-          <div className="position-absolute top-0 end-0 p-2">
-             <Button variant="light" size="sm" className="rounded-circle shadow-sm opacity-75" onClick={onClose}><X size={20} /></Button>
-          </div>
-        </div>
-      ) : imageLoading && (
-        <div className="w-100 position-relative bg-light" style={{ height: '160px' }}>
-           <div className="w-100 h-100 bg-secondary opacity-10 animate-pulse"></div>
-        </div>
-      )}
-      <div className={`p-3 border-bottom d-flex justify-content-between align-items-center bg-light`}>
-        <div className="flex-grow-1 min-width-0">
-          <h5 className="mb-0 text-truncate">{location.name}</h5>
-          <div className="text-muted small" style={{ fontSize: '0.65rem' }}>
-            {location.lat.toFixed(4)}, {location.lng.toFixed(4)}
-          </div>
-        </div>
-        <div className="d-flex align-items-center gap-2">
-          <Button 
-            variant="outline-primary" 
-            size="sm" 
-            className="d-flex align-items-center gap-1 py-1"
-            onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location.name)}`, '_blank')}
-            title="Open in Google Maps"
-          >
-            <MapIcon size={14} />
-            Maps
-          </Button>
-          {!location.imageUrl && (
-            <Button variant="link" className="p-0 text-muted" onClick={onClose}>
-              <X size={24} />
+        )}
+        <LoadingOverlay visible={imageLoading && !location.imageUrl} />
+        <Box style={{ position: 'absolute', top: 12, right: 12, zIndex: 10 }}>
+          <ActionIcon variant="filled" color="gray" size="lg" radius="xl" onClick={onClose} style={{ opacity: 0.9 }}><X size={20} /></ActionIcon>
+        </Box>
+      </Box>
+
+      <Box p="md" style={{ borderBottom: '1px solid var(--mantine-color-gray-3)' }} bg="gray.0">
+        <Group justify="space-between" align="start">
+          <Box style={{ flex: 1, minWidth: 0 }}>
+            <Text fw={700} size="lg" truncate>{location.name}</Text>
+            <Text size="xs" c="dimmed">{location.lat.toFixed(4)}, {location.lng.toFixed(4)}</Text>
+          </Box>
+          <Group gap="xs">
+            <Button
+              size="xs"
+              variant="outline"
+              leftSection={<MapIcon size={14} />}
+              onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location.name)}`, '_blank')}
+            >
+              Maps
             </Button>
-          )}
-        </div>
-      </div>
+          </Group>
+        </Group>
+      </Box>
 
-      <div className="p-3 flex-grow-1 overflow-auto">
-        <div className="mb-4 p-3 bg-light rounded border shadow-sm">
-          <div className="d-flex align-items-start gap-3 mb-3">
-            <Calendar className="text-primary mt-1" size={18} />
-            <div>
-              <div className="small fw-bold text-uppercase text-muted" style={{ fontSize: '0.65rem' }}>Schedule Recap</div>
-              {typeof schedule === 'string' ? (
-                <div className="small">{schedule}</div>
-              ) : (
-                <div className="small">
-                  <div><strong>From:</strong> {schedule.startStr}</div>
-                  <div><strong>To:</strong> {schedule.endStr}</div>
-                </div>
-              )}
-            </div>
-          </div>
+      <ScrollArea flex={1} type="auto">
+        <Box p="md">
+          <Paper p="sm" withBorder shadow="sm" mb="md">
+            <Group align="start" gap="md">
+              <Calendar size={18} className="text-primary mt-1" style={{ color: 'var(--mantine-color-blue-6)' }} />
+              <Box>
+                <Text size="xs" fw={700} tt="uppercase" c="dimmed">Schedule Recap</Text>
+                {typeof schedule === 'string' ? (
+                  <Text size="sm">{schedule}</Text>
+                ) : (
+                  <Box>
+                    <Text size="sm"><Text span fw={500}>From: </Text>{schedule.startStr}</Text>
+                    <Text size="sm"><Text span fw={500}>To: </Text>{schedule.endStr}</Text>
+                  </Box>
+                )}
+              </Box>
+            </Group>
 
-          {(arrivalRoute || departureRoute) && (
-            <div className="border-top pt-2 mt-2">
-              <div className="small fw-bold text-uppercase text-muted mb-2" style={{ fontSize: '0.65rem' }}>Travel Connections</div>
-              
-              {arrivalRoute && prevLoc && (
-                <div className="d-flex align-items-center gap-2 mb-2 small text-muted">
-                  <ArrowLeft size={14} className="text-info" />
-                  <span>Arrive from <strong>{prevLoc.name}</strong> via {TRANSPORT_LABELS[arrivalRoute.transportType]}</span>
-                </div>
-              )}
+            {(arrivalRoute || departureRoute) && (
+              <>
+                <Divider my="sm" />
+                <Text size="xs" fw={700} tt="uppercase" c="dimmed" mb="xs">Travel Connections</Text>
+                {arrivalRoute && prevLoc && (
+                  <Group gap="xs" mb="xs">
+                    <ArrowLeft size={14} style={{ color: 'var(--mantine-color-blue-5)' }} />
+                    <Text size="xs" c="dimmed">Arrive from <Text span fw={700} c="dark">{prevLoc.name}</Text> via {TRANSPORT_LABELS[arrivalRoute.transportType]}</Text>
+                  </Group>
+                )}
+                {departureRoute && nextLoc && (
+                  <Group gap="xs">
+                    <ArrowRight size={14} style={{ color: 'var(--mantine-color-green-6)' }} />
+                    <Text size="xs" c="dimmed">Depart to <Text span fw={700} c="dark">{nextLoc.name}</Text> via {TRANSPORT_LABELS[departureRoute.transportType]}</Text>
+                  </Group>
+                )}
+              </>
+            )}
+          </Paper>
 
-              {departureRoute && nextLoc && (
-                <div className="d-flex align-items-center gap-2 small text-muted">
-                  <ArrowRight size={14} className="text-success" />
-                  <span>Depart to <strong>{nextLoc.name}</strong> via {TRANSPORT_LABELS[departureRoute.transportType]}</span>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
+          <Box mb="xl">
+            <Text size="xs" fw={700} tt="uppercase" c="dimmed" mb={4}>Description & Notes</Text>
+            <Textarea
+              autosize
+              minRows={4}
+              maxRows={12}
+              placeholder="Add details, booking numbers, or notes..."
+              value={location.notes || ''}
+              onChange={(e) => onUpdate(location.id, { notes: e.target.value })}
+            />
+          </Box>
 
-        <Form.Group className="mb-4">
-          <Form.Label className="small fw-bold text-muted text-uppercase">Description & Notes</Form.Label>
-          <Form.Control
-            as="textarea"
-            rows={8}
-            placeholder="Add details, booking numbers, or notes..."
-            value={location.notes || ''}
-            onChange={(e) => onUpdate(location.id, { notes: e.target.value })}
-          />
-        </Form.Group>
+          <Box mb="xl">
+            <Group justify="space-between" mb="xs">
+              <Group gap={6}>
+                <CheckSquare size={14} />
+                <Text size="xs" fw={700} tt="uppercase" c="dimmed">Checklist</Text>
+              </Group>
+              <Badge color="gray" size="sm">{(location.checklist || []).filter(i => i.completed).length}/{(location.checklist || []).length}</Badge>
+            </Group>
 
-        <div className="mb-4">
-          <Form.Label className="small fw-bold text-muted text-uppercase d-flex align-items-center justify-content-between">
-            <span><CheckSquare size={12} className="me-1" /> Checklist</span>
-            <span className="badge bg-secondary">{(location.checklist || []).filter(i => i.completed).length}/{(location.checklist || []).length}</span>
-          </Form.Label>
-          
-          <ListGroup variant="flush" className="mb-2 border rounded">
-            {(location.checklist || []).map(item => (
-              <ListGroup.Item key={item.id} className="d-flex align-items-center gap-2 py-2">
-                <Form.Check checked={item.completed} onChange={() => toggleChecklistItem(item.id)} />
-                <span className={`flex-grow-1 small ${item.completed ? 'text-decoration-line-through text-muted' : ''}`}>{item.text}</span>
-                <Button variant="link" className="p-0 text-danger opacity-50" onClick={() => removeChecklistItem(item.id)}><Trash2 size={14} /></Button>
-              </ListGroup.Item>
-            ))}
-          </ListGroup>
+            <Stack gap="xs" mb="sm">
+              {(location.checklist || []).map(item => (
+                <Group key={item.id} gap="sm" align="center" wrap="nowrap">
+                  <Checkbox checked={item.completed} onChange={() => toggleChecklistItem(item.id)} />
+                  <Text size="sm" td={item.completed ? 'line-through' : undefined} c={item.completed ? 'dimmed' : undefined} style={{ flex: 1, lineHeight: 1.2 }}>{item.text}</Text>
+                  <ActionIcon variant="transparent" color="red" size="xs" onClick={() => removeChecklistItem(item.id)} opacity={0.5}><Trash2 size={14} /></ActionIcon>
+                </Group>
+              ))}
+            </Stack>
 
-          <Form onSubmit={handleAddChecklistItem}>
-            <InputGroup size="sm">
-              <Form.Control placeholder="Add task..." value={newChecklistItem} onChange={(e) => setNewChecklistItem(e.target.value)} />
-              <Button type="submit" variant="outline-primary"><Plus size={16} /></Button>
-            </InputGroup>
-          </Form>
-        </div>
+            <form onSubmit={handleAddChecklistItem}>
+              <Group gap="xs">
+                <TextInput style={{ flex: 1 }} size="xs" placeholder="Add task..." value={newChecklistItem} onChange={(e) => setNewChecklistItem(e.target.value)} />
+                <ActionIcon type="submit" variant="filled" size="sm"><Plus size={16} /></ActionIcon>
+              </Group>
+            </form>
+          </Box>
 
-        <div className="mb-4">
-          <Form.Label className="small fw-bold text-muted text-uppercase">
-            <LinkIcon size={12} className="me-1" /> Helpful Links
-          </Form.Label>
-          <ListGroup variant="flush" className="mb-2 border rounded">
-            {(location.links || []).map(link => (
-              <ListGroup.Item key={link.id} className="d-flex align-items-center gap-2 py-2">
-                <ExternalLink size={14} className="text-muted" />
-                <a href={link.url} target="_blank" rel="noopener noreferrer" className="flex-grow-1 small text-truncate text-decoration-none">{link.label}</a>
-                <Button variant="link" className="p-0 text-danger opacity-50" onClick={() => removeLink(link.id)}><Trash2 size={14} /></Button>
-              </ListGroup.Item>
-            ))}
-          </ListGroup>
-          <Form onSubmit={handleAddLink}>
-            <div className="d-flex flex-column gap-1">
-              <Form.Control size="sm" placeholder="Link Label (e.g. Booking.com)" value={newLink.label} onChange={(e) => setNewLink({ ...newLink, label: e.target.value })} />
-              <InputGroup size="sm">
-                <Form.Control placeholder="URL..." value={newLink.url} onChange={(e) => setNewLink({ ...newLink, url: e.target.value })} />
-                <Button type="submit" variant="outline-primary"><Plus size={16} /></Button>
-              </InputGroup>
-            </div>
-          </Form>
-        </div>
-      </div>
-    </div>
+          <Box mb="xl">
+            <Text size="xs" fw={700} tt="uppercase" c="dimmed" mb="xs">
+              <Group gap={6} display="inline-flex"><LinkIcon size={12} /> Helpful Links</Group>
+            </Text>
+
+            <Stack gap="xs" mb="sm">
+              {(location.links || []).map(link => (
+                <Group key={link.id} gap="sm" align="center" wrap="nowrap">
+                  <ExternalLink size={14} className="text-muted" />
+                  <Anchor href={link.url} target="_blank" rel="noopener noreferrer" size="sm" truncate style={{ flex: 1 }}>{link.label}</Anchor>
+                  <ActionIcon variant="transparent" color="red" size="xs" onClick={() => removeLink(link.id)} opacity={0.5}><Trash2 size={14} /></ActionIcon>
+                </Group>
+              ))}
+            </Stack>
+
+            <form onSubmit={handleAddLink}>
+              <Stack gap="xs">
+                <TextInput size="xs" placeholder="Link Label (e.g. Booking.com)" value={newLink.label} onChange={(e) => setNewLink({ ...newLink, label: e.target.value })} />
+                <Group gap="xs">
+                  <TextInput style={{ flex: 1 }} size="xs" placeholder="URL..." value={newLink.url} onChange={(e) => setNewLink({ ...newLink, url: e.target.value })} />
+                  <ActionIcon type="submit" variant="filled" size="sm"><Plus size={16} /></ActionIcon>
+                </Group>
+              </Stack>
+            </form>
+          </Box>
+        </Box>
+      </ScrollArea>
+    </Stack>
   );
 }

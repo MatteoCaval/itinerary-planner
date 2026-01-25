@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useRef, useEffect } from 'react';
-import { Button } from 'react-bootstrap';
+import { ActionIcon, Text, Group, Stack, Box, Paper, Tooltip } from '@mantine/core';
 import { Plus, Sun, Moon, Coffee } from 'lucide-react';
 import {
     DndContext,
@@ -56,84 +56,95 @@ function DroppableCell({ id, section, row, isEvenDay, zoomLevel, onClick, childr
 
     let icon;
     let label;
+    let color;
     switch (section) {
         case 'morning':
-            icon = <Coffee size={14} className="text-warning" />;
+            icon = <Coffee size={14} />;
             label = "Morning";
+            color = "orange";
             break;
         case 'afternoon':
-            icon = <Sun size={14} className="text-orange" />;
+            icon = <Sun size={14} />;
             label = "Afternoon";
+            color = "yellow";
             break;
         case 'evening':
-            icon = <Moon size={14} className="text-indigo" />;
+            icon = <Moon size={14} />;
             label = "Evening";
+            color = "indigo";
             break;
     }
 
-    const bgClass = isEvenDay ? 'bg-zebra-even' : 'bg-zebra-odd';
+    const bgClass = isEvenDay ? 'var(--mantine-color-gray-0)' : 'white';
 
     return (
-        <div 
+        <Box
             ref={setNodeRef}
-            className={`grid-cell ${bgClass} d-flex align-items-center ${isOver ? 'drag-over' : ''}`}
             onClick={onClick}
-            style={{ 
+            style={{
                 gridColumn: '2 / -1',
                 gridRow: `${row} / span 1`,
-                borderBottom: '1px solid #e9ecef',
+                borderBottom: '1px solid var(--mantine-color-gray-3)',
                 minHeight: `${80 * zoomLevel}px`,
                 zIndex: 0,
-                cursor: 'pointer'
+                cursor: 'pointer',
+                backgroundColor: isOver ? 'var(--mantine-color-blue-0)' : bgClass,
+                display: 'flex',
+                alignItems: 'center',
+                transition: 'background-color 0.2s ease'
             }}
         >
-            <div className="d-flex align-items-center justify-content-center p-2 text-muted small border-end" style={{ width: '80px', minWidth: '80px', height: '100%', pointerEvents: 'none' }}>
-                 <div className="d-flex flex-column align-items-center">
+            <Box style={{ width: 80, minWidth: 80, height: '100%', pointerEvents: 'none', borderRight: '1px solid var(--mantine-color-gray-3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Stack gap={2} align="center" c={color}>
                     {icon}
-                    <span style={{ fontSize: '0.7rem' }}>{label}</span>
-                 </div>
-            </div>
+                    <Text size="xs" c="dimmed">{label}</Text>
+                </Stack>
+            </Box>
             {children}
-        </div>
+        </Box>
     );
 }
 
 function DayLabel({ day, startRow, dayNum, isEvenDay, onAdd }: { day: Day, startRow: number, dayNum: number, isEvenDay: boolean, onAdd: () => void }) {
     return (
-        <div 
-            className={`day-label border-end border-bottom d-flex flex-column align-items-center justify-content-center text-center p-2 ${isEvenDay ? 'bg-zebra-even' : 'bg-zebra-odd'}`}
+        <Box
+            p="xs"
             style={{
                 gridColumn: '1 / span 1',
                 gridRow: `${startRow} / span 3`,
                 zIndex: 2,
-                borderTop: '1px solid #dee2e6'
+                borderTop: '1px solid var(--mantine-color-gray-3)',
+                borderRight: '1px solid var(--mantine-color-gray-3)',
+                borderBottom: '1px solid var(--mantine-color-gray-3)',
+                backgroundColor: isEvenDay ? 'var(--mantine-color-gray-0)' : 'white',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                textAlign: 'center'
             }}
         >
-            <div className="fw-bold small">Day {dayNum}</div>
-            <div className="text-muted small mb-2" style={{ fontSize: '0.7rem' }}>{formatDate(day.date)}</div>
-            <Button
-                variant="outline-secondary"
-                size="sm"
-                className="p-1 rounded-circle d-flex align-items-center justify-content-center"
-                style={{ width: '24px', height: '24px' }}
-                onClick={(e) => { e.stopPropagation(); onAdd(); }}
-                title="Add to Day"
-            >
-                <Plus size={14} />
-            </Button>
-        </div>
+            <Stack gap={4} align="center">
+                <Text size="sm" fw={700}>Day {dayNum}</Text>
+                <Text size="xs" c="dimmed">{formatDate(day.date)}</Text>
+                <Tooltip label="Add to Day">
+                    <ActionIcon variant="light" size="sm" radius="xl" onClick={(e) => { e.stopPropagation(); onAdd(); }}>
+                        <Plus size={14} />
+                    </ActionIcon>
+                </Tooltip>
+            </Stack>
+        </Box>
     );
 }
 
 const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
-    const R = 6371; 
+    const R = 6371;
     const dLat = (lat2 - lat1) * Math.PI / 180;
     const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a = 
-        Math.sin(dLat/2) * Math.sin(dLat/2) +
-        Math.cos(lat1 * Math.PI/180) * Math.cos(lat2 * Math.PI/180) * 
-        Math.sin(dLon/2) * Math.sin(dLon/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return (R * c).toFixed(1);
 };
 
@@ -142,50 +153,59 @@ function RouteConnector({ route, distance, row, col, onEdit }: { route: Route | 
     const transportColor = route ? TRANSPORT_COLORS[route.transportType] : '#0d6efd';
 
     return (
-        <div 
-            className="route-connector-grid d-flex justify-content-center"
+        <Box
             style={{
                 gridColumn: `${3 + col} / span 1`,
                 gridRow: `${row} / span 1`,
                 zIndex: 10,
                 pointerEvents: 'none',
-                height: '0',
-                position: 'relative'
+                height: 0,
+                position: 'relative',
+                display: 'flex',
+                justifyContent: 'center'
             }}
         >
-            <div 
-                className={`route-badge shadow-sm border bg-white rounded-pill d-flex align-items-center gap-2 ${!route ? 'route-hint' : ''}`}
-                style={{ 
-                    cursor: 'pointer', 
-                    pointerEvents: 'auto',
-                    fontSize: '0.75rem',
-                    padding: '4px 12px',
-                    transform: 'translateY(-50%)',
-                    whiteSpace: 'nowrap',
-                    transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                    borderStyle: route ? 'solid' : 'dashed',
-                    borderWidth: '2px',
-                    position: 'absolute',
-                    top: '0'
-                }}
-                onClick={(e) => {
-                    e.stopPropagation();
-                    onEdit();
-                }}
-            >
-                {route ? (
-                    <>
-                        <span style={{ color: transportColor, fontWeight: 'bold' }}>{transportLabel}</span>
-                        <span className="text-muted fw-medium border-start ps-2">{route.duration || `${distance}km`}</span>
-                    </>
-                ) : (
-                    <>
-                        <span className="text-primary fw-bold" style={{ fontSize: '1rem', lineHeight: '1' }}>+</span>
-                        <span className="text-dark fw-medium">Set travel <span className="text-muted small">({distance}km)</span></span>
-                    </>
-                )}
-            </div>
-        </div>
+            <Tooltip label="Edit Connection">
+                <Paper
+                    shadow="sm"
+                    withBorder
+                    bg={!route ? 'blue.0' : 'white'}
+                    style={{
+                        cursor: 'pointer',
+                        pointerEvents: 'auto',
+                        padding: '4px 12px',
+                        transform: 'translateY(-50%)',
+                        whiteSpace: 'nowrap',
+                        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                        borderStyle: route ? 'solid' : 'dashed',
+                        borderWidth: 2,
+                        position: 'absolute',
+                        top: 0,
+                        borderColor: !route ? 'var(--mantine-color-blue-3)' : 'var(--mantine-color-gray-3)',
+                        borderRadius: 999
+                    }}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onEdit();
+                    }}
+                >
+                    <Group gap="xs">
+                        {route ? (
+                            <>
+                                <Text size="xs" fw={700} c={transportColor as any}>{transportLabel}</Text>
+                                <Box style={{ width: 1, height: 12, backgroundColor: 'var(--mantine-color-gray-3)' }} />
+                                <Text size="xs" c="dimmed" fw={500}>{route.duration || `${distance}km`}</Text>
+                            </>
+                        ) : (
+                            <>
+                                <Text size="sm" fw={700} c="blue" lh={1}>+</Text>
+                                <Text size="xs" fw={500}>Set travel <Text span size="xs" c="dimmed">({distance}km)</Text></Text>
+                            </>
+                        )}
+                    </Group>
+                </Paper>
+            </Tooltip>
+        </Box>
     );
 }
 
@@ -199,7 +219,7 @@ function CurrentTimeLine({ days }: { days: Day[] }) {
 
     const nowStr = now.toISOString().split('T')[0];
     const dayIndex = days.findIndex(d => d.date === nowStr);
-    
+
     if (dayIndex === -1) return null;
 
     const hours = now.getHours();
@@ -209,34 +229,64 @@ function CurrentTimeLine({ days }: { days: Day[] }) {
     let slotOffset = 0;
     let percentInSlot = 0;
 
-    if (totalMinutes < 480) { 
+    if (totalMinutes < 480) {
         slotOffset = 0;
         percentInSlot = 0;
-    } else if (totalMinutes < 720) { 
+    } else if (totalMinutes < 720) {
         slotOffset = 0;
         percentInSlot = (totalMinutes - 480) / 240;
-    } else if (totalMinutes < 1080) { 
+    } else if (totalMinutes < 1080) {
         slotOffset = 1;
         percentInSlot = (totalMinutes - 720) / 360;
-    } else { 
+    } else {
         slotOffset = 2;
         percentInSlot = (totalMinutes - 1080) / 360;
     }
 
     const startRow = dayIndex * 3 + 1 + slotOffset;
-    
+
     return (
-        <div 
-            className="current-time-line"
+        <Box
             style={{
                 gridColumn: '2 / -1',
                 gridRow: `${startRow} / span 1`,
                 top: `${percentInSlot * 100}%`,
-                zIndex: 15
+                zIndex: 15,
+                position: 'absolute',
+                left: 0,
+                right: 0,
+                height: 2,
+                backgroundColor: 'var(--mantine-color-red-filled)',
+                pointerEvents: 'none'
             }}
         >
-            <div className="time-label">{now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
-        </div>
+            <Box
+                style={{
+                    position: 'absolute',
+                    left: -45,
+                    top: -10,
+                    backgroundColor: 'var(--mantine-color-red-filled)',
+                    color: 'white',
+                    fontSize: 10,
+                    padding: '2px 4px',
+                    borderRadius: 4,
+                    fontWeight: 'bold'
+                }}
+            >
+                {now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </Box>
+            <Box
+                style={{
+                    position: 'absolute',
+                    left: 0,
+                    top: -4,
+                    width: 10,
+                    height: 10,
+                    backgroundColor: 'var(--mantine-color-red-filled)',
+                    borderRadius: '50%'
+                }}
+            />
+        </Box>
     );
 }
 
@@ -285,10 +335,10 @@ export function DaySidebar({
 
     const layout = useMemo(() => {
         const itemPositions = new Map<string, { row: number, col: number, span: number }>();
-        const lanes: number[][] = []; 
+        const lanes: number[][] = [];
 
         sortedLocs.forEach(loc => {
-            if (!loc.startDayId) return; 
+            if (!loc.startDayId) return;
             const startRowBase = dayRowMap.get(loc.startDayId);
             if (startRowBase === undefined) return;
 
@@ -299,7 +349,7 @@ export function DaySidebar({
             let laneIndex = 0;
             while (true) {
                 if (!lanes[laneIndex]) lanes[laneIndex] = [];
-                const lastEnd = lanes[laneIndex][0] || 0; 
+                const lastEnd = lanes[laneIndex][0] || 0;
                 if (lastEnd <= startRow) {
                     lanes[laneIndex][0] = endRow;
                     itemPositions.set(loc.id, { row: startRow, col: laneIndex, span });
@@ -338,21 +388,24 @@ export function DaySidebar({
     const allLocationIds = locations.map(l => l.id);
     const unassignedLocations = locations.filter(l => !l.startDayId);
 
-    const gridTemplateCols = `80px 80px repeat(${Math.max(1, layout.totalLanes)}, 1fr)`; 
-    
+    const gridTemplateCols = `80px 80px repeat(${Math.max(1, layout.totalLanes)}, 1fr)`;
+
     return (
-        <div className="day-sidebar h-100 d-flex flex-column">
-             <DndContext
+        <Box className="day-sidebar" h="100%" display="flex" style={{ flexDirection: 'column' }}>
+            <DndContext
                 sensors={sensors}
                 collisionDetection={closestCenter}
                 onDragStart={(e) => setActiveId(e.active.id as string)}
                 onDragEnd={handleDragEnd}
             >
-                <div ref={scrollContainerRef} className="flex-grow-1 overflow-auto bg-white position-relative" style={{ 
+                <Box ref={scrollContainerRef} bg="white" style={{
+                    flex: 1,
+                    overflow: 'auto',
+                    position: 'relative',
                     display: 'grid',
                     gridTemplateColumns: gridTemplateCols,
                     gridAutoRows: `minmax(${80 * zoomLevel}px, auto)`,
-                    paddingBottom: '100px' 
+                    paddingBottom: 100
                 }}>
                     <CurrentTimeLine days={days} />
                     {days.map((day, dayIndex) => {
@@ -360,9 +413,15 @@ export function DaySidebar({
                         const isEvenDay = dayIndex % 2 === 1;
                         return (
                             <React.Fragment key={day.id}>
-                                <DayLabel day={day} startRow={startRow} dayNum={dayIndex + 1} isEvenDay={isEvenDay} onAdd={() => onAddToDay(day.id)} />
+                                <DayLabel
+                                    day={day}
+                                    startRow={startRow}
+                                    dayNum={dayIndex + 1}
+                                    isEvenDay={isEvenDay}
+                                    onAdd={() => onAddToDay(day.id)}
+                                />
                                 {SECTION_ORDER.map((section, secIndex) => (
-                                    <DroppableCell 
+                                    <DroppableCell
                                         key={`slot-${day.id}-${section}`}
                                         id={`slot-${day.id}-${section}`}
                                         section={section}
@@ -378,93 +437,97 @@ export function DaySidebar({
 
                     <SortableContext items={allLocationIds} strategy={verticalListSortingStrategy}>
                         {locations.map(loc => {
-                            if (!loc.startDayId) return null; 
+                            if (!loc.startDayId) return null;
                             const pos = layout.itemPositions.get(loc.id);
                             if (!pos) return null;
 
                             const currentIndex = sortedLocs.findIndex(l => l.id === loc.id);
                             const nextLoc = sortedLocs[currentIndex + 1];
                             const nextPos = nextLoc ? layout.itemPositions.get(nextLoc.id) : null;
-                            const route = nextLoc ? routes.find(r => 
+                            const route = nextLoc ? routes.find(r =>
                                 (r.fromLocationId === loc.id && r.toLocationId === nextLoc.id) ||
                                 (r.fromLocationId === nextLoc.id && r.toLocationId === loc.id)
                             ) : undefined;
 
                             const style: React.CSSProperties = {
-                                gridColumn: `${3 + pos.col} / span 1`, 
+                                gridColumn: `${3 + pos.col} / span 1`,
                                 gridRow: `${pos.row} / span ${pos.span}`,
                                 zIndex: 1,
                                 height: '100%',
-                                marginBottom: 0 
+                                marginBottom: 0
                             };
 
-                                return (
-                                    <React.Fragment key={loc.id}>
-                                        <div 
-                                            id={`item-${loc.id}`}
-                                            style={style} 
-                                            className={`px-1 py-4 item-hover-wrapper ${hoveredLocationId === loc.id ? 'hovered' : ''} ${selectedLocationId === loc.id ? 'selected' : ''}`}
-                                            onMouseEnter={() => onHoverLocation?.(loc.id)}
-                                            onMouseLeave={() => onHoverLocation?.(null)}
-                                            onClick={() => onSelectLocation?.(loc.id)}
-                                        >
-                                            <SortableItem
-                                                id={loc.id}
-                                                location={loc}
-                                                onRemove={onRemoveLocation}
-                                                onUpdate={onUpdateLocation}
-                                                onSelect={onSelectLocation}
-                                                isSelected={selectedLocationId === loc.id}
-                                                duration={loc.duration}
-                                                zoomLevel={zoomLevel}
-                                            />
-                                        </div>
-                                        {nextPos && (
-                                            <RouteConnector 
-                                                route={route || null} 
-                                                distance={calculateDistance(loc.lat, loc.lng, nextLoc.lat, nextLoc.lng)}
-                                                row={pos.row + pos.span} 
-                                                col={pos.col} 
-                                                onEdit={() => onEditRoute(loc.id, nextLoc.id)}
-                                            />
-                                        )}
-                                    </React.Fragment>
-                                );
+                            return (
+                                <React.Fragment key={loc.id}>
+                                    <Box
+                                        id={`item-${loc.id}`}
+                                        style={style}
+                                        px={4}
+                                        py={16}
+                                        onMouseEnter={() => onHoverLocation?.(loc.id)}
+                                        onMouseLeave={() => onHoverLocation?.(null)}
+                                        onClick={() => onSelectLocation?.(loc.id)}
+                                        className={`${hoveredLocationId === loc.id ? 'hovered' : ''} ${selectedLocationId === loc.id ? 'selected' : ''}`}
+
+                                    >
+                                        <SortableItem
+                                            id={loc.id}
+                                            location={loc}
+                                            onRemove={onRemoveLocation}
+                                            onUpdate={onUpdateLocation}
+                                            onSelect={onSelectLocation}
+                                            isSelected={selectedLocationId === loc.id}
+                                            duration={loc.duration}
+                                            zoomLevel={zoomLevel}
+                                        />
+                                    </Box>
+                                    {nextPos && (
+                                        <RouteConnector
+                                            route={route || null}
+                                            distance={calculateDistance(loc.lat, loc.lng, nextLoc.lat, nextLoc.lng)}
+                                            row={pos.row + pos.span}
+                                            col={pos.col}
+                                            onEdit={() => onEditRoute(loc.id, nextLoc.id)}
+                                        />
+                                    )}
+                                </React.Fragment>
+                            );
                         })}
                     </SortableContext>
-                </div>
+                </Box>
 
-                <div className="p-3 border-top bg-light" style={{ position: 'sticky', bottom: 0, zIndex: 10 }}>
-                    <strong>Unassigned</strong>
+                <Paper p="md" bg="gray.0" withBorder style={{ position: 'sticky', bottom: 0, zIndex: 10 }}>
+                    <Text fw={700} mb="xs">Unassigned</Text>
                     <DroppableCell id="unassigned-zone" section="morning" row={9999} isEvenDay={false} zoomLevel={1.0}>
-                         <div className="d-flex flex-wrap gap-2 w-100 ps-2">
-                             {unassignedLocations.map(loc => (
-                                 <div key={loc.id} style={{ width: '100%' }}>
-                                     <SortableItem
-                                         id={loc.id}
-                                         location={loc}
-                                         onRemove={onRemoveLocation}
-                                         onUpdate={onUpdateLocation}
-                                         onSelect={onSelectLocation}
-                                         isSelected={selectedLocationId === loc.id}
-                                         duration={loc.duration}
-                                         zoomLevel={1.0}
-                                     />
-                                 </div>
-                             ))}
-                             {unassignedLocations.length === 0 && <div className="text-muted small">No unassigned places</div>}
-                         </div>
+                        <Group gap="xs" p="xs" w="100%" wrap="wrap">
+                            {unassignedLocations.map(loc => (
+                                <Box key={loc.id} style={{ width: '100%' }}>
+                                    <SortableItem
+                                        id={loc.id}
+                                        location={loc}
+                                        onRemove={onRemoveLocation}
+                                        onUpdate={onUpdateLocation}
+                                        onSelect={onSelectLocation}
+                                        isSelected={selectedLocationId === loc.id}
+                                        duration={loc.duration}
+                                        zoomLevel={1.0}
+                                    />
+                                </Box>
+                            ))}
+                            {unassignedLocations.length === 0 && <Text c="dimmed" size="xs">No unassigned places</Text>}
+                        </Group>
                     </DroppableCell>
-                </div>
+                </Paper>
 
                 <DragOverlay>
                     {activeLocation ? (
-                        <div className="sortable-item dragging-overlay bg-white border shadow p-2 rounded" style={{ height: '80px' }}>
-                             <div className="fw-bold">{activeLocation.name}</div>
-                        </div>
+                        <Paper shadow="md" withBorder p="xs" radius="md" style={{ height: 80, cursor: 'grabbing' }}>
+                            <Text fw={700}>{activeLocation.name}</Text>
+                        </Paper>
                     ) : null}
                 </DragOverlay>
             </DndContext>
-        </div>
+
+        </Box>
     );
 }

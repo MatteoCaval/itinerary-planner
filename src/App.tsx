@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Row, Col, Button, Form, ButtonGroup } from 'react-bootstrap';
+import { AppShell, Burger, Group, Button, ActionIcon, TextInput, Tooltip, Text, Box, Paper, Stack, Slider } from '@mantine/core';
+import { useDisclosure } from '@mantine/hooks';
 import { v4 as uuidv4 } from 'uuid';
 import { Map as MapIcon, Search, Download, Upload, Trash2, Calendar as CalendarIcon, List as ListIcon, Cloud, Printer } from 'lucide-react';
 import MapDisplay from './components/MapDisplay';
@@ -78,6 +79,7 @@ const STORAGE_KEY_DATES = 'itinerary-dates';
 const STORAGE_KEY_DAYS = 'itinerary-days';
 
 function App() {
+  const [opened, { toggle }] = useDisclosure();
   const [startDate, setStartDate] = useState<string>(() => {
     const saved = localStorage.getItem(STORAGE_KEY_DATES);
     return saved ? JSON.parse(saved).startDate : '';
@@ -126,7 +128,6 @@ function App() {
   const [selectedLocationId, setSelectedLocationId] = useState<string | null>(null);
   const [zoomLevel, setZoomLevel] = useState(1.0);
   const [sidebarView, setSidebarView] = useState<'timeline' | 'calendar'>('timeline');
-  const [mobileView, setMobileView] = useState<'timeline' | 'map'>('timeline');
   const [showCloudModal, setShowCloudModal] = useState(false);
 
   useEffect(() => { localStorage.setItem(STORAGE_KEY_LOCATIONS, JSON.stringify(locations)); }, [locations]);
@@ -197,13 +198,14 @@ function App() {
     setLocations(locations.map(l => l.id === id ? { ...l, ...updates } : l));
   };
 
+
   const handleReorderLocations = (activeId: string, overId: string | null, newDayId: string | null, newSlot: DaySection | null = null) => {
     setLocations(prev => {
       const activeIndex = prev.findIndex(l => l.id === activeId);
       if (activeIndex === -1) return prev;
       let newLocations = [...prev];
-      newLocations[activeIndex] = { 
-        ...newLocations[activeIndex], 
+      newLocations[activeIndex] = {
+        ...newLocations[activeIndex],
         startDayId: newDayId || undefined,
         startSlot: newSlot || newLocations[activeIndex].startSlot || 'morning'
       };
@@ -216,8 +218,9 @@ function App() {
     });
   };
 
-  const handleScrollToLocation = (id: string) => {
+  const handleScrollToLocation = (id: string | null) => {
     setSelectedLocationId(id);
+    if (!id) return;
     setTimeout(() => {
       const element = document.getElementById(`item-${id}`);
       element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -274,173 +277,209 @@ function App() {
   const selectedLocation = useMemo(() => locations.find(l => l.id === selectedLocationId) || null, [locations, selectedLocationId]);
 
   return (
-    <div className="container-fluid p-0 h-100 overflow-hidden" style={{ height: '100vh', paddingBottom: '56px' }}>
+    <AppShell
+      header={{ height: 60 }}
+      navbar={{
+        width: 500,
+        breakpoint: 'sm',
+        collapsed: { mobile: !opened },
+      }}
+      padding={0}
+    >
       <PrintableItinerary days={days} locations={locations} routes={routes} startDate={startDate} endDate={endDate} />
-      
-      <Row className="g-0 h-100">
-        <Col 
-          md={5} lg={4} 
-          className={`sidebar d-flex flex-column h-100 shadow-sm ${mobileView === 'map' ? 'd-none d-md-flex' : 'd-flex'}`}
-          style={{ zIndex: 100 }}
-        >
-          <div className="p-3 border-bottom">
-            <div className="d-flex justify-content-between align-items-center mb-3">
-              <h3 className="d-flex align-items-center gap-2 mb-0"><MapIcon /> Itinerary</h3>
-              <ButtonGroup size="sm">
-                <Button variant={sidebarView === 'timeline' ? 'secondary' : 'outline-secondary'} onClick={() => setSidebarView('timeline')}><ListIcon size={16} /></Button>
-                <Button variant={sidebarView === 'calendar' ? 'secondary' : 'outline-secondary'} onClick={() => setSidebarView('calendar')}><CalendarIcon size={16} /></Button>
-              </ButtonGroup>
-            </div>
-            
+
+      <AppShell.Header style={{ zIndex: 1200 }}>
+        <Group h="100%" px="md" justify="space-between">
+          <Group>
+            <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
+            <Text fw={700} fz="lg" c="blue" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <MapIcon size={20} /> Itinerary Planner
+            </Text>
+          </Group>
+          <Group gap="xs">
+            <Button variant="default" size="xs" leftSection={<Printer size={16} />} onClick={handlePrint}>Print</Button>
+            <Button variant="default" size="xs" leftSection={<Upload size={16} />} onClick={() => document.getElementById('import-file')?.click()}>Import</Button>
+            <input type="file" id="import-file" style={{ display: 'none' }} onChange={handleImport} accept=".json" />
+            <Button variant="default" size="xs" leftSection={<Download size={16} />} onClick={handleExport}>Export</Button>
+            <Button variant="filled" color="blue" size="xs" leftSection={<Cloud size={16} />} onClick={() => setShowCloudModal(true)}>Sync</Button>
+          </Group>
+        </Group>
+      </AppShell.Header>
+
+      <AppShell.Navbar p={0} style={{ zIndex: 1000 }}>
+        <Stack h="100%" gap={0}>
+          <Box p="md" style={{ borderBottom: '1px solid var(--mantine-color-gray-3)' }}>
             <DateRangePicker startDate={startDate} endDate={endDate} onDateRangeChange={handleDateRangeChange} />
-            
+
+            {/* View Toggle */}
+            <Group grow mt="sm" mb="md">
+              <Button
+                variant={sidebarView === 'timeline' ? 'light' : 'subtle'}
+                onClick={() => setSidebarView('timeline')}
+                leftSection={<ListIcon size={16} />}
+                size="xs"
+              >
+                Timeline
+              </Button>
+              <Button
+                variant={sidebarView === 'calendar' ? 'light' : 'subtle'}
+                onClick={() => setSidebarView('calendar')}
+                leftSection={<CalendarIcon size={16} />}
+                size="xs"
+              >
+                Calendar
+              </Button>
+            </Group>
+
             {pendingAddToDay && (
-              <div className="alert alert-info py-2 px-3 small mb-2 d-flex justify-content-between align-items-center">
-                <span>Adding to Day {days.findIndex(d => d.id === pendingAddToDay.dayId) + 1} ({pendingAddToDay.slot})</span>
-                <Button variant="link" size="sm" className="p-0 text-decoration-none" onClick={() => setPendingAddToDay(null)}>Cancel</Button>
-              </div>
+              <Paper withBorder p="xs" bg="blue.0" mt="sm" mb="xs">
+                <Group justify="space-between">
+                  <Text size="sm">Adding to Day {days.findIndex(d => d.id === pendingAddToDay.dayId) + 1} ({pendingAddToDay.slot})</Text>
+                  <Button variant="subtle" size="xs" color="red" onClick={() => setPendingAddToDay(null)}>Cancel</Button>
+                </Group>
+              </Paper>
             )}
-            
-            <Form onSubmit={handleSearch} className="position-relative mb-2">
-              <div className="d-flex gap-2">
-                <Form.Control 
-                  type="text" 
-                  placeholder={pendingAddToDay ? "Search place to add..." : "Search place..."} 
-                  value={searchQuery} 
-                  onChange={e => setSearchQuery(e.target.value)} 
-                  autoFocus={!!pendingAddToDay} 
+
+            <Box mb="xs" style={{ position: 'relative' }}>
+              <form onSubmit={handleSearch}>
+                <TextInput
+                  placeholder={pendingAddToDay ? "Search place to add..." : "Search place..."}
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  rightSection={
+                    <ActionIcon size="sm" variant="transparent" type="submit" loading={isSearching}>
+                      <Search size={16} />
+                    </ActionIcon>
+                  }
                 />
-                <Button type="submit" variant="primary" disabled={isSearching}>{isSearching ? '...' : <Search size={18} />}</Button>
-              </div>
-              
+              </form>
               {suggestions.length > 0 && (
-                <div className="position-absolute w-100 mt-1 shadow-lg rounded bg-white border overflow-auto" style={{ zIndex: 1100, maxHeight: '250px' }}>
+                <Paper withBorder shadow="md" style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 1000, maxHeight: 250, overflowY: 'auto' }}>
                   {suggestions.map((s, i) => (
-                    <div 
-                      key={i} 
-                      className="p-2 border-bottom cursor-pointer hover-bg-light small d-flex flex-column"
+                    <Box
+                      key={i}
+                      p="xs"
+                      style={{ cursor: 'pointer', borderBottom: '1px solid var(--mantine-color-gray-2)' }}
+                      className="hover-bg-light"
                       onClick={async () => {
                         await addLocation(parseFloat(s.lat), parseFloat(s.lon), s.display_name);
                         setSearchQuery('');
                         setSuggestions([]);
                       }}
                     >
-                      <span className="fw-bold">{s.display_name.split(',')[0]}</span>
-                      <span className="text-muted text-truncate" style={{ fontSize: '0.7rem' }}>{s.display_name}</span>
-                    </div>
+                      <Text size="sm" fw={500}>{s.display_name.split(',')[0]}</Text>
+                      <Text size="xs" c="dimmed" truncate>{s.display_name}</Text>
+                    </Box>
                   ))}
-                </div>
+                </Paper>
               )}
-            </Form>
-            
-            {sidebarView === 'timeline' && (
-              <div className="d-flex align-items-center gap-2 mb-2 px-1">
-                <span className="text-muted small fw-bold">Zoom:</span>
-                <Form.Range min={0.5} max={2.5} step={0.1} value={zoomLevel} onChange={e => setZoomLevel(parseFloat(e.target.value))} className="flex-grow-1" />
-                <span className="text-muted small" style={{ minWidth: '35px' }}>{Math.round(zoomLevel * 100)}%</span>
-              </div>
-            )}
-          </div>
+            </Box>
 
-          <div className="flex-grow-1 overflow-auto bg-light">
+            {sidebarView === 'timeline' && (
+              <Group gap="xs" align="center" mt="xs">
+                <Text size="xs" fw={500} c="dimmed">Zoom:</Text>
+                <Slider
+                  flex={1}
+                  size="sm"
+                  min={0.5}
+                  max={2.5}
+                  step={0.1}
+                  value={zoomLevel}
+                  onChange={setZoomLevel}
+                  label={(val) => `${Math.round(val * 100)}%`}
+                  mb={4}
+                />
+                <Text size="xs" c="dimmed" w={35}>{Math.round(zoomLevel * 100)}%</Text>
+              </Group>
+            )}
+          </Box>
+
+          <Box style={{ flex: 1, overflow: 'hidden' }}>
             {sidebarView === 'timeline' ? (
-              <DaySidebar 
-                days={days} locations={locations} routes={routes} 
-                onReorderLocations={handleReorderLocations} onRemoveLocation={removeLocation} 
-                onUpdateLocation={updateLocation} onEditRoute={(from, to) => setEditingRoute({ fromId: from, toId: to })} 
+              <DaySidebar
+                days={days} locations={locations} routes={routes}
+                onReorderLocations={handleReorderLocations} onRemoveLocation={removeLocation}
+                onUpdateLocation={updateLocation} onEditRoute={(from, to) => setEditingRoute({ fromId: from, toId: to })}
                 onAddToDay={(dayId, slot) => setPendingAddToDay({ dayId, slot })}
-                hoveredLocationId={hoveredLocationId} onHoverLocation={setHoveredLocationId} zoomLevel={zoomLevel} 
+                hoveredLocationId={hoveredLocationId} onHoverLocation={setHoveredLocationId} zoomLevel={zoomLevel}
                 selectedLocationId={selectedLocationId} onSelectLocation={setSelectedLocationId}
               />
             ) : (
               <CalendarView days={days} locations={locations} onSelectLocation={handleScrollToLocation} />
             )}
-          </div>
+          </Box>
 
-          <div className="p-3 border-top bg-white">
-            <div className="d-flex justify-content-between align-items-center mb-2">
-              <strong className="small text-muted text-uppercase">Total Stops: {locations.length}</strong>
-              <div className="d-flex gap-1">
-                <Button variant="outline-danger" size="sm" className="py-0 px-2 small" onClick={() => {
-                  if(confirm('Are you sure you want to clear all data?')) setLocations([]);
-                }}>
-                  <Trash2 size={14} /> Clear
-                </Button>
-              </div>
-            </div>
-            <div className="d-flex gap-2">
-              <Button variant="outline-primary" size="sm" className="flex-grow-1 d-flex align-items-center justify-content-center gap-1" onClick={() => setShowCloudModal(true)}>
-                <Cloud size={14} /> Cloud
+          <Box p="md" style={{ borderTop: '1px solid var(--mantine-color-gray-3)' }}>
+            <Group justify="space-between" mb="xs">
+              <Text size="xs" fw={700} tt="uppercase" c="dimmed">{locations.length} Stops</Text>
+              <Button variant="subtle" color="red" size="xs" leftSection={<Trash2 size={14} />} onClick={() => {
+                if (confirm('Are you sure you want to clear all data?')) setLocations([]);
+              }}>
+                Clear
               </Button>
-              <Button variant="outline-secondary" size="sm" className="d-flex align-items-center justify-content-center gap-1" onClick={handlePrint} title="Print / Save as PDF">
-                <Printer size={14} />
-              </Button>
-              <Button variant="outline-secondary" size="sm" className="d-flex align-items-center justify-content-center gap-1" onClick={handleExport} title="Download JSON">
-                <Download size={14} />
-              </Button>
-              <label className="btn btn-outline-secondary btn-sm d-flex align-items-center justify-content-center gap-1 mb-0 cursor-pointer" title="Import JSON">
-                <Upload size={14} />
-                <input type="file" accept=".json" onChange={handleImport} style={{ display: 'none' }} />
-              </label>
-            </div>
-          </div>
-        </Col>
+            </Group>
+            <Group gap="xs">
+              <Button variant="light" size="xs" flex={1} leftSection={<Cloud size={14} />} onClick={() => setShowCloudModal(true)}>Cloud Sync</Button>
+              <Tooltip label="Print / Save PDF">
+                <ActionIcon variant="default" size="md" onClick={handlePrint}><Printer size={16} /></ActionIcon>
+              </Tooltip>
+              <Tooltip label="Download JSON">
+                <ActionIcon variant="default" size="md" onClick={handleExport}><Download size={16} /></ActionIcon>
+              </Tooltip>
+              <Tooltip label="Import JSON">
+                <ActionIcon variant="default" size="md" component="label" style={{ cursor: 'pointer' }}>
+                  <Upload size={16} />
+                  <input type="file" accept=".json" onChange={handleImport} style={{ display: 'none' }} />
+                </ActionIcon>
+              </Tooltip>
+            </Group>
+          </Box>
+        </Stack>
+      </AppShell.Navbar>
 
-        <Col 
-          md={7} lg={8} 
-          className={`position-relative h-100 ${mobileView === 'timeline' ? 'd-none d-md-block' : 'd-block'}`}
-        >
-          <MapDisplay 
-            days={days} locations={locations} routes={routes} 
-            onEditRoute={(from, to) => setEditingRoute({ fromId: from, toId: to })}
-            hoveredLocationId={hoveredLocationId} onHoverLocation={setHoveredLocationId} onSelectLocation={handleScrollToLocation} 
-          />
-        </Col>
-      </Row>
+      <AppShell.Main h="100vh" style={{ position: 'relative', overflow: 'hidden' }}>
+        <MapDisplay
+          days={days} locations={locations} routes={routes}
+          onEditRoute={(from, to) => setEditingRoute({ fromId: from, toId: to })}
+          hoveredLocationId={hoveredLocationId} onHoverLocation={setHoveredLocationId} onSelectLocation={handleScrollToLocation}
+        />
 
-      {/* Side Panel Overlay - Rendered outside grid to be visible on mobile regardless of view */}
-      {selectedLocation && (
-        <div className="location-detail-panel shadow-lg bg-white" style={{ zIndex: 1060 }}>
-          <LocationDetailPanel 
-            location={selectedLocation} 
-            days={days}
-            allLocations={locations}
-            routes={routes}
-            onUpdate={updateLocation} 
-            onClose={() => setSelectedLocationId(null)} 
-          />
-        </div>
-      )}
-
-      {/* Mobile Bottom Navigation */}
-      <div className="d-md-none fixed-bottom bg-white border-top d-flex justify-content-around p-2 shadow-lg" style={{ zIndex: 1050 }}>
-        <Button 
-          variant={mobileView === 'timeline' ? 'primary' : 'link'} 
-          className="flex-grow-1 text-decoration-none"
-          onClick={() => setMobileView('timeline')}
-        >
-          Timeline
-        </Button>
-        <div className="vr my-2"></div>
-        <Button 
-          variant={mobileView === 'map' ? 'primary' : 'link'} 
-          className="flex-grow-1 text-decoration-none"
-          onClick={() => setMobileView('map')}
-        >
-          Map
-        </Button>
-      </div>
+        {selectedLocation && (
+          <Paper
+            shadow="xl"
+            style={{
+              position: 'absolute',
+              top: 'var(--app-shell-header-height, 60px)',
+              right: 0,
+              height: 'calc(100% - var(--app-shell-header-height, 60px))',
+              width: 380,
+              zIndex: 1100,
+              maxWidth: '100%',
+              borderLeft: '1px solid var(--mantine-color-gray-3)'
+            }}
+          >
+            <LocationDetailPanel
+              location={selectedLocation}
+              days={days}
+              allLocations={locations}
+              routes={routes}
+              onUpdate={updateLocation}
+              onClose={() => setSelectedLocationId(null)}
+            />
+          </Paper>
+        )}
+      </AppShell.Main>
 
       <CloudSyncModal show={showCloudModal} onClose={() => setShowCloudModal(false)} getData={getExportData} onLoadData={handleCloudLoad} />
 
-      <RouteEditor 
-        show={!!editingRoute} route={routes.find(r => (r.fromLocationId === editingRoute?.fromId && r.toLocationId === editingRoute?.toId) || (r.fromLocationId === editingRoute?.toId && r.toLocationId === editingRoute?.fromId)) || (editingRoute ? { id: uuidv4(), fromLocationId: editingRoute.fromId, toLocationId: editingRoute.toId, transportType: 'car' } : null)} 
-        fromName={locations.find(l => l.id === editingRoute?.fromId)?.name || ''} toName={locations.find(l => l.id === editingRoute?.toId)?.name || ''} 
-        onSave={route => { setRoutes(prev => { const idx = prev.findIndex(r => r.id === route.id); if (idx >= 0) { const u = [...prev]; u[idx] = route; return u; } return [...prev, route]; }); setEditingRoute(null); }} 
-        onClose={() => setEditingRoute(null)} 
+      <RouteEditor
+        show={!!editingRoute} route={routes.find(r => (r.fromLocationId === editingRoute?.fromId && r.toLocationId === editingRoute?.toId) || (r.fromLocationId === editingRoute?.toId && r.toLocationId === editingRoute?.fromId)) || (editingRoute ? { id: uuidv4(), fromLocationId: editingRoute.fromId, toLocationId: editingRoute.toId, transportType: 'car' } : null)}
+        fromName={locations.find(l => l.id === editingRoute?.fromId)?.name || ''} toName={locations.find(l => l.id === editingRoute?.toId)?.name || ''}
+        onSave={route => { setRoutes(prev => { const idx = prev.findIndex(r => r.id === route.id); if (idx >= 0) { const u = [...prev]; u[idx] = route; return u; } return [...prev, route]; }); setEditingRoute(null); }}
+        onClose={() => setEditingRoute(null)}
       />
       <DayAssignmentModal show={!!editingDayAssignment} location={editingDayAssignment} days={days} onSave={(id, ids) => { updateLocation(id, { dayIds: ids }); setEditingDayAssignment(null); }} onClose={() => setEditingDayAssignment(null)} />
-    </div>
+    </AppShell>
   );
 }
 

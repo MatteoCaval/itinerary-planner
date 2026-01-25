@@ -25,3 +25,16 @@ coverage/
 
 # Gemini
 .gemini/
+
+# Vite
+.vite/
+vite.config.ts.timestamp-*
+
+# TypeScript
+*.tsbuildinfo
+
+# Linting
+.eslintcache
+
+# Docker
+docker-compose.override.yml

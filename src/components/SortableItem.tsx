@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { GripVertical, X } from 'lucide-react';
-import { Button, Form, Badge } from 'react-bootstrap';
+import { ActionIcon, TextInput, Badge, Text, Group, Stack, Box, Paper } from '@mantine/core';
 import { Location } from '../types';
 
 interface SortableItemProps {
@@ -40,7 +40,7 @@ export function SortableItem({
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition,
-    height: '100%', 
+    height: '100%',
   };
 
   const [isEditing, setIsEditing] = useState(false);
@@ -51,7 +51,7 @@ export function SortableItem({
     e.preventDefault();
     e.stopPropagation();
     setIsResizing(true);
-    
+
     const startY = e.clientY;
     const startDuration = duration;
     const rowHeight = 80 * zoomLevel;
@@ -60,7 +60,7 @@ export function SortableItem({
       const deltaY = moveEvent.clientY - startY;
       const rowDelta = Math.round(deltaY / rowHeight);
       const newDuration = Math.max(1, startDuration + rowDelta);
-      
+
       if (newDuration !== duration) {
         onUpdate(id, { duration: newDuration });
       }
@@ -77,47 +77,53 @@ export function SortableItem({
   };
 
   return (
-    <div className="sortable-item-wrapper h-100 position-relative">
-      <div
+    <Box className="sortable-item-wrapper" h="100%" style={{ position: 'relative' }}>
+      <Paper
         ref={setNodeRef}
-        style={style}
-        className={`sortable-item h-100 ${isDragging ? 'dragging' : ''} ${isResizing ? 'resizing' : ''} ${isSelected ? 'selected' : ''}`}
+
+        shadow={isDragging || isResizing ? 'md' : 'sm'}
+        withBorder
+        p="xs"
+        className={`sortable-item ${isDragging ? 'dragging' : ''} ${isResizing ? 'resizing' : ''}`}
+        style={{ ...style, borderColor: isSelected ? 'var(--mantine-color-blue-filled)' : undefined, borderWidth: isSelected ? 2 : 1 }}
+        bg={isSelected ? 'blue.0' : 'white'}
         onClick={() => onSelect?.(id)}
+        h="100%"
       >
-        <div className="d-flex flex-column h-100 w-100">
-          <div className="d-flex align-items-center w-100 mb-1">
-            <div 
-              {...attributes} 
-              {...listeners} 
-              className="drag-handle"
+        <Stack gap={4} h="100%">
+          <Group gap="xs" align="center" wrap="nowrap">
+            <Box
+              {...attributes}
+              {...listeners}
+              style={{ cursor: 'grab', color: 'var(--mantine-color-gray-5)', display: 'flex', alignItems: 'center' }}
               onClick={(e) => e.stopPropagation()}
             >
-              <GripVertical size={20} />
-            </div>
+              <GripVertical size={18} />
+            </Box>
 
-            {index && (
-              <div className="location-index me-2">
-                <Badge bg="primary" pill className="small">{index}</Badge>
-              </div>
+            {index !== undefined && (
+              <Badge size="xs" circle color="blue">{index}</Badge>
             )}
 
-            <div className="flex-grow-1 min-width-0 d-flex align-items-center gap-2">
+            <Box style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: '4px' }}>
               {isEditing ? (
-                <Form.Control
+                <TextInput
                   autoFocus
-                  size="sm"
-                  type="text"
+                  size="xs"
                   value={location.name}
                   onChange={(e) => onUpdate(id, { name: e.target.value })}
                   onBlur={() => setIsEditing(false)}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') setIsEditing(false);
                   }}
+                  styles={{ input: { height: 24, paddingLeft: 6, paddingRight: 6 } }}
                 />
               ) : (
-                <div
-                  className="fw-bold text-truncate"
-                  style={{ cursor: 'text' }}
+                <Text
+                  fw={600}
+                  size="sm"
+                  truncate
+                  style={{ cursor: 'text', flex: 1 }}
                   onClick={(e) => {
                     e.stopPropagation();
                     setIsEditing(true);
@@ -125,61 +131,62 @@ export function SortableItem({
                   title="Click to edit name"
                 >
                   {location.name}
-                </div>
+                </Text>
               )}
               {duration > 1 && (
-                <Badge bg="light" text="dark" className="border fw-normal" style={{ fontSize: '0.65rem' }}>
+                <Badge variant="outline" color="gray" size="xs" style={{ fontWeight: 400 }}>
                   {(duration / 3).toFixed(1).replace('.0', '')}d
                 </Badge>
               )}
-            </div>
+            </Box>
 
-            <div className="d-flex align-items-center gap-1">
-               <Button
-                variant="link"
-                className="text-danger btn-icon p-1"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onRemove(id);
-                }}
-                title="Remove location"
-              >
-                <X size={18} />
-              </Button>
-            </div>
-          </div>
+            <ActionIcon
+              variant="subtle"
+              color="red"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                onRemove(id);
+              }}
+              title="Remove location"
+            >
+              <X size={16} />
+            </ActionIcon>
+          </Group>
 
           {location.notes && (
-            <div 
-              className="notes-preview text-muted small mt-1 mb-2 px-1"
+            <Text
+              c="dimmed"
+              size="xs"
+              px={4}
               style={{
                 display: '-webkit-box',
                 WebkitLineClamp: duration > 1 ? 4 : 1,
                 WebkitBoxOrient: 'vertical',
                 overflow: 'hidden',
-                lineHeight: '1.2',
-                maxHeight: duration > 1 ? '4.8em' : '1.2em'
+                lineHeight: 1.3,
+                maxHeight: duration > 1 ? '5em' : '1.3em'
               }}
             >
               {location.notes}
-            </div>
+            </Text>
           )}
 
-          <div className="mt-auto pt-1">
-              {/* Route info detached */}
-          </div>
-        </div>
-      </div>
-      
+          <Box mt="auto" pt={4}>
+            {/* Route info detached */}
+          </Box>
+        </Stack>
+      </Paper>
+
       {!isDragging && (
-        <div 
+        <Box
           className="resize-handle"
           onPointerDown={handleResizeStart}
           title="Drag to change duration"
         >
-          <div className="resize-handle-bar" />
-        </div>
+          <Box className="resize-handle-bar" />
+        </Box>
       )}
-    </div>
+    </Box>
   );
 }

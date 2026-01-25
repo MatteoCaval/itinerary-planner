@@ -1,7 +1,7 @@
 import React from 'react';
-import { Modal, Button } from 'react-bootstrap';
+import { Modal, Button, Text, Box, Paper, Group, Checkbox, Stack, ScrollArea } from '@mantine/core';
 import { Day, Location } from '../types';
-import { Calendar, Check } from 'lucide-react';
+import { Calendar } from 'lucide-react';
 
 interface DayAssignmentModalProps {
     show: boolean;
@@ -59,63 +59,64 @@ export function DayAssignmentModal({ show, location, days, onSave, onClose }: Da
     };
 
     return (
-        <Modal show={show} onHide={onClose} centered>
-            <Modal.Header closeButton>
-                <Modal.Title className="fs-5">
-                    <Calendar size={18} className="me-2" />
-                    Assign to Days
-                </Modal.Title>
-            </Modal.Header>
-            <Modal.Body>
-                {location && (
-                    <>
-                        <div className="mb-3 p-2 bg-light rounded">
-                            <div className="small text-muted">Location</div>
-                            <div className="fw-bold">{location.name}</div>
-                        </div>
+        <Modal opened={show} onClose={onClose} title={<Group gap="xs"><Calendar size={18} /> Assign to Days</Group>} centered zIndex={2000}>
+            {location && (
+                <Stack gap="md">
+                    <Paper p="xs" bg="gray.0">
+                        <Text size="xs" c="dimmed">Location</Text>
+                        <Text fw={700}>{location.name}</Text>
+                    </Paper>
 
-                        <div className="small text-muted mb-2">Select days this location spans:</div>
+                    <Box>
+                        <Text size="sm" c="dimmed" mb="xs">Select days this location spans:</Text>
+                        <ScrollArea.Autosize mah={300}>
+                            <Stack gap="xs">
+                                {days.map((day) => {
+                                    const isSelected = selectedDays.has(day.id);
+                                    const dayNum = getDayNumber(day.date);
 
-                        <div className="day-selection-list">
-                            {days.map((day) => {
-                                const isSelected = selectedDays.has(day.id);
-                                const dayNum = getDayNumber(day.date);
-
-                                return (
-                                    <div
-                                        key={day.id}
-                                        className={`day-selection-item d-flex align-items-center p-2 mb-1 rounded cursor-pointer ${isSelected ? 'bg-primary-subtle border-primary' : 'bg-light'}`}
-                                        onClick={() => toggleDay(day.id)}
-                                        style={{ cursor: 'pointer', border: '1px solid transparent' }}
-                                    >
-                                        <div className={`check-box me-2 ${isSelected ? 'checked' : ''}`}>
-                                            {isSelected && <Check size={14} />}
-                                        </div>
-                                        <div className="flex-grow-1">
-                                            <strong>Day {dayNum}</strong>
-                                            <span className="text-muted ms-2 small">{formatDate(day.date)}</span>
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-
+                                    return (
+                                        <Paper
+                                            key={day.id}
+                                            p="xs"
+                                            withBorder
+                                            onClick={() => toggleDay(day.id)}
+                                            style={{
+                                                cursor: 'pointer',
+                                                borderColor: isSelected ? 'var(--mantine-color-blue-filled)' : undefined,
+                                                backgroundColor: isSelected ? 'var(--mantine-color-blue-0)' : undefined
+                                            }}
+                                        >
+                                            <Group>
+                                                <Checkbox
+                                                    checked={isSelected}
+                                                    onChange={() => { }}
+                                                    tabIndex={-1}
+                                                    style={{ pointerEvents: 'none' }}
+                                                />
+                                                <Box>
+                                                    <Text size="sm" fw={700}>Day {dayNum}</Text>
+                                                    <Text size="xs" c="dimmed">{formatDate(day.date)}</Text>
+                                                </Box>
+                                            </Group>
+                                        </Paper>
+                                    );
+                                })}
+                            </Stack>
+                        </ScrollArea.Autosize>
                         {days.length === 0 && (
-                            <div className="text-muted text-center py-3">
+                            <Text c="dimmed" ta="center" py="md">
                                 No days available. Please set trip dates first.
-                            </div>
+                            </Text>
                         )}
-                    </>
-                )}
-            </Modal.Body>
-            <Modal.Footer>
-                <Button variant="outline-secondary" size="sm" onClick={onClose}>
-                    Cancel
-                </Button>
-                <Button variant="primary" size="sm" onClick={handleSave} disabled={days.length === 0}>
-                    Save Assignment
-                </Button>
-            </Modal.Footer>
+                    </Box>
+
+                    <Group justify="flex-end" mt="md">
+                        <Button variant="default" onClick={onClose}>Cancel</Button>
+                        <Button onClick={handleSave} disabled={days.length === 0}>Save Assignment</Button>
+                    </Group>
+                </Stack>
+            )}
         </Modal>
     );
 }

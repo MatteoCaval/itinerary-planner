@@ -1,3 +1,4 @@
+import { SimpleGrid, Paper, Text, Box, Stack } from '@mantine/core';
 import { Day, Location, LocationCategory, DaySection } from '../types';
 
 interface CalendarViewProps {
@@ -7,21 +8,21 @@ interface CalendarViewProps {
 }
 
 const CATEGORY_COLORS: Record<LocationCategory, string> = {
-  sightseeing: '#0d6efd',
-  dining: '#fd7e14',
-  hotel: '#6f42c1',
-  transit: '#20c997',
-  other: '#6c757d'
+  sightseeing: 'blue',
+  dining: 'orange',
+  hotel: 'grape',
+  transit: 'teal',
+  other: 'gray'
 };
 
 const SECTION_ORDER: DaySection[] = ['morning', 'afternoon', 'evening'];
 const getSectionIndex = (section?: DaySection) => {
-    if (!section) return 0;
-    return SECTION_ORDER.indexOf(section);
+  if (!section) return 0;
+  return SECTION_ORDER.indexOf(section);
 };
 
 export function CalendarView({ days, locations, onSelectLocation }: CalendarViewProps) {
-  if (days.length === 0) return <div className="p-4 text-center text-muted">No dates selected</div>;
+  if (days.length === 0) return <Text c="dimmed" ta="center" py="xl">No dates selected</Text>;
 
   const months: { [key: string]: Day[] } = {};
   days.forEach(day => {
@@ -44,12 +45,6 @@ export function CalendarView({ days, locations, onSelectLocation }: CalendarView
       const startDayIndex = dayIndexMap.get(loc.startDayId);
       if (startDayIndex === undefined) return false;
 
-      // Calculate span in days
-      // 3 slots per day.
-      // Total slots from start of trip = startDayIndex * 3 + startSlotIndex
-      // End slot = Start total + duration - 1
-      // Current day covers slots: currentDayIndex * 3 to currentDayIndex * 3 + 2
-      
       const startSlotIndex = getSectionIndex(loc.startSlot);
       const absStartSlot = startDayIndex * 3 + startSlotIndex;
       const absEndSlot = absStartSlot + (loc.duration || 1) - 1;
@@ -63,58 +58,59 @@ export function CalendarView({ days, locations, onSelectLocation }: CalendarView
   };
 
   return (
-    <div className="calendar-view p-3 h-100 overflow-auto">
+    <Box p="md" h="100%" style={{ overflowY: 'auto' }}>
       {Object.entries(months).map(([monthName, monthDays]) => (
-        <div key={monthName} className="mb-4">
-          <h5 className="mb-3 text-secondary sticky-top bg-light py-2">{monthName}</h5>
-          <div className="calendar-grid" style={{ 
-            display: 'grid', 
-            gridTemplateColumns: 'repeat(7, 1fr)', 
-            gap: '8px' 
-          }}>
+        <Box key={monthName} mb="xl">
+          <Paper p="xs" bg="gray.0" mb="sm" style={{ position: 'sticky', top: 0, zIndex: 10 }}>
+            <Text fw={700} c="dimmed" tt="uppercase">{monthName}</Text>
+          </Paper>
+
+          <SimpleGrid cols={7} spacing="xs">
             {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
-              <div key={d} className="text-center small text-muted fw-bold pb-2 border-bottom">{d}</div>
+              <Text key={d} ta="center" size="xs" fw={700} c="dimmed">{d}</Text>
             ))}
-            
+
             {Array.from({ length: new Date(monthDays[0].date).getDay() }).map((_, i) => (
-              <div key={`pad-${i}`} className="calendar-cell empty bg-light opacity-25 rounded"></div>
+              <Box key={`pad-${i}`} bg="gray.1" style={{ borderRadius: 4, opacity: 0.5 }} />
             ))}
 
             {monthDays.map(day => {
               const dayLocs = getLocationsForDay(day.id);
-              
+
               return (
-                <div key={day.id} className="calendar-cell border rounded p-1 bg-white" style={{ minHeight: '80px' }}>
-                  <div className="text-end small text-muted mb-1" style={{ fontSize: '0.75rem' }}>
+                <Paper key={day.id} withBorder p={4} style={{ minHeight: 80, display: 'flex', flexDirection: 'column' }}>
+                  <Text ta="right" size="xs" c="dimmed" mb={4}>
                     {new Date(day.date).getDate()}
-                  </div>
-                  <div className="d-flex flex-column gap-1">
+                  </Text>
+                  <Stack gap={2}>
                     {dayLocs.map(loc => (
-                      <div 
-                        key={loc.id} 
-                        className="calendar-event rounded px-1 text-truncate"
-                        style={{ 
-                          fontSize: '0.65rem', 
-                          backgroundColor: `${CATEGORY_COLORS[loc.category || 'sightseeing']}20`,
-                          color: CATEGORY_COLORS[loc.category || 'sightseeing'],
+                      <Box
+                        key={loc.id}
+                        px={4}
+                        py={2}
+                        style={{
+                          fontSize: 10,
+                          backgroundColor: `var(--mantine-color-${CATEGORY_COLORS[loc.category || 'sightseeing']}-1)`,
+                          color: `var(--mantine-color-${CATEGORY_COLORS[loc.category || 'sightseeing']}-7)`,
+                          borderRadius: 4,
                           cursor: 'pointer',
-                          border: '1px solid transparent'
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis'
                         }}
                         onClick={() => onSelectLocation(loc.id)}
                         title={loc.name}
-                        onMouseEnter={(e) => e.currentTarget.style.borderColor = CATEGORY_COLORS[loc.category || 'sightseeing']}
-                        onMouseLeave={(e) => e.currentTarget.style.borderColor = 'transparent'}
                       >
                         {loc.name}
-                      </div>
+                      </Box>
                     ))}
-                  </div>
-                </div>
+                  </Stack>
+                </Paper>
               );
             })}
-          </div>
-        </div>
+          </SimpleGrid>
+        </Box>
       ))}
-    </div>
+    </Box>
   );
 }

@@ -1,5 +1,5 @@
 import { useEffect, useMemo } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap, Tooltip } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap, useMapEvents, Tooltip } from 'react-leaflet';
 import { Location, Route, TRANSPORT_COLORS, TRANSPORT_LABELS, Day, DaySection, LocationCategory } from '../types';
 import L from 'leaflet';
 import { Map as SightseeingIcon, Utensils, Bed, Train, Globe, ChevronRight } from 'lucide-react';
@@ -25,7 +25,14 @@ interface MapDisplayProps {
   onEditRoute: (fromId: string, toId: string) => void;
   hoveredLocationId?: string | null;
   onHoverLocation?: (id: string | null) => void;
-  onSelectLocation?: (id: string) => void;
+  onSelectLocation?: (id: string | null) => void;
+}
+
+function MapClickHandler({ onSelect }: { onSelect?: (id: string | null) => void }) {
+  useMapEvents({
+    click: () => onSelect?.(null),
+  });
+  return null;
 }
 
 const CATEGORY_ICONS: Record<LocationCategory, any> = {
@@ -40,7 +47,7 @@ const CATEGORY_ICONS: Record<LocationCategory, any> = {
 const createIcon = (loc: Location, index: number, isHovered: boolean) => {
   const IconComponent = CATEGORY_ICONS[loc.category || 'sightseeing'];
   const iconHtml = renderToStaticMarkup(<IconComponent size={12} color="white" />);
-  
+
   return L.divIcon({
     className: 'custom-marker-wrapper',
     html: `
@@ -156,20 +163,20 @@ function RouteSegment({ from, to, route, onEditRoute, isHovered }: RouteSegmentP
           <div className="route-tooltip-content" style={{ cursor: 'pointer' }}>
             {buildTooltipContent()}
             {(!route?.duration && !route?.cost) && (
-              <span className="text-muted"> Click to add details</span>
+              <span style={{ color: '#6c757d' }}> Click to add details</span>
             )}
           </div>
         </Tooltip>
       </Polyline>
-      <Marker 
-        position={midpoint} 
+      <Marker
+        position={midpoint}
         icon={createTransportIcon(route, isHovered)}
         eventHandlers={{ click: onEditRoute }}
       />
       {arrowPoints.map(point => (
-        <Marker 
+        <Marker
           key={point.id}
-          position={point.pos} 
+          position={point.pos}
           icon={createArrowIcon(-angle, isHovered ? '#0d6efd' : color, isHovered)}
           interactive={false}
         />
@@ -188,27 +195,27 @@ export default function MapDisplay({ days, locations, routes, onEditRoute, hover
 
     const SECTION_ORDER: DaySection[] = ['morning', 'afternoon', 'evening'];
     const getSectionIndex = (section?: DaySection) => {
-        if (!section) return 0;
-        return SECTION_ORDER.indexOf(section);
+      if (!section) return 0;
+      return SECTION_ORDER.indexOf(section);
     };
 
     return [...locations].sort((a, b) => {
-        // Handle unassigned at the end
-        if (!a.startDayId && b.startDayId) return 1;
-        if (a.startDayId && !b.startDayId) return -1;
-        if (!a.startDayId && !b.startDayId) return a.order - b.order;
+      // Handle unassigned at the end
+      if (!a.startDayId && b.startDayId) return 1;
+      if (a.startDayId && !b.startDayId) return -1;
+      if (!a.startDayId && !b.startDayId) return a.order - b.order;
 
-        if (a.startDayId !== b.startDayId) {
-            const rowA = dayRowMap.get(a.startDayId || '') || 9999;
-            const rowB = dayRowMap.get(b.startDayId || '') || 9999;
-            return rowA - rowB;
-        }
-        
-        const slotA = getSectionIndex(a.startSlot);
-        const slotB = getSectionIndex(b.startSlot);
-        if (slotA !== slotB) return slotA - slotB;
-        
-        return a.order - b.order;
+      if (a.startDayId !== b.startDayId) {
+        const rowA = dayRowMap.get(a.startDayId || '') || 9999;
+        const rowB = dayRowMap.get(b.startDayId || '') || 9999;
+        return rowA - rowB;
+      }
+
+      const slotA = getSectionIndex(a.startSlot);
+      const slotB = getSectionIndex(b.startSlot);
+      if (slotA !== slotB) return slotA - slotB;
+
+      return a.order - b.order;
     });
   }, [locations, days]);
 
@@ -232,8 +239,8 @@ export default function MapDisplay({ days, locations, routes, onEditRoute, hover
         {sortedLocations.map((loc, index) => {
           const isHovered = hoveredLocationId === loc.id;
           return (
-            <Marker 
-              key={loc.id} 
+            <Marker
+              key={loc.id}
               position={[loc.lat, loc.lng]}
               icon={createIcon(loc, index, isHovered)}
               eventHandlers={{
@@ -244,7 +251,7 @@ export default function MapDisplay({ days, locations, routes, onEditRoute, hover
             >
               <Popup>
                 <strong>{index + 1}. {loc.name}</strong><br />
-                {loc.notes && <span className="text-muted">{loc.notes}</span>}
+                {loc.notes && <span style={{ color: '#6c757d' }}>{loc.notes}</span>}
               </Popup>
             </Marker>
           );
@@ -274,6 +281,7 @@ export default function MapDisplay({ days, locations, routes, onEditRoute, hover
         })}
 
         <FitBounds locations={locations} />
+        <MapClickHandler onSelect={onSelectLocation} />
       </MapContainer>
     </div>
   );

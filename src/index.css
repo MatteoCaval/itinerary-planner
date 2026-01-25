@@ -16,7 +16,7 @@ body,
 }
 
 .map-container {
-  height: 100vh;
+  height: calc(100vh - var(--app-shell-header-height, 60px));
   width: 100%;
 }
 
@@ -144,12 +144,14 @@ body,
 
 .day-header {
   cursor: pointer;
-  background: #495057; /* Dark gray for high contrast with white text */
+  background: #495057;
+  /* Dark gray for high contrast with white text */
   transition: background 0.2s;
 }
 
 .day-header:hover {
-  background: #343a40; /* Even darker on hover */
+  background: #343a40;
+  /* Even darker on hover */
 }
 
 .day-locations {
@@ -265,23 +267,28 @@ body,
 /* Grid Layout Styles */
 .grid-cell {
   border-right: 1px solid #dee2e6;
-  background-color: white; /* Default background */
+  background-color: white;
+  /* Default background */
 }
 
 /* Timeline / Ruler View Colors */
 .bg-zebra-odd {
   background-color: white;
 }
+
 .bg-zebra-even {
-  background-color: #f8f9fa; /* Subtle light gray */
+  background-color: #f8f9fa;
+  /* Subtle light gray */
 }
 
 .bg-light-yellow {
   background-color: rgba(255, 253, 240, 0.5);
 }
+
 .bg-light-orange {
   background-color: rgba(255, 248, 240, 0.5);
 }
+
 .bg-light-indigo {
   background-color: rgba(245, 247, 255, 0.5);
 }
@@ -306,6 +313,7 @@ body,
 .text-orange {
   color: #fd7e14;
 }
+
 .text-indigo {
   color: #6610f2;
 }
@@ -329,7 +337,7 @@ body,
   height: 24px;
   border-radius: 50%;
   border: 2px solid white;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -353,7 +361,7 @@ body,
   padding: 1px 4px;
   border-radius: 10px;
   border: 1px solid #ccc;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
   z-index: 5;
 }
 
@@ -372,7 +380,7 @@ body,
   align-items: center;
   justify-content: center;
   font-size: 12px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
   transition: all 0.2s;
   cursor: pointer;
 }
@@ -419,11 +427,12 @@ body,
 .route-badge:hover {
   transform: translateY(-50%) scale(1.05) !important;
   border-color: #0d6efd !important;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.15) !important;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15) !important;
 }
 
 .route-hint {
-  background-color: #f0f7ff !important; /* Very light blue hint */
+  background-color: #f0f7ff !important;
+  /* Very light blue hint */
   border-color: #bfdbfe !important;
 }
 
@@ -431,12 +440,24 @@ body,
   background-color: white !important;
 }
 
+/* Default hidden for screen */
+.printable-itinerary {
+  display: none;
+}
+
 /* Print Styles */
 @media print {
-  .sidebar, .map-container, .navbar, .modal, .location-detail-panel, .btn, .form-control {
+
+  .sidebar,
+  .map-container,
+  .navbar,
+  .modal,
+  .location-detail-panel,
+  .btn,
+  .form-control {
     display: none !important;
   }
-  
+
   .container-fluid {
     height: auto !important;
     overflow: visible !important;
@@ -446,7 +467,8 @@ body,
     display: block !important;
   }
 
-  body, html {
+  body,
+  html {
     background-color: white !important;
     height: auto !important;
     overflow: visible !important;
@@ -471,14 +493,27 @@ body,
 
 /* Animations */
 @keyframes slideIn {
-  from { transform: translateX(100%); }
-  to { transform: translateX(0); }
+  from {
+    transform: translateX(100%);
+  }
+
+  to {
+    transform: translateX(0);
+  }
 }
 
 @keyframes pulse {
-  0% { opacity: 1; }
-  50% { opacity: 0.5; }
-  100% { opacity: 1; }
+  0% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.5;
+  }
+
+  100% {
+    opacity: 1;
+  }
 }
 
 .animate-pulse {
