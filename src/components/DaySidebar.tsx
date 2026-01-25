@@ -532,7 +532,14 @@ export function DaySidebar({
                 </Box>
 
                 <Paper p="md" bg="gray.0" withBorder style={{ position: 'sticky', bottom: 0, zIndex: 10 }}>
-                    <Text fw={700} mb="xs">Unassigned</Text>
+                    <Group justify="space-between" mb="xs">
+                        <Text fw={700}>Unassigned</Text>
+                        <Tooltip label="Add to Unassigned">
+                            <ActionIcon variant="light" size="sm" radius="xl" onClick={() => onAddToDay('unassigned')}>
+                                <Plus size={14} />
+                            </ActionIcon>
+                        </Tooltip>
+                    </Group>
                     <UnassignedZone
                         locations={unassignedLocations}
                         onRemove={onRemoveLocation}

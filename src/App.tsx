@@ -157,6 +157,11 @@ function App() {
     let assignedDayId = targetDayId || pendingAddToDay?.dayId || (days.length > 0 ? days[0].id : undefined);
     let assignedSlot = targetSlot || pendingAddToDay?.slot || 'morning';
 
+    // Handle explicit 'unassigned' target
+    if (assignedDayId === 'unassigned') {
+      assignedDayId = undefined;
+    }
+
     const newLocation: Location = {
       id: uuidv4(),
       name: resolvedName.split(',')[0],
@@ -364,7 +369,12 @@ function App() {
             {pendingAddToDay && (
               <Paper withBorder p="xs" bg="blue.0" mt="sm" mb="xs">
                 <Group justify="space-between">
-                  <Text size="sm">Adding to Day {days.findIndex(d => d.id === pendingAddToDay.dayId) + 1} ({pendingAddToDay.slot})</Text>
+                  <Text size="sm">
+                    {pendingAddToDay.dayId === 'unassigned'
+                      ? 'Adding to Unassigned'
+                      : `Adding to Day ${days.findIndex(d => d.id === pendingAddToDay.dayId) + 1} ({pendingAddToDay.slot})`
+                    }
+                  </Text>
                   <Button variant="subtle" size="xs" color="red" onClick={() => setPendingAddToDay(null)}>Cancel</Button>
                 </Group>
               </Paper>
