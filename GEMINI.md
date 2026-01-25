@@ -11,12 +11,44 @@ A sophisticated travel itinerary planner featuring a synchronized **Gantt-style 
 ## Tech Stack
 - **Framework:** React 18 (TypeScript)
 - **Build Tool:** Vite
-- **Styling:** Tailwind CSS v4 + Shadcn/UI ("Zinc" Theme)
+- **Styling:** Bootstrap 5 (React-Bootstrap)
 - **Icons:** Lucide React
 - **Map Library:** Leaflet + React Leaflet (CartoDB Voyager Tiles)
 - **Drag & Drop:** @dnd-kit (Core + Sortable)
 - **Backend:** Firebase Realtime Database (for Cloud Sync)
 - **Environment:** Docker & Docker Compose (Node 20-alpine)
+
+## UI Architecture & Layout
+*This section describes the structural integrity of the UI to prevent breakage during refactors.*
+
+### 1. Root Layout (`App.tsx`)
+- **Container:** Uses Bootstrap `container-fluid` with `p-0`, `h-100`, and `overflow-hidden` to fill the entire viewport.
+- **Grid System:** A single `Row` with `g-0` (no gutters) and `h-100`.
+    - **Sidebar Column (`Col md={5} lg={4}`):** Fixed width on desktop, full width on mobile (when active). Contains header, scrollable body, and fixed footer.
+    - **Map Column (`Col md={7} lg={8}`):** Occupies remaining space. Contains the Leaflet map and the absolute-positioned `LocationDetailPanel`.
+- **Z-Index Stacking:**
+    - Sidebar: `zIndex: 100` (above map).
+    - Detail Panel Overlay: `zIndex: 1060` (above everything).
+    - Mobile Bottom Nav: `zIndex: 1050`.
+
+### 2. Timeline Grid (`DaySidebar.tsx`)
+- **CSS Grid Container:** The main body uses `display: grid` with dynamic columns: `gridTemplateColumns: 80px 80px repeat(N, 1fr)`.
+    - Col 1: Day Label (e.g., "Day 1").
+    - Col 2: Slot Icons (Morning/Afternoon/Evening).
+    - Col 3+: Lanes for destination blocks.
+- **Row Height:** Controlled by `zoomLevel` state via `gridAutoRows: minmax(80px * zoomLevel, auto)`.
+- **Item Positioning:** Items use `gridRow: StartRow / span Duration` and `gridColumn: Lane / span 1`.
+
+### 3. Detail Panel (`LocationDetailPanel.tsx`)
+- **Positioning:** Rendered as a direct child of the Map Column or root layout.
+- **CSS Class:** `.location-detail-panel` uses `position: absolute`, `top: 0`, `right: 0`, `height: 100%`.
+- **Responsiveness:** Width is fixed at `350px` on desktop but defaults to `100%` width on mobile to act as a full-screen overlay.
+- **Animation:** Uses `@keyframes slideIn` to enter from the right.
+
+### 4. Mobile Logic
+- **Conditional Visibility:** Uses Bootstrap responsive display classes (`d-none d-md-flex`) combined with React state (`mobileView === 'map'`).
+- **Tab Switching:** A fixed bottom navbar toggles the visibility of the Sidebar vs the Map.
+- **Overlay Preservation:** The `LocationDetailPanel` must be rendered outside the conditional columns to remain visible even when the Map column is hidden.
 
 ## Comprehensive Feature List
 *Ensure these functionalities remain intact during any refactor.*
@@ -41,50 +73,23 @@ A sophisticated travel itinerary planner featuring a synchronized **Gantt-style 
 - **Interaction:** Hovering a timeline item highlights the map marker/route, and vice versa. Clicking either opens the Detail Panel.
 
 ### 3. Destination Details (Side Panel)
-- **Overlay:** Slides in from the right (absolute positioned, z-indexed high). Mobile-friendly (full width on small screens).
-- **Schedule Recap:** Displays calculated start/end time (e.g., "Mon, Jan 1 (Morning) - Tue, Jan 2 (Afternoon)").
+- **Schedule Recap:** Displays calculated start/end time.
 - **Travel Connections:** Explicitly lists "Arrive from [Prev]" and "Depart to [Next]" with transport details.
 - **Image Preview:** Fetches and displays a destination image via Unsplash API. Persists the URL to avoid re-fetching. Shows a skeleton loader while loading.
-- **Rich Content:**
-    - Notes (Multi-line text area).
-    - Checklist (Tasks with completion state).
-    - Links (External URLs with labels).
+- **Rich Content:** Notes, Checklists, and External Links.
 - **Google Maps Integration:** "Maps" button searches for the location by name in a new tab.
 
-### 4. Route Editing
-- **Transport Logic:** Routes exist *between* two consecutive locations.
-- **Structured Input:** Duration is entered via specific "Hours" and "Minutes" inputs, or Quick Preset buttons (15m, 1h, etc.).
-- **Metadata:** Supports Transport Type (Car, Train, etc.), Cost, and Notes.
-
-### 5. Data Management & Persistence
-- **Local Storage:** `localStorage` automatically saves state (`itinerary-locations`, `itinerary-routes`, etc.).
-- **Cloud Sync (Firebase):**
-    - **Save:** Upload current state to Firebase Realtime Database with a generated or custom Passcode.
-    - **Load:** Retrieve itinerary by Passcode. Warning prompt before overwriting.
-    - **Persistence:** Remembers the last used passcode.
-- **File Export:**
-    - **JSON:** Download full state as `.json`.
-    - **PDF/Print:** dedicated "Print" button reformats the view into a clean document layout, hiding the UI.
-- **Clear All:** Reset functionality with confirmation.
-
-### 6. Search & Geocoding
-- **Autocomplete:** Debounced search against Nominatim (OpenStreetMap) API.
-- **Results Dropdown:** Shows matching places; clicking adds them to the timeline immediately.
-- **Auto-Geocoding:** Reverse geocoding used when adding points via map click.
-
-### 7. Layout & Responsiveness
-- **Desktop:** Split view (Sidebar + Map). Sidebar width is fixed/responsive (resize handle removed).
-- **Mobile:**
-    - **Tabbed Navigation:** Bottom bar switches between "Timeline" and "Map" views (mutually exclusive).
-    - **Detail Panel:** Overlays the entire screen when active.
+### 4. Data Management & Persistence
+- **Local Storage:** `localStorage` automatically saves state.
+- **Cloud Sync (Firebase):** Save/Load itinerary via Passcode. Remembers last used code.
+- **File Export:** JSON download and dedicated PDF/Print document view.
 
 ## Folder Structure
 ```text
 itinerary-planner/
 ├── src/
 │   ├── components/
-│   │   ├── ui/                     # Shadcn/UI primitive components (Button, Dialog, etc.)
-│   │   ├── DaySidebar.tsx          # Timeline logic & rendering
+│   │   ├── DaySidebar.tsx          # Timeline logic & grid rendering
 │   │   ├── MapDisplay.tsx          # Map rendering & routing logic
 │   │   ├── LocationDetailPanel.tsx # Right-side drawer for editing
 │   │   ├── CalendarView.tsx        # Alternative Month view
@@ -92,18 +97,15 @@ itinerary-planner/
 │   │   ├── SortableItem.tsx        # Individual timeline block
 │   │   ├── RouteEditor.tsx         # Transport details modal
 │   │   └── PrintableItinerary.tsx  # Hidden component for PDF generation
-│   ├── lib/
-│   │   └── utils.ts                # Shadcn utility (cn)
 │   ├── App.tsx                     # Main layout & state orchestration
 │   ├── firebase.ts                 # Firebase config
 │   ├── unsplash.ts                 # Image API logic
 │   ├── types.ts                    # TypeScript interfaces
-│   ├── index.css                   # Tailwind imports & custom overrides
-│   └── main.tsx                    # Entry
+│   ├── index.css                   # Layout overrides and custom Grid logic
+│   └── main.tsx                    # Entry point
 ├── Dockerfile                      # Node 20-alpine
 ├── docker-compose.yaml             # Dev environment
-├── vite.config.ts                  # Vite config (Tailwind, Alias, Base path)
-├── tailwind.config.js              # Tailwind theme config
-├── postcss.config.js               # PostCSS config
+├── package.json                    # Dependencies and scripts
+├── vite.config.ts                  # Vite config
 └── GEMINI.md                       # THIS FILE
 ```
