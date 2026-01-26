@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { Modal, Button, TextInput, Textarea, Stack, Group, Text, PasswordInput, Tabs, Alert } from '@mantine/core';
-import { Sparkles, Settings, AlertCircle } from 'lucide-react';
-import { AISettings, Day, Location } from '../types';
+import { Modal, Button, TextInput, Textarea, Stack, Group, Text, PasswordInput, Tabs, Alert, SegmentedControl, Box } from '@mantine/core';
+import { Sparkles, Settings, AlertCircle, Calendar } from 'lucide-react';
+import { AISettings, Day, Location, Route } from '../types';
 import { generateAIItinerary } from '../aiService';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -9,16 +9,21 @@ interface AIPlannerModalProps {
   show: boolean;
   onClose: () => void;
   days: Day[];
+  currentLocations: Location[];
+  currentRoutes: Route[];
   settings: AISettings;
   onSettingsChange: (settings: AISettings) => void;
-  onAddLocations: (locations: Location[]) => void;
+  onApplyItinerary: (locations: Location[], routes: Route[], mode: 'scratch' | 'refactor') => void;
 }
 
-export function AIPlannerModal({ show, onClose, days, settings, onSettingsChange, onAddLocations }: AIPlannerModalProps) {
+export function AIPlannerModal({ show, onClose, days, currentLocations, currentRoutes, settings, onSettingsChange, onApplyItinerary }: AIPlannerModalProps) {
   const [prompt, setPrompt] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<string | null>('generate');
+  const [mode, setMode] = useState<'scratch' | 'refactor'>('scratch');
+
+  const hasDates = days.length > 0;
 
   const handleGenerate = async () => {
     if (!settings.apiKey) {
@@ -32,25 +37,41 @@ export function AIPlannerModal({ show, onClose, days, settings, onSettingsChange
     setError(null);
     try {
       const dayData = days.map(d => ({ id: d.id, date: d.date }));
-      const result = await generateAIItinerary(prompt, settings, dayData);
+      const result = await generateAIItinerary(prompt, settings, dayData, currentLocations, currentRoutes, mode);
       
-      const newLocations: Location[] = result.map((loc, index) => ({
+      // Map temporary AI IDs to real UUIDs to ensure uniqueness and proper routing
+      const idMap: Record<string, string> = {};
+      
+      const newLocations: Location[] = result.locations.map((loc, index) => {
+        const newId = uuidv4();
+        if (loc.id) idMap[loc.id] = newId;
+        return {
+          id: newId,
+          name: loc.name || 'Unnamed Activity',
+          lat: loc.lat || 0,
+          lng: loc.lng || 0,
+          notes: loc.notes || '',
+          startDayId: loc.startDayId,
+          startSlot: (loc.startSlot as any) || 'morning',
+          duration: loc.duration || 1,
+          order: index + 1000,
+          category: (loc.category as any) || 'sightseeing',
+          dayIds: [],
+          checklist: [],
+          links: []
+        };
+      });
+
+      const newRoutes: Route[] = result.routes.map(r => ({
         id: uuidv4(),
-        name: loc.name || 'Unnamed Activity',
-        lat: loc.lat || 0,
-        lng: loc.lng || 0,
-        notes: loc.notes || '',
-        startDayId: loc.startDayId,
-        startSlot: (loc.startSlot as any) || 'morning',
-        duration: loc.duration || 1,
-        order: index + 1000,
-        category: (loc.category as any) || 'sightseeing',
-        dayIds: [],
-        checklist: [],
-        links: []
+        fromLocationId: idMap[r.fromLocationId || ''] || r.fromLocationId || '',
+        toLocationId: idMap[r.toLocationId || ''] || r.toLocationId || '',
+        transportType: (r.transportType as any) || 'car',
+        duration: r.duration || '',
+        notes: r.notes || ''
       }));
 
-      onAddLocations(newLocations);
+      onApplyItinerary(newLocations, newRoutes, mode);
       setPrompt('');
       onClose();
     } catch (err: any) {
@@ -83,30 +104,50 @@ export function AIPlannerModal({ show, onClose, days, settings, onSettingsChange
 
         <Tabs.Panel value="generate">
           <Stack gap="md">
-            <Text size="sm" c="dimmed">Describe your trip goals and Gemini will populate your timeline.</Text>
-            
-            {error && (
-              <Alert icon={<AlertCircle size={16} />} title="Error" color="red">
-                {error}
+            {!hasDates && (
+              <Alert icon={<Calendar size={16} />} title="Dates Required" color="orange">
+                Please select your trip dates in the sidebar first. The AI needs to know the specific days to plan for.
               </Alert>
             )}
+
+            <Box>
+              <Text size="sm" fw={500} mb={4}>Planning Mode</Text>
+              <SegmentedControl
+                fullWidth
+                value={mode}
+                onChange={(val) => setMode(val as any)}
+                data={[
+                  { label: 'From Scratch (Replaces everything)', value: 'scratch' },
+                  { label: 'Refactor (Enhance existing plans)', value: 'refactor' },
+                ]}
+                disabled={!hasDates || loading}
+              />
+            </Box>
 
             <Textarea
               placeholder="e.g. 3 days in London focusing on history and Harry Potter"
               minRows={4}
               value={prompt}
               onChange={(e) => setPrompt(e.currentTarget.value)}
-              disabled={loading}
+              disabled={!hasDates || loading}
+              label="What should I plan?"
             />
+
+            {error && (
+              <Alert icon={<AlertCircle size={16} />} title="Error" color="red">
+                {error}
+              </Alert>
+            )}
 
             <Group justify="flex-end">
               <Button variant="default" onClick={onClose} disabled={loading}>Cancel</Button>
               <Button 
                 onClick={handleGenerate} 
                 loading={loading}
+                disabled={!hasDates || !prompt.trim()}
                 leftSection={!loading && <Sparkles size={16} />}
               >
-                Generate Itinerary
+                {mode === 'scratch' ? 'Generate Itinerary' : 'Refactor Itinerary'}
               </Button>
             </Group>
           </Stack>
@@ -132,7 +173,7 @@ export function AIPlannerModal({ show, onClose, days, settings, onSettingsChange
             />
 
             <Alert color="blue">
-                Your API key is stored locally in your browser. Gemini is currently the supported AI provider.
+                Your API key is stored locally in your browser.
             </Alert>
           </Stack>
         </Tabs.Panel>

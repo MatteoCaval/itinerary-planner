@@ -305,6 +305,19 @@ function App() {
     setDays(days.map(d => d.id === id ? { ...d, ...updates } : d));
   };
 
+  const handleApplyAIItinerary = (newLocs: Location[], newRoutes: Route[], mode: 'scratch' | 'refactor') => {
+    if (mode === 'scratch') {
+        setLocations(newLocs);
+        setRoutes(newRoutes);
+    } else {
+        // Refactor: Merge intelligently. 
+        // For now, we'll append, but since we sent the AI the current context, 
+        // it should have returned a consistent set.
+        setLocations([...locations, ...newLocs]);
+        setRoutes([...routes, ...newRoutes]);
+    }
+  };
+
 
   const handleReorderLocations = (activeId: string, overId: string | null, newDayId: string | null, newSlot: DaySection | null = null) => {
     setLocations(prev => {
@@ -638,9 +651,11 @@ function App() {
         show={showAIModal}
         onClose={() => setShowAIModal(false)}
         days={days}
+        currentLocations={locations}
+        currentRoutes={routes}
         settings={aiSettings}
         onSettingsChange={setAiSettings}
-        onAddLocations={(newLocs: Location[]) => setLocations([...locations, ...newLocs])}
+        onApplyItinerary={handleApplyAIItinerary}
       />
 
       <RouteEditor
