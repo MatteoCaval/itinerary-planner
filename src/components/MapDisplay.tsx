@@ -24,9 +24,28 @@ interface MapDisplayProps {
   routes: Route[];
   onEditRoute: (fromId: string, toId: string) => void;
   hoveredLocationId?: string | null;
+  selectedLocationId?: string | null;
   onHoverLocation?: (id: string | null) => void;
   onSelectLocation?: (id: string | null) => void;
   hideControls?: boolean;
+}
+
+function SelectedLocationHandler({ selectedId, locations }: { selectedId?: string | null, locations: Location[] }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (selectedId) {
+      const loc = locations.find(l => l.id === selectedId);
+      if (loc) {
+        map.setView([loc.lat, loc.lng], 16, {
+          animate: true,
+          duration: 1
+        });
+      }
+    }
+  }, [selectedId, locations, map]);
+
+  return null;
 }
 
 function MapClickHandler({ onSelect }: { onSelect?: (id: string | null) => void }) {
@@ -186,7 +205,7 @@ function RouteSegment({ from, to, route, onEditRoute, isHovered }: RouteSegmentP
   );
 }
 
-export default function MapDisplay({ days, locations, routes, onEditRoute, hoveredLocationId, onHoverLocation, onSelectLocation, hideControls }: MapDisplayProps) {
+export default function MapDisplay({ days, locations, routes, onEditRoute, hoveredLocationId, selectedLocationId, onHoverLocation, onSelectLocation, hideControls }: MapDisplayProps) {
   const position: [number, number] = [51.505, -0.09]; // Default center (London)
 
   // Get ordered locations for drawing routes, matching sidebar chronological logic
@@ -283,6 +302,7 @@ export default function MapDisplay({ days, locations, routes, onEditRoute, hover
         })}
 
         <FitBounds locations={locations} />
+        <SelectedLocationHandler selectedId={selectedLocationId} locations={locations} />
         <MapClickHandler onSelect={onSelectLocation} />
       </MapContainer>
     </div>
