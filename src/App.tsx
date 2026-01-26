@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { AppShell, Burger, Group, Button, ActionIcon, TextInput, Tooltip, Text, Box, Paper, Stack, Slider, Menu } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { v4 as uuidv4 } from 'uuid';
-import { Map as MapIcon, Search, Download, Upload, Trash2, Calendar as CalendarIcon, List as ListIcon, Cloud, FileText, MoreHorizontal } from 'lucide-react';
+import { Map as MapIcon, Search, Download, Upload, Trash2, Calendar as CalendarIcon, List as ListIcon, Cloud, FileText, MoreHorizontal, History, Undo, Redo } from 'lucide-react';
 import MapDisplay from './components/MapDisplay';
 import { DateRangePicker } from './components/DateRangePicker';
 import { DaySidebar } from './components/DaySidebar';
@@ -11,6 +11,7 @@ import { DayAssignmentModal } from './components/DayAssignmentModal';
 import { LocationDetailPanel } from './components/LocationDetailPanel';
 import { CalendarView } from './components/CalendarView';
 import { CloudSyncModal } from './components/CloudSyncModal';
+import { HistoryModal } from './components/HistoryModal';
 import { generateMarkdown, downloadMarkdown } from './markdownExporter';
 import { Location, Day, Route, DaySection } from './types';
 
@@ -121,6 +122,7 @@ function App() {
     }, 500);
     return () => clearTimeout(timer);
   }, [searchQuery]);
+
   const [editingRoute, setEditingRoute] = useState<{ fromId: string; toId: string } | null>(null);
   const [editingDayAssignment, setEditingDayAssignment] = useState<Location | null>(null);
   const [pendingAddToDay, setPendingAddToDay] = useState<{ dayId: string, slot?: DaySection } | null>(null);
@@ -129,6 +131,76 @@ function App() {
   const [zoomLevel, setZoomLevel] = useState(1.0);
   const [sidebarView, setSidebarView] = useState<'timeline' | 'calendar'>('timeline');
   const [showCloudModal, setShowCloudModal] = useState(false);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+
+  // History State
+  const [history, setHistory] = useState<{
+    startDate: string;
+    endDate: string;
+    days: Day[];
+    locations: Location[];
+    routes: Route[];
+    timestamp: number;
+    label: string;
+  }[]>([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
+  const [isNavigatingHistory, setIsNavigatingHistory] = useState(false);
+
+  const currentState = useMemo(() => ({
+    startDate, endDate, days, locations, routes
+  }), [startDate, endDate, days, locations, routes]);
+
+  // Initial history entry
+  useEffect(() => {
+    if (history.length === 0 && days.length > 0) {
+        setHistory([{ ...currentState, timestamp: Date.now(), label: 'Initial State' }]);
+        setHistoryIndex(0);
+    }
+  }, [days.length]);
+
+  // Push to history when state changes (debounced)
+  useEffect(() => {
+    if (isNavigatingHistory) return;
+
+    const timer = setTimeout(() => {
+        const lastHistoryEntry = history[historyIndex];
+        const stateString = JSON.stringify(currentState);
+        const lastStateString = lastHistoryEntry ? JSON.stringify({
+            startDate: lastHistoryEntry.startDate,
+            endDate: lastHistoryEntry.endDate,
+            days: lastHistoryEntry.days,
+            locations: lastHistoryEntry.locations,
+            routes: lastHistoryEntry.routes,
+        }) : '';
+
+        if (stateString !== lastStateString) {
+            const newHistory = history.slice(0, historyIndex + 1);
+            const label = history.length === 0 ? 'Initial State' : `Change ${newHistory.length}`;
+            newHistory.push({ ...currentState, timestamp: Date.now(), label });
+            setHistory(newHistory);
+            setHistoryIndex(newHistory.length - 1);
+        }
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [currentState, isNavigatingHistory, historyIndex]);
+
+  const handleHistoryNavigate = (index: number) => {
+    if (index < 0 || index >= history.length) return;
+    
+    setIsNavigatingHistory(true);
+    const snapshot = history[index];
+    
+    setStartDate(snapshot.startDate);
+    setEndDate(snapshot.endDate);
+    setDays(snapshot.days);
+    setLocations(snapshot.locations);
+    setRoutes(snapshot.routes);
+    setHistoryIndex(index);
+    
+    // Resume tracking after a short delay
+    setTimeout(() => setIsNavigatingHistory(false), 100);
+  };
 
   useEffect(() => { localStorage.setItem(STORAGE_KEY_LOCATIONS, JSON.stringify(locations)); }, [locations]);
   useEffect(() => { localStorage.setItem(STORAGE_KEY_ROUTES, JSON.stringify(routes)); }, [routes]);
@@ -308,6 +380,13 @@ function App() {
             </Text>
           </Group>
           <Group gap="xs" visibleFrom="sm">
+            <ActionIcon variant="subtle" color="gray" onClick={() => handleHistoryNavigate(historyIndex - 1)} disabled={historyIndex <= 0}>
+                <Undo size={18} />
+            </ActionIcon>
+            <ActionIcon variant="subtle" color="gray" onClick={() => handleHistoryNavigate(historyIndex + 1)} disabled={historyIndex >= history.length - 1}>
+                <Redo size={18} />
+            </ActionIcon>
+            <Button variant="default" size="xs" leftSection={<History size={16} />} onClick={() => setShowHistoryModal(true)}>History</Button>
             <Button variant="default" size="xs" leftSection={<FileText size={16} />} onClick={handleExportMarkdown}>Markdown</Button>
             <Button variant="default" size="xs" leftSection={<Upload size={16} />} onClick={() => document.getElementById('import-file')?.click()}>Import</Button>
             <input type="file" id="import-file" style={{ display: 'none' }} onChange={handleImport} accept=".json" />
@@ -325,6 +404,9 @@ function App() {
 
               <Menu.Dropdown>
                 <Menu.Label>Actions</Menu.Label>
+                <Menu.Item leftSection={<History size={16} />} onClick={() => setShowHistoryModal(true)}>
+                  Time Machine
+                </Menu.Item>
                 <Menu.Item leftSection={<Cloud size={16} />} onClick={() => setShowCloudModal(true)}>
                   Sync
                 </Menu.Item>
@@ -464,7 +546,10 @@ function App() {
               </Button>
             </Group>
             <Group gap="xs">
+              <Button variant="light" size="xs" flex={1} leftSection={<History size={14} />} onClick={() => setShowHistoryModal(true)}>History</Button>
               <Button variant="light" size="xs" flex={1} leftSection={<Cloud size={14} />} onClick={() => setShowCloudModal(true)}>Cloud Sync</Button>
+            </Group>
+            <Group gap="xs" mt="xs">
               <Tooltip label="Export Markdown">
                 <ActionIcon variant="default" size="md" onClick={handleExportMarkdown}><FileText size={16} /></ActionIcon>
               </Tooltip>
@@ -508,6 +593,15 @@ function App() {
       </AppShell.Main>
 
       <CloudSyncModal show={showCloudModal} onClose={() => setShowCloudModal(false)} getData={getExportData} onLoadData={handleCloudLoad} />
+      
+      <HistoryModal 
+        show={showHistoryModal} 
+        onClose={() => setShowHistoryModal(false)} 
+        currentIndex={historyIndex} 
+        totalStates={history.length} 
+        snapshots={history} 
+        onNavigate={handleHistoryNavigate} 
+      />
 
       <RouteEditor
         show={!!editingRoute} route={routes.find(r => (r.fromLocationId === editingRoute?.fromId && r.toLocationId === editingRoute?.toId) || (r.fromLocationId === editingRoute?.toId && r.toLocationId === editingRoute?.fromId)) || (editingRoute ? { id: uuidv4(), fromLocationId: editingRoute.fromId, toLocationId: editingRoute.toId, transportType: 'car' } : null)}
