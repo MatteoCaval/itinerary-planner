@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { AppShell, Burger, Group, Button, ActionIcon, TextInput, Tooltip, Text, Box, Paper, Stack, Slider, Menu } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { v4 as uuidv4 } from 'uuid';
-import { Map as MapIcon, Search, Download, Upload, Trash2, Calendar as CalendarIcon, List as ListIcon, Cloud, FileText, MoreHorizontal, History, Undo, Redo } from 'lucide-react';
+import { Map as MapIcon, Search, Download, Upload, Trash2, Calendar as CalendarIcon, List as ListIcon, Cloud, FileText, MoreHorizontal, History, Undo, Redo, Sparkles } from 'lucide-react';
 import MapDisplay from './components/MapDisplay';
 import { DateRangePicker } from './components/DateRangePicker';
 import { DaySidebar } from './components/DaySidebar';
@@ -12,8 +12,9 @@ import { LocationDetailPanel } from './components/LocationDetailPanel';
 import { CalendarView } from './components/CalendarView';
 import { CloudSyncModal } from './components/CloudSyncModal';
 import { HistoryModal } from './components/HistoryModal';
+import { AIPlannerModal } from './components/AIPlannerModal';
 import { generateMarkdown, downloadMarkdown } from './markdownExporter';
-import { Location, Day, Route, DaySection } from './types';
+import { Location, Day, Route, DaySection, AISettings } from './types';
 
 // Nominatim OpenStreetMap Search Service
 const searchPlace = async (query: string) => {
@@ -78,6 +79,7 @@ const STORAGE_KEY_LOCATIONS = 'itinerary-locations';
 const STORAGE_KEY_ROUTES = 'itinerary-routes';
 const STORAGE_KEY_DATES = 'itinerary-dates';
 const STORAGE_KEY_DAYS = 'itinerary-days';
+const STORAGE_KEY_AI = 'itinerary-ai-settings';
 
 function App() {
   const [opened, { toggle, close }] = useDisclosure();
@@ -106,6 +108,29 @@ function App() {
     return saved ? JSON.parse(saved) : [];
   });
 
+  const [aiSettings, setAiSettings] = useState<AISettings>(() => {
+    const saved = localStorage.getItem(STORAGE_KEY_AI);
+    if (!saved) return { apiKey: '', model: 'gemini-3-flash-preview' };
+
+    try {
+      const parsed = JSON.parse(saved);
+      // Migration: extract gemini config if it was the old structure
+      if (parsed.configs && parsed.configs.gemini) {
+        return {
+          apiKey: parsed.configs.gemini.apiKey || '',
+          model: parsed.configs.gemini.model || 'gemini-3-flash-preview'
+        };
+      }
+      return {
+        apiKey: parsed.apiKey || '',
+        model: parsed.model || 'gemini-3-flash-preview'
+      };
+    } catch (e) {
+      return { apiKey: '', model: 'gemini-3-flash-preview' };
+    }
+  });
+
+  const [showAIModal, setShowAIModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -206,6 +231,7 @@ function App() {
   useEffect(() => { localStorage.setItem(STORAGE_KEY_ROUTES, JSON.stringify(routes)); }, [routes]);
   useEffect(() => { localStorage.setItem(STORAGE_KEY_DATES, JSON.stringify({ startDate, endDate })); }, [startDate, endDate]);
   useEffect(() => { localStorage.setItem(STORAGE_KEY_DAYS, JSON.stringify(days)); }, [days]);
+  useEffect(() => { localStorage.setItem(STORAGE_KEY_AI, JSON.stringify(aiSettings)); }, [aiSettings]);
 
   const handleDateRangeChange = (newStart: string, newEnd: string) => {
     setStartDate(newStart);
@@ -387,6 +413,7 @@ function App() {
                 <Redo size={18} />
             </ActionIcon>
             <Button variant="default" size="xs" leftSection={<History size={16} />} onClick={() => setShowHistoryModal(true)}>History</Button>
+            <Button variant="light" color="blue" size="xs" leftSection={<Sparkles size={16} />} onClick={() => setShowAIModal(true)}>AI Planner</Button>
             <Button variant="default" size="xs" leftSection={<FileText size={16} />} onClick={handleExportMarkdown}>Markdown</Button>
             <Button variant="default" size="xs" leftSection={<Upload size={16} />} onClick={() => document.getElementById('import-file')?.click()}>Import</Button>
             <input type="file" id="import-file" style={{ display: 'none' }} onChange={handleImport} accept=".json" />
@@ -406,6 +433,9 @@ function App() {
                 <Menu.Label>Actions</Menu.Label>
                 <Menu.Item leftSection={<History size={16} />} onClick={() => setShowHistoryModal(true)}>
                   Time Machine
+                </Menu.Item>
+                <Menu.Item leftSection={<Sparkles size={16} />} onClick={() => setShowAIModal(true)} color="blue">
+                  AI Magic
                 </Menu.Item>
                 <Menu.Item leftSection={<Cloud size={16} />} onClick={() => setShowCloudModal(true)}>
                   Sync
@@ -547,6 +577,7 @@ function App() {
             </Group>
             <Group gap="xs">
               <Button variant="light" size="xs" flex={1} leftSection={<History size={14} />} onClick={() => setShowHistoryModal(true)}>History</Button>
+              <Button variant="light" color="blue" size="xs" flex={1} leftSection={<Sparkles size={14} />} onClick={() => setShowAIModal(true)}>AI Planner</Button>
               <Button variant="light" size="xs" flex={1} leftSection={<Cloud size={14} />} onClick={() => setShowCloudModal(true)}>Cloud Sync</Button>
             </Group>
             <Group gap="xs" mt="xs">
@@ -601,6 +632,15 @@ function App() {
         totalStates={history.length} 
         snapshots={history} 
         onNavigate={handleHistoryNavigate} 
+      />
+
+      <AIPlannerModal
+        show={showAIModal}
+        onClose={() => setShowAIModal(false)}
+        days={days}
+        settings={aiSettings}
+        onSettingsChange={setAiSettings}
+        onAddLocations={(newLocs: Location[]) => setLocations([...locations, ...newLocs])}
       />
 
       <RouteEditor

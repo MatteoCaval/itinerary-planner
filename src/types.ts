@@ -26,6 +26,11 @@ export interface Day {
   accommodation?: Accommodation;
 }
 
+export interface AISettings {
+  apiKey: string;
+  model: string;
+}
+
 export interface Itinerary {
   id: string;
   name: string;
