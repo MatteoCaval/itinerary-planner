@@ -305,17 +305,11 @@ function App() {
     setDays(days.map(d => d.id === id ? { ...d, ...updates } : d));
   };
 
-  const handleApplyAIItinerary = (newLocs: Location[], newRoutes: Route[], mode: 'scratch' | 'refactor') => {
-    if (mode === 'scratch') {
-        setLocations(newLocs);
-        setRoutes(newRoutes);
-    } else {
-        // Refactor: Merge intelligently. 
-        // For now, we'll append, but since we sent the AI the current context, 
-        // it should have returned a consistent set.
-        setLocations([...locations, ...newLocs]);
-        setRoutes([...routes, ...newRoutes]);
-    }
+  const handleApplyAIItinerary = (newLocs: Location[], newRoutes: Route[]) => {
+    // Both modes now replace the state because the AI is provided with 
+    // the current context during 'refactor' and returns the full updated itinerary.
+    setLocations(newLocs);
+    setRoutes(newRoutes);
   };
 
 

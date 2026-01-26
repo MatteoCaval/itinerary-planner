@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Modal, Button, TextInput, Textarea, Stack, Group, Text, PasswordInput, Tabs, Alert, SegmentedControl, Box } from '@mantine/core';
-import { Sparkles, Settings, AlertCircle, Calendar } from 'lucide-react';
+import { Modal, Button, TextInput, Textarea, Stack, Group, Text, PasswordInput, Tabs, Alert, SegmentedControl, Box, Paper, ScrollArea } from '@mantine/core';
+import { Sparkles, Settings, AlertCircle, Calendar, MessageSquareQuote } from 'lucide-react';
 import { AISettings, Day, Location, Route } from '../types';
 import { generateAIItinerary } from '../aiService';
 import { v4 as uuidv4 } from 'uuid';
@@ -13,7 +13,7 @@ interface AIPlannerModalProps {
   currentRoutes: Route[];
   settings: AISettings;
   onSettingsChange: (settings: AISettings) => void;
-  onApplyItinerary: (locations: Location[], routes: Route[], mode: 'scratch' | 'refactor') => void;
+  onApplyItinerary: (locations: Location[], routes: Route[]) => void;
 }
 
 export function AIPlannerModal({ show, onClose, days, currentLocations, currentRoutes, settings, onSettingsChange, onApplyItinerary }: AIPlannerModalProps) {
@@ -22,6 +22,8 @@ export function AIPlannerModal({ show, onClose, days, currentLocations, currentR
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<string | null>('generate');
   const [mode, setMode] = useState<'scratch' | 'refactor'>('scratch');
+  const [resultExplanation, setResultExplanation] = useState<string | null>(null);
+  const [pendingResults, setPendingResults] = useState<{ locations: Location[], routes: Route[] } | null>(null);
 
   const hasDates = days.length > 0;
 
@@ -35,11 +37,13 @@ export function AIPlannerModal({ show, onClose, days, currentLocations, currentR
 
     setLoading(true);
     setError(null);
+    setResultExplanation(null);
+    setPendingResults(null);
+
     try {
       const dayData = days.map(d => ({ id: d.id, date: d.date }));
       const result = await generateAIItinerary(prompt, settings, dayData, currentLocations, currentRoutes, mode);
       
-      // Map temporary AI IDs to real UUIDs to ensure uniqueness and proper routing
       const idMap: Record<string, string> = {};
       
       const newLocations: Location[] = result.locations.map((loc, index) => {
@@ -71,13 +75,29 @@ export function AIPlannerModal({ show, onClose, days, currentLocations, currentR
         notes: r.notes || ''
       }));
 
-      onApplyItinerary(newLocations, newRoutes, mode);
-      setPrompt('');
-      onClose();
+      setResultExplanation(result.explanation || null);
+      setPendingResults({ locations: newLocations, routes: newRoutes });
+      
+      // If there's no explanation, we can just apply immediately
+      if (!result.explanation) {
+        onApplyItinerary(newLocations, newRoutes);
+        setPrompt('');
+        onClose();
+      }
     } catch (err: any) {
       setError(err.message || 'An error occurred during generation');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleApply = () => {
+    if (pendingResults) {
+        onApplyItinerary(pendingResults.locations, pendingResults.routes);
+        setPrompt('');
+        setPendingResults(null);
+        setResultExplanation(null);
+        onClose();
     }
   };
 
@@ -106,32 +126,53 @@ export function AIPlannerModal({ show, onClose, days, currentLocations, currentR
           <Stack gap="md">
             {!hasDates && (
               <Alert icon={<Calendar size={16} />} title="Dates Required" color="orange">
-                Please select your trip dates in the sidebar first. The AI needs to know the specific days to plan for.
+                Please select your trip dates in the sidebar first.
               </Alert>
             )}
 
-            <Box>
-              <Text size="sm" fw={500} mb={4}>Planning Mode</Text>
-              <SegmentedControl
-                fullWidth
-                value={mode}
-                onChange={(val) => setMode(val as any)}
-                data={[
-                  { label: 'From Scratch (Replaces everything)', value: 'scratch' },
-                  { label: 'Refactor (Enhance existing plans)', value: 'refactor' },
-                ]}
-                disabled={!hasDates || loading}
-              />
-            </Box>
+            {!resultExplanation ? (
+                <>
+                    <Box>
+                      <Text size="sm" fw={500} mb={4}>Planning Mode</Text>
+                      <SegmentedControl
+                        fullWidth
+                        value={mode}
+                        onChange={(val) => setMode(val as any)}
+                        data={[
+                          { label: 'From Scratch', value: 'scratch' },
+                          { label: 'Refactor', value: 'refactor' },
+                        ]}
+                        disabled={!hasDates || loading}
+                      />
+                    </Box>
 
-            <Textarea
-              placeholder="e.g. 3 days in London focusing on history and Harry Potter"
-              minRows={4}
-              value={prompt}
-              onChange={(e) => setPrompt(e.currentTarget.value)}
-              disabled={!hasDates || loading}
-              label="What should I plan?"
-            />
+                    <Textarea
+                      placeholder="e.g. 3 days in London focusing on history"
+                      minRows={4}
+                      value={prompt}
+                      onChange={(e) => setPrompt(e.currentTarget.value)}
+                      disabled={!hasDates || loading}
+                      label="What should I plan?"
+                    />
+                </>
+            ) : (
+                <Paper withBorder p="md" bg="blue.0" radius="md">
+                    <Stack gap="xs">
+                        <Group gap="xs">
+                            <MessageSquareQuote size={18} color="var(--mantine-color-blue-6)" />
+                            <Text fw={700} size="sm">AI Insights & Decisions</Text>
+                        </Group>
+                        <ScrollArea.Autosize mah={200}>
+                            <Text size="sm" style={{ fontStyle: 'italic', whiteSpace: 'pre-wrap' }}>
+                                {resultExplanation}
+                            </Text>
+                        </ScrollArea.Autosize>
+                        <Alert color="blue" variant="light" mt="sm">
+                            The itinerary has been generated based on your request. Review the notes above and click 'Apply' to update your timeline.
+                        </Alert>
+                    </Stack>
+                </Paper>
+            )}
 
             {error && (
               <Alert icon={<AlertCircle size={16} />} title="Error" color="red">
@@ -141,14 +182,18 @@ export function AIPlannerModal({ show, onClose, days, currentLocations, currentR
 
             <Group justify="flex-end">
               <Button variant="default" onClick={onClose} disabled={loading}>Cancel</Button>
-              <Button 
-                onClick={handleGenerate} 
-                loading={loading}
-                disabled={!hasDates || !prompt.trim()}
-                leftSection={!loading && <Sparkles size={16} />}
-              >
-                {mode === 'scratch' ? 'Generate Itinerary' : 'Refactor Itinerary'}
-              </Button>
+              {resultExplanation ? (
+                  <Button onClick={handleApply} color="green">Apply Changes</Button>
+              ) : (
+                  <Button 
+                    onClick={handleGenerate} 
+                    loading={loading}
+                    disabled={!hasDates || !prompt.trim()}
+                    leftSection={!loading && <Sparkles size={16} />}
+                  >
+                    Generate
+                  </Button>
+              )}
             </Group>
           </Stack>
         </Tabs.Panel>
