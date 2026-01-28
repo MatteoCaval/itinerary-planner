@@ -14,7 +14,8 @@ import { CloudSyncModal } from './components/CloudSyncModal';
 import { HistoryModal } from './components/HistoryModal';
 import { AIPlannerModal } from './components/AIPlannerModal';
 import { generateMarkdown, downloadMarkdown } from './markdownExporter';
-import { Location, Day, Route, DaySection, AISettings } from './types';
+import { Location, DaySection } from './types';
+import { ItineraryProvider, useItinerary } from './context/ItineraryContext';
 
 // Nominatim OpenStreetMap Search Service
 const searchPlace = async (query: string) => {
@@ -38,98 +39,22 @@ const reverseGeocode = async (lat: number, lng: number) => {
   }
 }
 
-const generateDays = (startDate: string, endDate: string): Day[] => {
-  if (!startDate || !endDate) return [];
-  const days: Day[] = [];
-  const start = new Date(startDate);
-  const end = new Date(endDate);
-  let current = new Date(start);
-  while (current <= end) {
-    days.push({
-      id: uuidv4(),
-      date: current.toISOString().split('T')[0],
-    });
-    current.setDate(current.getDate() + 1);
-  }
-  return days;
-};
+function AppContent() {
+  const {
+    startDate, endDate, days, locations, routes, aiSettings,
+    selectedLocationId, hoveredLocationId,
+    historyIndex, historyLength, history,
+    updateDateRange, updateDay,
+    addLocation, removeLocation, updateLocation, reorderLocations,
+    updateRoute,
+    setAiSettings,
+    setSelectedLocationId, setHoveredLocationId,
+    navigateHistory,
+    getExportData, loadFromData, clearAll
+  } = useItinerary();
 
-const migrateLocations = (oldLocations: any[]): Location[] => {
-  return oldLocations.map((loc, index) => ({
-    id: loc.id,
-    name: loc.name,
-    lat: loc.lat,
-    lng: loc.lng,
-    notes: loc.notes,
-    imageUrl: loc.imageUrl,
-    dayIds: loc.dayIds || [],
-    startDayId: loc.startDayId || (loc.dayIds?.length > 0 ? loc.dayIds[0] : undefined),
-    startSlot: loc.startSlot || 'morning',
-    duration: loc.duration || 1,
-    order: loc.order ?? index,
-    category: loc.category || 'sightseeing',
-    checklist: loc.checklist || [],
-    links: loc.links || [],
-    cost: loc.cost || 0,
-    targetTime: loc.targetTime || ''
-  }));
-};
-
-const STORAGE_KEY_LOCATIONS = 'itinerary-locations';
-const STORAGE_KEY_ROUTES = 'itinerary-routes';
-const STORAGE_KEY_DATES = 'itinerary-dates';
-const STORAGE_KEY_DAYS = 'itinerary-days';
-const STORAGE_KEY_AI = 'itinerary-ai-settings';
-
-function App() {
   const [opened, { toggle, close }] = useDisclosure();
-  const [startDate, setStartDate] = useState<string>(() => {
-    const saved = localStorage.getItem(STORAGE_KEY_DATES);
-    return saved ? JSON.parse(saved).startDate : '';
-  });
-
-  const [endDate, setEndDate] = useState<string>(() => {
-    const saved = localStorage.getItem(STORAGE_KEY_DATES);
-    return saved ? JSON.parse(saved).endDate : '';
-  });
-
-  const [days, setDays] = useState<Day[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEY_DAYS);
-    return saved ? JSON.parse(saved) : [];
-  });
-
-  const [locations, setLocations] = useState<Location[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEY_LOCATIONS);
-    return saved ? migrateLocations(JSON.parse(saved)) : [];
-  });
-
-  const [routes, setRoutes] = useState<Route[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEY_ROUTES);
-    return saved ? JSON.parse(saved) : [];
-  });
-
-  const [aiSettings, setAiSettings] = useState<AISettings>(() => {
-    const saved = localStorage.getItem(STORAGE_KEY_AI);
-    if (!saved) return { apiKey: '', model: 'gemini-3-flash-preview' };
-
-    try {
-      const parsed = JSON.parse(saved);
-      // Migration: extract gemini config if it was the old structure
-      if (parsed.configs && parsed.configs.gemini) {
-        return {
-          apiKey: parsed.configs.gemini.apiKey || '',
-          model: parsed.configs.gemini.model || 'gemini-3-flash-preview'
-        };
-      }
-      return {
-        apiKey: parsed.apiKey || '',
-        model: parsed.model || 'gemini-3-flash-preview'
-      };
-    } catch (e) {
-      return { apiKey: '', model: 'gemini-3-flash-preview' };
-    }
-  });
-
+  
   const [showAIModal, setShowAIModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [suggestions, setSuggestions] = useState<any[]>([]);
@@ -151,106 +76,12 @@ function App() {
   const [editingRoute, setEditingRoute] = useState<{ fromId: string; toId: string } | null>(null);
   const [editingDayAssignment, setEditingDayAssignment] = useState<Location | null>(null);
   const [pendingAddToDay, setPendingAddToDay] = useState<{ dayId: string, slot?: DaySection } | null>(null);
-  const [hoveredLocationId, setHoveredLocationId] = useState<string | null>(null);
-  const [selectedLocationId, setSelectedLocationId] = useState<string | null>(null);
   const [zoomLevel, setZoomLevel] = useState(1.0);
   const [sidebarView, setSidebarView] = useState<'timeline' | 'calendar'>('timeline');
   const [showCloudModal, setShowCloudModal] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
 
-  // History State
-  const [history, setHistory] = useState<{
-    startDate: string;
-    endDate: string;
-    days: Day[];
-    locations: Location[];
-    routes: Route[];
-    timestamp: number;
-    label: string;
-  }[]>([]);
-  const [historyIndex, setHistoryIndex] = useState(-1);
-  const [isNavigatingHistory, setIsNavigatingHistory] = useState(false);
-
-  const currentState = useMemo(() => ({
-    startDate, endDate, days, locations, routes
-  }), [startDate, endDate, days, locations, routes]);
-
-  // Initial history entry
-  useEffect(() => {
-    if (history.length === 0 && days.length > 0) {
-        setHistory([{ ...currentState, timestamp: Date.now(), label: 'Initial State' }]);
-        setHistoryIndex(0);
-    }
-  }, [days.length]);
-
-  // Push to history when state changes (debounced)
-  useEffect(() => {
-    if (isNavigatingHistory) return;
-
-    const timer = setTimeout(() => {
-        const lastHistoryEntry = history[historyIndex];
-        const stateString = JSON.stringify(currentState);
-        const lastStateString = lastHistoryEntry ? JSON.stringify({
-            startDate: lastHistoryEntry.startDate,
-            endDate: lastHistoryEntry.endDate,
-            days: lastHistoryEntry.days,
-            locations: lastHistoryEntry.locations,
-            routes: lastHistoryEntry.routes,
-        }) : '';
-
-        if (stateString !== lastStateString) {
-            const newHistory = history.slice(0, historyIndex + 1);
-            const label = history.length === 0 ? 'Initial State' : `Change ${newHistory.length}`;
-            newHistory.push({ ...currentState, timestamp: Date.now(), label });
-            setHistory(newHistory);
-            setHistoryIndex(newHistory.length - 1);
-        }
-    }, 1000);
-
-    return () => clearTimeout(timer);
-  }, [currentState, isNavigatingHistory, historyIndex]);
-
-  const handleHistoryNavigate = (index: number) => {
-    if (index < 0 || index >= history.length) return;
-    
-    setIsNavigatingHistory(true);
-    const snapshot = history[index];
-    
-    setStartDate(snapshot.startDate);
-    setEndDate(snapshot.endDate);
-    setDays(snapshot.days);
-    setLocations(snapshot.locations);
-    setRoutes(snapshot.routes);
-    setHistoryIndex(index);
-    
-    // Resume tracking after a short delay
-    setTimeout(() => setIsNavigatingHistory(false), 100);
-  };
-
-  useEffect(() => { localStorage.setItem(STORAGE_KEY_LOCATIONS, JSON.stringify(locations)); }, [locations]);
-  useEffect(() => { localStorage.setItem(STORAGE_KEY_ROUTES, JSON.stringify(routes)); }, [routes]);
-  useEffect(() => { localStorage.setItem(STORAGE_KEY_DATES, JSON.stringify({ startDate, endDate })); }, [startDate, endDate]);
-  useEffect(() => { localStorage.setItem(STORAGE_KEY_DAYS, JSON.stringify(days)); }, [days]);
-  useEffect(() => { localStorage.setItem(STORAGE_KEY_AI, JSON.stringify(aiSettings)); }, [aiSettings]);
-
-  const handleDateRangeChange = (newStart: string, newEnd: string) => {
-    setStartDate(newStart);
-    setEndDate(newEnd);
-    const newDays = generateDays(newStart, newEnd);
-    const oldDaysMap = new Map(days.map(d => [d.date, d]));
-    const updatedDays = newDays.map(day => {
-      const existingDay = oldDaysMap.get(day.date);
-      return existingDay ? { ...existingDay } : day;
-    });
-    setDays(updatedDays);
-    const newDayIds = new Set(updatedDays.map(d => d.id));
-    setLocations(prev => prev.map(loc => ({
-      ...loc,
-      startDayId: loc.startDayId && newDayIds.has(loc.startDayId) ? loc.startDayId : undefined,
-    })));
-  };
-
-  const addLocation = async (lat: number, lng: number, name?: string, targetDayId?: string, targetSlot?: DaySection) => {
+  const handleAddLocation = async (lat: number, lng: number, name?: string, targetDayId?: string, targetSlot?: DaySection) => {
     const resolvedName = name || await reverseGeocode(lat, lng);
     let assignedDayId = targetDayId || pendingAddToDay?.dayId || (days.length > 0 ? days[0].id : undefined);
     let assignedSlot = targetSlot || pendingAddToDay?.slot || 'morning';
@@ -274,7 +105,7 @@ function App() {
       cost: 0,
       targetTime: ''
     };
-    setLocations([...locations, newLocation]);
+    addLocation(newLocation);
     setPendingAddToDay(null);
   };
 
@@ -285,51 +116,10 @@ function App() {
     const results = await searchPlace(searchQuery);
     setIsSearching(false);
     if (results?.length > 0) {
-      await addLocation(parseFloat(results[0].lat), parseFloat(results[0].lon), results[0].display_name);
+      await handleAddLocation(parseFloat(results[0].lat), parseFloat(results[0].lon), results[0].display_name);
       setSearchQuery('');
       setSuggestions([]);
     }
-  };
-
-  const removeLocation = (id: string) => {
-    setLocations(locations.filter(l => l.id !== id));
-    setRoutes(routes.filter(r => r.fromLocationId !== id && r.toLocationId !== id));
-    if (selectedLocationId === id) setSelectedLocationId(null);
-  };
-
-  const updateLocation = (id: string, updates: Partial<Location>) => {
-    setLocations(locations.map(l => l.id === id ? { ...l, ...updates } : l));
-  };
-
-  const updateDay = (id: string, updates: Partial<Day>) => {
-    setDays(days.map(d => d.id === id ? { ...d, ...updates } : d));
-  };
-
-  const handleApplyAIItinerary = (newLocs: Location[], newRoutes: Route[]) => {
-    // Both modes now replace the state because the AI is provided with 
-    // the current context during 'refactor' and returns the full updated itinerary.
-    setLocations(newLocs);
-    setRoutes(newRoutes);
-  };
-
-
-  const handleReorderLocations = (activeId: string, overId: string | null, newDayId: string | null, newSlot: DaySection | null = null) => {
-    setLocations(prev => {
-      const activeIndex = prev.findIndex(l => l.id === activeId);
-      if (activeIndex === -1) return prev;
-      let newLocations = [...prev];
-      newLocations[activeIndex] = {
-        ...newLocations[activeIndex],
-        startDayId: newDayId || undefined,
-        startSlot: newSlot || newLocations[activeIndex].startSlot || 'morning'
-      };
-      if (overId && overId !== activeId && overId !== 'unassigned-zone' && !overId.startsWith('slot-')) {
-        const overIndex = newLocations.findIndex(l => l.id === overId);
-        const [moved] = newLocations.splice(activeIndex, 1);
-        newLocations.splice(overIndex, 0, moved);
-      }
-      return newLocations.map((loc, idx) => ({ ...loc, order: idx }));
-    });
   };
 
   const handleScrollToLocation = (id: string | null) => {
@@ -341,18 +131,6 @@ function App() {
         element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }, 100);
     }
-  };
-
-  const getExportData = () => ({
-    startDate, endDate, days, locations, routes, version: '1.0'
-  });
-
-  const handleCloudLoad = (data: any) => {
-    if (data.startDate) setStartDate(data.startDate);
-    if (data.endDate) setEndDate(data.endDate);
-    if (data.days) setDays(data.days);
-    if (data.locations) setLocations(migrateLocations(data.locations));
-    if (data.routes) setRoutes(data.routes);
   };
 
   const handleExport = () => {
@@ -376,7 +154,7 @@ function App() {
     reader.onload = (event) => {
       try {
         const data = JSON.parse(event.target?.result as string);
-        handleCloudLoad(data);
+        loadFromData(data);
         alert('Itinerary imported successfully!');
       } catch (err) {
         alert('Error importing file. Please ensure it is a valid JSON itinerary.');
@@ -413,10 +191,10 @@ function App() {
             </Text>
           </Group>
           <Group gap="xs" visibleFrom="sm">
-            <ActionIcon variant="subtle" color="gray" onClick={() => handleHistoryNavigate(historyIndex - 1)} disabled={historyIndex <= 0}>
+            <ActionIcon variant="subtle" color="gray" onClick={() => navigateHistory(historyIndex - 1)} disabled={historyIndex <= 0}>
                 <Undo size={18} />
             </ActionIcon>
-            <ActionIcon variant="subtle" color="gray" onClick={() => handleHistoryNavigate(historyIndex + 1)} disabled={historyIndex >= history.length - 1}>
+            <ActionIcon variant="subtle" color="gray" onClick={() => navigateHistory(historyIndex + 1)} disabled={historyIndex >= historyLength - 1}>
                 <Redo size={18} />
             </ActionIcon>
             <Button variant="default" size="xs" leftSection={<History size={16} />} onClick={() => setShowHistoryModal(true)}>History</Button>
@@ -467,7 +245,7 @@ function App() {
       <AppShell.Navbar p={0} style={{ zIndex: 1000 }}>
         <Stack h="100%" gap={0}>
           <Box p="md" style={{ borderBottom: '1px solid var(--mantine-color-gray-3)' }}>
-            <DateRangePicker startDate={startDate} endDate={endDate} onDateRangeChange={handleDateRangeChange} />
+            <DateRangePicker startDate={startDate} endDate={endDate} onDateRangeChange={updateDateRange} />
 
             {/* View Toggle */}
             <Group grow mt="sm" mb="md">
@@ -525,7 +303,7 @@ function App() {
                       style={{ cursor: 'pointer', borderBottom: '1px solid var(--mantine-color-gray-2)' }}
                       className="hover-bg-light"
                       onClick={async () => {
-                        await addLocation(parseFloat(s.lat), parseFloat(s.lon), s.display_name);
+                        await handleAddLocation(parseFloat(s.lat), parseFloat(s.lon), s.display_name);
                         setSearchQuery('');
                         setSuggestions([]);
                       }}
@@ -561,7 +339,7 @@ function App() {
             {sidebarView === 'timeline' ? (
               <DaySidebar
                 days={days} locations={locations} routes={routes}
-                onReorderLocations={handleReorderLocations} onRemoveLocation={removeLocation}
+                onReorderLocations={reorderLocations} onRemoveLocation={removeLocation}
                 onUpdateLocation={updateLocation} onEditRoute={(from, to) => setEditingRoute({ fromId: from, toId: to })}
                 onAddToDay={(dayId, slot) => setPendingAddToDay({ dayId, slot })}
                 onUpdateDay={updateDay}
@@ -577,7 +355,7 @@ function App() {
             <Group justify="space-between" mb="xs">
               <Text size="xs" fw={700} tt="uppercase" c="dimmed">{locations.length} Stops</Text>
               <Button variant="subtle" color="red" size="xs" leftSection={<Trash2 size={14} />} onClick={() => {
-                if (confirm('Are you sure you want to clear all data?')) setLocations([]);
+                if (confirm('Are you sure you want to clear all data?')) clearAll();
               }}>
                 Clear
               </Button>
@@ -633,15 +411,15 @@ function App() {
         )}
       </AppShell.Main>
 
-      <CloudSyncModal show={showCloudModal} onClose={() => setShowCloudModal(false)} getData={getExportData} onLoadData={handleCloudLoad} />
+      <CloudSyncModal show={showCloudModal} onClose={() => setShowCloudModal(false)} getData={getExportData} onLoadData={loadFromData} />
       
       <HistoryModal 
         show={showHistoryModal} 
         onClose={() => setShowHistoryModal(false)} 
         currentIndex={historyIndex} 
-        totalStates={history.length} 
-        snapshots={history} 
-        onNavigate={handleHistoryNavigate} 
+        totalStates={historyLength}
+        snapshots={history}
+        onNavigate={navigateHistory} 
       />
 
       <AIPlannerModal
@@ -652,17 +430,30 @@ function App() {
         currentRoutes={routes}
         settings={aiSettings}
         onSettingsChange={setAiSettings}
-        onApplyItinerary={handleApplyAIItinerary}
+        onApplyItinerary={(locs, rts) => {
+             // We need to handle this manually since context doesn't have a 'setAll' that takes both.
+             // Or better, add a setItinerary to context.
+             // For now:
+             loadFromData({ days, locations: locs, routes: rts, startDate, endDate });
+        }}
       />
 
       <RouteEditor
         show={!!editingRoute} route={routes.find(r => (r.fromLocationId === editingRoute?.fromId && r.toLocationId === editingRoute?.toId) || (r.fromLocationId === editingRoute?.toId && r.toLocationId === editingRoute?.fromId)) || (editingRoute ? { id: uuidv4(), fromLocationId: editingRoute.fromId, toLocationId: editingRoute.toId, transportType: 'car' } : null)}
         fromName={locations.find(l => l.id === editingRoute?.fromId)?.name || ''} toName={locations.find(l => l.id === editingRoute?.toId)?.name || ''}
-        onSave={route => { setRoutes(prev => { const idx = prev.findIndex(r => r.id === route.id); if (idx >= 0) { const u = [...prev]; u[idx] = route; return u; } return [...prev, route]; }); setEditingRoute(null); }}
+        onSave={route => { updateRoute(route); setEditingRoute(null); }}
         onClose={() => setEditingRoute(null)}
       />
       <DayAssignmentModal show={!!editingDayAssignment} location={editingDayAssignment} days={days} onSave={(id, ids) => { updateLocation(id, { dayIds: ids }); setEditingDayAssignment(null); }} onClose={() => setEditingDayAssignment(null)} />
     </AppShell>
+  );
+}
+
+function App() {
+  return (
+    <ItineraryProvider>
+      <AppContent />
+    </ItineraryProvider>
   );
 }
 
