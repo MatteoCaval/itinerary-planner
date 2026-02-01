@@ -1,19 +1,17 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { AppShell, Burger, Group, Button, ActionIcon, TextInput, Tooltip, Text, Box, Paper, Stack, Slider, Menu, ScrollArea } from '@mantine/core';
+import { AppShell, Burger, Group, Button, ActionIcon, Tooltip, Text, Box, Paper, Menu } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { v4 as uuidv4 } from 'uuid';
-import { Map as MapIcon, Search, Download, Upload, Trash2, Calendar as CalendarIcon, List as ListIcon, Cloud, FileText, MoreHorizontal, History, Undo, Redo, Sparkles, ChevronLeft, Wallet } from 'lucide-react';
+import { Map as MapIcon, Download, Upload, Cloud, FileText, MoreHorizontal, History, Undo, Redo, Sparkles, ChevronLeft } from 'lucide-react';
 import MapDisplay from './components/MapDisplay';
-import { DateRangePicker } from './components/DateRangePicker';
-import { DaySidebar } from './components/DaySidebar';
 import { RouteEditor } from './components/RouteEditor';
 import { DayAssignmentModal } from './components/DayAssignmentModal';
 import { LocationDetailPanel } from './components/LocationDetailPanel';
-import { CalendarView } from './components/CalendarView';
 import { CloudSyncModal } from './components/CloudSyncModal';
 import { HistoryModal } from './components/HistoryModal';
 import { AIPlannerModal } from './components/AIPlannerModal';
-import { TripDashboard } from './components/TripDashboard';
+import { SidebarContent } from './components/SidebarContent';
+import { MobileBottomSheet } from './components/MobileBottomSheet';
 import { generateMarkdown, downloadMarkdown } from './markdownExporter';
 import { Location, DaySection } from './types';
 import { ItineraryProvider, useItinerary } from './context/ItineraryContext';
@@ -331,16 +329,16 @@ function AppContent() {
       navbar={{
         width: { base: '100%', sm: 500, lg: 600, xl: 700 },
         breakpoint: 'sm',
-        collapsed: { mobile: !opened },
+        collapsed: { mobile: true, desktop: !opened },
       }}
       padding={0}
     >
       <AppShell.Header style={{ zIndex: 1200 }}>
         <Group h="100%" px="md" justify="space-between">
           <Group>
-            <Burger opened={opened} onClick={() => { toggle(); if (!opened) setSelectedLocationId(null); }} hiddenFrom="sm" size="sm" />
+            <Burger opened={opened} onClick={toggle} size="sm" color="blue" />
             <Text fw={700} fz="lg" c="blue" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <MapIcon size={20} /> Itinerary Planner
+              <MapIcon size={20} /> <Box visibleFrom="xs">Itinerary Planner</Box>
             </Text>
           </Group>
           <Group gap="xs" visibleFrom="sm">
@@ -396,180 +394,28 @@ function AppContent() {
       </AppShell.Header>
 
       <AppShell.Navbar p={0} style={{ zIndex: 1000 }}>
-        <Stack h="100%" gap={0}>
-          <Box p="md" style={{ borderBottom: '1px solid var(--mantine-color-gray-3)' }}>
-            <DateRangePicker startDate={startDate} endDate={endDate} onDateRangeChange={updateDateRange} />
-
-            {/* View Toggle */}
-            <Group grow mt="sm" mb="md">
-              <Button
-                variant={sidebarView === 'timeline' ? 'light' : 'subtle'}
-                onClick={() => setSidebarView('timeline')}
-                leftSection={<ListIcon size={16} />}
-                size="xs"
-              >
-                Timeline
-              </Button>
-              <Button
-                variant={sidebarView === 'calendar' ? 'light' : 'subtle'}
-                onClick={() => setSidebarView('calendar')}
-                leftSection={<CalendarIcon size={16} />}
-                size="xs"
-              >
-                Calendar
-              </Button>
-              <Button
-                variant={sidebarView === 'budget' ? 'light' : 'subtle'}
-                onClick={() => setSidebarView('budget')}
-                leftSection={<Wallet size={16} />}
-                size="xs"
-                color="blue"
-              >
-                Budget
-              </Button>
-            </Group>
-
-            {pendingAddToDay && (
-              <Paper withBorder p="xs" bg="blue.0" mt="sm" mb="xs">
-                <Group justify="space-between">
-                  <Text size="sm">
-                    {pendingAddToDay.dayId === 'unassigned'
-                      ? 'Adding to Unassigned'
-                      : `Adding to Day ${days.findIndex(d => d.id === pendingAddToDay.dayId) + 1}${pendingAddToDay.slot ? ` (${pendingAddToDay.slot})` : ''}`
-                    }
-                  </Text>
-                  <Button variant="subtle" size="xs" color="red" onClick={() => setPendingAddToDay(null)}>Cancel</Button>
-                </Group>
-              </Paper>
-            )}
-
-            <Box mb="xs" style={{ position: 'relative' }}>
-              <form onSubmit={handleSearch}>
-                <TextInput
-                  placeholder={pendingAddToDay ? "Search place to add..." : "Search place..."}
-                  value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
-                  rightSection={
-                    <ActionIcon size="sm" variant="transparent" type="submit" loading={isSearching}>
-                      <Search size={16} />
-                    </ActionIcon>
-                  }
-                />
-              </form>
-              {suggestions.length > 0 && (
-                <Paper withBorder shadow="md" style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 1000, maxHeight: 250, overflowY: 'auto' }}>
-                  {suggestions.map((s, i) => (
-                    <Box
-                      key={i}
-                      p="xs"
-                      style={{ cursor: 'pointer', borderBottom: '1px solid var(--mantine-color-gray-2)' }}
-                      className="hover-bg-light"
-                      onClick={async () => {
-                        await handleAddLocationWrapped(parseFloat(s.lat), parseFloat(s.lon), s.display_name);
-                        setSearchQuery('');
-                        setSuggestions([]);
-                      }}
-                    >
-                      <Text size="sm" fw={500}>{s.display_name.split(',')[0]}</Text>
-                      <Text size="xs" c="dimmed" truncate>{s.display_name}</Text>
-                    </Box>
-                  ))}
-                </Paper>
-              )}
-            </Box>
-
-            {sidebarView === 'timeline' && (
-              <Group gap="xs" align="center" mt="xs">
-                <Text size="xs" fw={500} c="dimmed">Zoom:</Text>
-                <Slider
-                  flex={1}
-                  size="sm"
-                  min={0.5}
-                  max={2.5}
-                  step={0.1}
-                  value={zoomLevel}
-                  onChange={setZoomLevel}
-                  label={(val) => `${Math.round(val * 100)}%`}
-                  mb={4}
-                />
-                <Text size="xs" c="dimmed" w={35}>{Math.round(zoomLevel * 100)}%</Text>
-              </Group>
-            )}
-          </Box>
-
-          <Box style={{ flex: 1, overflow: 'hidden' }}>
-            {sidebarView === 'timeline' ? (
-              <Stack h="100%" gap={0}>
-                 {activeParent && (
-                    <Paper p="xs" bg="blue.6" radius={0}>
-                        <Group justify="space-between">
-                            <Box>
-                                <Text size="xs" c="blue.1" fw={700} tt="uppercase">Planning Sub-Itinerary</Text>
-                                <Text size="sm" c="white" fw={700} truncate>{activeParent.name}</Text>
-                            </Box>
-                            <Button variant="white" size="compact-xs" onClick={() => setSelectedLocationId(null)}>Back to Main</Button>
-                        </Group>
-                    </Paper>
-                 )}
-                <Box flex={1} style={{ overflow: 'hidden' }}>
-                    <DaySidebar
-                        days={activeDays} locations={sidebarLocations} routes={routes}
-                        onReorderLocations={activeParent ? handleSubReorder : reorderLocations} 
-                        onRemoveLocation={activeParent ? handleSubRemove : removeLocation}
-                        onUpdateLocation={activeParent ? handleSubUpdate : updateLocation} 
-                        onEditRoute={(from, to) => setEditingRoute({ fromId: from, toId: to })}
-                        onAddToDay={activeParent ? handleSubAdd : (dayId, slot) => setPendingAddToDay({ dayId, slot })}
-                        onUpdateDay={updateDay}
-                        hoveredLocationId={hoveredLocationId} onHoverLocation={setHoveredLocationId} zoomLevel={zoomLevel}
-                        selectedLocationId={selectedLocationId} onSelectLocation={setSelectedLocationId}
-                        dayNumberOffset={activeParent ? days.findIndex(d => d.id === activeParent.startDayId) + 1 : undefined}
-                        parentName={activeParent?.name}
-                        selectedDayId={selectedDayId}
-                        onSelectDay={setSelectedDayId}
-                        isSlotBlocked={activeParent ? isSlotBlocked : undefined}
-                        onNestLocation={handleNestLocation}
-                    />
-                </Box>
-              </Stack>
-            ) : sidebarView === 'calendar' ? (
-              <CalendarView days={days} locations={locations} onSelectLocation={handleScrollToLocation} />
-            ) : (
-              <ScrollArea h="100%" p="md">
-                <TripDashboard days={days} locations={locations} routes={routes} />
-              </ScrollArea>
-            )}
-          </Box>
-
-          <Box p="md" style={{ borderTop: '1px solid var(--mantine-color-gray-3)' }}>
-            <Group justify="space-between" mb="xs">
-              <Text size="xs" fw={700} tt="uppercase" c="dimmed">{locations.length} Stops</Text>
-              <Button variant="subtle" color="red" size="xs" leftSection={<Trash2 size={14} />} onClick={() => {
-                if (confirm('Are you sure you want to clear all data?')) clearAll();
-              }}>
-                Clear
-              </Button>
-            </Group>
-            <Group gap="xs">
-              <Button variant="light" size="xs" flex={1} leftSection={<History size={14} />} onClick={() => setShowHistoryModal(true)}>History</Button>
-              <Button variant="light" color="blue" size="xs" flex={1} leftSection={<Sparkles size={14} />} onClick={() => setShowAIModal(true)}>AI Planner</Button>
-              <Button variant="light" size="xs" flex={1} leftSection={<Cloud size={14} />} onClick={() => setShowCloudModal(true)}>Cloud Sync</Button>
-            </Group>
-            <Group gap="xs" mt="xs">
-              <Tooltip label="Export Markdown">
-                <ActionIcon variant="default" size="md" onClick={handleExportMarkdown}><FileText size={16} /></ActionIcon>
-              </Tooltip>
-              <Tooltip label="Download JSON">
-                <ActionIcon variant="default" size="md" onClick={handleExport}><Download size={16} /></ActionIcon>
-              </Tooltip>
-              <Tooltip label="Import JSON">
-                <ActionIcon variant="default" size="md" component="label" style={{ cursor: 'pointer' }}>
-                  <Upload size={16} />
-                  <input type="file" accept=".json" onChange={handleImport} style={{ display: 'none' }} />
-                </ActionIcon>
-              </Tooltip>
-            </Group>
-          </Box>
-        </Stack>
+        <Box visibleFrom="sm" h="100%">
+            <SidebarContent
+              startDate={startDate} endDate={endDate} updateDateRange={updateDateRange}
+              sidebarView={sidebarView} setSidebarView={setSidebarView}
+              pendingAddToDay={pendingAddToDay} setPendingAddToDay={setPendingAddToDay}
+              searchQuery={searchQuery} setSearchQuery={setSearchQuery} isSearching={isSearching} handleSearch={handleSearch}
+              suggestions={suggestions} handleAddLocationWrapped={handleAddLocationWrapped}
+              zoomLevel={zoomLevel} setZoomLevel={setZoomLevel}
+              activeParent={activeParent} setSelectedLocationId={setSelectedLocationId}
+              days={days} activeDays={activeDays} sidebarLocations={sidebarLocations} routes={routes}
+              handleSubReorder={handleSubReorder} handleSubRemove={handleSubRemove}
+              handleSubUpdate={handleSubUpdate} setEditingRoute={setEditingRoute} handleSubAdd={handleSubAdd} updateDay={updateDay}
+              hoveredLocationId={hoveredLocationId} setHoveredLocationId={setHoveredLocationId}
+              selectedLocationId={selectedLocationId} reorderLocations={reorderLocations}
+              removeLocation={removeLocation} updateLocation={updateLocation}
+              selectedDayId={selectedDayId} setSelectedDayId={setSelectedDayId}
+              isSlotBlocked={isSlotBlocked} handleNestLocation={handleNestLocation}
+              handleScrollToLocation={handleScrollToLocation} locations={locations} clearAll={clearAll}
+              setShowHistoryModal={setShowHistoryModal} setShowAIModal={setShowAIModal} setShowCloudModal={setShowCloudModal}
+              handleExportMarkdown={handleExportMarkdown} handleExport={handleExport} handleImport={handleImport}
+            />
+        </Box>
       </AppShell.Navbar>
 
       <AppShell.Main h="100vh" style={{ position: 'relative', overflow: 'hidden' }}>
@@ -584,6 +430,29 @@ function AppContent() {
           isSubItinerary={isSubItinerary}
           isPanelCollapsed={panelCollapsed}
         />
+
+        <MobileBottomSheet opened={opened}>
+          <SidebarContent
+            startDate={startDate} endDate={endDate} updateDateRange={updateDateRange}
+            sidebarView={sidebarView} setSidebarView={setSidebarView}
+            pendingAddToDay={pendingAddToDay} setPendingAddToDay={setPendingAddToDay}
+            searchQuery={searchQuery} setSearchQuery={setSearchQuery} isSearching={isSearching} handleSearch={handleSearch}
+            suggestions={suggestions} handleAddLocationWrapped={handleAddLocationWrapped}
+            zoomLevel={zoomLevel} setZoomLevel={setZoomLevel}
+            activeParent={activeParent} setSelectedLocationId={setSelectedLocationId}
+            days={days} activeDays={activeDays} sidebarLocations={sidebarLocations} routes={routes}
+            handleSubReorder={handleSubReorder} handleSubRemove={handleSubRemove}
+            handleSubUpdate={handleSubUpdate} setEditingRoute={setEditingRoute} handleSubAdd={handleSubAdd} updateDay={updateDay}
+            hoveredLocationId={hoveredLocationId} setHoveredLocationId={setHoveredLocationId}
+            selectedLocationId={selectedLocationId} reorderLocations={reorderLocations}
+            removeLocation={removeLocation} updateLocation={updateLocation}
+            selectedDayId={selectedDayId} setSelectedDayId={setSelectedDayId}
+            isSlotBlocked={isSlotBlocked} handleNestLocation={handleNestLocation}
+            handleScrollToLocation={handleScrollToLocation} locations={locations} clearAll={clearAll}
+            setShowHistoryModal={setShowHistoryModal} setShowAIModal={setShowAIModal} setShowCloudModal={setShowCloudModal}
+            handleExportMarkdown={handleExportMarkdown} handleExport={handleExport} handleImport={handleImport}
+          />
+        </MobileBottomSheet>
 
         {selectedLocation && (
           <>
