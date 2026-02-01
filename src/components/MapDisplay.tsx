@@ -297,30 +297,32 @@ export default function MapDisplay({ days, locations, routes, onEditRoute, hover
       }
     });
 
-    // Add accommodations as virtual points
-    days.forEach((day, dayIdx) => {
-      if (day.accommodation && day.accommodation.lat && day.accommodation.lng) {
-        // Find if this day has any locations in the current view
-        const hasLocationsThisDay = sortedLocations.some(l => 
-          isSubItinerary ? l.dayOffset === dayIdx : l.startDayId === day.id
-        );
+    // Add accommodations as virtual points ONLY if in sub-itinerary mode
+    if (isSubItinerary) {
+      days.forEach((day, dayIdx) => {
+        if (day.accommodation && day.accommodation.lat && day.accommodation.lng) {
+          // Find if this day has any locations in the current view
+          const hasLocationsThisDay = sortedLocations.some(l => 
+            l.dayOffset === dayIdx
+          );
 
-        if (hasLocationsThisDay || !isSubItinerary) {
-          points.push({
-            id: `path-accom-${day.id}`,
-            name: day.accommodation.name,
-            lat: day.accommodation.lat,
-            lng: day.accommodation.lng,
-            isAccommodation: true,
-            notes: day.accommodation.notes,
-            // Accommodation comes AFTER evening slot (index 2) of the same day
-            // and BEFORE morning slot (index 0) of the next day.
-            // So we give it a section index of 2.5
-            sortValue: dayIdx * 10 + 2.5
-          });
+          if (hasLocationsThisDay) {
+            points.push({
+              id: `path-accom-${day.id}`,
+              name: day.accommodation.name,
+              lat: day.accommodation.lat,
+              lng: day.accommodation.lng,
+              isAccommodation: true,
+              notes: day.accommodation.notes,
+              // Accommodation comes AFTER evening slot (index 2) of the same day
+              // and BEFORE morning slot (index 0) of the next day.
+              // So we give it a section index of 2.5
+              sortValue: dayIdx * 10 + 2.5
+            });
+          }
         }
-      }
-    });
+      });
+    }
 
     return points.sort((a, b) => a.sortValue - b.sortValue);
   }, [sortedLocations, days, isSubItinerary]);
