@@ -364,6 +364,18 @@ function AppContent() {
     }
   };
 
+  const findLocationById = (id: string): Location | null => {
+    const top = locations.find(l => l.id === id);
+    if (top) return top;
+    for (const loc of locations) {
+      if (loc.subLocations) {
+        const sub = loc.subLocations.find(s => s.id === id);
+        if (sub) return sub;
+      }
+    }
+    return null;
+  };
+
   return (
     <AppShell
       header={{ height: 60 }}
@@ -629,6 +641,7 @@ function AppContent() {
                 onUpdate={updateLocation}
                 onClose={() => setSelectedLocationId(null)}
                 onSelectLocation={setSelectedLocationId}
+                onEditRoute={(from, to) => setEditingRoute({ fromId: from, toId: to })}
                 selectedDayId={selectedDayId}
                 onSelectDay={setSelectedDayId}
                 onCollapse={() => setPanelCollapsed(true)}
@@ -697,7 +710,8 @@ function AppContent() {
 
       <RouteEditor
         show={!!editingRoute} route={routes.find(r => (r.fromLocationId === editingRoute?.fromId && r.toLocationId === editingRoute?.toId) || (r.fromLocationId === editingRoute?.toId && r.toLocationId === editingRoute?.fromId)) || (editingRoute ? { id: uuidv4(), fromLocationId: editingRoute.fromId, toLocationId: editingRoute.toId, transportType: 'car' } : null)}
-        fromName={locations.find(l => l.id === editingRoute?.fromId)?.name || ''} toName={locations.find(l => l.id === editingRoute?.toId)?.name || ''}
+        fromName={findLocationById(editingRoute?.fromId || '')?.name || ''} 
+        toName={findLocationById(editingRoute?.toId || '')?.name || ''}
         onSave={route => { updateRoute(route); setEditingRoute(null); }}
         onClose={() => setEditingRoute(null)}
       />

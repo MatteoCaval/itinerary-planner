@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { TextInput, Textarea, Button, ActionIcon, Paper, Group, Stack, Text, Badge, Image, Checkbox, LoadingOverlay, Box, Divider, ScrollArea, Anchor, Tooltip } from '@mantine/core';
 import { X, Plus, Trash2, ExternalLink, CheckSquare, Link as LinkIcon, Map as MapIcon, Calendar, ArrowRight, ArrowLeft, Bed, Search, ChevronRight, ArrowUp, ArrowDown } from 'lucide-react';
-import { Location, Day, Route, DaySection, TRANSPORT_LABELS } from '../types';
+import { Location, Day, Route, DaySection, TRANSPORT_LABELS, TRANSPORT_COLORS } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 import { searchPhoto } from '../unsplash';
 import { searchPlace } from '../utils/geocoding';
@@ -15,6 +15,7 @@ interface LocationDetailPanelProps {
   onUpdate: (id: string, updates: Partial<Location>) => void;
   onClose: () => void;
   onSelectLocation?: (id: string | null) => void;
+  onEditRoute?: (fromId: string, toId: string) => void;
   selectedDayId?: string | null;
   onSelectDay?: (id: string | null) => void;
   onCollapse?: () => void;
@@ -24,7 +25,7 @@ const SECTION_ORDER: DaySection[] = ['morning', 'afternoon', 'evening'];
 
 export function LocationDetailPanel({ 
   location, parentLocation, days, allLocations, routes, onUpdate, onClose, onSelectLocation,
-  selectedDayId, onSelectDay, onCollapse 
+  onEditRoute, selectedDayId, onSelectDay, onCollapse 
 }: LocationDetailPanelProps) {
   const [newChecklistItem, setNewChecklistItem] = useState('');
   const [newLink, setNewLink] = useState({ label: '', url: '' });
@@ -451,28 +452,76 @@ export function LocationDetailPanel({
                       </Group>
                       <Divider mb="xs" color={isDaySelected ? 'blue.3' : 'blue.1'} />
                       <Stack gap={6}>
-                        {daySubs.map((sub) => {
+                        {daySubs.map((sub, subIdx) => {
                            const sortedIdx = sortedSubLocations.findIndex(s => s.id === sub.id);
+                           const nextSub = daySubs[subIdx + 1];
+                           const route = nextSub ? routes.find(r => 
+                             (r.fromLocationId === sub.id && r.toLocationId === nextSub.id) || 
+                             (r.fromLocationId === nextSub.id && r.toLocationId === sub.id)
+                           ) : null;
+
                            return (
-                             <Paper key={sub.id} p="xs" withBorder bg="white" shadow="xs" style={{ cursor: 'pointer' }} onClick={() => onSelectLocation?.(sub.id)}>
-                              <Group justify="space-between" wrap="nowrap">
-                                <Group gap="xs" style={{ flex: 1, minWidth: 0 }}>
-                                  <Badge size="xs" color="blue" variant="light" tt="capitalize">{sub.startSlot || 'morning'}</Badge>
-                                  <Text size="sm" fw={500} truncate>{sub.name}</Text>
+                             <React.Fragment key={sub.id}>
+                               <Paper p="xs" withBorder bg="white" shadow="xs" style={{ cursor: 'pointer' }} onClick={() => onSelectLocation?.(sub.id)}>
+                                <Group justify="space-between" wrap="nowrap">
+                                  <Group gap="xs" style={{ flex: 1, minWidth: 0 }}>
+                                    <Badge size="xs" color="blue" variant="light" tt="capitalize">{sub.startSlot || 'morning'}</Badge>
+                                    <Text size="sm" fw={500} truncate>{sub.name}</Text>
+                                  </Group>
+                                  <Group gap={2}>
+                                    <ActionIcon size="sm" variant="subtle" disabled={sortedIdx === 0} onClick={(e) => { e.stopPropagation(); moveSubLocation(sub.id, 'up'); }}>
+                                      <ArrowUp size={14} />
+                                    </ActionIcon>
+                                    <ActionIcon size="sm" variant="subtle" disabled={sortedIdx === sortedSubLocations.length - 1} onClick={(e) => { e.stopPropagation(); moveSubLocation(sub.id, 'down'); }}>
+                                      <ArrowDown size={14} />
+                                    </ActionIcon>
+                                    <ActionIcon size="sm" variant="subtle" color="red" onClick={(e) => { e.stopPropagation(); removeSubLocation(sub.id); }}>
+                                      <Trash2 size={14} />
+                                    </ActionIcon>
+                                  </Group>
                                 </Group>
-                                <Group gap={2}>
-                                  <ActionIcon size="sm" variant="subtle" disabled={sortedIdx === 0} onClick={(e) => { e.stopPropagation(); moveSubLocation(sub.id, 'up'); }}>
-                                    <ArrowUp size={14} />
-                                  </ActionIcon>
-                                  <ActionIcon size="sm" variant="subtle" disabled={sortedIdx === sortedSubLocations.length - 1} onClick={(e) => { e.stopPropagation(); moveSubLocation(sub.id, 'down'); }}>
-                                    <ArrowDown size={14} />
-                                  </ActionIcon>
-                                  <ActionIcon size="sm" variant="subtle" color="red" onClick={(e) => { e.stopPropagation(); removeSubLocation(sub.id); }}>
-                                    <Trash2 size={14} />
-                                  </ActionIcon>
-                                </Group>
-                              </Group>
-                            </Paper>
+                              </Paper>
+                              
+                              {nextSub && (
+                                <Box px="md">
+                                  <Paper 
+                                    p={4} 
+                                    withBorder={!!route} 
+                                    bg={route ? 'gray.0' : 'transparent'}
+                                    style={{ 
+                                      borderStyle: route ? 'solid' : 'dashed',
+                                      borderWidth: 1,
+                                      borderColor: 'var(--mantine-color-gray-3)',
+                                      cursor: 'pointer',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      margin: '2px 0'
+                                    }}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      onEditRoute?.(sub.id, nextSub.id);
+                                    }}
+                                  >
+                                    {route ? (
+                                      <Group gap="xs">
+                                        <Text size="10px" fw={700} c={TRANSPORT_COLORS[route.transportType]}>
+                                          {TRANSPORT_LABELS[route.transportType]}
+                                        </Text>
+                                        {route.duration && (
+                                          <>
+                                            <Box style={{ width: 1, height: 10, backgroundColor: 'var(--mantine-color-gray-3)' }} />
+                                            <Text size="10px" c="dimmed">{route.duration}</Text>
+                                          </>
+                                        )}
+                                      </Group>
+                                    ) : (
+                                      <Text size="10px" c="dimmed">+ Set travel details</Text>
+                                    )}
+                                  </Paper>
+                                </Box>
+                              )}
+                             </React.Fragment>
                            );
                         })}
                         {daySubs.length === 0 && <Text size="xs" c="dimmed" fs="italic" ta="center" py={4}>No activities planned</Text>}

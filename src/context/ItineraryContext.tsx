@@ -262,8 +262,23 @@ export function ItineraryProvider({ children }: { children: ReactNode }) {
   };
 
   const removeLocation = (id: string) => {
+    // Collect IDs of this location and all its sub-locations for route cleanup
+    const getAllIds = (loc: Location): string[] => {
+      let ids = [loc.id];
+      if (loc.subLocations) {
+        loc.subLocations.forEach(sub => {
+          ids = [...ids, ...getAllIds(sub)];
+        });
+      }
+      return ids;
+    };
+
+    const locationToRemove = locations.find(l => l.id === id);
+    const idsToRemove = locationToRemove ? getAllIds(locationToRemove) : [id];
+    const idSet = new Set(idsToRemove);
+
     setLocations(locations.filter(l => l.id !== id));
-    setRoutes(routes.filter(r => r.fromLocationId !== id && r.toLocationId !== id));
+    setRoutes(routes.filter(r => !idSet.has(r.fromLocationId) && !idSet.has(r.toLocationId)));
     if (selectedLocationId === id) setSelectedLocationId(null);
   };
 
