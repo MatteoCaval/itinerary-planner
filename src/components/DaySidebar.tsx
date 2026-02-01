@@ -40,6 +40,7 @@ interface DaySidebarProps {
     parentName?: string;
     selectedDayId?: string | null;
     onSelectDay?: (id: string | null) => void;
+    isSlotBlocked?: (dayId: string, slot: DaySection) => boolean;
 }
 
 const SECTION_ORDER: DaySection[] = ['morning', 'afternoon', 'evening'];
@@ -57,8 +58,8 @@ const formatDate = (dateStr: string) => {
     });
 };
 
-function DroppableCell({ id, section, row, isEvenDay, zoomLevel, onClick, children }: { id: string, section: DaySection, row: number, isEvenDay: boolean, zoomLevel: number, onClick?: () => void, children?: React.ReactNode }) {
-    const { isOver, setNodeRef } = useDroppable({ id });
+function DroppableCell({ id, section, row, isEvenDay, zoomLevel, onClick, isBlocked, children }: { id: string, section: DaySection, row: number, isEvenDay: boolean, zoomLevel: number, onClick?: () => void, isBlocked?: boolean, children?: React.ReactNode }) {
+    const { isOver, setNodeRef } = useDroppable({ id, disabled: isBlocked });
 
     let icon;
     let color;
@@ -77,30 +78,36 @@ function DroppableCell({ id, section, row, isEvenDay, zoomLevel, onClick, childr
             break;
     }
 
-    const bgClass = isEvenDay ? 'var(--mantine-color-gray-0)' : 'white';
+    const bgClass = isBlocked ? 'var(--mantine-color-gray-2)' : (isEvenDay ? 'var(--mantine-color-gray-0)' : 'white');
 
     return (
         <Box
             ref={setNodeRef}
-            onClick={onClick}
+            onClick={!isBlocked ? onClick : undefined}
             style={{
                 gridColumn: '2 / -1',
                 gridRow: `${row} / span 1`,
                 borderBottom: '1px solid var(--mantine-color-gray-3)',
                 minHeight: `${80 * zoomLevel}px`,
                 zIndex: 0,
-                cursor: 'pointer',
+                cursor: isBlocked ? 'not-allowed' : 'pointer',
                 backgroundColor: isOver ? 'var(--mantine-color-blue-0)' : bgClass,
                 display: 'flex',
                 alignItems: 'center',
-                transition: 'background-color 0.2s ease'
+                transition: 'background-color 0.2s ease',
+                opacity: isBlocked ? 0.6 : 1,
             }}
         >
-            <Box style={{ width: 40, minWidth: 40, height: '100%', pointerEvents: 'none', borderRight: '1px solid var(--mantine-color-gray-3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Stack gap={2} align="center" c={color}>
+            <Box style={{ width: 40, minWidth: 40, height: '100%', pointerEvents: 'none', borderRight: '1px solid var(--mantine-color-gray-3)', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: isBlocked ? 'rgba(0,0,0,0.05)' : 'transparent' }}>
+                <Stack gap={2} align="center" c={isBlocked ? 'gray' : color}>
                     {icon}
                 </Stack>
             </Box>
+            {isBlocked && (
+              <Box px="md">
+                <Text size="xs" c="dimmed" fs="italic">Outside destination timeframe</Text>
+              </Box>
+            )}
             {children}
         </Box>
     );
@@ -523,7 +530,8 @@ export function DaySidebar({
     dayNumberOffset,
     parentName,
     selectedDayId,
-    onSelectDay
+    onSelectDay,
+    isSlotBlocked
 }: DaySidebarProps) {
     const [activeId, setActiveId] = useState<string | null>(null);
     const [unassignedCollapsed, setUnassignedCollapsed] = useState(false);
@@ -664,6 +672,7 @@ export function DaySidebar({
                                         isEvenDay={isEvenDay}
                                         zoomLevel={zoomLevel}
                                         onClick={() => onAddToDay(day.id, section)}
+                                        isBlocked={isSlotBlocked?.(day.id, section)}
                                     />
                                 ))}
                             </React.Fragment>

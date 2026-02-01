@@ -189,10 +189,32 @@ function AppContent() {
     const startDayIdx = days.findIndex(d => d.id === activeParent.startDayId);
     if (startDayIdx === -1) return days;
     
-    // Duration in slots (3 per day)
-    const numDays = Math.ceil((activeParent.duration || 1) / 3);
-    return days.slice(startDayIdx, startDayIdx + numDays);
+    const startSlotIdx = ['morning', 'afternoon', 'evening'].indexOf(activeParent.startSlot || 'morning');
+    const totalSlots = activeParent.duration || 1;
+    const endAbsSlot = (startDayIdx * 3) + startSlotIdx + totalSlots - 1;
+    const endDayIdx = Math.floor(endAbsSlot / 3);
+    
+    return days.slice(startDayIdx, endDayIdx + 1);
   }, [days, activeParent]);
+
+  // Helper to check if a slot is blocked (outside parent's duration)
+  const isSlotBlocked = (dayId: string, slot: DaySection) => {
+    if (!activeParent || !activeParent.startDayId) return false;
+
+    const startDayIdx = days.findIndex(d => d.id === activeParent.startDayId);
+    const currentDayIdx = days.findIndex(d => d.id === dayId);
+    if (startDayIdx === -1 || currentDayIdx === -1) return false;
+
+    const sectionOrder = ['morning', 'afternoon', 'evening'];
+    const startSlotIdx = sectionOrder.indexOf(activeParent.startSlot || 'morning');
+    const currentSlotIdx = sectionOrder.indexOf(slot);
+
+    const absStart = startDayIdx * 3 + startSlotIdx;
+    const absEnd = absStart + (activeParent.duration || 1) - 1;
+    const absCurrent = currentDayIdx * 3 + currentSlotIdx;
+
+    return absCurrent < absStart || absCurrent > absEnd;
+  };
 
   // Determine locations to show on map (drill-down if sub-locations exist or are selected)
   const mapLocations = useMemo(() => {
@@ -532,6 +554,7 @@ function AppContent() {
                         parentName={activeParent?.name}
                         selectedDayId={selectedDayId}
                         onSelectDay={setSelectedDayId}
+                        isSlotBlocked={activeParent ? isSlotBlocked : undefined}
                     />
                 </Box>
               </Stack>
