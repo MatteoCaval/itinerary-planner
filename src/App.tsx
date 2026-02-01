@@ -40,6 +40,32 @@ function AppContent() {
   const [searchQuery, setSearchQuery] = useState('');
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  
+  const [sidebarWidth, setSidebarWidth] = useState(500);
+  const startResizing = React.useCallback((mouseDownEvent: React.MouseEvent) => {
+    mouseDownEvent.preventDefault();
+    const startX = mouseDownEvent.clientX;
+    const startWidth = sidebarWidth;
+
+    const doDrag = (mouseMoveEvent: MouseEvent) => {
+      const newWidth = startWidth + mouseMoveEvent.clientX - startX;
+      if (newWidth > 300 && newWidth < window.innerWidth - 100) {
+        setSidebarWidth(newWidth);
+      }
+    };
+
+    const stopDrag = () => {
+      document.removeEventListener('mousemove', doDrag);
+      document.removeEventListener('mouseup', stopDrag);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+
+    document.addEventListener('mousemove', doDrag);
+    document.addEventListener('mouseup', stopDrag);
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  }, [sidebarWidth]);
 
   // Clear selected day when location selection changes
   useEffect(() => {
@@ -327,16 +353,16 @@ function AppContent() {
     <AppShell
       header={{ height: 60 }}
       navbar={{
-        width: { base: '100%', sm: 500, lg: 600, xl: 700 },
+        width: { base: '100%', sm: sidebarWidth },
         breakpoint: 'sm',
-        collapsed: { mobile: true, desktop: !opened },
+        collapsed: { mobile: true, desktop: false },
       }}
       padding={0}
     >
       <AppShell.Header style={{ zIndex: 1200 }}>
         <Group h="100%" px="md" justify="space-between">
           <Group>
-            <Burger opened={opened} onClick={toggle} size="sm" color="blue" />
+            <Burger opened={opened} onClick={toggle} size="sm" color="blue" hiddenFrom="sm" />
             <Text fw={700} fz="lg" c="blue" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <MapIcon size={20} /> <Box visibleFrom="xs">Itinerary Planner</Box>
             </Text>
@@ -394,6 +420,21 @@ function AppContent() {
       </AppShell.Header>
 
       <AppShell.Navbar p={0} style={{ zIndex: 1000 }}>
+        {/* Resize Handle */}
+        <div
+          onMouseDown={startResizing}
+          style={{
+            position: 'absolute',
+            right: -3,
+            top: 0,
+            bottom: 0,
+            width: 6,
+            cursor: 'col-resize',
+            zIndex: 1100,
+            backgroundColor: 'transparent',
+          }}
+          className="resize-handle"
+        />
         <Box visibleFrom="sm" h="100%">
             <SidebarContent
               startDate={startDate} endDate={endDate} updateDateRange={updateDateRange}
