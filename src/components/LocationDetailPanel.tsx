@@ -33,6 +33,20 @@ export function LocationDetailPanel({
   const [subSearchQuery, setSubSearchQuery] = useState('');
   const [subSuggestions, setSubSuggestions] = useState<any[]>([]);
 
+  // 1. Unified Chronological Sort for Sub-locations
+  const sortedSubLocations = useMemo(() => {
+    const subs = location?.subLocations || [];
+    return [...subs].sort((a, b) => {
+      const dayA = a.dayOffset || 0;
+      const dayB = b.dayOffset || 0;
+      if (dayA !== dayB) return dayA - dayB;
+      const slotA = SECTION_ORDER.indexOf(a.startSlot || 'morning');
+      const slotB = SECTION_ORDER.indexOf(b.startSlot || 'morning');
+      if (slotA !== slotB) return slotA - slotB;
+      return (a.order || 0) - (b.order || 0);
+    });
+  }, [location?.subLocations]);
+
   useEffect(() => {
     const timer = setTimeout(async () => {
       if (subSearchQuery.trim().length > 2) {
@@ -152,51 +166,37 @@ export function LocationDetailPanel({
     onUpdate(location.id, { subLocations: (location.subLocations || []).filter(l => l.id !== subId) });
   };
 
-  const moveSubLocation = (index: number, direction: 'up' | 'down') => {
-    const subs = [...(location.subLocations || [])];
-    
-    // 1. Get the current chronological order used in the UI
-    const sortedSubs = [...subs].sort((a, b) => {
-      const dayA = a.dayOffset || 0;
-      const dayB = b.dayOffset || 0;
-      if (dayA !== dayB) return dayA - dayB;
-      const slotA = SECTION_ORDER.indexOf(a.startSlot || 'morning');
-      const slotB = SECTION_ORDER.indexOf(b.startSlot || 'morning');
-      if (slotA !== slotB) return slotA - slotB;
-      return (a.order || 0) - (b.order || 0);
-    });
-
-    // 2. Find the item we want to move in the SORTED list
-    const currentItem = subs[index];
-    const sortedIdx = sortedSubs.findIndex(s => s.id === currentItem.id);
+  const moveSubLocation = (subId: string, direction: 'up' | 'down') => {
+    if (!location) return;
+    const sortedSubs = [...sortedSubLocations];
+    const sortedIdx = sortedSubs.findIndex(s => s.id === subId);
     
     if (direction === 'up' && sortedIdx > 0) {
-      const prevItem = sortedSubs[sortedIdx - 1];
+      const currentItem = { ...sortedSubs[sortedIdx] };
+      const prevItem = { ...sortedSubs[sortedIdx - 1] };
       
       // Swap positions in the sorted array
       sortedSubs.splice(sortedIdx, 1);
       sortedSubs.splice(sortedIdx - 1, 0, currentItem);
       
-      // The moved item inherits the day/slot of the position it moved into
+      // Inherit timing from new neighbor
       currentItem.dayOffset = prevItem.dayOffset;
       currentItem.startSlot = prevItem.startSlot;
       
-      // Re-assign order to all items to ensure persistence
       const finalSubs = sortedSubs.map((s, idx) => ({ ...s, order: idx }));
       onUpdate(location.id, { subLocations: finalSubs });
     } else if (direction === 'down' && sortedIdx < sortedSubs.length - 1) {
-      const nextItem = sortedSubs[sortedIdx + 1];
+      const currentItem = { ...sortedSubs[sortedIdx] };
+      const nextItem = { ...sortedSubs[sortedIdx + 1] };
       
-      // Swap positions in the sorted array
+      // Swap positions
       sortedSubs.splice(sortedIdx, 1);
-      sortedSubs.splice(sortedIdx, 0, nextItem); // This effectively swaps them
-      sortedSubs[sortedIdx + 1] = currentItem;
+      sortedSubs.splice(sortedIdx + 1, 0, currentItem);
       
-      // The moved item inherits the day/slot of the position it moved into
+      // Inherit timing
       currentItem.dayOffset = nextItem.dayOffset;
       currentItem.startSlot = nextItem.startSlot;
       
-      // Re-assign order to all items to ensure persistence
       const finalSubs = sortedSubs.map((s, idx) => ({ ...s, order: idx }));
       onUpdate(location.id, { subLocations: finalSubs });
     }
@@ -402,7 +402,7 @@ export function LocationDetailPanel({
 
             <Stack gap="xs">
               {(() => {
-                const subs = location.subLocations || [];
+                const subs = sortedSubLocations;
                 const numDays = Math.ceil((location.duration || 1) / 3);
                 const grouped: Record<number | string, Location[]> = {};
                 
@@ -417,13 +417,8 @@ export function LocationDetailPanel({
 
                 // Render Assigned Days
                 for (let i = 0; i < numDays; i++) {
-                  const daySubs = (grouped[i] || []).sort((a, b) => {
-                    const slotA = SECTION_ORDER.indexOf(a.startSlot || 'morning');
-                    const slotB = SECTION_ORDER.indexOf(b.startSlot || 'morning');
-                    if (slotA !== slotB) return slotA - slotB;
-                    return (a.order || 0) - (b.order || 0);
-                  });
-
+                  const daySubs = (grouped[i] || []);
+                  
                   // Find the actual day ID from the global days array
                   const startDayIdx = days.findIndex(d => d.id === location.startDayId);
                   const actualDay = startDayIdx !== -1 ? days[startDayIdx + i] : null;
@@ -445,7 +440,7 @@ export function LocationDetailPanel({
                       <Divider mb="xs" color={isDaySelected ? 'blue.3' : 'blue.1'} />
                       <Stack gap={6}>
                         {daySubs.map((sub) => {
-                           const globalIdx = (location.subLocations || []).findIndex(s => s.id === sub.id);
+                           const sortedIdx = sortedSubLocations.findIndex(s => s.id === sub.id);
                            return (
                              <Paper key={sub.id} p="xs" withBorder bg="white" shadow="xs" style={{ cursor: 'pointer' }} onClick={() => onSelectLocation?.(sub.id)}>
                               <Group justify="space-between" wrap="nowrap">
@@ -454,10 +449,10 @@ export function LocationDetailPanel({
                                   <Text size="sm" fw={500} truncate>{sub.name}</Text>
                                 </Group>
                                 <Group gap={2}>
-                                  <ActionIcon size="sm" variant="subtle" disabled={globalIdx === 0} onClick={(e) => { e.stopPropagation(); moveSubLocation(globalIdx, 'up'); }}>
+                                  <ActionIcon size="sm" variant="subtle" disabled={sortedIdx === 0} onClick={(e) => { e.stopPropagation(); moveSubLocation(sub.id, 'up'); }}>
                                     <ArrowUp size={14} />
                                   </ActionIcon>
-                                  <ActionIcon size="sm" variant="subtle" disabled={globalIdx === (location.subLocations?.length || 0) - 1} onClick={(e) => { e.stopPropagation(); moveSubLocation(globalIdx, 'down'); }}>
+                                  <ActionIcon size="sm" variant="subtle" disabled={sortedIdx === sortedSubLocations.length - 1} onClick={(e) => { e.stopPropagation(); moveSubLocation(sub.id, 'down'); }}>
                                     <ArrowDown size={14} />
                                   </ActionIcon>
                                   <ActionIcon size="sm" variant="subtle" color="red" onClick={(e) => { e.stopPropagation(); removeSubLocation(sub.id); }}>
@@ -483,16 +478,27 @@ export function LocationDetailPanel({
                       </Group>
                       <Divider mb="xs" color="gray.2" />
                       <Stack gap={6}>
-                        {grouped['unassigned'].map((sub) => (
-                           <Paper key={sub.id} p="xs" withBorder bg="gray.0" shadow="xs" style={{ cursor: 'pointer' }} onClick={() => onSelectLocation?.(sub.id)}>
-                            <Group justify="space-between" wrap="nowrap">
-                              <Text size="sm" fw={500} truncate style={{ flex: 1 }}>{sub.name}</Text>
-                              <ActionIcon size="sm" variant="subtle" color="red" onClick={(e) => { e.stopPropagation(); removeSubLocation(sub.id); }}>
-                                <Trash2 size={14} />
-                              </ActionIcon>
-                            </Group>
-                          </Paper>
-                        ))}
+                        {grouped['unassigned'].map((sub) => {
+                           const sortedIdx = sortedSubLocations.findIndex(s => s.id === sub.id);
+                           return (
+                             <Paper key={sub.id} p="xs" withBorder bg="gray.0" shadow="xs" style={{ cursor: 'pointer' }} onClick={() => onSelectLocation?.(sub.id)}>
+                              <Group justify="space-between" wrap="nowrap">
+                                <Text size="sm" fw={500} truncate style={{ flex: 1 }}>{sub.name}</Text>
+                                <Group gap={2}>
+                                  <ActionIcon size="sm" variant="subtle" disabled={sortedIdx === 0} onClick={(e) => { e.stopPropagation(); moveSubLocation(sub.id, 'up'); }}>
+                                    <ArrowUp size={14} />
+                                  </ActionIcon>
+                                  <ActionIcon size="sm" variant="subtle" disabled={sortedIdx === sortedSubLocations.length - 1} onClick={(e) => { e.stopPropagation(); moveSubLocation(sub.id, 'down'); }}>
+                                    <ArrowDown size={14} />
+                                  </ActionIcon>
+                                  <ActionIcon size="sm" variant="subtle" color="red" onClick={(e) => { e.stopPropagation(); removeSubLocation(sub.id); }}>
+                                    <Trash2 size={14} />
+                                  </ActionIcon>
+                                </Group>
+                              </Group>
+                            </Paper>
+                           );
+                        })}
                       </Stack>
                     </Box>
                   );
