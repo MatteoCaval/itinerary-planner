@@ -505,6 +505,8 @@ function AppContent() {
                         onUpdateDay={updateDay}
                         hoveredLocationId={hoveredLocationId} onHoverLocation={setHoveredLocationId} zoomLevel={zoomLevel}
                         selectedLocationId={selectedLocationId} onSelectLocation={setSelectedLocationId}
+                        dayNumberOffset={activeParent ? days.findIndex(d => d.id === activeParent.startDayId) + 1 : undefined}
+                        parentName={activeParent?.name}
                     />
                 </Box>
               </Stack>

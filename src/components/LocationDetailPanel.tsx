@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { TextInput, Textarea, Button, ActionIcon, Paper, Group, Stack, Text, Badge, Image, Checkbox, LoadingOverlay, Box, Divider, ScrollArea, Anchor } from '@mantine/core';
-import { X, Plus, Trash2, ExternalLink, CheckSquare, Link as LinkIcon, Map as MapIcon, Calendar, ArrowRight, ArrowLeft, Bed, Search, ArrowUp, ArrowDown } from 'lucide-react';
+import { X, Plus, Trash2, ExternalLink, CheckSquare, Link as LinkIcon, Map as MapIcon, Calendar, ArrowRight, ArrowLeft, Bed, Search } from 'lucide-react';
 import { Location, Day, Route, DaySection, TRANSPORT_LABELS } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 import { searchPhoto } from '../unsplash';
@@ -145,18 +145,6 @@ export function LocationDetailPanel({ location, parentLocation, days, allLocatio
 
   const removeSubLocation = (subId: string) => {
     onUpdate(location.id, { subLocations: (location.subLocations || []).filter(l => l.id !== subId) });
-  };
-
-  const moveSubLocation = (index: number, direction: 'up' | 'down') => {
-    const subs = [...(location.subLocations || [])];
-    if (direction === 'up' && index > 0) {
-      [subs[index], subs[index - 1]] = [subs[index - 1], subs[index]];
-    } else if (direction === 'down' && index < subs.length - 1) {
-      [subs[index], subs[index + 1]] = [subs[index + 1], subs[index]];
-    }
-    // Update order field as well
-    const updated = subs.map((s, i) => ({ ...s, order: i }));
-    onUpdate(location.id, { subLocations: updated });
   };
 
   const handleAddChecklistItem = (e: React.FormEvent) => {
@@ -358,29 +346,76 @@ export function LocationDetailPanel({ location, parentLocation, days, allLocatio
             </Box>
 
             <Stack gap="xs">
-              {(location.subLocations || []).map((sub, index) => (
-                <Paper key={sub.id} p="xs" withBorder bg="gray.0">
-                  <Group justify="space-between">
-                    <Group gap="xs">
-                      <Badge size="sm" circle color="gray">{index + 1}</Badge>
-                      <Box>
-                        <Text size="sm" fw={500}>{sub.name}</Text>
-                      </Box>
-                    </Group>
-                    <Group gap={4}>
-                      <ActionIcon size="sm" variant="subtle" disabled={index === 0} onClick={() => moveSubLocation(index, 'up')}>
-                        <ArrowUp size={14} />
-                      </ActionIcon>
-                      <ActionIcon size="sm" variant="subtle" disabled={index === (location.subLocations?.length || 0) - 1} onClick={() => moveSubLocation(index, 'down')}>
-                        <ArrowDown size={14} />
-                      </ActionIcon>
-                      <ActionIcon size="sm" variant="subtle" color="red" onClick={() => removeSubLocation(sub.id)}>
-                        <Trash2 size={14} />
-                      </ActionIcon>
-                    </Group>
-                  </Group>
-                </Paper>
-              ))}
+              {(() => {
+                const subs = location.subLocations || [];
+                const numDays = Math.ceil((location.duration || 1) / 3);
+                const grouped: Record<number | string, Location[]> = {};
+                
+                // Group by dayOffset
+                subs.forEach(s => {
+                  const day = s.dayOffset === undefined ? 'unassigned' : s.dayOffset;
+                  if (!grouped[day]) grouped[day] = [];
+                  grouped[day].push(s);
+                });
+
+                const rendered = [];
+
+                // Render Assigned Days
+                for (let i = 0; i < numDays; i++) {
+                  const daySubs = (grouped[i] || []).sort((a, b) => (a.order || 0) - (b.order || 0));
+                  rendered.push(
+                    <Box key={`day-group-${i}`} mt={i > 0 ? 'sm' : 0}>
+                      <Group justify="space-between" mb={4} px={4}>
+                        <Text size="xs" fw={700} c="blue.7">Day {i + 1}</Text>
+                        <Text size="xs" c="dimmed">{daySubs.length} items</Text>
+                      </Group>
+                      <Divider mb="xs" color="blue.1" />
+                      <Stack gap={6}>
+                        {daySubs.map((sub) => (
+                           <Paper key={sub.id} p="xs" withBorder bg="white" shadow="xs" style={{ cursor: 'pointer' }} onClick={() => onSelectLocation?.(sub.id)}>
+                            <Group justify="space-between" wrap="nowrap">
+                              <Group gap="xs" style={{ flex: 1, minWidth: 0 }}>
+                                <Badge size="xs" color="blue" variant="light">{SECTION_ORDER.indexOf(sub.startSlot || 'morning') + 1}</Badge>
+                                <Text size="sm" fw={500} truncate>{sub.name}</Text>
+                              </Group>
+                              <ActionIcon size="sm" variant="subtle" color="red" onClick={(e) => { e.stopPropagation(); removeSubLocation(sub.id); }}>
+                                <Trash2 size={14} />
+                              </ActionIcon>
+                            </Group>
+                          </Paper>
+                        ))}
+                        {daySubs.length === 0 && <Text size="xs" c="dimmed" fs="italic" ta="center" py={4}>No activities planned</Text>}
+                      </Stack>
+                    </Box>
+                  );
+                }
+
+                // Render Unassigned
+                if (grouped['unassigned'] && grouped['unassigned'].length > 0) {
+                  rendered.push(
+                    <Box key="day-group-unassigned" mt="md">
+                      <Group justify="space-between" mb={4} px={4}>
+                        <Text size="xs" fw={700} c="gray.7">Unassigned</Text>
+                      </Group>
+                      <Divider mb="xs" color="gray.2" />
+                      <Stack gap={6}>
+                        {grouped['unassigned'].map((sub) => (
+                           <Paper key={sub.id} p="xs" withBorder bg="gray.0" shadow="xs" style={{ cursor: 'pointer' }} onClick={() => onSelectLocation?.(sub.id)}>
+                            <Group justify="space-between" wrap="nowrap">
+                              <Text size="sm" fw={500} truncate style={{ flex: 1 }}>{sub.name}</Text>
+                              <ActionIcon size="sm" variant="subtle" color="red" onClick={(e) => { e.stopPropagation(); removeSubLocation(sub.id); }}>
+                                <Trash2 size={14} />
+                              </ActionIcon>
+                            </Group>
+                          </Paper>
+                        ))}
+                      </Stack>
+                    </Box>
+                  );
+                }
+
+                return rendered;
+              })()}
               {(!location.subLocations || location.subLocations.length === 0) && (
                 <Text size="xs" c="dimmed" fs="italic">No sub-destinations added yet.</Text>
               )}

@@ -36,6 +36,8 @@ interface DaySidebarProps {
     selectedLocationId?: string | null;
     onSelectLocation?: (id: string | null) => void;
     zoomLevel: number;
+    dayNumberOffset?: number;
+    parentName?: string;
 }
 
 const SECTION_ORDER: DaySection[] = ['morning', 'afternoon', 'evening'];
@@ -142,14 +144,16 @@ function UnassignedZone({ locations, onRemove, onUpdate, onSelect, selectedLocat
     );
 }
 
-function DayLabel({ day, startRow, dayNum, isEvenDay, onAdd, onUpdateDay, existingAccommodations }: {
+function DayLabel({ day, startRow, dayNum, isEvenDay, onAdd, onUpdateDay, existingAccommodations, parentName, dayNumberOffset }: {
     day: Day,
     startRow: number,
     dayNum: number,
     isEvenDay: boolean,
     onAdd: () => void,
     onUpdateDay: (id: string, updates: Partial<Day>) => void,
-    existingAccommodations: string[]
+    existingAccommodations: string[],
+    parentName?: string,
+    dayNumberOffset?: number
 }) {
     const [opened, setOpened] = useState(false);
     const [tempName, setTempName] = useState(day.accommodation?.name || '');
@@ -224,7 +228,10 @@ function DayLabel({ day, startRow, dayNum, isEvenDay, onAdd, onUpdateDay, existi
             }}
         >
             <Stack gap={4} align="center">
-                <Text size="sm" fw={700}>Day {dayNum}</Text>
+                <Box>
+                    <Text size="sm" fw={700}>{parentName ? `${parentName} Day` : 'Day'} {parentName ? dayNum - (dayNumberOffset || 0) + 1 : dayNum}</Text>
+                    {parentName && <Text size="xs" c="blue.6" fw={500}>(Day {dayNum})</Text>}
+                </Box>
                 <Text size="xs" c="dimmed">{formatDate(day.date)}</Text>
                 
                 <Popover opened={opened} onChange={setOpened} withArrow trapFocus width={300} position="right" shadow="md" zIndex={2100} withinPortal>
@@ -503,7 +510,9 @@ export function DaySidebar({
     onHoverLocation,
     selectedLocationId,
     onSelectLocation,
-    zoomLevel
+    zoomLevel,
+    dayNumberOffset,
+    parentName
 }: DaySidebarProps) {
     const [activeId, setActiveId] = useState<string | null>(null);
     const [unassignedCollapsed, setUnassignedCollapsed] = useState(false);
@@ -625,11 +634,13 @@ export function DaySidebar({
                                 <DayLabel
                                     day={day}
                                     startRow={startRow}
-                                    dayNum={dayIndex + 1}
+                                    dayNum={dayNumberOffset ? dayNumberOffset + dayIndex : dayIndex + 1}
                                     isEvenDay={isEvenDay}
                                     onAdd={() => onAddToDay(day.id)}
                                     onUpdateDay={onUpdateDay}
                                     existingAccommodations={existingAccommodations}
+                                    parentName={parentName}
+                                    dayNumberOffset={dayNumberOffset}
                                 />
                                 {SECTION_ORDER.map((section, secIndex) => (
                                     <DroppableCell
