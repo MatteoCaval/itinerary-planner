@@ -38,6 +38,8 @@ interface DaySidebarProps {
     zoomLevel: number;
     dayNumberOffset?: number;
     parentName?: string;
+    selectedDayId?: string | null;
+    onSelectDay?: (id: string | null) => void;
 }
 
 const SECTION_ORDER: DaySection[] = ['morning', 'afternoon', 'evening'];
@@ -144,7 +146,7 @@ function UnassignedZone({ locations, onRemove, onUpdate, onSelect, selectedLocat
     );
 }
 
-function DayLabel({ day, startRow, dayNum, isEvenDay, onAdd, onUpdateDay, existingAccommodations, parentName, dayNumberOffset }: {
+function DayLabel({ day, startRow, dayNum, isEvenDay, onAdd, onUpdateDay, existingAccommodations, parentName, dayNumberOffset, isSelected, onSelect }: {
     day: Day,
     startRow: number,
     dayNum: number,
@@ -153,7 +155,9 @@ function DayLabel({ day, startRow, dayNum, isEvenDay, onAdd, onUpdateDay, existi
     onUpdateDay: (id: string, updates: Partial<Day>) => void,
     existingAccommodations: string[],
     parentName?: string,
-    dayNumberOffset?: number
+    dayNumberOffset?: number,
+    isSelected?: boolean,
+    onSelect?: () => void
 }) {
     const [opened, setOpened] = useState(false);
     const [tempName, setTempName] = useState(day.accommodation?.name || '');
@@ -213,18 +217,21 @@ function DayLabel({ day, startRow, dayNum, isEvenDay, onAdd, onUpdateDay, existi
     return (
         <Box
             p="xs"
+            onClick={onSelect}
             style={{
                 gridColumn: '1 / span 1',
                 gridRow: `${startRow} / span 3`,
                 zIndex: 2,
                 borderTop: '1px solid var(--mantine-color-gray-3)',
-                borderRight: '1px solid var(--mantine-color-gray-3)',
+                borderRight: isSelected ? '4px solid var(--mantine-color-blue-6)' : '1px solid var(--mantine-color-gray-3)',
                 borderBottom: '1px solid var(--mantine-color-gray-3)',
-                backgroundColor: isEvenDay ? 'var(--mantine-color-gray-0)' : 'white',
+                backgroundColor: isSelected ? 'var(--mantine-color-blue-0)' : (isEvenDay ? 'var(--mantine-color-gray-0)' : 'white'),
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                textAlign: 'center'
+                textAlign: 'center',
+                cursor: onSelect ? 'pointer' : 'default',
+                transition: 'all 0.2s ease'
             }}
         >
             <Stack gap={4} align="center">
@@ -512,7 +519,9 @@ export function DaySidebar({
     onSelectLocation,
     zoomLevel,
     dayNumberOffset,
-    parentName
+    parentName,
+    selectedDayId,
+    onSelectDay
 }: DaySidebarProps) {
     const [activeId, setActiveId] = useState<string | null>(null);
     const [unassignedCollapsed, setUnassignedCollapsed] = useState(false);
@@ -641,6 +650,8 @@ export function DaySidebar({
                                     existingAccommodations={existingAccommodations}
                                     parentName={parentName}
                                     dayNumberOffset={dayNumberOffset}
+                                    isSelected={selectedDayId === day.id}
+                                    onSelect={() => onSelectDay?.(selectedDayId === day.id ? null : day.id)}
                                 />
                                 {SECTION_ORDER.map((section, secIndex) => (
                                     <DroppableCell

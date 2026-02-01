@@ -35,9 +35,15 @@ function AppContent() {
   const [opened, { toggle, close }] = useDisclosure();
   
   const [showAIModal, setShowAIModal] = useState(false);
+  const [selectedDayId, setSelectedDayId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+
+  // Clear selected day when location selection changes
+  useEffect(() => {
+    setSelectedDayId(null);
+  }, [selectedLocationId]);
 
   // Debounced search for suggestions
   useEffect(() => {
@@ -161,27 +167,6 @@ function AppContent() {
     return null;
   }, [locations, selectedLocationId]);
 
-  // Determine locations to show on map (drill-down if sub-locations exist or are selected)
-  const mapLocations = useMemo(() => {
-    // 1. Is a top-level location selected?
-    const parent = locations.find(l => l.id === selectedLocationId);
-    if (parent && parent.subLocations && parent.subLocations.length > 0) {
-      return parent.subLocations;
-    }
-
-    // 2. Is a sub-location selected? Find its parent and show siblings.
-    for (const loc of locations) {
-      if (loc.subLocations?.some(sub => sub.id === selectedLocationId)) {
-        return loc.subLocations;
-      }
-    }
-
-    // 3. Default to global
-    return locations;
-  }, [locations, selectedLocationId]);
-
-  const isSubItinerary = mapLocations !== locations;
-
   // Derive which location is the "Active Parent" for the current view
   const activeParent = useMemo(() => {
     // Case 1: A top-level location with sub-locations is selected
@@ -206,6 +191,37 @@ function AppContent() {
     const numDays = Math.ceil((activeParent.duration || 1) / 3);
     return days.slice(startDayIdx, startDayIdx + numDays);
   }, [days, activeParent]);
+
+  // Determine locations to show on map (drill-down if sub-locations exist or are selected)
+  const mapLocations = useMemo(() => {
+    let baseLocations = locations;
+    
+    // 1. Is a top-level location selected?
+    const parent = locations.find(l => l.id === selectedLocationId);
+    if (parent && parent.subLocations && parent.subLocations.length > 0) {
+      baseLocations = parent.subLocations;
+    } else {
+      // 2. Is a sub-location selected? Find its parent and show siblings.
+      for (const loc of locations) {
+        if (loc.subLocations?.some(sub => sub.id === selectedLocationId)) {
+          baseLocations = loc.subLocations;
+          break;
+        }
+      }
+    }
+
+    // 3. Filter by day if selected (only in sub-itinerary mode for now as requested)
+    if (selectedDayId && baseLocations !== locations) {
+      const dayIdx = activeDays.findIndex(d => d.id === selectedDayId);
+      if (dayIdx !== -1) {
+        return baseLocations.filter(l => l.dayOffset === dayIdx);
+      }
+    }
+
+    return baseLocations;
+  }, [locations, selectedLocationId, selectedDayId, activeDays]);
+
+  const isSubItinerary = mapLocations !== locations;
 
   // Derive locations for the sidebar (mapping dayOffset to startDayId)
   const sidebarLocations = useMemo(() => {
@@ -507,6 +523,8 @@ function AppContent() {
                         selectedLocationId={selectedLocationId} onSelectLocation={setSelectedLocationId}
                         dayNumberOffset={activeParent ? days.findIndex(d => d.id === activeParent.startDayId) + 1 : undefined}
                         parentName={activeParent?.name}
+                        selectedDayId={selectedDayId}
+                        onSelectDay={setSelectedDayId}
                     />
                 </Box>
               </Stack>
