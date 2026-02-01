@@ -337,7 +337,23 @@ export default function MapDisplay({ days, locations, routes, onEditRoute, hover
              }
           }
 
-          if (isCurrentDay || isPreviousDayOfFilter) {
+          // Check for evening activity if it is the current day
+          let shouldShowForCurrentDay = isCurrentDay;
+          if (isCurrentDay) {
+            const hasEveningActivity = sortedLocations.some(l => {
+              if (l.dayOffset !== dayIdx) return false;
+              // Check if activity covers evening
+              if (l.startSlot === 'evening') return true;
+              // Check if duration extends into evening
+              const duration = l.duration || 1;
+              if (l.startSlot === 'afternoon' && duration >= 2) return true;
+              if (l.startSlot === 'morning' && duration >= 3) return true;
+              return false;
+            });
+            shouldShowForCurrentDay = hasEveningActivity;
+          }
+
+          if (shouldShowForCurrentDay || isPreviousDayOfFilter) {
             points.push({
               id: `path-accom-${day.id}`,
               name: day.accommodation.name,
@@ -359,8 +375,45 @@ export default function MapDisplay({ days, locations, routes, onEditRoute, hover
 
   // Extract accommodations with location data for markers (keep for FitBounds and standalone markers)
   const accommodations = useMemo(() => {
+    // Determine if we are filtering to a single day
+    const filteredDayOffsets = new Set(sortedLocations.filter(l => l.dayOffset !== undefined).map(l => l.dayOffset as number));
+    const isFilteredToOneDay = filteredDayOffsets.size === 1;
+    const viewedDayIdx = isFilteredToOneDay ? Array.from(filteredDayOffsets)[0] : null;
+
     return days
-      .filter(d => d.accommodation && d.accommodation.lat && d.accommodation.lng)
+      .filter((d, dIdx) => {
+        if (!d.accommodation || !d.accommodation.lat || !d.accommodation.lng) return false;
+        
+        if (isSubItinerary) {
+          // Special case: Single day view logic (preserve existing behavior for "Previous Day Hotel")
+          if (isFilteredToOneDay && typeof viewedDayIdx === 'number') {
+            return dIdx === viewedDayIdx || dIdx === viewedDayIdx - 1;
+          }
+
+          // General Sub-Itinerary Logic:
+          // Only show the accommodation for Day X if the sub-itinerary has activities 
+          // that extend into the "Evening" of Day X. 
+          // If the sub-itinerary ends in the Afternoon, the "Night Stay" likely belongs 
+          // to the NEXT destination, so we hide it.
+          const hasEveningActivity = sortedLocations.some(l => {
+            if (l.dayOffset !== dIdx) return false;
+            
+            // Check if activity covers evening
+            if (l.startSlot === 'evening') return true;
+            
+            // Check if duration extends into evening
+            const duration = l.duration || 1;
+            if (l.startSlot === 'afternoon' && duration >= 2) return true; // Afternoon (1) + Evening (1) = 2
+            if (l.startSlot === 'morning' && duration >= 3) return true;   // Morning -> Afternoon -> Evening
+            
+            return false;
+          });
+
+          return hasEveningActivity;
+        }
+        
+        return true;
+      })
       .map(d => ({
         id: `accom-${d.id}`,
         name: d.accommodation!.name,
@@ -368,7 +421,7 @@ export default function MapDisplay({ days, locations, routes, onEditRoute, hover
         lng: d.accommodation!.lng!,
         notes: d.accommodation!.notes
       }));
-  }, [days]);
+  }, [days, isSubItinerary, sortedLocations]);
 
   return (
     <div className="map-container">
