@@ -686,11 +686,11 @@ function AppContent() {
         currentRoutes={routes}
         settings={aiSettings}
         onSettingsChange={setAiSettings}
-        onApplyItinerary={(locs, rts) => {
+        onApplyItinerary={(locs, rts, updatedDays) => {
              // We need to handle this manually since context doesn't have a 'setAll' that takes both.
              // Or better, add a setItinerary to context.
              // For now:
-             loadFromData({ days, locations: locs, routes: rts, startDate, endDate });
+             loadFromData({ days: updatedDays || days, locations: locs, routes: rts, startDate, endDate });
         }}
       />
 

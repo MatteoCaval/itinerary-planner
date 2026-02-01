@@ -13,7 +13,7 @@ interface AIPlannerModalProps {
   currentRoutes: Route[];
   settings: AISettings;
   onSettingsChange: (settings: AISettings) => void;
-  onApplyItinerary: (locations: Location[], routes: Route[]) => void;
+  onApplyItinerary: (locations: Location[], routes: Route[], days?: Day[]) => void;
 }
 
 export function AIPlannerModal({ show, onClose, days, currentLocations, currentRoutes, settings, onSettingsChange, onApplyItinerary }: AIPlannerModalProps) {
@@ -23,7 +23,7 @@ export function AIPlannerModal({ show, onClose, days, currentLocations, currentR
   const [activeTab, setActiveTab] = useState<string | null>('generate');
   const [mode, setMode] = useState<'scratch' | 'refactor'>('scratch');
   const [resultExplanation, setResultExplanation] = useState<string | null>(null);
-  const [pendingResults, setPendingResults] = useState<{ locations: Location[], routes: Route[] } | null>(null);
+  const [pendingResults, setPendingResults] = useState<{ locations: Location[], routes: Route[], days?: Day[] } | null>(null);
 
   const hasDates = days.length > 0;
 
@@ -46,9 +46,10 @@ export function AIPlannerModal({ show, onClose, days, currentLocations, currentR
       
       const idMap: Record<string, string> = {};
       
-      const newLocations: Location[] = result.locations.map((loc, index) => {
+      const mapLocation = (loc: Partial<Location>, index: number): Location => {
         const newId = uuidv4();
         if (loc.id) idMap[loc.id] = newId;
+        
         return {
           id: newId,
           name: loc.name || 'Unnamed Activity',
@@ -60,11 +61,15 @@ export function AIPlannerModal({ show, onClose, days, currentLocations, currentR
           duration: loc.duration || 1,
           order: index + 1000,
           category: (loc.category as any) || 'sightseeing',
+          dayOffset: loc.dayOffset,
           dayIds: [],
           checklist: [],
-          links: []
+          links: [],
+          subLocations: loc.subLocations?.map((sub, sIdx) => mapLocation(sub, sIdx))
         };
-      });
+      };
+
+      const newLocations: Location[] = result.locations.map((loc, index) => mapLocation(loc, index));
 
       const newRoutes: Route[] = result.routes.map(r => ({
         id: uuidv4(),
@@ -75,12 +80,21 @@ export function AIPlannerModal({ show, onClose, days, currentLocations, currentR
         notes: r.notes || ''
       }));
 
+      // Update days with accommodations if provided
+      const updatedDays: Day[] = days.map(d => {
+        const aiDay = result.days?.find(ad => ad.id === d.id);
+        if (aiDay && aiDay.accommodation) {
+          return { ...d, accommodation: aiDay.accommodation as any };
+        }
+        return d;
+      });
+
       setResultExplanation(result.explanation || null);
-      setPendingResults({ locations: newLocations, routes: newRoutes });
+      setPendingResults({ locations: newLocations, routes: newRoutes, days: updatedDays });
       
       // If there's no explanation, we can just apply immediately
       if (!result.explanation) {
-        onApplyItinerary(newLocations, newRoutes);
+        onApplyItinerary(newLocations, newRoutes, updatedDays);
         setPrompt('');
         onClose();
       }
@@ -93,7 +107,7 @@ export function AIPlannerModal({ show, onClose, days, currentLocations, currentR
 
   const handleApply = () => {
     if (pendingResults) {
-        onApplyItinerary(pendingResults.locations, pendingResults.routes);
+        onApplyItinerary(pendingResults.locations, pendingResults.routes, pendingResults.days);
         setPrompt('');
         setPendingResults(null);
         setResultExplanation(null);
