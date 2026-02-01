@@ -301,12 +301,22 @@ export default function MapDisplay({ days, locations, routes, onEditRoute, hover
     if (isSubItinerary) {
       days.forEach((day, dayIdx) => {
         if (day.accommodation && day.accommodation.lat && day.accommodation.lng) {
-          // Find if this day has any locations in the current view
-          const hasLocationsThisDay = sortedLocations.some(l => 
-            l.dayOffset === dayIdx
-          );
+          // 1. Is this the current day being viewed? (Shows the end-of-day return to hotel)
+          const isCurrentDay = sortedLocations.some(l => l.dayOffset === dayIdx);
+          
+          // 2. Is this the PREVIOUS day relative to a single filtered day? 
+          // (Shows the start-of-day departure from hotel)
+          let isPreviousDayOfFilter = false;
+          if (sortedLocations.length > 0) {
+             const viewedDayIdx = sortedLocations[0].dayOffset || 0;
+             // If we are looking at only ONE day, and this loop iteration is the day BEFORE that day
+             const isFilteredToOneDay = new Set(sortedLocations.map(l => l.dayOffset)).size === 1;
+             if (isFilteredToOneDay && dayIdx === viewedDayIdx - 1) {
+                isPreviousDayOfFilter = true;
+             }
+          }
 
-          if (hasLocationsThisDay) {
+          if (isCurrentDay || isPreviousDayOfFilter) {
             points.push({
               id: `path-accom-${day.id}`,
               name: day.accommodation.name,
@@ -314,9 +324,8 @@ export default function MapDisplay({ days, locations, routes, onEditRoute, hover
               lng: day.accommodation.lng,
               isAccommodation: true,
               notes: day.accommodation.notes,
-              // Accommodation comes AFTER evening slot (index 2) of the same day
-              // and BEFORE morning slot (index 0) of the next day.
-              // So we give it a section index of 2.5
+              // If it's the previous day's hotel, it needs to come BEFORE Day X Morning
+              // So we give it a sort value at the very end of Day X-1
               sortValue: dayIdx * 10 + 2.5
             });
           }
