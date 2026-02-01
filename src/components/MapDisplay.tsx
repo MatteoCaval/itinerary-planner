@@ -243,6 +243,15 @@ export default function MapDisplay({ days, locations, routes, onEditRoute, hover
     };
 
     return [...locations].sort((a, b) => {
+      // Handle sub-itinerary sorting by dayOffset
+      if (isSubItinerary) {
+        if (a.dayOffset !== b.dayOffset) return (a.dayOffset || 0) - (b.dayOffset || 0);
+        const slotA = getSectionIndex(a.startSlot);
+        const slotB = getSectionIndex(b.startSlot);
+        if (slotA !== slotB) return slotA - slotB;
+        return a.order - b.order;
+      }
+
       // Handle unassigned at the end
       if (!a.startDayId && b.startDayId) return 1;
       if (a.startDayId && !b.startDayId) return -1;
@@ -333,7 +342,8 @@ export default function MapDisplay({ days, locations, routes, onEditRoute, hover
 
           const nextLoc = sortedLocations[index + 1];
           // Only draw lines between assigned locations (unless we are in sub-itinerary mode)
-          if ((!loc.startDayId || !nextLoc.startDayId) && !isSubItinerary) return null;
+          // In sub-itinerary mode, we assume they are organized within the parent's block
+          if (!isSubItinerary && (!loc.startDayId || !nextLoc.startDayId)) return null;
 
           const route = getRoute(loc.id, nextLoc.id);
           const isHovered = hoveredLocationId === loc.id || hoveredLocationId === nextLoc.id;

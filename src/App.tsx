@@ -95,7 +95,7 @@ function AppContent() {
     const results = await searchPlace(searchQuery);
     setIsSearching(false);
     if (results?.length > 0) {
-      await handleAddLocation(parseFloat(results[0].lat), parseFloat(results[0].lon), results[0].display_name);
+      await handleAddLocationWrapped(parseFloat(results[0].lat), parseFloat(results[0].lon), results[0].display_name);
       setSearchQuery('');
       setSuggestions([]);
     }
@@ -182,6 +182,45 @@ function AppContent() {
 
   const isSubItinerary = mapLocations !== locations;
 
+  // Derive which location is the "Active Parent" for the current view
+  const activeParent = useMemo(() => {
+    // Case 1: A top-level location with sub-locations is selected
+    const top = locations.find(l => l.id === selectedLocationId);
+    if (top && top.subLocations && top.subLocations.length > 0) return top;
+    
+    // Case 2: A sub-location is selected -> return its parent
+    for (const loc of locations) {
+      if (loc.subLocations?.some(sub => sub.id === selectedLocationId)) return loc;
+    }
+    return null;
+  }, [locations, selectedLocationId]);
+
+  // Derive days for the current view
+  const activeDays = useMemo(() => {
+    if (!activeParent || !activeParent.startDayId) return days;
+    
+    const startDayIdx = days.findIndex(d => d.id === activeParent.startDayId);
+    if (startDayIdx === -1) return days;
+    
+    // Duration in slots (3 per day)
+    const numDays = Math.ceil((activeParent.duration || 1) / 3);
+    return days.slice(startDayIdx, startDayIdx + numDays);
+  }, [days, activeParent]);
+
+  // Derive locations for the sidebar (mapping dayOffset to startDayId)
+  const sidebarLocations = useMemo(() => {
+    if (!activeParent) return locations;
+
+    return (activeParent.subLocations || []).map(sub => {
+      const dayIdx = sub.dayOffset || 0;
+      const targetDay = activeDays[dayIdx];
+      return {
+        ...sub,
+        startDayId: targetDay ? targetDay.id : undefined
+      };
+    });
+  }, [activeParent, activeDays, locations]);
+
   const parentLocation = useMemo(() => {
     for (const loc of locations) {
       if (loc.subLocations?.some(sub => sub.id === selectedLocationId)) {
@@ -190,6 +229,88 @@ function AppContent() {
     }
     return null;
   }, [locations, selectedLocationId]);
+
+  // --- Specialized Handlers for Sub-Itinerary ---
+  const handleSubReorder = (activeId: string, overId: string | null, newDayId: string | null, newSlot: DaySection | null) => {
+    if (!activeParent) return;
+
+    const newSubLocations = [...(activeParent.subLocations || [])];
+    const activeIdx = newSubLocations.findIndex(s => s.id === activeId);
+    if (activeIdx === -1) return;
+
+    // Calculate new dayOffset
+    let newDayOffset = 0;
+    if (newDayId) {
+      const dayIdx = activeDays.findIndex(d => d.id === newDayId);
+      if (dayIdx !== -1) newDayOffset = dayIdx;
+    }
+
+    // Update the item
+    const updatedItem = {
+      ...newSubLocations[activeIdx],
+      dayOffset: newDayOffset,
+      startSlot: newSlot || newSubLocations[activeIdx].startSlot || 'morning'
+    };
+    newSubLocations[activeIdx] = updatedItem;
+
+    // Handle reordering within the same slot if overId is provided
+    if (overId && overId !== activeId && overId !== 'unassigned-zone' && !overId.startsWith('slot-')) {
+       const overIdx = newSubLocations.findIndex(s => s.id === overId);
+       const [moved] = newSubLocations.splice(activeIdx, 1);
+       newSubLocations.splice(overIdx, 0, moved);
+    }
+
+    updateLocation(activeParent.id, {
+      subLocations: newSubLocations.map((s, idx) => ({ ...s, order: idx }))
+    });
+  };
+
+  const handleSubAdd = async (dayId: string, slot?: DaySection) => {
+    if (!activeParent) return;
+    setPendingAddToDay({ dayId, slot });
+  };
+
+  const handleSubRemove = (id: string) => {
+    if (!activeParent) return;
+    updateLocation(activeParent.id, {
+      subLocations: (activeParent.subLocations || []).filter(s => s.id !== id)
+    });
+    if (selectedLocationId === id) setSelectedLocationId(activeParent.id);
+  };
+
+  const handleSubUpdate = (id: string, updates: Partial<Location>) => {
+    if (!activeParent) return;
+    updateLocation(activeParent.id, {
+      subLocations: (activeParent.subLocations || []).map(s => s.id === id ? { ...s, ...updates } : s)
+    });
+  };
+
+  // Override handleAddLocation to handle sub-mode
+  const handleAddLocationOriginal = handleAddLocation;
+  const handleAddLocationWrapped = async (lat: number, lng: number, name?: string, targetDayId?: string, targetSlot?: DaySection) => {
+    if (activeParent) {
+      const resolvedName = name || await reverseGeocode(lat, lng);
+      const dayId = targetDayId || pendingAddToDay?.dayId;
+      const dayIdx = activeDays.findIndex(d => d.id === dayId);
+      
+      const newSub: Location = {
+        id: uuidv4(),
+        name: resolvedName.split(',')[0],
+        lat, lng, order: (activeParent.subLocations || []).length,
+        dayOffset: dayIdx === -1 ? 0 : dayIdx,
+        startSlot: targetSlot || pendingAddToDay?.slot || 'morning',
+        category: 'sightseeing',
+        dayIds: []
+      };
+      
+      updateLocation(activeParent.id, {
+        subLocations: [...(activeParent.subLocations || []), newSub]
+      });
+      setPendingAddToDay(null);
+    } else {
+      await handleAddLocationOriginal(lat, lng, name, targetDayId, targetSlot);
+    }
+  };
 
   return (
     <AppShell
@@ -322,7 +443,7 @@ function AppContent() {
                       style={{ cursor: 'pointer', borderBottom: '1px solid var(--mantine-color-gray-2)' }}
                       className="hover-bg-light"
                       onClick={async () => {
-                        await handleAddLocation(parseFloat(s.lat), parseFloat(s.lon), s.display_name);
+                        await handleAddLocationWrapped(parseFloat(s.lat), parseFloat(s.lon), s.display_name);
                         setSearchQuery('');
                         setSuggestions([]);
                       }}
@@ -356,15 +477,32 @@ function AppContent() {
 
           <Box style={{ flex: 1, overflow: 'hidden' }}>
             {sidebarView === 'timeline' ? (
-              <DaySidebar
-                days={days} locations={locations} routes={routes}
-                onReorderLocations={reorderLocations} onRemoveLocation={removeLocation}
-                onUpdateLocation={updateLocation} onEditRoute={(from, to) => setEditingRoute({ fromId: from, toId: to })}
-                onAddToDay={(dayId, slot) => setPendingAddToDay({ dayId, slot })}
-                onUpdateDay={updateDay}
-                hoveredLocationId={hoveredLocationId} onHoverLocation={setHoveredLocationId} zoomLevel={zoomLevel}
-                selectedLocationId={selectedLocationId} onSelectLocation={setSelectedLocationId}
-              />
+              <Stack h="100%" gap={0}>
+                 {activeParent && (
+                    <Paper p="xs" bg="blue.6" radius={0}>
+                        <Group justify="space-between">
+                            <Box>
+                                <Text size="xs" c="blue.1" fw={700} tt="uppercase">Planning Sub-Itinerary</Text>
+                                <Text size="sm" c="white" fw={700} truncate>{activeParent.name}</Text>
+                            </Box>
+                            <Button variant="white" size="compact-xs" onClick={() => setSelectedLocationId(null)}>Back to Main</Button>
+                        </Group>
+                    </Paper>
+                 )}
+                <Box flex={1} style={{ overflow: 'hidden' }}>
+                    <DaySidebar
+                        days={activeDays} locations={sidebarLocations} routes={routes}
+                        onReorderLocations={activeParent ? handleSubReorder : reorderLocations} 
+                        onRemoveLocation={activeParent ? handleSubRemove : removeLocation}
+                        onUpdateLocation={activeParent ? handleSubUpdate : updateLocation} 
+                        onEditRoute={(from, to) => setEditingRoute({ fromId: from, toId: to })}
+                        onAddToDay={activeParent ? handleSubAdd : (dayId, slot) => setPendingAddToDay({ dayId, slot })}
+                        onUpdateDay={updateDay}
+                        hoveredLocationId={hoveredLocationId} onHoverLocation={setHoveredLocationId} zoomLevel={zoomLevel}
+                        selectedLocationId={selectedLocationId} onSelectLocation={setSelectedLocationId}
+                    />
+                </Box>
+              </Stack>
             ) : (
               <CalendarView days={days} locations={locations} onSelectLocation={handleScrollToLocation} />
             )}

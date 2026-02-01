@@ -59,6 +59,7 @@ export interface Location {
   duration?: number;      // Duration in "slots" (1 slot = 1 section of a day). Default 1.
   order: number;          // Order within the itinerary (global or per slot?)
   subLocations?: Location[]; // Nested destinations/itinerary
+  dayOffset?: number;        // 0-based index relative to parent's startDayId
 }
 
 // Transport type colors for map routes
