@@ -49,9 +49,13 @@ function SelectedLocationHandler({ selectedId, locations }: { selectedId?: strin
   return null;
 }
 
-function MapClickHandler({ onSelect }: { onSelect?: (id: string | null) => void }) {
+function MapClickHandler({ onSelect, isDrillDown }: { onSelect?: (id: string | null) => void, isDrillDown?: boolean }) {
   useMapEvents({
-    click: () => onSelect?.(null),
+    click: () => {
+      if (!isDrillDown) {
+        onSelect?.(null);
+      }
+    },
   });
   return null;
 }
@@ -420,7 +424,7 @@ export default function MapDisplay({ days, locations, routes, onEditRoute, hover
 
         <FitBounds locations={locations} accommodations={accommodations} />
         <SelectedLocationHandler selectedId={selectedLocationId} locations={locations} />
-        <MapClickHandler onSelect={onSelectLocation} />
+        <MapClickHandler onSelect={onSelectLocation} isDrillDown={isSubItinerary} />
       </MapContainer>
     </div>
   );
