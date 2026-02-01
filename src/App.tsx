@@ -337,6 +337,50 @@ function AppContent() {
     });
   };
 
+  const handleNestLocation = (activeId: string, parentId: string) => {
+    const itemToNest = locations.find(l => l.id === activeId);
+    const parent = locations.find(l => l.id === parentId);
+
+    if (itemToNest && parent && activeId !== parentId) {
+      // 1. Remove from top-level
+      const newLocations = locations.filter(l => l.id !== activeId);
+      
+      // 2. Prepare the item for nesting
+      // We'll put it in the first available slot of the parent for now
+      const nestedItem: Location = {
+        ...itemToNest,
+        dayOffset: 0,
+        startDayId: undefined, // Sub-locations use dayOffset
+        startSlot: 'morning',
+        order: (parent.subLocations || []).length
+      };
+
+      // 3. Add to parent's subLocations
+      const updatedLocations = newLocations.map(l => {
+        if (l.id === parentId) {
+          return {
+            ...l,
+            subLocations: [...(l.subLocations || []), nestedItem]
+          }
+        }
+        return l;
+      });
+
+      // We need a bulk setLocations or multiple updates.
+      // Since context only has updateLocation and removeLocation, 
+      // let's use loadFromData for a atomic swap if possible, 
+      // or just call both.
+      
+      // Actually, context has setLocations!
+      loadFromData({ ...getExportData(), locations: updatedLocations });
+      
+      // If we were selecting the nested item, select the parent now
+      if (selectedLocationId === activeId) {
+        setSelectedLocationId(parentId);
+      }
+    }
+  };
+
   // Override handleAddLocation to handle sub-mode
   const handleAddLocationOriginal = handleAddLocation;
   const handleAddLocationWrapped = async (lat: number, lng: number, name?: string, targetDayId?: string, targetSlot?: DaySection) => {
@@ -569,6 +613,7 @@ function AppContent() {
                         selectedDayId={selectedDayId}
                         onSelectDay={setSelectedDayId}
                         isSlotBlocked={activeParent ? isSlotBlocked : undefined}
+                        onNestLocation={handleNestLocation}
                     />
                 </Box>
               </Stack>

@@ -34,7 +34,8 @@ export function SortableItem({
     setNodeRef,
     transform,
     transition,
-    isDragging
+    isDragging,
+    isOver
   } = useSortable({ id });
 
   const style: React.CSSProperties = {
@@ -80,12 +81,17 @@ export function SortableItem({
       <Paper
         ref={setNodeRef}
 
-        shadow={isDragging || isResizing ? 'md' : 'sm'}
+        shadow={isDragging || isResizing || isOver ? 'md' : 'sm'}
         withBorder
         p="xs"
-        className={`sortable-item ${isDragging ? 'dragging' : ''} ${isResizing ? 'resizing' : ''}`}
-        style={{ ...style, borderColor: isSelected ? 'var(--mantine-color-blue-filled)' : undefined, borderWidth: isSelected ? 2 : 1 }}
-        bg={isSelected ? 'blue.0' : 'white'}
+        className={`sortable-item ${isDragging ? 'dragging' : ''} ${isResizing ? 'resizing' : ''} ${isOver ? 'nesting-target' : ''}`}
+        style={{ 
+          ...style, 
+          borderColor: isOver ? 'var(--mantine-color-blue-6)' : (isSelected ? 'var(--mantine-color-blue-filled)' : undefined),
+          borderWidth: isSelected || isOver ? 2 : 1,
+          borderStyle: isOver ? 'dashed' : 'solid'
+        }}
+        bg={isOver ? 'blue.0' : (isSelected ? 'blue.0' : 'white')}
         onClick={() => onSelect?.(id)}
         h="100%"
       >

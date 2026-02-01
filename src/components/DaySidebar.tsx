@@ -41,6 +41,7 @@ interface DaySidebarProps {
     selectedDayId?: string | null;
     onSelectDay?: (id: string | null) => void;
     isSlotBlocked?: (dayId: string, slot: DaySection) => boolean;
+    onNestLocation?: (activeId: string, parentId: string) => void;
 }
 
 const SECTION_ORDER: DaySection[] = ['morning', 'afternoon', 'evening'];
@@ -531,7 +532,8 @@ export function DaySidebar({
     parentName,
     selectedDayId,
     onSelectDay,
-    isSlotBlocked
+    isSlotBlocked,
+    onNestLocation
 }: DaySidebarProps) {
     const [activeId, setActiveId] = useState<string | null>(null);
     const [unassignedCollapsed, setUnassignedCollapsed] = useState(false);
@@ -597,6 +599,14 @@ export function DaySidebar({
 
         const activeIdStr = active.id as string;
         const overId = over.id as string;
+
+        // --- NEW: Nesting Logic ---
+        // If we drop onto another location (that is not ourselves)
+        // And we are not in sub-itinerary mode already (to avoid deep nesting for now)
+        if (!parentName && locations.some(l => l.id === overId) && activeIdStr !== overId) {
+            onNestLocation?.(activeIdStr, overId);
+            return;
+        }
 
         if (overId.startsWith('slot-')) {
             const lastHyphenIndex = overId.lastIndexOf('-');
