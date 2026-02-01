@@ -28,6 +28,7 @@ interface MapDisplayProps {
   onHoverLocation?: (id: string | null) => void;
   onSelectLocation?: (id: string | null) => void;
   hideControls?: boolean;
+  isSubItinerary?: boolean;
 }
 
 function SelectedLocationHandler({ selectedId, locations }: { selectedId?: string | null, locations: Location[] }) {
@@ -205,7 +206,7 @@ function RouteSegment({ from, to, route, onEditRoute, isHovered }: RouteSegmentP
   );
 }
 
-export default function MapDisplay({ days, locations, routes, onEditRoute, hoveredLocationId, selectedLocationId, onHoverLocation, onSelectLocation, hideControls }: MapDisplayProps) {
+export default function MapDisplay({ days, locations, routes, onEditRoute, hoveredLocationId, selectedLocationId, onHoverLocation, onSelectLocation, hideControls, isSubItinerary }: MapDisplayProps) {
   const position: [number, number] = [51.505, -0.09]; // Default center (London)
 
   // Get ordered locations for drawing routes, matching sidebar chronological logic
@@ -283,8 +284,8 @@ export default function MapDisplay({ days, locations, routes, onEditRoute, hover
           if (index === sortedLocations.length - 1) return null;
 
           const nextLoc = sortedLocations[index + 1];
-          // Only draw lines between assigned locations
-          if (!loc.startDayId || !nextLoc.startDayId) return null;
+          // Only draw lines between assigned locations (unless we are in sub-itinerary mode)
+          if ((!loc.startDayId || !nextLoc.startDayId) && !isSubItinerary) return null;
 
           const route = getRoute(loc.id, nextLoc.id);
           const isHovered = hoveredLocationId === loc.id || hoveredLocationId === nextLoc.id;

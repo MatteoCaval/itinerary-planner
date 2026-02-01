@@ -180,6 +180,8 @@ function AppContent() {
     return locations;
   }, [locations, selectedLocationId]);
 
+  const isSubItinerary = mapLocations !== locations;
+
   const parentLocation = useMemo(() => {
     for (const loc of locations) {
       if (loc.subLocations?.some(sub => sub.id === selectedLocationId)) {
@@ -409,6 +411,7 @@ function AppContent() {
           onHoverLocation={setHoveredLocationId} 
           onSelectLocation={handleScrollToLocation}
           hideControls={opened}
+          isSubItinerary={isSubItinerary}
         />
 
         {selectedLocation && (
