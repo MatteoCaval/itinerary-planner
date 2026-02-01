@@ -607,6 +607,7 @@ function AppContent() {
           onSelectLocation={handleScrollToLocation}
           hideControls={opened}
           isSubItinerary={isSubItinerary}
+          isPanelCollapsed={panelCollapsed}
         />
 
         {selectedLocation && (

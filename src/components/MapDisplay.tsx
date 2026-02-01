@@ -29,22 +29,38 @@ interface MapDisplayProps {
   onSelectLocation?: (id: string | null) => void;
   hideControls?: boolean;
   isSubItinerary?: boolean;
+  isPanelCollapsed?: boolean;
 }
 
-function SelectedLocationHandler({ selectedId, locations }: { selectedId?: string | null, locations: Location[] }) {
+function SelectedLocationHandler({ selectedId, locations, isPanelCollapsed }: { selectedId?: string | null, locations: Location[], isPanelCollapsed?: boolean }) {
   const map = useMap();
 
   useEffect(() => {
     if (selectedId) {
       const loc = locations.find(l => l.id === selectedId);
       if (loc) {
-        map.setView([loc.lat, loc.lng], 16, {
+        // Calculate offset based on panel width
+        let offset = 0;
+        const width = window.innerWidth;
+        
+        // Match CSS breakpoints for panel width
+        if (width > 768 && !isPanelCollapsed) {
+          if (width >= 1600) offset = 500 / 2;
+          else if (width >= 1200) offset = 450 / 2;
+          else offset = 380 / 2;
+        }
+
+        const targetPoint = map.project([loc.lat, loc.lng], 16);
+        const actualPoint = L.point(targetPoint.x + offset, targetPoint.y);
+        const targetLatLng = map.unproject(actualPoint, 16);
+
+        map.setView(targetLatLng, 16, {
           animate: true,
           duration: 1
         });
       }
     }
-  }, [selectedId, locations, map]);
+  }, [selectedId, locations, map, isPanelCollapsed]);
 
   return null;
 }
@@ -238,7 +254,7 @@ const getSectionIndex = (section?: DaySection) => {
   return SECTION_ORDER.indexOf(section);
 };
 
-export default function MapDisplay({ days, locations, routes, onEditRoute, hoveredLocationId, selectedLocationId, onHoverLocation, onSelectLocation, hideControls, isSubItinerary }: MapDisplayProps) {
+export default function MapDisplay({ days, locations, routes, onEditRoute, hoveredLocationId, selectedLocationId, onHoverLocation, onSelectLocation, hideControls, isSubItinerary, isPanelCollapsed }: MapDisplayProps) {
   const position: [number, number] = [51.505, -0.09]; // Default center (London)
 
   // Get ordered locations for drawing routes, matching sidebar chronological logic
@@ -423,7 +439,7 @@ export default function MapDisplay({ days, locations, routes, onEditRoute, hover
         })}
 
         <FitBounds locations={locations} accommodations={accommodations} />
-        <SelectedLocationHandler selectedId={selectedLocationId} locations={locations} />
+        <SelectedLocationHandler selectedId={selectedLocationId} locations={locations} isPanelCollapsed={isPanelCollapsed} />
         <MapClickHandler onSelect={onSelectLocation} isDrillDown={isSubItinerary} />
       </MapContainer>
     </div>
