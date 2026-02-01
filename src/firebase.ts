@@ -14,9 +14,27 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
+// Helper to remove undefined values recursively (Firebase doesn't allow them)
+const sanitizeForFirebase = (obj: any): any => {
+  if (Array.isArray(obj)) {
+    return obj.map(sanitizeForFirebase);
+  } else if (obj !== null && typeof obj === 'object') {
+    const newObj: any = {};
+    Object.keys(obj).forEach(key => {
+      const val = obj[key];
+      if (val !== undefined) {
+        newObj[key] = sanitizeForFirebase(val);
+      }
+    });
+    return newObj;
+  }
+  return obj;
+};
+
 export const saveItinerary = async (passcode: string, data: any) => {
   try {
-    await set(ref(db, 'itineraries/' + passcode), data);
+    const sanitizedData = sanitizeForFirebase(data);
+    await set(ref(db, 'itineraries/' + passcode), sanitizedData);
     return { success: true };
   } catch (error: any) {
     console.error("Error saving itinerary:", error.code, error.message);
