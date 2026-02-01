@@ -74,10 +74,49 @@ export function SidebarContent({
   handleExportMarkdown, handleExport, handleImport
 }: SidebarContentProps) {
   
+  const [datePickerOpened, setDatePickerOpened] = React.useState(false);
+
+  const formatDateRange = () => {
+    if (!startDate || !endDate) return 'Select Trip Dates';
+    const start = new Date(startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    const end = new Date(endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    const diff = days.length;
+    return `${start} — ${end} (${diff} ${diff === 1 ? 'day' : 'days'})`;
+  };
+
   return (
     <Stack h="100%" gap={0}>
       <Box p="md" style={{ borderBottom: '1px solid var(--mantine-color-gray-3)' }}>
-        <DateRangePicker startDate={startDate} endDate={endDate} onDateRangeChange={updateDateRange} />
+        {/* Collapsible Date Header */}
+        <Box mb="xs">
+            {!datePickerOpened ? (
+                <Paper 
+                    withBorder 
+                    p="xs" 
+                    bg="gray.0" 
+                    style={{ cursor: 'pointer' }}
+                    onClick={() => setDatePickerOpened(true)}
+                >
+                    <Group justify="space-between" wrap="nowrap">
+                        <Group gap="xs">
+                            <CalendarIcon size={14} color="var(--mantine-color-blue-6)" />
+                            <Text size="xs" fw={700}>{formatDateRange()}</Text>
+                        </Group>
+                        <Text size="10px" c="blue" fw={700}>EDIT</Text>
+                    </Group>
+                </Paper>
+            ) : (
+                <Stack gap="xs">
+                    <DateRangePicker startDate={startDate} endDate={endDate} onDateRangeChange={(s, e) => {
+                        updateDateRange(s, e);
+                        // We don't auto-close to allow fine-tuning, but user can close it
+                    }} />
+                    <Button variant="subtle" size="compact-xs" color="gray" onClick={() => setDatePickerOpened(false)}>
+                        Collapse Date Picker
+                    </Button>
+                </Stack>
+            )}
+        </Box>
 
         {/* View Toggle */}
         <Group grow mt="sm" mb="md">
