@@ -212,8 +212,8 @@ function AppContent() {
     if (!activeParent) return locations;
 
     return (activeParent.subLocations || []).map(sub => {
-      const dayIdx = sub.dayOffset || 0;
-      const targetDay = activeDays[dayIdx];
+      const dayIdx = sub.dayOffset;
+      const targetDay = dayIdx !== undefined ? activeDays[dayIdx] : undefined;
       return {
         ...sub,
         startDayId: targetDay ? targetDay.id : undefined
@@ -234,30 +234,35 @@ function AppContent() {
   const handleSubReorder = (activeId: string, overId: string | null, newDayId: string | null, newSlot: DaySection | null) => {
     if (!activeParent) return;
 
-    const newSubLocations = [...(activeParent.subLocations || [])];
+    let newSubLocations = [...(activeParent.subLocations || [])];
     const activeIdx = newSubLocations.findIndex(s => s.id === activeId);
     if (activeIdx === -1) return;
 
     // Calculate new dayOffset
-    let newDayOffset = 0;
-    if (newDayId) {
+    let newDayOffset: number | undefined = undefined;
+    if (newDayId && newDayId !== 'unassigned-zone') {
       const dayIdx = activeDays.findIndex(d => d.id === newDayId);
       if (dayIdx !== -1) newDayOffset = dayIdx;
     }
 
-    // Update the item
+    // Update the item properties
     const updatedItem = {
       ...newSubLocations[activeIdx],
       dayOffset: newDayOffset,
-      startSlot: newSlot || newSubLocations[activeIdx].startSlot || 'morning'
+      startSlot: newSlot || (newDayOffset !== undefined ? newSubLocations[activeIdx].startSlot || 'morning' : undefined)
     };
     newSubLocations[activeIdx] = updatedItem;
 
-    // Handle reordering within the same slot if overId is provided
+    // Handle reordering within the array (move item to new position if dropped over another item)
     if (overId && overId !== activeId && overId !== 'unassigned-zone' && !overId.startsWith('slot-')) {
-       const overIdx = newSubLocations.findIndex(s => s.id === overId);
        const [moved] = newSubLocations.splice(activeIdx, 1);
-       newSubLocations.splice(overIdx, 0, moved);
+       const overIdx = newSubLocations.findIndex(s => s.id === overId);
+       if (overIdx !== -1) {
+         newSubLocations.splice(overIdx, 0, moved);
+       } else {
+         // Fallback if overIdx lost (should not happen)
+         newSubLocations.push(moved);
+       }
     }
 
     updateLocation(activeParent.id, {

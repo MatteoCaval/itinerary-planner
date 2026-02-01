@@ -228,6 +228,12 @@ function RouteSegment({ from, to, route, onEditRoute, isHovered }: RouteSegmentP
   );
 }
 
+const SECTION_ORDER: DaySection[] = ['morning', 'afternoon', 'evening'];
+const getSectionIndex = (section?: DaySection) => {
+  if (!section) return 0;
+  return SECTION_ORDER.indexOf(section);
+};
+
 export default function MapDisplay({ days, locations, routes, onEditRoute, hoveredLocationId, selectedLocationId, onHoverLocation, onSelectLocation, hideControls, isSubItinerary }: MapDisplayProps) {
   const position: [number, number] = [51.505, -0.09]; // Default center (London)
 
@@ -235,12 +241,6 @@ export default function MapDisplay({ days, locations, routes, onEditRoute, hover
   const sortedLocations = useMemo(() => {
     const dayRowMap = new Map<string, number>();
     days.forEach((d, i) => dayRowMap.set(d.id, i * 3 + 1));
-
-    const SECTION_ORDER: DaySection[] = ['morning', 'afternoon', 'evening'];
-    const getSectionIndex = (section?: DaySection) => {
-      if (!section) return 0;
-      return SECTION_ORDER.indexOf(section);
-    };
 
     return [...locations].sort((a, b) => {
       // Handle sub-itinerary sorting by dayOffset
@@ -269,7 +269,7 @@ export default function MapDisplay({ days, locations, routes, onEditRoute, hover
 
       return a.order - b.order;
     });
-  }, [locations, days]);
+  }, [locations, days, isSubItinerary]);
 
   // Get route between two locations
   const getRoute = (fromId: string, toId: string): Route | undefined => {
@@ -279,7 +279,53 @@ export default function MapDisplay({ days, locations, routes, onEditRoute, hover
     );
   };
 
-  // Extract accommodations with location data
+  // Combine locations and accommodations into a single chronological path
+  const pathPoints = useMemo(() => {
+    const points: any[] = [];
+    
+    // Add all valid locations
+    sortedLocations.forEach(loc => {
+      if (isSubItinerary || loc.startDayId) {
+        points.push({
+          ...loc,
+          isAccommodation: false,
+          // Calculate a global sort value
+          sortValue: isSubItinerary 
+            ? (loc.dayOffset || 0) * 10 + getSectionIndex(loc.startSlot) + (loc.order * 0.01)
+            : (days.findIndex(d => d.id === loc.startDayId) * 10) + getSectionIndex(loc.startSlot) + (loc.order * 0.01)
+        });
+      }
+    });
+
+    // Add accommodations as virtual points
+    days.forEach((day, dayIdx) => {
+      if (day.accommodation && day.accommodation.lat && day.accommodation.lng) {
+        // Find if this day has any locations in the current view
+        const hasLocationsThisDay = sortedLocations.some(l => 
+          isSubItinerary ? l.dayOffset === dayIdx : l.startDayId === day.id
+        );
+
+        if (hasLocationsThisDay || !isSubItinerary) {
+          points.push({
+            id: `path-accom-${day.id}`,
+            name: day.accommodation.name,
+            lat: day.accommodation.lat,
+            lng: day.accommodation.lng,
+            isAccommodation: true,
+            notes: day.accommodation.notes,
+            // Accommodation comes AFTER evening slot (index 2) of the same day
+            // and BEFORE morning slot (index 0) of the next day.
+            // So we give it a section index of 2.5
+            sortValue: dayIdx * 10 + 2.5
+          });
+        }
+      }
+    });
+
+    return points.sort((a, b) => a.sortValue - b.sortValue);
+  }, [sortedLocations, days, isSubItinerary]);
+
+  // Extract accommodations with location data for markers (keep for FitBounds and standalone markers)
   const accommodations = useMemo(() => {
     return days
       .filter(d => d.accommodation && d.accommodation.lat && d.accommodation.lng)
@@ -336,25 +382,26 @@ export default function MapDisplay({ days, locations, routes, onEditRoute, hover
           );
         })}
 
-        {/* Draw route segments between consecutive locations */}
-        {sortedLocations.length > 1 && sortedLocations.map((loc, index) => {
-          if (index === sortedLocations.length - 1) return null;
+        {/* Draw route segments between consecutive points in the path */}
+        {pathPoints.length > 1 && pathPoints.map((point, index) => {
+          if (index === pathPoints.length - 1) return null;
 
-          const nextLoc = sortedLocations[index + 1];
-          // Only draw lines between assigned locations (unless we are in sub-itinerary mode)
-          // In sub-itinerary mode, we assume they are organized within the parent's block
-          if (!isSubItinerary && (!loc.startDayId || !nextLoc.startDayId)) return null;
+          const nextPoint = pathPoints[index + 1];
+          
+          // Draw a line if at least one is NOT an accommodation, or if they are different accommodations
+          // (to avoid lines if we have multiple points for the same thing somehow)
+          if (point.lat === nextPoint.lat && point.lng === nextPoint.lng) return null;
 
-          const route = getRoute(loc.id, nextLoc.id);
-          const isHovered = hoveredLocationId === loc.id || hoveredLocationId === nextLoc.id;
+          const route = getRoute(point.id, nextPoint.id);
+          const isHovered = hoveredLocationId === point.id || hoveredLocationId === nextPoint.id;
 
           return (
             <RouteSegment
-              key={`route-${loc.id}-${nextLoc.id}`}
-              from={loc}
-              to={nextLoc}
+              key={`route-${point.id}-${nextPoint.id}`}
+              from={point}
+              to={nextPoint}
               route={route}
-              onEditRoute={() => onEditRoute(loc.id, nextLoc.id)}
+              onEditRoute={() => onEditRoute(point.id, nextPoint.id)}
               isHovered={isHovered}
             />
           );
