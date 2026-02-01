@@ -154,6 +154,18 @@ body,
   /* Even darker on hover */
 }
 
+.day-label-box {
+  transition: background-color 0.2s ease, border-right 0.2s ease;
+}
+
+.day-label-box:hover {
+  background-color: var(--mantine-color-blue-0) !important;
+}
+
+.day-label-box:active {
+  background-color: var(--mantine-color-blue-1) !important;
+}
+
 .day-locations {
   border-top: 1px solid #e9ecef;
   padding-bottom: 8px;

@@ -180,6 +180,8 @@ function AppContent() {
     return null;
   }, [locations, selectedLocationId]);
 
+  const isSubItinerary = !!activeParent;
+
   // Derive days for the current view
   const activeDays = useMemo(() => {
     if (!activeParent || !activeParent.startDayId) return days;
@@ -210,18 +212,22 @@ function AppContent() {
       }
     }
 
-    // 3. Filter by day if selected (only in sub-itinerary mode for now as requested)
-    if (selectedDayId && baseLocations !== locations) {
-      const dayIdx = activeDays.findIndex(d => d.id === selectedDayId);
-      if (dayIdx !== -1) {
-        return baseLocations.filter(l => l.dayOffset === dayIdx);
+    // 3. Filter by day if selected
+    if (selectedDayId) {
+      if (baseLocations === locations) {
+        // Global mode: Filter by startDayId
+        return baseLocations.filter(l => l.startDayId === selectedDayId);
+      } else {
+        // Sub-itinerary mode: Filter by dayOffset index
+        const dayIdx = activeDays.findIndex(d => d.id === selectedDayId);
+        if (dayIdx !== -1) {
+          return baseLocations.filter(l => l.dayOffset === dayIdx);
+        }
       }
     }
 
     return baseLocations;
   }, [locations, selectedLocationId, selectedDayId, activeDays]);
-
-  const isSubItinerary = mapLocations !== locations;
 
   // Derive locations for the sidebar (mapping dayOffset to startDayId)
   const sidebarLocations = useMemo(() => {
@@ -591,6 +597,8 @@ function AppContent() {
               onUpdate={updateLocation}
               onClose={() => setSelectedLocationId(null)}
               onSelectLocation={setSelectedLocationId}
+              selectedDayId={selectedDayId}
+              onSelectDay={setSelectedDayId}
             />
           </Paper>
         )}

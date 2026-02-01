@@ -15,11 +15,16 @@ interface LocationDetailPanelProps {
   onUpdate: (id: string, updates: Partial<Location>) => void;
   onClose: () => void;
   onSelectLocation?: (id: string | null) => void;
+  selectedDayId?: string | null;
+  onSelectDay?: (id: string | null) => void;
 }
 
 const SECTION_ORDER: DaySection[] = ['morning', 'afternoon', 'evening'];
 
-export function LocationDetailPanel({ location, parentLocation, days, allLocations, routes, onUpdate, onClose, onSelectLocation }: LocationDetailPanelProps) {
+export function LocationDetailPanel({ 
+  location, parentLocation, days, allLocations, routes, onUpdate, onClose, onSelectLocation,
+  selectedDayId, onSelectDay 
+}: LocationDetailPanelProps) {
   const [newChecklistItem, setNewChecklistItem] = useState('');
   const [newLink, setNewLink] = useState({ label: '', url: '' });
   const [imageLoading, setImageLoading] = useState(false);
@@ -368,13 +373,26 @@ export function LocationDetailPanel({ location, parentLocation, days, allLocatio
                     if (slotA !== slotB) return slotA - slotB;
                     return (a.order || 0) - (b.order || 0);
                   });
+
+                  // Find the actual day ID from the global days array
+                  const startDayIdx = days.findIndex(d => d.id === location.startDayId);
+                  const actualDay = startDayIdx !== -1 ? days[startDayIdx + i] : null;
+                  const isDaySelected = actualDay && selectedDayId === actualDay.id;
+
                   rendered.push(
                     <Box key={`day-group-${i}`} mt={i > 0 ? 'sm' : 0}>
-                      <Group justify="space-between" mb={4} px={4}>
-                        <Text size="xs" fw={700} c="blue.7">Day {i + 1}</Text>
+                      <Group 
+                        justify="space-between" 
+                        mb={4} 
+                        px={4} 
+                        onClick={() => actualDay && onSelectDay?.(isDaySelected ? null : actualDay.id)}
+                        style={{ cursor: 'pointer', borderRadius: 4 }}
+                        bg={isDaySelected ? 'blue.0' : 'transparent'}
+                      >
+                        <Text size="xs" fw={700} c={isDaySelected ? 'blue.7' : 'blue.7'}>Day {i + 1} {isDaySelected && '(Filtered)'}</Text>
                         <Text size="xs" c="dimmed">{daySubs.length} items</Text>
                       </Group>
-                      <Divider mb="xs" color="blue.1" />
+                      <Divider mb="xs" color={isDaySelected ? 'blue.3' : 'blue.1'} />
                       <Stack gap={6}>
                         {daySubs.map((sub) => (
                            <Paper key={sub.id} p="xs" withBorder bg="white" shadow="xs" style={{ cursor: 'pointer' }} onClick={() => onSelectLocation?.(sub.id)}>

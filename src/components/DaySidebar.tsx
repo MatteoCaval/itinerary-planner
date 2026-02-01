@@ -218,6 +218,7 @@ function DayLabel({ day, startRow, dayNum, isEvenDay, onAdd, onUpdateDay, existi
         <Box
             p="xs"
             onClick={onSelect}
+            className="day-label-box"
             style={{
                 gridColumn: '1 / span 1',
                 gridRow: `${startRow} / span 3`,
@@ -231,7 +232,8 @@ function DayLabel({ day, startRow, dayNum, isEvenDay, onAdd, onUpdateDay, existi
                 justifyContent: 'center',
                 textAlign: 'center',
                 cursor: onSelect ? 'pointer' : 'default',
-                transition: 'all 0.2s ease'
+                transition: 'all 0.2s ease',
+                position: 'relative'
             }}
         >
             <Stack gap={4} align="center">
