@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { TextInput, Textarea, Button, ActionIcon, Paper, Group, Stack, Text, Badge, Image, Checkbox, LoadingOverlay, Box, Divider, ScrollArea, Anchor } from '@mantine/core';
-import { X, Plus, Trash2, ExternalLink, CheckSquare, Link as LinkIcon, Map as MapIcon, Calendar, ArrowRight, ArrowLeft, Bed, Search, ArrowUp, ArrowDown } from 'lucide-react';
+import { TextInput, Textarea, Button, ActionIcon, Paper, Group, Stack, Text, Badge, Image, Checkbox, LoadingOverlay, Box, Divider, ScrollArea, Anchor, Tooltip } from '@mantine/core';
+import { X, Plus, Trash2, ExternalLink, CheckSquare, Link as LinkIcon, Map as MapIcon, Calendar, ArrowRight, ArrowLeft, Bed, Search, ChevronRight, ArrowUp, ArrowDown } from 'lucide-react';
 import { Location, Day, Route, DaySection, TRANSPORT_LABELS } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 import { searchPhoto } from '../unsplash';
@@ -17,13 +17,14 @@ interface LocationDetailPanelProps {
   onSelectLocation?: (id: string | null) => void;
   selectedDayId?: string | null;
   onSelectDay?: (id: string | null) => void;
+  onCollapse?: () => void;
 }
 
 const SECTION_ORDER: DaySection[] = ['morning', 'afternoon', 'evening'];
 
 export function LocationDetailPanel({ 
   location, parentLocation, days, allLocations, routes, onUpdate, onClose, onSelectLocation,
-  selectedDayId, onSelectDay 
+  selectedDayId, onSelectDay, onCollapse 
 }: LocationDetailPanelProps) {
   const [newChecklistItem, setNewChecklistItem] = useState('');
   const [newLink, setNewLink] = useState({ label: '', url: '' });
@@ -289,7 +290,18 @@ export function LocationDetailPanel({
         )}
         <LoadingOverlay visible={imageLoading && !location.imageUrl} />
         <Box style={{ position: 'absolute', top: 12, right: 12, zIndex: 10 }}>
-          <ActionIcon variant="filled" color="gray" size="lg" radius="xl" onClick={onClose} style={{ opacity: 0.9 }}><X size={20} /></ActionIcon>
+          <Group gap="xs">
+            <Tooltip label="Collapse Panel">
+              <ActionIcon variant="filled" color="blue" size="lg" radius="xl" onClick={onCollapse} style={{ opacity: 0.9 }}>
+                <ChevronRight size={20} />
+              </ActionIcon>
+            </Tooltip>
+            <Tooltip label="Close (Exit Context)">
+              <ActionIcon variant="filled" color="gray" size="lg" radius="xl" onClick={onClose} style={{ opacity: 0.9 }}>
+                <X size={20} />
+              </ActionIcon>
+            </Tooltip>
+          </Group>
         </Box>
       </Box>
 

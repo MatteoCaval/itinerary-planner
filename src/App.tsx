@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { AppShell, Burger, Group, Button, ActionIcon, TextInput, Tooltip, Text, Box, Paper, Stack, Slider, Menu } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { v4 as uuidv4 } from 'uuid';
-import { Map as MapIcon, Search, Download, Upload, Trash2, Calendar as CalendarIcon, List as ListIcon, Cloud, FileText, MoreHorizontal, History, Undo, Redo, Sparkles } from 'lucide-react';
+import { Map as MapIcon, Search, Download, Upload, Trash2, Calendar as CalendarIcon, List as ListIcon, Cloud, FileText, MoreHorizontal, History, Undo, Redo, Sparkles, ChevronLeft } from 'lucide-react';
 import MapDisplay from './components/MapDisplay';
 import { DateRangePicker } from './components/DateRangePicker';
 import { DaySidebar } from './components/DaySidebar';
@@ -36,6 +36,7 @@ function AppContent() {
   
   const [showAIModal, setShowAIModal] = useState(false);
   const [selectedDayId, setSelectedDayId] = useState<string | null>(null);
+  const [panelCollapsed, setPanelCollapsed] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -43,6 +44,7 @@ function AppContent() {
   // Clear selected day when location selection changes
   useEffect(() => {
     setSelectedDayId(null);
+    setPanelCollapsed(false);
   }, [selectedLocationId]);
 
   // Debounced search for suggestions
@@ -608,23 +610,60 @@ function AppContent() {
         />
 
         {selectedLocation && (
-          <Paper
-            shadow="xl"
-            className="location-detail-panel-root"
-          >
-            <LocationDetailPanel
-              location={selectedLocation}
-              parentLocation={parentLocation}
-              days={days}
-              allLocations={locations}
-              routes={routes}
-              onUpdate={updateLocation}
-              onClose={() => setSelectedLocationId(null)}
-              onSelectLocation={setSelectedLocationId}
-              selectedDayId={selectedDayId}
-              onSelectDay={setSelectedDayId}
-            />
-          </Paper>
+          <>
+            <Paper
+              shadow="xl"
+              className="location-detail-panel-root"
+              style={{ 
+                transform: panelCollapsed ? 'translateX(100%)' : 'translateX(0)',
+                visibility: panelCollapsed ? 'hidden' : 'visible'
+              }}
+            >
+              <LocationDetailPanel
+                location={selectedLocation}
+                parentLocation={parentLocation}
+                days={days}
+                allLocations={locations}
+                routes={routes}
+                onUpdate={updateLocation}
+                onClose={() => setSelectedLocationId(null)}
+                onSelectLocation={setSelectedLocationId}
+                selectedDayId={selectedDayId}
+                onSelectDay={setSelectedDayId}
+                onCollapse={() => setPanelCollapsed(true)}
+              />
+            </Paper>
+
+            {panelCollapsed && (
+              <Box
+                style={{
+                  position: 'absolute',
+                  top: '50%',
+                  right: 0,
+                  transform: 'translateY(-50%)',
+                  zIndex: 1150
+                }}
+              >
+                <Tooltip label="Expand Details" position="left">
+                  <ActionIcon 
+                    variant="filled" 
+                    color="blue" 
+                    size="xl" 
+                    radius="md" 
+                    onClick={() => setPanelCollapsed(false)}
+                    style={{ 
+                      borderRadius: '12px 0 0 12px',
+                      height: 100,
+                      width: 24,
+                      boxShadow: 'var(--mantine-shadow-xl)'
+                    }}
+                  >
+                    <ChevronLeft size={20} />
+                  </ActionIcon>
+                </Tooltip>
+              </Box>
+            )}
+          </>
         )}
       </AppShell.Main>
 
