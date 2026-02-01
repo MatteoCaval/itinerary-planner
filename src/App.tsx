@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { AppShell, Burger, Group, Button, ActionIcon, TextInput, Tooltip, Text, Box, Paper, Stack, Slider, Menu } from '@mantine/core';
+import { AppShell, Burger, Group, Button, ActionIcon, TextInput, Tooltip, Text, Box, Paper, Stack, Slider, Menu, ScrollArea } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { v4 as uuidv4 } from 'uuid';
 import { Map as MapIcon, Search, Download, Upload, Trash2, Calendar as CalendarIcon, List as ListIcon, Cloud, FileText, MoreHorizontal, History, Undo, Redo, Sparkles, ChevronLeft, Wallet } from 'lucide-react';
@@ -66,8 +66,7 @@ function AppContent() {
   const [editingDayAssignment, setEditingDayAssignment] = useState<Location | null>(null);
   const [pendingAddToDay, setPendingAddToDay] = useState<{ dayId: string, slot?: DaySection } | null>(null);
   const [zoomLevel, setZoomLevel] = useState(1.0);
-  const [sidebarView, setSidebarView] = useState<'timeline' | 'calendar'>('timeline');
-  const [showDashboard, setShowDashboard] = useState(false);
+  const [sidebarView, setSidebarView] = useState<'timeline' | 'calendar' | 'budget'>('timeline');
   const [showCloudModal, setShowCloudModal] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
 
@@ -420,8 +419,8 @@ function AppContent() {
                 Calendar
               </Button>
               <Button
-                variant={showDashboard ? 'light' : 'subtle'}
-                onClick={() => setShowDashboard(!showDashboard)}
+                variant={sidebarView === 'budget' ? 'light' : 'subtle'}
+                onClick={() => setSidebarView('budget')}
                 leftSection={<Wallet size={16} />}
                 size="xs"
                 color="blue"
@@ -429,12 +428,6 @@ function AppContent() {
                 Budget
               </Button>
             </Group>
-
-            {showDashboard && (
-              <Box mb="md">
-                <TripDashboard days={days} locations={locations} routes={routes} />
-              </Box>
-            )}
 
             {pendingAddToDay && (
               <Paper withBorder p="xs" bg="blue.0" mt="sm" mb="xs">
@@ -538,8 +531,12 @@ function AppContent() {
                     />
                 </Box>
               </Stack>
-            ) : (
+            ) : sidebarView === 'calendar' ? (
               <CalendarView days={days} locations={locations} onSelectLocation={handleScrollToLocation} />
+            ) : (
+              <ScrollArea h="100%" p="md">
+                <TripDashboard days={days} locations={locations} routes={routes} />
+              </ScrollArea>
             )}
           </Box>
 
