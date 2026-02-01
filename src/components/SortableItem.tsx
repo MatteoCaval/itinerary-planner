@@ -175,6 +175,7 @@ export function SortableItem({
           className="resize-handle"
           onPointerDown={handleResizeStart}
           title="Drag to change duration"
+          style={{ touchAction: 'none' }} // Crucial for mobile pointer events to work without scrolling
         >
           <Box className="resize-handle-bar" />
         </Box>

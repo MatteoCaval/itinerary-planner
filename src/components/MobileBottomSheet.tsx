@@ -11,6 +11,7 @@ type SheetState = 'peek' | 'half' | 'full';
 
 export function MobileBottomSheet({ children, opened }: MobileBottomSheetProps) {
   const [sheetState, setSheetState] = useState<SheetState>('half');
+  const [touchStart, setTouchStart] = useState<number | null>(null);
 
   React.useEffect(() => {
     if (opened) {
@@ -31,6 +32,28 @@ export function MobileBottomSheet({ children, opened }: MobileBottomSheetProps) 
     if (sheetState === 'half') setSheetState('full');
     else if (sheetState === 'full') setSheetState('half');
     else setSheetState('half');
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStart(e.touches[0].clientY);
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStart === null) return;
+    const touchEnd = e.changedTouches[0].clientY;
+    const delta = touchStart - touchEnd; // Positive means swipe up
+
+    if (Math.abs(delta) > 50) { // Threshold for swipe
+      if (delta > 0) {
+        // Swiped Up
+        if (sheetState === 'half') setSheetState('full');
+      } else {
+        // Swiped Down
+        if (sheetState === 'full') setSheetState('half');
+        else if (sheetState === 'half') setSheetState('peek');
+      }
+    }
+    setTouchStart(null);
   };
 
   return (
@@ -66,10 +89,13 @@ export function MobileBottomSheet({ children, opened }: MobileBottomSheetProps) 
         <Box 
           p={0} 
           onClick={cycleState}
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
           style={{ 
             cursor: 'pointer',
             borderBottom: '1px solid var(--mantine-color-gray-2)',
-            flexShrink: 0
+            flexShrink: 0,
+            touchAction: 'none' // Prevent browser scroll while dragging header
           }}
         >
           <Stack gap={0} align="center" py={8}>
