@@ -231,9 +231,9 @@ function AppContent() {
 
   // Derive locations for the sidebar (mapping dayOffset to startDayId)
   const sidebarLocations = useMemo(() => {
-    if (!activeParent) return locations;
+    if (!activeParent || !activeParent.subLocations) return locations;
 
-    return (activeParent.subLocations || []).map(sub => {
+    return activeParent.subLocations.map(sub => {
       const dayIdx = sub.dayOffset;
       const targetDay = dayIdx !== undefined ? activeDays[dayIdx] : undefined;
       return {
@@ -241,7 +241,7 @@ function AppContent() {
         startDayId: targetDay ? targetDay.id : undefined
       };
     });
-  }, [activeParent, activeDays, locations]);
+  }, [activeParent?.subLocations, activeDays, locations]);
 
   const parentLocation = useMemo(() => {
     for (const loc of locations) {
@@ -267,24 +267,25 @@ function AppContent() {
       if (dayIdx !== -1) newDayOffset = dayIdx;
     }
 
-    // Update the item properties
+    // Update the item properties (do NOT create a new object if not needed to keep dnd-kit happy)
+    const originalItem = newSubLocations[activeIdx];
     const updatedItem = {
-      ...newSubLocations[activeIdx],
+      ...originalItem,
       dayOffset: newDayOffset,
-      startSlot: newSlot || (newDayOffset !== undefined ? newSubLocations[activeIdx].startSlot || 'morning' : undefined)
+      startSlot: newSlot || (newDayOffset !== undefined ? originalItem.startSlot || 'morning' : undefined)
     };
-    newSubLocations[activeIdx] = updatedItem;
 
-    // Handle reordering within the array (move item to new position if dropped over another item)
+    // Handle reordering within the array
     if (overId && overId !== activeId && overId !== 'unassigned-zone' && !overId.startsWith('slot-')) {
-       const [moved] = newSubLocations.splice(activeIdx, 1);
+       newSubLocations.splice(activeIdx, 1);
        const overIdx = newSubLocations.findIndex(s => s.id === overId);
        if (overIdx !== -1) {
-         newSubLocations.splice(overIdx, 0, moved);
+         newSubLocations.splice(overIdx, 0, updatedItem);
        } else {
-         // Fallback if overIdx lost (should not happen)
-         newSubLocations.push(moved);
+         newSubLocations.push(updatedItem);
        }
+    } else {
+      newSubLocations[activeIdx] = updatedItem;
     }
 
     updateLocation(activeParent.id, {

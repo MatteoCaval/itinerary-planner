@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { TextInput, Textarea, Button, ActionIcon, Paper, Group, Stack, Text, Badge, Image, Checkbox, LoadingOverlay, Box, Divider, ScrollArea, Anchor } from '@mantine/core';
-import { X, Plus, Trash2, ExternalLink, CheckSquare, Link as LinkIcon, Map as MapIcon, Calendar, ArrowRight, ArrowLeft, Bed, Search } from 'lucide-react';
+import { X, Plus, Trash2, ExternalLink, CheckSquare, Link as LinkIcon, Map as MapIcon, Calendar, ArrowRight, ArrowLeft, Bed, Search, ArrowUp, ArrowDown } from 'lucide-react';
 import { Location, Day, Route, DaySection, TRANSPORT_LABELS } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 import { searchPhoto } from '../unsplash';
@@ -150,6 +150,56 @@ export function LocationDetailPanel({
 
   const removeSubLocation = (subId: string) => {
     onUpdate(location.id, { subLocations: (location.subLocations || []).filter(l => l.id !== subId) });
+  };
+
+  const moveSubLocation = (index: number, direction: 'up' | 'down') => {
+    const subs = [...(location.subLocations || [])];
+    
+    // 1. Get the current chronological order used in the UI
+    const sortedSubs = [...subs].sort((a, b) => {
+      const dayA = a.dayOffset || 0;
+      const dayB = b.dayOffset || 0;
+      if (dayA !== dayB) return dayA - dayB;
+      const slotA = SECTION_ORDER.indexOf(a.startSlot || 'morning');
+      const slotB = SECTION_ORDER.indexOf(b.startSlot || 'morning');
+      if (slotA !== slotB) return slotA - slotB;
+      return (a.order || 0) - (b.order || 0);
+    });
+
+    // 2. Find the item we want to move in the SORTED list
+    const currentItem = subs[index];
+    const sortedIdx = sortedSubs.findIndex(s => s.id === currentItem.id);
+    
+    if (direction === 'up' && sortedIdx > 0) {
+      const prevItem = sortedSubs[sortedIdx - 1];
+      
+      // Swap positions in the sorted array
+      sortedSubs.splice(sortedIdx, 1);
+      sortedSubs.splice(sortedIdx - 1, 0, currentItem);
+      
+      // The moved item inherits the day/slot of the position it moved into
+      currentItem.dayOffset = prevItem.dayOffset;
+      currentItem.startSlot = prevItem.startSlot;
+      
+      // Re-assign order to all items to ensure persistence
+      const finalSubs = sortedSubs.map((s, idx) => ({ ...s, order: idx }));
+      onUpdate(location.id, { subLocations: finalSubs });
+    } else if (direction === 'down' && sortedIdx < sortedSubs.length - 1) {
+      const nextItem = sortedSubs[sortedIdx + 1];
+      
+      // Swap positions in the sorted array
+      sortedSubs.splice(sortedIdx, 1);
+      sortedSubs.splice(sortedIdx, 0, nextItem); // This effectively swaps them
+      sortedSubs[sortedIdx + 1] = currentItem;
+      
+      // The moved item inherits the day/slot of the position it moved into
+      currentItem.dayOffset = nextItem.dayOffset;
+      currentItem.startSlot = nextItem.startSlot;
+      
+      // Re-assign order to all items to ensure persistence
+      const finalSubs = sortedSubs.map((s, idx) => ({ ...s, order: idx }));
+      onUpdate(location.id, { subLocations: finalSubs });
+    }
   };
 
   const handleAddChecklistItem = (e: React.FormEvent) => {
@@ -394,19 +444,30 @@ export function LocationDetailPanel({
                       </Group>
                       <Divider mb="xs" color={isDaySelected ? 'blue.3' : 'blue.1'} />
                       <Stack gap={6}>
-                        {daySubs.map((sub) => (
-                           <Paper key={sub.id} p="xs" withBorder bg="white" shadow="xs" style={{ cursor: 'pointer' }} onClick={() => onSelectLocation?.(sub.id)}>
-                            <Group justify="space-between" wrap="nowrap">
-                              <Group gap="xs" style={{ flex: 1, minWidth: 0 }}>
-                                <Badge size="xs" color="blue" variant="light" tt="capitalize">{sub.startSlot || 'morning'}</Badge>
-                                <Text size="sm" fw={500} truncate>{sub.name}</Text>
+                        {daySubs.map((sub) => {
+                           const globalIdx = (location.subLocations || []).findIndex(s => s.id === sub.id);
+                           return (
+                             <Paper key={sub.id} p="xs" withBorder bg="white" shadow="xs" style={{ cursor: 'pointer' }} onClick={() => onSelectLocation?.(sub.id)}>
+                              <Group justify="space-between" wrap="nowrap">
+                                <Group gap="xs" style={{ flex: 1, minWidth: 0 }}>
+                                  <Badge size="xs" color="blue" variant="light" tt="capitalize">{sub.startSlot || 'morning'}</Badge>
+                                  <Text size="sm" fw={500} truncate>{sub.name}</Text>
+                                </Group>
+                                <Group gap={2}>
+                                  <ActionIcon size="sm" variant="subtle" disabled={globalIdx === 0} onClick={(e) => { e.stopPropagation(); moveSubLocation(globalIdx, 'up'); }}>
+                                    <ArrowUp size={14} />
+                                  </ActionIcon>
+                                  <ActionIcon size="sm" variant="subtle" disabled={globalIdx === (location.subLocations?.length || 0) - 1} onClick={(e) => { e.stopPropagation(); moveSubLocation(globalIdx, 'down'); }}>
+                                    <ArrowDown size={14} />
+                                  </ActionIcon>
+                                  <ActionIcon size="sm" variant="subtle" color="red" onClick={(e) => { e.stopPropagation(); removeSubLocation(sub.id); }}>
+                                    <Trash2 size={14} />
+                                  </ActionIcon>
+                                </Group>
                               </Group>
-                              <ActionIcon size="sm" variant="subtle" color="red" onClick={(e) => { e.stopPropagation(); removeSubLocation(sub.id); }}>
-                                <Trash2 size={14} />
-                              </ActionIcon>
-                            </Group>
-                          </Paper>
-                        ))}
+                            </Paper>
+                           );
+                        })}
                         {daySubs.length === 0 && <Text size="xs" c="dimmed" fs="italic" ta="center" py={4}>No activities planned</Text>}
                       </Stack>
                     </Box>
