@@ -42,10 +42,20 @@ const migrateLocations = (oldLocations: any[]): Location[] => {
     category: loc.category || 'sightseeing',
     checklist: loc.checklist || [],
     links: loc.links || [],
-    cost: loc.cost || 0,
+    cost: typeof loc.cost === 'string' ? parseFloat(loc.cost) : (loc.cost || 0),
     targetTime: loc.targetTime || '',
     dayOffset: loc.dayOffset,
     subLocations: loc.subLocations ? migrateLocations(loc.subLocations) : []
+  }));
+};
+
+const migrateDays = (oldDays: any[]): Day[] => {
+  return oldDays.map(day => ({
+    ...day,
+    accommodation: day.accommodation ? {
+      ...day.accommodation,
+      cost: typeof day.accommodation.cost === 'string' ? parseFloat(day.accommodation.cost) : day.accommodation.cost
+    } : undefined
   }));
 };
 
@@ -123,7 +133,7 @@ export function ItineraryProvider({ children }: { children: ReactNode }) {
 
   const [days, setDays] = useState<Day[]>(() => {
     const saved = localStorage.getItem(STORAGE_KEY_DAYS);
-    return saved ? JSON.parse(saved) : [];
+    return saved ? migrateDays(JSON.parse(saved)) : [];
   });
 
   const [locations, setLocations] = useState<Location[]>(() => {
@@ -333,9 +343,15 @@ export function ItineraryProvider({ children }: { children: ReactNode }) {
   const loadFromData = (data: any) => {
     if (data.startDate) setStartDate(data.startDate);
     if (data.endDate) setEndDate(data.endDate);
-    if (data.days) setDays(data.days);
+    if (data.days) setDays(migrateDays(data.days));
     if (data.locations) setLocations(migrateLocations(data.locations));
-    if (data.routes) setRoutes(data.routes);
+    if (data.routes) {
+      const migratedRoutes = data.routes.map((r: any) => ({
+        ...r,
+        cost: typeof r.cost === 'string' ? parseFloat(r.cost.replace(/[^0-9.]/g, '')) : r.cost
+      }));
+      setRoutes(migratedRoutes);
+    }
   };
 
   const value = {
