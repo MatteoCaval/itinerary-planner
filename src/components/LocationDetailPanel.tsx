@@ -362,7 +362,12 @@ export function LocationDetailPanel({ location, parentLocation, days, allLocatio
 
                 // Render Assigned Days
                 for (let i = 0; i < numDays; i++) {
-                  const daySubs = (grouped[i] || []).sort((a, b) => (a.order || 0) - (b.order || 0));
+                  const daySubs = (grouped[i] || []).sort((a, b) => {
+                    const slotA = SECTION_ORDER.indexOf(a.startSlot || 'morning');
+                    const slotB = SECTION_ORDER.indexOf(b.startSlot || 'morning');
+                    if (slotA !== slotB) return slotA - slotB;
+                    return (a.order || 0) - (b.order || 0);
+                  });
                   rendered.push(
                     <Box key={`day-group-${i}`} mt={i > 0 ? 'sm' : 0}>
                       <Group justify="space-between" mb={4} px={4}>
@@ -375,7 +380,7 @@ export function LocationDetailPanel({ location, parentLocation, days, allLocatio
                            <Paper key={sub.id} p="xs" withBorder bg="white" shadow="xs" style={{ cursor: 'pointer' }} onClick={() => onSelectLocation?.(sub.id)}>
                             <Group justify="space-between" wrap="nowrap">
                               <Group gap="xs" style={{ flex: 1, minWidth: 0 }}>
-                                <Badge size="xs" color="blue" variant="light">{SECTION_ORDER.indexOf(sub.startSlot || 'morning') + 1}</Badge>
+                                <Badge size="xs" color="blue" variant="light" tt="capitalize">{sub.startSlot || 'morning'}</Badge>
                                 <Text size="sm" fw={500} truncate>{sub.name}</Text>
                               </Group>
                               <ActionIcon size="sm" variant="subtle" color="red" onClick={(e) => { e.stopPropagation(); removeSubLocation(sub.id); }}>
