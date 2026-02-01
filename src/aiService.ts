@@ -49,12 +49,29 @@ export const generateAIItinerary = async (
     Locations: ${JSON.stringify(currentLocations.map(l => ({ 
       id: l.id, 
       name: l.name, 
+      category: l.category,
+      notes: l.notes,
+      cost: l.cost,
       startDayId: l.startDayId, 
       startSlot: l.startSlot,
       duration: l.duration,
-      subLocations: l.subLocations?.map(s => ({ name: s.name, dayOffset: s.dayOffset, startSlot: s.startSlot }))
+      subLocations: l.subLocations?.map(s => ({ 
+        name: s.name, 
+        category: s.category,
+        notes: s.notes,
+        cost: s.cost,
+        dayOffset: s.dayOffset, 
+        startSlot: s.startSlot 
+      }))
     })))}
-    Routes: ${JSON.stringify(currentRoutes)}
+    Routes: ${JSON.stringify(currentRoutes.map(r => ({
+      transportType: r.transportType,
+      duration: r.duration,
+      cost: r.cost,
+      notes: r.notes,
+      fromLocationId: r.fromLocationId,
+      toLocationId: r.toLocationId
+    })))}
 
     OUTPUT JSON STRUCTURE (Strict):
     {
