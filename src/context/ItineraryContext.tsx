@@ -43,7 +43,8 @@ const migrateLocations = (oldLocations: any[]): Location[] => {
     checklist: loc.checklist || [],
     links: loc.links || [],
     cost: loc.cost || 0,
-    targetTime: loc.targetTime || ''
+    targetTime: loc.targetTime || '',
+    subLocations: loc.subLocations ? migrateLocations(loc.subLocations) : []
   }));
 };
 

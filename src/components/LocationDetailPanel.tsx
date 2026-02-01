@@ -1,25 +1,44 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { TextInput, Textarea, Button, ActionIcon, Paper, Group, Stack, Text, Badge, Image, Checkbox, LoadingOverlay, Box, Divider, ScrollArea, Anchor } from '@mantine/core';
-import { X, Plus, Trash2, ExternalLink, CheckSquare, Link as LinkIcon, Map as MapIcon, Calendar, ArrowRight, ArrowLeft, Bed } from 'lucide-react';
+import { X, Plus, Trash2, ExternalLink, CheckSquare, Link as LinkIcon, Map as MapIcon, Calendar, ArrowRight, ArrowLeft, Bed, Search, ArrowUp, ArrowDown } from 'lucide-react';
 import { Location, Day, Route, DaySection, TRANSPORT_LABELS } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 import { searchPhoto } from '../unsplash';
+import { searchPlace } from '../utils/geocoding';
 
 interface LocationDetailPanelProps {
   location: Location | null;
+  parentLocation?: Location | null;
   days: Day[];
   allLocations: Location[];
   routes: Route[];
   onUpdate: (id: string, updates: Partial<Location>) => void;
   onClose: () => void;
+  onSelectLocation?: (id: string | null) => void;
 }
 
 const SECTION_ORDER: DaySection[] = ['morning', 'afternoon', 'evening'];
 
-export function LocationDetailPanel({ location, days, allLocations, routes, onUpdate, onClose }: LocationDetailPanelProps) {
+export function LocationDetailPanel({ location, parentLocation, days, allLocations, routes, onUpdate, onClose, onSelectLocation }: LocationDetailPanelProps) {
   const [newChecklistItem, setNewChecklistItem] = useState('');
   const [newLink, setNewLink] = useState({ label: '', url: '' });
   const [imageLoading, setImageLoading] = useState(false);
+  
+  // Sub-location search state
+  const [subSearchQuery, setSubSearchQuery] = useState('');
+  const [subSuggestions, setSubSuggestions] = useState<any[]>([]);
+
+  useEffect(() => {
+    const timer = setTimeout(async () => {
+      if (subSearchQuery.trim().length > 2) {
+        const results = await searchPlace(subSearchQuery);
+        setSubSuggestions(results || []);
+      } else {
+        setSubSuggestions([]);
+      }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [subSearchQuery]);
 
   useEffect(() => {
     const fetchImage = async () => {
@@ -108,6 +127,37 @@ export function LocationDetailPanel({ location, days, allLocations, routes, onUp
     (r.fromLocationId === location.id && r.toLocationId === nextLoc.id) ||
     (r.fromLocationId === nextLoc.id && r.toLocationId === location.id)
   ) : null;
+
+  const handleAddSubLocation = (place: any) => {
+    const newSub: Location = {
+      id: uuidv4(),
+      name: place.display_name.split(',')[0],
+      lat: parseFloat(place.lat),
+      lng: parseFloat(place.lon),
+      order: (location.subLocations || []).length,
+      dayIds: [],
+      category: 'sightseeing'
+    };
+    onUpdate(location.id, { subLocations: [...(location.subLocations || []), newSub] });
+    setSubSearchQuery('');
+    setSubSuggestions([]);
+  };
+
+  const removeSubLocation = (subId: string) => {
+    onUpdate(location.id, { subLocations: (location.subLocations || []).filter(l => l.id !== subId) });
+  };
+
+  const moveSubLocation = (index: number, direction: 'up' | 'down') => {
+    const subs = [...(location.subLocations || [])];
+    if (direction === 'up' && index > 0) {
+      [subs[index], subs[index - 1]] = [subs[index - 1], subs[index]];
+    } else if (direction === 'down' && index < subs.length - 1) {
+      [subs[index], subs[index + 1]] = [subs[index + 1], subs[index]];
+    }
+    // Update order field as well
+    const updated = subs.map((s, i) => ({ ...s, order: i }));
+    onUpdate(location.id, { subLocations: updated });
+  };
 
   const handleAddChecklistItem = (e: React.FormEvent) => {
     e.preventDefault();
@@ -201,6 +251,17 @@ export function LocationDetailPanel({ location, days, allLocations, routes, onUp
       </Box>
 
       <Box className="location-detail-panel-header" p="md" style={{ borderBottom: '1px solid var(--mantine-color-gray-3)' }} bg="gray.0">
+        {parentLocation && (
+          <Button 
+            variant="subtle" 
+            size="xs" 
+            mb="xs" 
+            leftSection={<ArrowLeft size={14} />} 
+            onClick={() => onSelectLocation?.(parentLocation.id)}
+          >
+            Back to {parentLocation.name}
+          </Button>
+        )}
         <Group justify="space-between" align="start">
           <Box style={{ flex: 1, minWidth: 0 }}>
             <Text fw={700} size="lg" truncate>{location.name}</Text>
@@ -266,6 +327,65 @@ export function LocationDetailPanel({ location, days, allLocations, routes, onUp
               </>
             )}
           </Paper>
+
+          {/* Sub-Destinations Section */}
+          <Box mb="xl">
+            <Text size="xs" fw={700} tt="uppercase" c="dimmed" mb={4}>Sub-Destinations</Text>
+            <Box mb="sm" style={{ position: 'relative' }}>
+                <TextInput
+                  size="xs"
+                  placeholder="Search to add sub-destination..."
+                  value={subSearchQuery}
+                  onChange={(e) => setSubSearchQuery(e.target.value)}
+                  rightSection={<Search size={14} />}
+                />
+                {subSuggestions.length > 0 && (
+                  <Paper withBorder shadow="md" style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 1000, maxHeight: 200, overflowY: 'auto' }}>
+                    {subSuggestions.map((s, i) => (
+                      <Box
+                        key={i}
+                        p="xs"
+                        style={{ cursor: 'pointer', borderBottom: '1px solid var(--mantine-color-gray-2)' }}
+                        className="hover-bg-light"
+                        onClick={() => handleAddSubLocation(s)}
+                      >
+                        <Text size="sm" fw={500}>{s.display_name.split(',')[0]}</Text>
+                        <Text size="xs" c="dimmed" truncate>{s.display_name}</Text>
+                      </Box>
+                    ))}
+                  </Paper>
+                )}
+            </Box>
+
+            <Stack gap="xs">
+              {(location.subLocations || []).map((sub, index) => (
+                <Paper key={sub.id} p="xs" withBorder bg="gray.0">
+                  <Group justify="space-between">
+                    <Group gap="xs">
+                      <Badge size="sm" circle color="gray">{index + 1}</Badge>
+                      <Box>
+                        <Text size="sm" fw={500}>{sub.name}</Text>
+                      </Box>
+                    </Group>
+                    <Group gap={4}>
+                      <ActionIcon size="sm" variant="subtle" disabled={index === 0} onClick={() => moveSubLocation(index, 'up')}>
+                        <ArrowUp size={14} />
+                      </ActionIcon>
+                      <ActionIcon size="sm" variant="subtle" disabled={index === (location.subLocations?.length || 0) - 1} onClick={() => moveSubLocation(index, 'down')}>
+                        <ArrowDown size={14} />
+                      </ActionIcon>
+                      <ActionIcon size="sm" variant="subtle" color="red" onClick={() => removeSubLocation(sub.id)}>
+                        <Trash2 size={14} />
+                      </ActionIcon>
+                    </Group>
+                  </Group>
+                </Paper>
+              ))}
+              {(!location.subLocations || location.subLocations.length === 0) && (
+                <Text size="xs" c="dimmed" fs="italic">No sub-destinations added yet.</Text>
+              )}
+            </Stack>
+          </Box>
 
           <Box mb="xl">
             <Text size="xs" fw={700} tt="uppercase" c="dimmed" mb={4}>Description & Notes</Text>

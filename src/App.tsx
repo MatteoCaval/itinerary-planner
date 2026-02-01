@@ -16,28 +16,7 @@ import { AIPlannerModal } from './components/AIPlannerModal';
 import { generateMarkdown, downloadMarkdown } from './markdownExporter';
 import { Location, DaySection } from './types';
 import { ItineraryProvider, useItinerary } from './context/ItineraryContext';
-
-// Nominatim OpenStreetMap Search Service
-const searchPlace = async (query: string) => {
-  try {
-    const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`);
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error("Search failed", error);
-    return [];
-  }
-};
-
-const reverseGeocode = async (lat: number, lng: number) => {
-  try {
-    const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
-    const data = await response.json();
-    return data.display_name || `Location at ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
-  } catch {
-    return `Location at ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
-  }
-}
+import { searchPlace, reverseGeocode } from './utils/geocoding';
 
 function AppContent() {
   const {
@@ -170,7 +149,45 @@ function AppContent() {
     downloadMarkdown(md, `travel-itinerary-${dateStr}.md`);
   };
 
-  const selectedLocation = useMemo(() => locations.find(l => l.id === selectedLocationId) || null, [locations, selectedLocationId]);
+  const selectedLocation = useMemo(() => {
+    const top = locations.find(l => l.id === selectedLocationId);
+    if (top) return top;
+    for (const loc of locations) {
+      if (loc.subLocations) {
+        const sub = loc.subLocations.find(s => s.id === selectedLocationId);
+        if (sub) return sub;
+      }
+    }
+    return null;
+  }, [locations, selectedLocationId]);
+
+  // Determine locations to show on map (drill-down if sub-locations exist or are selected)
+  const mapLocations = useMemo(() => {
+    // 1. Is a top-level location selected?
+    const parent = locations.find(l => l.id === selectedLocationId);
+    if (parent && parent.subLocations && parent.subLocations.length > 0) {
+      return parent.subLocations;
+    }
+
+    // 2. Is a sub-location selected? Find its parent and show siblings.
+    for (const loc of locations) {
+      if (loc.subLocations?.some(sub => sub.id === selectedLocationId)) {
+        return loc.subLocations;
+      }
+    }
+
+    // 3. Default to global
+    return locations;
+  }, [locations, selectedLocationId]);
+
+  const parentLocation = useMemo(() => {
+    for (const loc of locations) {
+      if (loc.subLocations?.some(sub => sub.id === selectedLocationId)) {
+        return loc;
+      }
+    }
+    return null;
+  }, [locations, selectedLocationId]);
 
   return (
     <AppShell
@@ -385,7 +402,7 @@ function AppContent() {
 
       <AppShell.Main h="100vh" style={{ position: 'relative', overflow: 'hidden' }}>
         <MapDisplay
-          days={days} locations={locations} routes={routes}
+          days={days} locations={mapLocations} routes={routes}
           onEditRoute={(from, to) => setEditingRoute({ fromId: from, toId: to })}
           hoveredLocationId={hoveredLocationId} 
           selectedLocationId={selectedLocationId}
@@ -401,11 +418,13 @@ function AppContent() {
           >
             <LocationDetailPanel
               location={selectedLocation}
+              parentLocation={parentLocation}
               days={days}
               allLocations={locations}
               routes={routes}
               onUpdate={updateLocation}
               onClose={() => setSelectedLocationId(null)}
+              onSelectLocation={setSelectedLocationId}
             />
           </Paper>
         )}
