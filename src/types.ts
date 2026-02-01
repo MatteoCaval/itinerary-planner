@@ -14,6 +14,8 @@ export interface Route {
 
 export interface Accommodation {
   name: string;
+  lat?: number;
+  lng?: number;
   cost?: number;
   notes?: string;
   link?: string;

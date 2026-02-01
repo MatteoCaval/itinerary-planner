@@ -107,16 +107,38 @@ const createArrowIcon = (angle: number, color: string, isHovered: boolean) => {
   });
 };
 
+// Accommodation Icon
+const createAccommodationIcon = () => {
+  const iconHtml = renderToStaticMarkup(<Bed size={16} color="white" />);
+  return L.divIcon({
+    className: 'custom-marker-wrapper accommodation-marker',
+    html: `
+      <div class="map-marker-container">
+        <div class="marker-circle" style="background-color: #6610f2; width: 32px; height: 32px;">
+          ${iconHtml}
+        </div>
+      </div>
+    `,
+    iconSize: [32, 32],
+    iconAnchor: [16, 32],
+  });
+};
+
 // Component to fit bounds
-function FitBounds({ locations }: { locations: Location[] }) {
+function FitBounds({ locations, accommodations }: { locations: Location[], accommodations?: { lat: number, lng: number }[] }) {
   const map = useMap();
 
   useEffect(() => {
-    if (locations.length > 0) {
-      const bounds = L.latLngBounds(locations.map(l => [l.lat, l.lng]));
+    const points: [number, number][] = locations.map(l => [l.lat, l.lng]);
+    if (accommodations) {
+      accommodations.forEach(a => points.push([a.lat, a.lng]));
+    }
+    
+    if (points.length > 0) {
+      const bounds = L.latLngBounds(points);
       map.fitBounds(bounds, { padding: [50, 50] });
     }
-  }, [locations, map]);
+  }, [locations, accommodations, map]);
 
   return null;
 }
@@ -248,6 +270,19 @@ export default function MapDisplay({ days, locations, routes, onEditRoute, hover
     );
   };
 
+  // Extract accommodations with location data
+  const accommodations = useMemo(() => {
+    return days
+      .filter(d => d.accommodation && d.accommodation.lat && d.accommodation.lng)
+      .map(d => ({
+        id: `accom-${d.id}`,
+        name: d.accommodation!.name,
+        lat: d.accommodation!.lat!,
+        lng: d.accommodation!.lng!,
+        notes: d.accommodation!.notes
+      }));
+  }, [days]);
+
   return (
     <div className="map-container">
       <MapContainer center={position} zoom={13} scrollWheelZoom={true} className="leaflet-container" zoomControl={false}>
@@ -257,6 +292,19 @@ export default function MapDisplay({ days, locations, routes, onEditRoute, hover
           url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
         />
 
+        {/* Accommodation Markers */}
+        {accommodations.map(acc => (
+          <Marker
+            key={acc.id}
+            position={[acc.lat, acc.lng]}
+            icon={createAccommodationIcon()}
+          >
+            <Popup>
+              <strong>🏨 {acc.name}</strong><br />
+              {acc.notes && <span style={{ color: '#6c757d' }}>{acc.notes}</span>}
+            </Popup>
+          </Marker>
+        ))}
 
         {sortedLocations.map((loc, index) => {
           const isHovered = hoveredLocationId === loc.id;
@@ -302,7 +350,7 @@ export default function MapDisplay({ days, locations, routes, onEditRoute, hover
           );
         })}
 
-        <FitBounds locations={locations} />
+        <FitBounds locations={locations} accommodations={accommodations} />
         <SelectedLocationHandler selectedId={selectedLocationId} locations={locations} />
         <MapClickHandler onSelect={onSelectLocation} />
       </MapContainer>

@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useRef, useEffect } from 'react';
 import { ActionIcon, Text, Group, Stack, Box, Paper, Tooltip, Popover, TextInput, Button, Autocomplete } from '@mantine/core';
-import { Plus, Sun, Moon, Coffee, ChevronDown, ChevronUp, Bed, Trash } from 'lucide-react';
+import { Plus, Sun, Moon, Coffee, ChevronDown, ChevronUp, Bed, Trash, Search, MapPin } from 'lucide-react';
 import {
     DndContext,
     closestCenter,
@@ -19,6 +19,7 @@ import {
 } from '@dnd-kit/sortable';
 import { Day, Location, Route, DaySection, TRANSPORT_COLORS, TRANSPORT_LABELS } from '../types';
 import { SortableItem } from './SortableItem';
+import { searchPlace } from '../utils/geocoding';
 
 interface DaySidebarProps {
     days: Day[];
@@ -153,19 +154,48 @@ function DayLabel({ day, startRow, dayNum, isEvenDay, onAdd, onUpdateDay, existi
     const [opened, setOpened] = useState(false);
     const [tempName, setTempName] = useState(day.accommodation?.name || '');
     const [tempNotes, setTempNotes] = useState(day.accommodation?.notes || '');
+    const [tempLat, setTempLat] = useState(day.accommodation?.lat);
+    const [tempLng, setTempLng] = useState(day.accommodation?.lng);
+    
+    // Search state
+    const [suggestions, setSuggestions] = useState<any[]>([]);
 
     // Reset local state when day prop changes (e.g. if loaded from cloud)
     useEffect(() => {
         setTempName(day.accommodation?.name || '');
         setTempNotes(day.accommodation?.notes || '');
+        setTempLat(day.accommodation?.lat);
+        setTempLng(day.accommodation?.lng);
     }, [day.accommodation]);
+
+    // Auto-search when name changes (debounced)
+    useEffect(() => {
+        const timer = setTimeout(async () => {
+            if (opened && tempName.trim().length > 2 && !tempLat) {
+                const results = await searchPlace(tempName);
+                setSuggestions(results || []);
+            } else {
+                setSuggestions([]);
+            }
+        }, 500);
+        return () => clearTimeout(timer);
+    }, [tempName, opened, tempLat]);
+
+    const selectSuggestion = (s: any) => {
+        setTempName(s.display_name.split(',')[0]);
+        setTempLat(parseFloat(s.lat));
+        setTempLng(parseFloat(s.lon));
+        setSuggestions([]);
+    };
 
     const handleSave = () => {
         onUpdateDay(day.id, {
             accommodation: {
                 ...day.accommodation,
                 name: tempName,
-                notes: tempNotes
+                notes: tempNotes,
+                lat: tempLat,
+                lng: tempLng
             }
         });
         setOpened(false);
@@ -197,7 +227,7 @@ function DayLabel({ day, startRow, dayNum, isEvenDay, onAdd, onUpdateDay, existi
                 <Text size="sm" fw={700}>Day {dayNum}</Text>
                 <Text size="xs" c="dimmed">{formatDate(day.date)}</Text>
                 
-                <Popover opened={opened} onChange={setOpened} withArrow trapFocus width={250} position="right" shadow="md" zIndex={2100} withinPortal>
+                <Popover opened={opened} onChange={setOpened} withArrow trapFocus width={300} position="right" shadow="md" zIndex={2100} withinPortal>
                     <Tooltip label={day.accommodation?.name ? `Staying at: ${day.accommodation.name}` : "Set Accommodation"}>
                         <Popover.Target>
                             <ActionIcon 
@@ -217,15 +247,62 @@ function DayLabel({ day, startRow, dayNum, isEvenDay, onAdd, onUpdateDay, existi
                     <Popover.Dropdown onClick={(e) => e.stopPropagation()}>
                         <Stack gap="xs">
                             <Text size="sm" fw={700}>Accommodation</Text>
-                            <Autocomplete
-                                placeholder="Hotel / Airbnb Name"
-                                value={tempName}
-                                onChange={setTempName}
-                                size="xs"
-                                label="Name"
-                                data={existingAccommodations}
-                                comboboxProps={{ withinPortal: false }}
-                            />
+                            <Box style={{ position: 'relative' }}>
+                                <Autocomplete
+                                    placeholder="Search Hotel / Address..."
+                                    value={tempName}
+                                    onChange={(val) => {
+                                        setTempName(val);
+                                        // Reset coords if user types new name, unless selecting
+                                        if (val !== tempName) {
+                                           // We don't strictly reset coords here to avoid clearing them on minor edits
+                                           // But ideally we should if it's a totally new place. 
+                                           // For now, let's keep it simple. User can re-select from dropdown.
+                                        }
+                                    }}
+                                    size="xs"
+                                    label="Name / Location"
+                                    data={existingAccommodations}
+                                    comboboxProps={{ withinPortal: false }}
+                                    rightSection={tempLat ? <MapPin size={14} color="green" /> : <Search size={14} />}
+                                />
+                                {suggestions.length > 0 && (
+                                    <Paper 
+                                        withBorder 
+                                        shadow="md" 
+                                        style={{ 
+                                            position: 'absolute', 
+                                            top: '100%', 
+                                            left: 0, 
+                                            right: 0, 
+                                            zIndex: 2200, 
+                                            maxHeight: 150, 
+                                            overflowY: 'auto' 
+                                        }}
+                                    >
+                                        {suggestions.map((s, i) => (
+                                            <Box
+                                                key={i}
+                                                p="xs"
+                                                style={{ cursor: 'pointer', borderBottom: '1px solid var(--mantine-color-gray-2)' }}
+                                                className="hover-bg-light"
+                                                onClick={() => selectSuggestion(s)}
+                                            >
+                                                <Text size="xs" fw={500}>{s.display_name.split(',')[0]}</Text>
+                                                <Text size="xs" c="dimmed" truncate>{s.display_name}</Text>
+                                            </Box>
+                                        ))}
+                                    </Paper>
+                                )}
+                            </Box>
+                            
+                            {tempLat && (
+                                <Text size="xs" c="dimmed" fs="italic">
+                                    <MapPin size={10} style={{ display: 'inline', marginRight: 4 }} />
+                                    Location set ({tempLat.toFixed(4)}, {tempLng?.toFixed(4)})
+                                </Text>
+                            )}
+
                             <TextInput 
                                 placeholder="Notes / Address" 
                                 value={tempNotes} 
