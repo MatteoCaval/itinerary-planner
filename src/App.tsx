@@ -425,15 +425,18 @@ function AppContent() {
           onMouseDown={startResizing}
           style={{
             position: 'absolute',
-            right: -3,
+            right: 0,
             top: 0,
             bottom: 0,
-            width: 6,
+            width: 8,
             cursor: 'col-resize',
             zIndex: 1100,
             backgroundColor: 'transparent',
+            transition: 'background-color 0.2s',
           }}
-          className="resize-handle"
+          className="sidebar-resize-handle"
+          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.1)'}
+          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
         />
         <Box visibleFrom="sm" h="100%">
             <SidebarContent

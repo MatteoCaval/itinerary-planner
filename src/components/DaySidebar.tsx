@@ -550,7 +550,7 @@ export function DaySidebar({
     onNestLocation
 }: DaySidebarProps) {
     const [activeId, setActiveId] = useState<string | null>(null);
-    const [unassignedCollapsed, setUnassignedCollapsed] = useState(false);
+    const [unassignedCollapsed, setUnassignedCollapsed] = useState(() => locations.filter(l => !l.startDayId).length === 0);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
 
     const sensors = useSensors(
