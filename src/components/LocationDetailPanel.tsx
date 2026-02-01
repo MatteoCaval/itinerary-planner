@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { TextInput, Textarea, Button, ActionIcon, Paper, Group, Stack, Text, Badge, Image, Checkbox, LoadingOverlay, Box, Divider, ScrollArea, Anchor, Tooltip, NumberInput } from '@mantine/core';
 import { X, Plus, Trash2, ExternalLink, CheckSquare, Link as LinkIcon, Map as MapIcon, Calendar, ArrowRight, ArrowLeft, Bed, Search, ChevronRight, ArrowUp, ArrowDown, Utensils, Train, Globe, Euro } from 'lucide-react';
-import { Location, Day, Route, DaySection, TRANSPORT_LABELS, TRANSPORT_COLORS } from '../types';
+import { Location, Day, Route, DaySection, TRANSPORT_LABELS, TRANSPORT_COLORS, CATEGORY_COLORS } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 import { searchPhoto } from '../unsplash';
 import { searchPlace } from '../utils/geocoding';
@@ -582,7 +582,8 @@ export function LocationDetailPanel({
                     <Tooltip key={cat} label={cat.charAt(0).toUpperCase() + cat.slice(1)}>
                       <ActionIcon 
                         variant={location.category === cat ? 'filled' : 'light'} 
-                        color="blue"
+                        color={location.category === cat ? undefined : 'gray'}
+                        style={{ backgroundColor: location.category === cat ? CATEGORY_COLORS[cat] : undefined }}
                         onClick={() => onUpdate(location.id, { category: cat })}
                         size="md"
                       >

@@ -3,7 +3,7 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { GripVertical, X } from 'lucide-react';
 import { ActionIcon, Badge, Text, Group, Stack, Box, Paper } from '@mantine/core';
-import { Location } from '../types';
+import { Location, CATEGORY_COLORS } from '../types';
 
 interface SortableItemProps {
   id: string;
@@ -76,6 +76,8 @@ export function SortableItem({
     window.addEventListener('pointerup', onPointerUp);
   };
 
+  const catColor = CATEGORY_COLORS[location.category || 'sightseeing'];
+
   return (
     <Box className="sortable-item-wrapper" h="100%" style={{ position: 'relative' }}>
       <Paper
@@ -87,8 +89,9 @@ export function SortableItem({
         className={`sortable-item ${isDragging ? 'dragging' : ''} ${isResizing ? 'resizing' : ''} ${isOver ? 'nesting-target' : ''}`}
         style={{ 
           ...style, 
-          borderColor: isOver ? 'var(--mantine-color-blue-6)' : (isSelected ? 'var(--mantine-color-blue-filled)' : undefined),
+          borderColor: isOver ? 'var(--mantine-color-blue-6)' : (isSelected ? 'var(--mantine-color-blue-filled)' : catColor),
           borderWidth: isSelected || isOver ? 2 : 1,
+          borderLeft: `4px solid ${catColor}`,
           borderStyle: isOver ? 'dashed' : 'solid'
         }}
         bg={isOver ? 'blue.0' : (isSelected ? 'blue.0' : 'white')}

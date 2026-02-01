@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap, useMapEvents, Tooltip, ZoomControl } from 'react-leaflet';
-import { Location, Route, TRANSPORT_COLORS, TRANSPORT_LABELS, Day, DaySection, LocationCategory } from '../types';
+import { Location, Route, TRANSPORT_COLORS, TRANSPORT_LABELS, Day, DaySection, LocationCategory, CATEGORY_COLORS } from '../types';
 import L from 'leaflet';
 import { Map as SightseeingIcon, Utensils, Bed, Train, Globe, ChevronRight } from 'lucide-react';
 import { renderToStaticMarkup } from 'react-dom/server';
@@ -88,12 +88,13 @@ const CATEGORY_ICONS: Record<LocationCategory, any> = {
 const createIcon = (loc: Location, index: number, isHovered: boolean) => {
   const IconComponent = CATEGORY_ICONS[loc.category || 'sightseeing'];
   const iconHtml = renderToStaticMarkup(<IconComponent size={12} color="white" />);
+  const baseColor = CATEGORY_COLORS[loc.category || 'sightseeing'];
 
   return L.divIcon({
     className: 'custom-marker-wrapper',
     html: `
       <div class="map-marker-container ${isHovered ? 'hovered' : ''}">
-        <div class="marker-circle" style="background-color: ${isHovered ? '#0d6efd' : '#6c757d'}">
+        <div class="marker-circle" style="background-color: ${isHovered ? '#0d6efd' : baseColor}">
           ${iconHtml}
         </div>
         <div class="marker-number">${index + 1}</div>

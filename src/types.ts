@@ -83,3 +83,12 @@ export const TRANSPORT_LABELS: Record<TransportType, string> = {
   ferry: '⛴️ Ferry',
   other: '📍 Other',
 };
+
+// Category colors for timeline and map
+export const CATEGORY_COLORS: Record<LocationCategory, string> = {
+  sightseeing: '#3b82f6', // blue-6
+  dining: '#f97316',      // orange-6
+  hotel: '#6366f1',       // indigo-6
+  transit: '#22c55e',     // green-6
+  other: '#6b7280',       // gray-6
+};
