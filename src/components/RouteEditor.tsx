@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Modal, Button, TextInput, NumberInput, Textarea, Group, Stack, Text, Paper, Badge, Grid, Box } from '@mantine/core';
+import { Modal, Button, NumberInput, Textarea, Group, Stack, Text, Paper, Badge, Grid, Box } from '@mantine/core';
 import { Route, TransportType, TRANSPORT_LABELS } from '../types';
 import { Clock, Euro, FileText, ArrowRight } from 'lucide-react';
 
@@ -22,7 +22,7 @@ export function RouteEditor({ show, route, fromName, toName, onSave, onClose }: 
     const [hours, setHours] = useState<number>(0);
     const [minutes, setMinutes] = useState<number>(0);
 
-    const [cost, setCost] = useState('');
+    const [cost, setCost] = useState<number | undefined>(undefined);
     const [notes, setNotes] = useState('');
 
     // Helper to parse duration string "1h 30m" -> { h: 1, m: 30 }
@@ -47,14 +47,14 @@ export function RouteEditor({ show, route, fromName, toName, onSave, onClose }: 
             const { h, m } = parseDuration(route.duration || '');
             setHours(h);
             setMinutes(m);
-            setCost(route.cost || '');
+            setCost(route.cost);
             setNotes(route.notes || '');
         } else {
             // Reset to defaults
             setTransportType('car');
             setHours(0);
             setMinutes(0);
-            setCost('');
+            setCost(undefined);
             setNotes('');
         }
     }, [route, show]); // Reset when modal opens
@@ -76,7 +76,7 @@ export function RouteEditor({ show, route, fromName, toName, onSave, onClose }: 
             ...route,
             transportType,
             duration: durationStr || undefined,
-            cost: cost || undefined,
+            cost: cost,
             notes: notes || undefined,
         });
     };
@@ -117,7 +117,7 @@ export function RouteEditor({ show, route, fromName, toName, onSave, onClose }: 
                             </Group>
                         </Box>
 
-                        <TextInput
+                        <NumberInput
                             label={
                                 <Group gap={4} mb={4}>
                                     <Euro size={14} />
@@ -127,7 +127,9 @@ export function RouteEditor({ show, route, fromName, toName, onSave, onClose }: 
                             leftSection="€"
                             placeholder="0.00"
                             value={cost}
-                            onChange={(e) => setCost(e.target.value)}
+                            onChange={(val) => setCost(Number(val) || undefined)}
+                            min={0}
+                            decimalScale={2}
                         />
                     </Stack>
                 </Grid.Col>

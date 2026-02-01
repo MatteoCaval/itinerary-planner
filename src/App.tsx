@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { AppShell, Burger, Group, Button, ActionIcon, TextInput, Tooltip, Text, Box, Paper, Stack, Slider, Menu } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { v4 as uuidv4 } from 'uuid';
-import { Map as MapIcon, Search, Download, Upload, Trash2, Calendar as CalendarIcon, List as ListIcon, Cloud, FileText, MoreHorizontal, History, Undo, Redo, Sparkles, ChevronLeft } from 'lucide-react';
+import { Map as MapIcon, Search, Download, Upload, Trash2, Calendar as CalendarIcon, List as ListIcon, Cloud, FileText, MoreHorizontal, History, Undo, Redo, Sparkles, ChevronLeft, Wallet } from 'lucide-react';
 import MapDisplay from './components/MapDisplay';
 import { DateRangePicker } from './components/DateRangePicker';
 import { DaySidebar } from './components/DaySidebar';
@@ -13,10 +13,12 @@ import { CalendarView } from './components/CalendarView';
 import { CloudSyncModal } from './components/CloudSyncModal';
 import { HistoryModal } from './components/HistoryModal';
 import { AIPlannerModal } from './components/AIPlannerModal';
+import { TripDashboard } from './components/TripDashboard';
 import { generateMarkdown, downloadMarkdown } from './markdownExporter';
 import { Location, DaySection } from './types';
 import { ItineraryProvider, useItinerary } from './context/ItineraryContext';
 import { searchPlace, reverseGeocode } from './utils/geocoding';
+import { useItineraryDrillDown } from './hooks/useItineraryDrillDown';
 
 function AppContent() {
   const {
@@ -65,6 +67,7 @@ function AppContent() {
   const [pendingAddToDay, setPendingAddToDay] = useState<{ dayId: string, slot?: DaySection } | null>(null);
   const [zoomLevel, setZoomLevel] = useState(1.0);
   const [sidebarView, setSidebarView] = useState<'timeline' | 'calendar'>('timeline');
+  const [showDashboard, setShowDashboard] = useState(false);
   const [showCloudModal, setShowCloudModal] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
 
@@ -169,112 +172,15 @@ function AppContent() {
     return null;
   }, [locations, selectedLocationId]);
 
-  // Derive which location is the "Active Parent" for the current view
-  const activeParent = useMemo(() => {
-    // Case 1: A top-level location with sub-locations is selected
-    const top = locations.find(l => l.id === selectedLocationId);
-    if (top && top.subLocations && top.subLocations.length > 0) return top;
-    
-    // Case 2: A sub-location is selected -> return its parent
-    for (const loc of locations) {
-      if (loc.subLocations?.some(sub => sub.id === selectedLocationId)) return loc;
-    }
-    return null;
-  }, [locations, selectedLocationId]);
-
-  const isSubItinerary = !!activeParent;
-
-  // Derive days for the current view
-  const activeDays = useMemo(() => {
-    if (!activeParent || !activeParent.startDayId) return days;
-    
-    const startDayIdx = days.findIndex(d => d.id === activeParent.startDayId);
-    if (startDayIdx === -1) return days;
-    
-    const startSlotIdx = ['morning', 'afternoon', 'evening'].indexOf(activeParent.startSlot || 'morning');
-    const totalSlots = activeParent.duration || 1;
-    const endAbsSlot = (startDayIdx * 3) + startSlotIdx + totalSlots - 1;
-    const endDayIdx = Math.floor(endAbsSlot / 3);
-    
-    return days.slice(startDayIdx, endDayIdx + 1);
-  }, [days, activeParent]);
-
-  // Helper to check if a slot is blocked (outside parent's duration)
-  const isSlotBlocked = (dayId: string, slot: DaySection) => {
-    if (!activeParent || !activeParent.startDayId) return false;
-
-    const startDayIdx = days.findIndex(d => d.id === activeParent.startDayId);
-    const currentDayIdx = days.findIndex(d => d.id === dayId);
-    if (startDayIdx === -1 || currentDayIdx === -1) return false;
-
-    const sectionOrder = ['morning', 'afternoon', 'evening'];
-    const startSlotIdx = sectionOrder.indexOf(activeParent.startSlot || 'morning');
-    const currentSlotIdx = sectionOrder.indexOf(slot);
-
-    const absStart = startDayIdx * 3 + startSlotIdx;
-    const absEnd = absStart + (activeParent.duration || 1) - 1;
-    const absCurrent = currentDayIdx * 3 + currentSlotIdx;
-
-    return absCurrent < absStart || absCurrent > absEnd;
-  };
-
-  // Determine locations to show on map (drill-down if sub-locations exist or are selected)
-  const mapLocations = useMemo(() => {
-    let baseLocations = locations;
-    
-    // 1. Is a top-level location selected?
-    const parent = locations.find(l => l.id === selectedLocationId);
-    if (parent && parent.subLocations && parent.subLocations.length > 0) {
-      baseLocations = parent.subLocations;
-    } else {
-      // 2. Is a sub-location selected? Find its parent and show siblings.
-      for (const loc of locations) {
-        if (loc.subLocations?.some(sub => sub.id === selectedLocationId)) {
-          baseLocations = loc.subLocations;
-          break;
-        }
-      }
-    }
-
-    // 3. Filter by day if selected
-    if (selectedDayId) {
-      if (baseLocations === locations) {
-        // Global mode: Filter by startDayId
-        return baseLocations.filter(l => l.startDayId === selectedDayId);
-      } else {
-        // Sub-itinerary mode: Filter by dayOffset index
-        const dayIdx = activeDays.findIndex(d => d.id === selectedDayId);
-        if (dayIdx !== -1) {
-          return baseLocations.filter(l => l.dayOffset === dayIdx);
-        }
-      }
-    }
-
-    return baseLocations;
-  }, [locations, selectedLocationId, selectedDayId, activeDays]);
-
-  // Derive locations for the sidebar (mapping dayOffset to startDayId)
-  const sidebarLocations = useMemo(() => {
-    if (!activeParent || !activeParent.subLocations) return locations;
-
-    return activeParent.subLocations.map(sub => {
-      const dayIdx = sub.dayOffset;
-      const targetDay = dayIdx !== undefined ? activeDays[dayIdx] : undefined;
-      return {
-        ...sub,
-        startDayId: targetDay ? targetDay.id : undefined
-      };
-    });
-  }, [activeParent?.subLocations, activeDays, locations]);
-
-  const parentLocation = useMemo(() => {
-    for (const loc of locations) {
-      if (loc.subLocations?.some(sub => sub.id === selectedLocationId)) {
-        return loc;
-      }
-    }
-    return null;
-  }, [locations, selectedLocationId]);
+  const {
+    activeParent,
+    parentLocation,
+    isSubItinerary,
+    activeDays,
+    mapLocations,
+    sidebarLocations,
+    isSlotBlocked
+  } = useItineraryDrillDown({ locations, days, selectedLocationId, selectedDayId });
 
   // --- Specialized Handlers for Sub-Itinerary ---
   const handleSubReorder = (activeId: string, overId: string | null, newDayId: string | null, newSlot: DaySection | null) => {
@@ -513,7 +419,22 @@ function AppContent() {
               >
                 Calendar
               </Button>
+              <Button
+                variant={showDashboard ? 'light' : 'subtle'}
+                onClick={() => setShowDashboard(!showDashboard)}
+                leftSection={<Wallet size={16} />}
+                size="xs"
+                color="blue"
+              >
+                Budget
+              </Button>
             </Group>
+
+            {showDashboard && (
+              <Box mb="md">
+                <TripDashboard days={days} locations={locations} routes={routes} />
+              </Box>
+            )}
 
             {pendingAddToDay && (
               <Paper withBorder p="xs" bg="blue.0" mt="sm" mb="xs">

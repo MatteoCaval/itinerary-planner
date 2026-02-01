@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { TextInput, Textarea, Button, ActionIcon, Paper, Group, Stack, Text, Badge, Image, Checkbox, LoadingOverlay, Box, Divider, ScrollArea, Anchor, Tooltip } from '@mantine/core';
-import { X, Plus, Trash2, ExternalLink, CheckSquare, Link as LinkIcon, Map as MapIcon, Calendar, ArrowRight, ArrowLeft, Bed, Search, ChevronRight, ArrowUp, ArrowDown } from 'lucide-react';
+import { TextInput, Textarea, Button, ActionIcon, Paper, Group, Stack, Text, Badge, Image, Checkbox, LoadingOverlay, Box, Divider, ScrollArea, Anchor, Tooltip, NumberInput } from '@mantine/core';
+import { X, Plus, Trash2, ExternalLink, CheckSquare, Link as LinkIcon, Map as MapIcon, Calendar, ArrowRight, ArrowLeft, Bed, Search, ChevronRight, ArrowUp, ArrowDown, Utensils, Train, Globe, Euro } from 'lucide-react';
 import { Location, Day, Route, DaySection, TRANSPORT_LABELS, TRANSPORT_COLORS } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 import { searchPhoto } from '../unsplash';
@@ -571,6 +571,44 @@ export function LocationDetailPanel({
                 <Text size="xs" c="dimmed" fs="italic">No sub-destinations added yet.</Text>
               )}
             </Stack>
+          </Box>
+
+          <Box mb="xl">
+            <Group grow gap="md">
+              <Box>
+                <Text size="xs" fw={700} tt="uppercase" c="dimmed" mb={4}>Category</Text>
+                <Group gap={4}>
+                  {(['sightseeing', 'dining', 'hotel', 'transit', 'other'] as const).map(cat => (
+                    <Tooltip key={cat} label={cat.charAt(0).toUpperCase() + cat.slice(1)}>
+                      <ActionIcon 
+                        variant={location.category === cat ? 'filled' : 'light'} 
+                        color="blue"
+                        onClick={() => onUpdate(location.id, { category: cat })}
+                        size="md"
+                      >
+                        {cat === 'sightseeing' && <MapIcon size={16} />}
+                        {cat === 'dining' && <Utensils size={16} />}
+                        {cat === 'hotel' && <Bed size={16} />}
+                        {cat === 'transit' && <Train size={16} />}
+                        {cat === 'other' && <Globe size={16} />}
+                      </ActionIcon>
+                    </Tooltip>
+                  ))}
+                </Group>
+              </Box>
+              <Box>
+                <Text size="xs" fw={700} tt="uppercase" c="dimmed" mb={4}>Cost</Text>
+                <NumberInput
+                  size="xs"
+                  placeholder="0.00"
+                  leftSection={<Euro size={14} />}
+                  value={location.cost}
+                  onChange={(val) => onUpdate(location.id, { cost: Number(val) || 0 })}
+                  min={0}
+                  decimalScale={2}
+                />
+              </Box>
+            </Group>
           </Box>
 
           <Box mb="xl">

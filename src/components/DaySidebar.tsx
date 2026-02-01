@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useRef, useEffect } from 'react';
-import { ActionIcon, Text, Group, Stack, Box, Paper, Tooltip, Popover, TextInput, Button, Autocomplete } from '@mantine/core';
-import { Plus, Sun, Moon, Coffee, ChevronDown, ChevronUp, Bed, Trash, Search, MapPin } from 'lucide-react';
+import { ActionIcon, Text, Group, Stack, Box, Paper, Tooltip, Popover, TextInput, Button, Autocomplete, NumberInput } from '@mantine/core';
+import { Plus, Sun, Moon, Coffee, ChevronDown, ChevronUp, Bed, Trash, Search, MapPin, Euro } from 'lucide-react';
 import {
     DndContext,
     closestCenter,
@@ -170,6 +170,7 @@ function DayLabel({ day, startRow, dayNum, isEvenDay, onAdd, onUpdateDay, existi
     const [opened, setOpened] = useState(false);
     const [tempName, setTempName] = useState(day.accommodation?.name || '');
     const [tempNotes, setTempNotes] = useState(day.accommodation?.notes || '');
+    const [tempCost, setTempCost] = useState<number | undefined>(day.accommodation?.cost);
     const [tempLat, setTempLat] = useState(day.accommodation?.lat);
     const [tempLng, setTempLng] = useState(day.accommodation?.lng);
     
@@ -180,6 +181,7 @@ function DayLabel({ day, startRow, dayNum, isEvenDay, onAdd, onUpdateDay, existi
     useEffect(() => {
         setTempName(day.accommodation?.name || '');
         setTempNotes(day.accommodation?.notes || '');
+        setTempCost(day.accommodation?.cost);
         setTempLat(day.accommodation?.lat);
         setTempLng(day.accommodation?.lng);
     }, [day.accommodation]);
@@ -210,6 +212,7 @@ function DayLabel({ day, startRow, dayNum, isEvenDay, onAdd, onUpdateDay, existi
                 ...day.accommodation,
                 name: tempName,
                 notes: tempNotes,
+                cost: tempCost,
                 lat: tempLat,
                 lng: tempLng
             }
@@ -333,6 +336,16 @@ function DayLabel({ day, startRow, dayNum, isEvenDay, onAdd, onUpdateDay, existi
                                 onChange={(e) => setTempNotes(e.currentTarget.value)}
                                 size="xs"
                                 label="Notes"
+                            />
+                            <NumberInput
+                                label="Nightly Cost"
+                                placeholder="0.00"
+                                leftSection={<Euro size={12} />}
+                                value={tempCost}
+                                onChange={(val) => setTempCost(Number(val) || undefined)}
+                                size="xs"
+                                min={0}
+                                decimalScale={2}
                             />
                             <Group justify="space-between" gap="xs">
                                 {day.accommodation?.name && (

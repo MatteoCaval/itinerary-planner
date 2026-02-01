@@ -8,7 +8,7 @@ export interface Route {
   toLocationId: string;
   transportType: TransportType;
   duration?: string;      // e.g., "2h 30m"
-  cost?: string;          // e.g., "$50"
+  cost?: number;          // e.g., 50
   notes?: string;
 }
 
