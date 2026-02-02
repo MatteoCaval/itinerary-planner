@@ -217,10 +217,42 @@ export default function MapDisplay({ days, locations, routes, onEditRoute, hover
 
   const accommodations = useMemo(() => {
     const focusedGIdx = selectedDayId ? days.findIndex(day => day.id === selectedDayId) : -1;
+
+    let filterStart = 0;
+    let filterEnd = days.length - 1;
+
+    if (activeParent) {
+      const pStart = days.findIndex(d => d.id === activeParent.startDayId);
+      if (pStart !== -1) {
+        filterStart = pStart;
+
+        const sSlot = getSectionIndex(activeParent.startSlot);
+        const dur = activeParent.duration || 1;
+        const absEnd = pStart * 3 + sSlot + dur - 1;
+
+        filterEnd = Math.floor(absEnd / 3);
+
+        // If the itinerary ends before the evening slot (index 2), 
+        // the accommodation for that night belongs to the next destination.
+        // So we exclude it from this view.
+        if (absEnd % 3 < 2) {
+          filterEnd--;
+        }
+      }
+    }
+
     return days.filter((d, gIdx) => {
       if (!d.accommodation?.lat) return false;
-      if (focusedGIdx === -1) return true;
-      return gIdx === focusedGIdx || (gIdx === focusedGIdx - 1 && gIdx >= (activeParent ? days.findIndex(day => day.id === activeParent.startDayId) : 0));
+
+      const inRange = gIdx >= filterStart && gIdx <= filterEnd;
+
+      if (focusedGIdx === -1) {
+        return inRange;
+      }
+
+      // Show current day's accommodation OR previous night's accommodation
+      // BUT only if they fall within the valid "accommodation range" for this trip leg.
+      return (gIdx === focusedGIdx || gIdx === focusedGIdx - 1) && inRange;
     }).map(d => ({ id: `accom-${d.id}`, name: d.accommodation!.name, lat: d.accommodation!.lat!, lng: d.accommodation!.lng!, notes: d.accommodation!.notes }));
   }, [days, selectedDayId, activeParent]);
 
