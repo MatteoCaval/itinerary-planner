@@ -9,13 +9,10 @@ interface DrillDownProps {
 }
 
 export function useItineraryDrillDown({ locations, days, selectedLocationId, selectedDayId }: DrillDownProps) {
-  // 1. Identify the "Active Parent" for the current context
+  // 1. Identify the "Active Parent" destination
   const activeParent = useMemo(() => {
-    // Case 1: A top-level location with sub-locations is selected
     const top = locations.find(l => l.id === selectedLocationId);
     if (top && top.subLocations && top.subLocations.length > 0) return top;
-    
-    // Case 2: A sub-location is selected -> return its parent
     for (const loc of locations) {
       if (loc.subLocations?.some(sub => sub.id === selectedLocationId)) return loc;
     }
@@ -24,95 +21,67 @@ export function useItineraryDrillDown({ locations, days, selectedLocationId, sel
 
   const isSubItinerary = !!activeParent;
 
-  // 2. Identify the direct parent of the selected location (for "Back to" buttons)
   const parentLocation = useMemo(() => {
     for (const loc of locations) {
-      if (loc.subLocations?.some(sub => sub.id === selectedLocationId)) {
-        return loc;
-      }
+      if (loc.subLocations?.some(sub => sub.id === selectedLocationId)) return loc;
     }
     return null;
   }, [locations, selectedLocationId]);
 
-  // 3. Derive days for the current view (Main Trip or Sub-Itinerary range)
+  // 2. Determine the range of days for this destination
   const activeDays = useMemo(() => {
     if (!activeParent || !activeParent.startDayId) return days;
+    const startIdx = days.findIndex(d => d.id === activeParent.startDayId);
+    if (startIdx === -1) return days;
     
-    const startDayIdx = days.findIndex(d => d.id === activeParent.startDayId);
-    if (startDayIdx === -1) return days;
-    
+    // Calculate how many days this destination spans
     const startSlotIdx = ['morning', 'afternoon', 'evening'].indexOf(activeParent.startSlot || 'morning');
     const totalSlots = activeParent.duration || 1;
-    const endAbsSlot = (startDayIdx * 3) + startSlotIdx + totalSlots - 1;
-    const endDayIdx = Math.floor(endAbsSlot / 3);
+    const endDayIdx = Math.floor((startIdx * 3 + startSlotIdx + totalSlots - 1) / 3);
     
-    return days.slice(startDayIdx, endDayIdx + 1);
+    return days.slice(startIdx, endDayIdx + 1);
   }, [days, activeParent]);
 
-  // 4. Derive locations for the Map (handling drill-down + day filtering)
+  // 3. Filter locations for the MAP
   const mapLocations = useMemo(() => {
-    let baseLocations = locations;
-    
-    if (activeParent && activeParent.subLocations && activeParent.subLocations.length > 0) {
-      baseLocations = activeParent.subLocations;
-    }
+    let base = activeParent?.subLocations || (isSubItinerary ? [] : locations);
 
     if (selectedDayId) {
       if (!activeParent) {
-        // Global mode: Filter by startDayId
-        return baseLocations.filter(l => l.startDayId === selectedDayId);
+        // Global focus: match by startDayId
+        return base.filter(l => l.startDayId === selectedDayId);
       } else {
-        // Sub-itinerary mode: Filter by dayOffset index
-        const dayIdx = activeDays.findIndex(d => d.id === selectedDayId);
-        if (dayIdx !== -1) {
-          return baseLocations.filter(l => l.dayOffset === dayIdx);
-        }
+        // Sub-itinerary focus: find relative index of selectedDayId within activeDays
+        const relIdx = activeDays.findIndex(d => d.id === selectedDayId);
+        if (relIdx === -1) return []; // Day is outside this destination's range
+        return base.filter(l => l.dayOffset === relIdx);
       }
     }
+    return base;
+  }, [locations, activeParent, selectedDayId, activeDays, isSubItinerary]);
 
-    return baseLocations;
-  }, [locations, activeParent, selectedDayId, activeDays]);
-
-  // 5. Derive locations for the Timeline Sidebar (mapping dayOffset to startDayId)
+  // 4. Locations for the Sidebar
   const sidebarLocations = useMemo(() => {
     if (!activeParent || !activeParent.subLocations) return locations;
-
     return activeParent.subLocations.map(sub => {
-      const dayIdx = sub.dayOffset;
-      const targetDay = dayIdx !== undefined ? activeDays[dayIdx] : undefined;
-      return {
-        ...sub,
-        startDayId: targetDay ? targetDay.id : undefined
-      };
+      const targetDay = sub.dayOffset !== undefined ? activeDays[sub.dayOffset] : undefined;
+      return { ...sub, startDayId: targetDay ? targetDay.id : undefined };
     });
-  }, [activeParent?.subLocations, activeDays, locations]);
+  }, [activeParent, activeDays, locations]);
 
-  // 6. Slot blocking helper
   const isSlotBlocked = (dayId: string, slot: DaySection) => {
     if (!activeParent || !activeParent.startDayId) return false;
+    const startIdx = days.findIndex(d => d.id === activeParent.startDayId);
+    const currIdx = days.findIndex(d => d.id === dayId);
+    if (startIdx === -1 || currIdx === -1) return false;
 
-    const startDayIdx = days.findIndex(d => d.id === activeParent.startDayId);
-    const currentDayIdx = days.findIndex(d => d.id === dayId);
-    if (startDayIdx === -1 || currentDayIdx === -1) return false;
+    const sections = ['morning', 'afternoon', 'evening'];
+    const startAbs = startIdx * 3 + sections.indexOf(activeParent.startSlot || 'morning');
+    const endAbs = startAbs + (activeParent.duration || 1) - 1;
+    const currAbs = currIdx * 3 + sections.indexOf(slot);
 
-    const sectionOrder = ['morning', 'afternoon', 'evening'];
-    const startSlotIdx = sectionOrder.indexOf(activeParent.startSlot || 'morning');
-    const currentSlotIdx = sectionOrder.indexOf(slot);
-
-    const absStart = startDayIdx * 3 + startSlotIdx;
-    const absEnd = absStart + (activeParent.duration || 1) - 1;
-    const absCurrent = currentDayIdx * 3 + currentSlotIdx;
-
-    return absCurrent < absStart || absCurrent > absEnd;
+    return currAbs < startAbs || currAbs > endAbs;
   };
 
-  return {
-    activeParent,
-    parentLocation,
-    isSubItinerary,
-    activeDays,
-    mapLocations,
-    sidebarLocations,
-    isSlotBlocked
-  };
+  return { activeParent, parentLocation, isSubItinerary, activeDays, mapLocations, sidebarLocations, isSlotBlocked };
 }

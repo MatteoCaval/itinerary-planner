@@ -464,7 +464,7 @@ function AppContent() {
 
       <AppShell.Main h="100vh" style={{ position: 'relative', overflow: 'hidden' }}>
         <MapDisplay
-          days={isSubItinerary ? activeDays : days} locations={mapLocations} routes={routes}
+          days={days} locations={mapLocations} routes={routes}
           onEditRoute={(from, to) => setEditingRoute({ fromId: from, toId: to })}
           hoveredLocationId={hoveredLocationId} 
           selectedLocationId={selectedLocationId}
@@ -473,6 +473,9 @@ function AppContent() {
           hideControls={opened}
           isSubItinerary={isSubItinerary}
           isPanelCollapsed={panelCollapsed}
+          allLocations={locations}
+          activeParent={activeParent}
+          selectedDayId={selectedDayId}
         />
 
         <MobileBottomSheet opened={opened}>

@@ -70,6 +70,15 @@ A sophisticated travel itinerary planner featuring a synchronized **Gantt-style 
     - **Mid-point Badges:** Show transport type/duration.
     - **Directional Arrows:** Indicate flow of travel.
 - **Interaction:** Hovering a timeline item highlights the map marker/route, and vice versa. Clicking either opens the Detail Panel.
+- **Sub-Itinerary Accommodation Routing:** When viewing a parent destination with sub-locations (e.g., "Tokyo Exploration"):
+    - **Full View:** Shows all sub-locations across all days with accommodations at the start and end of each day when there's activity.
+    - **Single Day View:** When filtering to a specific day:
+        - Map displays route starting from **previous night's accommodation**
+        - Shows all activities for that day chronologically
+        - Displays route returning to **current night's accommodation**
+        - This ensures the full daily journey is visible (accommodation → activities → accommodation)
+    - **Logic:** The map automatically detects single-day filtering by checking unique `dayOffset` values and includes both previous night (dayOffset - 1) and current night (dayOffset) accommodations for proper context.
+
 
 ### 3. Destination Details (Side Panel)
 - **Schedule Recap:** Displays calculated start/end time.
