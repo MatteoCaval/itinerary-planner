@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useCallback } from 'react';
+import { useEffect, useMemo, useCallback, useRef, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap, useMapEvents, Tooltip, ZoomControl } from 'react-leaflet';
-import { Location, Route, TRANSPORT_COLORS, TRANSPORT_LABELS, Day, DaySection, LocationCategory, CATEGORY_COLORS } from '../types';
+import { Location, Route, TRANSPORT_COLORS, TRANSPORT_LABELS, Day, DaySection, LocationCategory, CATEGORY_COLORS, TransportType } from '../types';
 import L from 'leaflet';
 import { Map as SightseeingIcon, Utensils, Bed, Train, Globe, ChevronRight } from 'lucide-react';
 import { renderToStaticMarkup } from 'react-dom/server';
+import { fetchRouteGeometry, LatLngTuple } from '../utils/routing';
 
 // Fix Leaflet default icon issue
 import icon from 'leaflet/dist/images/marker-icon.png';
@@ -106,10 +107,68 @@ function FitBounds({ locations, accommodations }: { locations: Location[], accom
   return null;
 }
 
-interface RouteSegmentProps { from: Location; to: Location; route?: Route; onEditRoute: () => void; isHovered: boolean; }
-function RouteSegment({ from, to, route, onEditRoute, isHovered }: RouteSegmentProps) {
-  const positions: [number, number][] = [[from.lat, from.lng], [to.lat, to.lng]];
-  const angle = Math.atan2(to.lat - from.lat, to.lng - from.lng) * (180 / Math.PI);
+const distanceBetween = (a: LatLngTuple, b: LatLngTuple) => {
+  const dLat = b[0] - a[0];
+  const dLng = b[1] - a[1];
+  return Math.sqrt((dLat * dLat) + (dLng * dLng));
+};
+
+const getPointAt = (positions: LatLngTuple[], t: number): LatLngTuple => {
+  if (positions.length === 0) return [0, 0];
+  if (positions.length === 1) return positions[0];
+  if (t <= 0) return positions[0];
+  if (t >= 1) return positions[positions.length - 1];
+
+  const segmentDistances: number[] = [];
+  let total = 0;
+  for (let i = 0; i < positions.length - 1; i++) {
+    const dist = distanceBetween(positions[i], positions[i + 1]);
+    segmentDistances.push(dist);
+    total += dist;
+  }
+
+  if (total === 0) return positions[0];
+
+  let target = t * total;
+  for (let i = 0; i < segmentDistances.length; i++) {
+    const seg = segmentDistances[i];
+    if (target > seg) {
+      target -= seg;
+      continue;
+    }
+
+    const ratio = seg === 0 ? 0 : target / seg;
+    const start = positions[i];
+    const end = positions[i + 1];
+    return [
+      start[0] + (end[0] - start[0]) * ratio,
+      start[1] + (end[1] - start[1]) * ratio,
+    ];
+  }
+
+  return positions[positions.length - 1];
+};
+
+const getAngleAt = (positions: LatLngTuple[], t: number) => {
+  const before = getPointAt(positions, Math.max(0, t - 0.02));
+  const after = getPointAt(positions, Math.min(1, t + 0.02));
+  return Math.atan2(after[0] - before[0], after[1] - before[1]) * (180 / Math.PI);
+};
+
+interface RouteSegmentProps {
+  from: Location;
+  to: Location;
+  route?: Route;
+  path?: LatLngTuple[] | null;
+  onEditRoute: () => void;
+  isHovered: boolean;
+}
+
+function RouteSegment({ from, to, route, path, onEditRoute, isHovered }: RouteSegmentProps) {
+  const positions: LatLngTuple[] = (path && path.length > 1)
+    ? path
+    : [[from.lat, from.lng], [to.lat, to.lng]];
+  const angle = getAngleAt(positions, 0.5);
   const color = route ? TRANSPORT_COLORS[route.transportType] : '#6b7280';
   const label = route ? TRANSPORT_LABELS[route.transportType].split(' ')[0] : '🔗';
   const buildTooltip = () => {
@@ -122,10 +181,24 @@ function RouteSegment({ from, to, route, onEditRoute, isHovered }: RouteSegmentP
       <Polyline positions={positions} color={isHovered ? '#0d6efd' : color} weight={4} opacity={isHovered ? 1 : 0.6} dashArray={route ? undefined : "5, 10"} eventHandlers={{ click: (e) => { L.DomEvent.stopPropagation(e); onEditRoute(); } }}>
         <Tooltip permanent={false} direction="center" className="route-tooltip"><div className="route-tooltip-content">{buildTooltip()}</div></Tooltip>
       </Polyline>
-      <Marker position={[(from.lat + to.lat) / 2, (from.lng + to.lng) / 2]} icon={L.divIcon({ className: 'transport-midpoint-icon', html: `<div class="midpoint-badge ${isHovered ? 'hovered' : ''}">${label}</div>`, iconSize: [20, 20], iconAnchor: [10, 10] })} eventHandlers={{ click: onEditRoute }} />
-      {[0.2, 0.4, 0.6, 0.8].map(offset => (
-        <Marker key={offset} position={[from.lat + (to.lat - from.lat) * offset, from.lng + (to.lng - from.lng) * offset]} icon={L.divIcon({ className: 'route-arrow-icon', html: `<div style="transform: rotate(${-angle}deg); color: ${isHovered ? '#0d6efd' : color}; display: flex; align-items: center; justify-content: center; opacity: 0.9;">${renderToStaticMarkup(<ChevronRight size={isHovered ? 24 : 20} strokeWidth={5} />)}</div>`, iconSize: [24, 24], iconAnchor: [12, 12] })} interactive={false} />
-      ))}
+      <Marker position={getPointAt(positions, 0.5)} icon={L.divIcon({ className: 'transport-midpoint-icon', html: `<div class="midpoint-badge ${isHovered ? 'hovered' : ''}">${label}</div>`, iconSize: [20, 20], iconAnchor: [10, 10] })} eventHandlers={{ click: onEditRoute }} />
+      {[0.2, 0.4, 0.6, 0.8].map(offset => {
+        const point = getPointAt(positions, offset);
+        const segmentAngle = getAngleAt(positions, offset);
+        return (
+          <Marker
+            key={offset}
+            position={point}
+            icon={L.divIcon({
+              className: 'route-arrow-icon',
+              html: `<div style="transform: rotate(${-segmentAngle}deg); color: ${isHovered ? '#0d6efd' : color}; display: flex; align-items: center; justify-content: center; opacity: 0.9;">${renderToStaticMarkup(<ChevronRight size={isHovered ? 24 : 20} strokeWidth={5} />)}</div>`,
+              iconSize: [24, 24],
+              iconAnchor: [12, 12]
+            })}
+            interactive={false}
+          />
+        );
+      })}
     </>
   );
 }
@@ -140,6 +213,8 @@ const containsLocation = (parent: Location, targetId: string): boolean => {
 
 export default function MapDisplay({ days, locations, routes, onEditRoute, hoveredLocationId, selectedLocationId, onHoverLocation, onSelectLocation, hideControls, isSubItinerary, isPanelCollapsed, allLocations, activeParent, selectedDayId }: MapDisplayProps) {
   const position: [number, number] = [51.505, -0.09];
+  const [routeShapes, setRouteShapes] = useState<Record<string, LatLngTuple[]>>({});
+  const routeShapesRef = useRef<Record<string, LatLngTuple[]>>({});
 
   const getAbsDayIdx = useCallback((loc: Location): number => {
     if (activeParent && loc.dayOffset !== undefined) {
@@ -215,6 +290,68 @@ export default function MapDisplay({ days, locations, routes, onEditRoute, hover
     }
   }, [pathPoints, selectedDayId, days]);
 
+  const routeSegments = useMemo(() => {
+    if (pathPoints.length < 2) return [];
+    const segments: {
+      key: string;
+      from: Location;
+      to: Location;
+      route?: Route;
+      transportType: TransportType;
+    }[] = [];
+
+    for (let i = 0; i < pathPoints.length - 1; i++) {
+      const from = pathPoints[i] as Location;
+      const to = pathPoints[i + 1] as Location;
+      if (from.lat === to.lat && from.lng === to.lng) continue;
+      const route = routes.find(r => (r.fromLocationId === from.id && r.toLocationId === to.id) || (r.fromLocationId === to.id && r.toLocationId === from.id));
+      const transportType = (route?.transportType || 'other') as TransportType;
+      const key = `${from.id}|${to.id}|${transportType}`;
+      segments.push({ key, from, to, route, transportType });
+    }
+
+    return segments;
+  }, [pathPoints, routes]);
+
+  useEffect(() => {
+    const activeKeys = new Set(routeSegments.map(segment => segment.key));
+    const next: Record<string, LatLngTuple[]> = {};
+
+    Object.entries(routeShapesRef.current).forEach(([key, value]) => {
+      if (activeKeys.has(key)) next[key] = value;
+    });
+
+    routeShapesRef.current = next;
+    setRouteShapes(next);
+  }, [routeSegments]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const controller = new AbortController();
+
+    const fetchRoutes = async () => {
+      for (const segment of routeSegments) {
+        if (routeShapesRef.current[segment.key]) continue;
+        const geometry = await fetchRouteGeometry(
+          [segment.from.lat, segment.from.lng],
+          [segment.to.lat, segment.to.lng],
+          segment.transportType,
+          { signal: controller.signal }
+        );
+        if (cancelled || !geometry) continue;
+        routeShapesRef.current = { ...routeShapesRef.current, [segment.key]: geometry };
+        setRouteShapes(routeShapesRef.current);
+      }
+    };
+
+    fetchRoutes();
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+  }, [routeSegments]);
+
   const accommodations = useMemo(() => {
     const focusedGIdx = selectedDayId ? days.findIndex(day => day.id === selectedDayId) : -1;
 
@@ -263,13 +400,17 @@ export default function MapDisplay({ days, locations, routes, onEditRoute, hover
         <TileLayer attribution='&copy; CARTO' url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png" />
         {accommodations.map(acc => <Marker key={acc.id} position={[acc.lat, acc.lng]} icon={createAccommodationIcon()}><Popup><strong>🏨 {acc.name}</strong><br />{acc.notes && <span style={{ color: '#6c757d' }}>{acc.notes}</span>}</Popup></Marker>)}
         {sortedLocations.map((loc, index) => <Marker key={loc.id} position={[loc.lat, loc.lng]} icon={createIcon(loc, index, hoveredLocationId === loc.id)} eventHandlers={{ mouseover: () => onHoverLocation?.(loc.id), mouseout: () => onHoverLocation?.(null), click: () => onSelectLocation?.(loc.id) }}><Popup><strong>{index + 1}. {loc.name}</strong><br />{loc.notes && <span style={{ color: '#6c757d' }}>{loc.notes}</span>}</Popup></Marker>)}
-        {pathPoints.length > 1 && pathPoints.map((point, index) => {
-          if (index === pathPoints.length - 1) return null;
-          const next = pathPoints[index + 1];
-          if (point.lat === next.lat && point.lng === next.lng) return null;
-          const route = routes.find(r => (r.fromLocationId === point.id && r.toLocationId === next.id) || (r.fromLocationId === next.id && r.toLocationId === point.id));
-          return <RouteSegment key={`route-${point.id}-${next.id}`} from={point} to={next} route={route} onEditRoute={() => onEditRoute(point.id, next.id)} isHovered={hoveredLocationId === point.id || hoveredLocationId === next.id} />;
-        })}
+        {routeSegments.map(segment => (
+          <RouteSegment
+            key={`route-${segment.key}`}
+            from={segment.from}
+            to={segment.to}
+            route={segment.route}
+            path={routeShapes[segment.key]}
+            onEditRoute={() => onEditRoute(segment.from.id, segment.to.id)}
+            isHovered={hoveredLocationId === segment.from.id || hoveredLocationId === segment.to.id}
+          />
+        ))}
         <FitBounds locations={locations} accommodations={accommodations} />
         <SelectedLocationHandler selectedId={selectedLocationId} locations={locations} isPanelCollapsed={isPanelCollapsed} />
         <MapClickHandler onSelect={onSelectLocation} isDrillDown={isSubItinerary} />
