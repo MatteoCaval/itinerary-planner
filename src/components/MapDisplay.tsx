@@ -168,7 +168,6 @@ function RouteSegment({ from, to, route, path, onEditRoute, isHovered }: RouteSe
   const positions: LatLngTuple[] = (path && path.length > 1)
     ? path
     : [[from.lat, from.lng], [to.lat, to.lng]];
-  const angle = getAngleAt(positions, 0.5);
   const color = route ? TRANSPORT_COLORS[route.transportType] : '#6b7280';
   const label = route ? TRANSPORT_LABELS[route.transportType].split(' ')[0] : '🔗';
   const buildTooltip = () => {
