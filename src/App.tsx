@@ -70,7 +70,6 @@ function AppContent() {
   // Clear selected day when location selection changes
   useEffect(() => {
     setSelectedDayId(null);
-    setPanelCollapsed(false);
   }, [selectedLocationId]);
 
   // Debounced search for suggestions
