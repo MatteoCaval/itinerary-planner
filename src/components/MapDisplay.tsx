@@ -26,6 +26,8 @@ interface MapDisplayProps {
   onEditRoute: (fromId: string, toId: string) => void;
   hoveredLocationId?: string | null;
   selectedLocationId?: string | null;
+  selectedDayId?: string | null;
+  onSelectDay?: (id: string | null) => void;
   onHoverLocation?: (id: string | null) => void;
   onSelectLocation?: (id: string | null) => void;
   hideControls?: boolean;
@@ -33,7 +35,6 @@ interface MapDisplayProps {
   isPanelCollapsed?: boolean;
   allLocations?: Location[];
   activeParent?: Location | null;
-  selectedDayId?: string | null;
 }
 
 function SelectedLocationHandler({ selectedId, locations, isPanelCollapsed }: { selectedId?: string | null, locations: Location[], isPanelCollapsed?: boolean }) {
@@ -61,6 +62,14 @@ function SelectedLocationHandler({ selectedId, locations, isPanelCollapsed }: { 
 
 function MapClickHandler({ onSelect, isDrillDown }: { onSelect?: (id: string | null) => void, isDrillDown?: boolean }) {
   useMapEvents({ click: () => { if (!isDrillDown) onSelect?.(null); } });
+  return null;
+}
+
+function MapReady({ onReady }: { onReady: (map: L.Map) => void }) {
+  const map = useMap();
+  useEffect(() => {
+    onReady(map);
+  }, [map, onReady]);
   return null;
 }
 
@@ -210,10 +219,12 @@ const containsLocation = (parent: Location, targetId: string): boolean => {
   return parent.subLocations?.some(sub => containsLocation(sub, targetId)) || false;
 };
 
-export default function MapDisplay({ days, locations, routes, onEditRoute, hoveredLocationId, selectedLocationId, onHoverLocation, onSelectLocation, hideControls, isSubItinerary, isPanelCollapsed, allLocations, activeParent, selectedDayId }: MapDisplayProps) {
+
+export default function MapDisplay({ days, locations, routes, onEditRoute, hoveredLocationId, selectedLocationId, selectedDayId, onSelectDay, onHoverLocation, onSelectLocation, hideControls, isSubItinerary, isPanelCollapsed, allLocations, activeParent }: MapDisplayProps) {
   const position: [number, number] = [51.505, -0.09];
   const [routeShapes, setRouteShapes] = useState<Record<string, LatLngTuple[]>>({});
   const routeShapesRef = useRef<Record<string, LatLngTuple[]>>({});
+  const [map, setMap] = useState<L.Map | null>(null);
 
   const getAbsDayIdx = useCallback((loc: Location): number => {
     if (activeParent && loc.dayOffset !== undefined) {
@@ -223,6 +234,93 @@ export default function MapDisplay({ days, locations, routes, onEditRoute, hover
     if (loc.startDayId) return days.findIndex(d => d.id === loc.startDayId);
     return -1;
   }, [days, activeParent]);
+
+  const focusDays = useMemo(() => {
+    if (!activeParent || !activeParent.startDayId) return days;
+    const startIdx = days.findIndex(d => d.id === activeParent.startDayId);
+    if (startIdx === -1) return days;
+    const startSlotIdx = getSectionIndex(activeParent.startSlot);
+    const totalSlots = activeParent.duration || 1;
+    const endDayIdx = Math.floor((startIdx * 3 + startSlotIdx + totalSlots - 1) / 3);
+    return days.slice(startIdx, endDayIdx + 1);
+  }, [days, activeParent]);
+
+  const selectedFocusIndex = useMemo(() => {
+    if (!selectedDayId) return -1;
+    return focusDays.findIndex(day => day.id === selectedDayId);
+  }, [selectedDayId, focusDays]);
+
+  const formatDayLabel = (day: Day, index: number) => {
+    const dateStr = new Date(day.date + 'T00:00:00').toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric'
+    });
+    return `Day ${index + 1} · ${dateStr}`;
+  };
+
+  const focusLocations = useMemo(() => {
+    if (activeParent?.subLocations && activeParent.subLocations.length > 0) {
+      return activeParent.subLocations;
+    }
+    return allLocations && allLocations.length > 0 ? allLocations : locations;
+  }, [activeParent, allLocations, locations]);
+
+  const getPointsForDay = useCallback((dayId: string) => {
+    const targetIdx = days.findIndex(d => d.id === dayId);
+    if (targetIdx === -1) return [] as LatLngTuple[];
+    const points = focusLocations
+      .filter(loc => getAbsDayIdx(loc) === targetIdx)
+      .map(loc => [loc.lat, loc.lng] as LatLngTuple);
+
+    const day = days[targetIdx];
+    if (day?.accommodation?.lat && day?.accommodation?.lng) {
+      points.push([day.accommodation.lat, day.accommodation.lng]);
+    }
+    return points;
+  }, [days, focusLocations, getAbsDayIdx]);
+
+  const getAllPoints = useCallback(() => {
+    const points = focusLocations.map(loc => [loc.lat, loc.lng] as LatLngTuple);
+    focusDays.forEach(day => {
+      if (day.accommodation?.lat && day.accommodation?.lng) {
+        points.push([day.accommodation.lat, day.accommodation.lng]);
+      }
+    });
+    return points;
+  }, [focusLocations, focusDays]);
+
+  const fitPoints = useCallback((points: LatLngTuple[]) => {
+    if (!map || points.length === 0) return;
+    map.fitBounds(L.latLngBounds(points), { padding: [60, 60] });
+  }, [map]);
+
+  const handleSelectFocusDay = useCallback((value: string) => {
+    if (!onSelectDay) return;
+    if (!value) {
+      fitPoints(getAllPoints());
+      onSelectDay(null);
+      return;
+    }
+    fitPoints(getPointsForDay(value));
+    onSelectDay(value);
+  }, [fitPoints, getAllPoints, getPointsForDay, onSelectDay]);
+
+  const stepFocusDay = useCallback((direction: -1 | 1) => {
+    if (!onSelectDay || focusDays.length === 0) return;
+    const currentIndex = selectedDayId ? focusDays.findIndex(d => d.id === selectedDayId) : -1;
+    let nextIndex = currentIndex + direction;
+    if (currentIndex === -1) {
+      nextIndex = direction > 0 ? 0 : focusDays.length - 1;
+    }
+    if (nextIndex < 0) nextIndex = 0;
+    if (nextIndex > focusDays.length - 1) nextIndex = focusDays.length - 1;
+    const nextDay = focusDays[nextIndex];
+    if (!nextDay) return;
+    handleSelectFocusDay(nextDay.id);
+  }, [focusDays, handleSelectFocusDay, onSelectDay, selectedDayId]);
+
+  const isPrevDisabled = focusDays.length === 0 || selectedFocusIndex <= 0;
+  const isNextDisabled = focusDays.length === 0 || selectedFocusIndex === -1 || selectedFocusIndex >= focusDays.length - 1;
 
   const sortedLocations = useMemo(() => {
     return [...locations].sort((a, b) => {
@@ -393,10 +491,17 @@ export default function MapDisplay({ days, locations, routes, onEditRoute, hover
   }, [days, selectedDayId, activeParent]);
 
   return (
-    <div className="map-container">
-      <MapContainer center={position} zoom={13} scrollWheelZoom={true} className="leaflet-container" zoomControl={false}>
+    <div className="map-container" style={{ position: 'relative' }}>
+      <MapContainer
+        center={position}
+        zoom={13}
+        scrollWheelZoom={true}
+        className="leaflet-container"
+        zoomControl={false}
+      >
         {!hideControls && <ZoomControl position="topleft" />}
         <TileLayer attribution='&copy; CARTO' url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png" />
+        <MapReady onReady={setMap} />
         {accommodations.map(acc => <Marker key={acc.id} position={[acc.lat, acc.lng]} icon={createAccommodationIcon()}><Popup><strong>🏨 {acc.name}</strong><br />{acc.notes && <span style={{ color: '#6c757d' }}>{acc.notes}</span>}</Popup></Marker>)}
         {sortedLocations.map((loc, index) => <Marker key={loc.id} position={[loc.lat, loc.lng]} icon={createIcon(loc, index, hoveredLocationId === loc.id)} eventHandlers={{ mouseover: () => onHoverLocation?.(loc.id), mouseout: () => onHoverLocation?.(null), click: () => onSelectLocation?.(loc.id) }}><Popup><strong>{index + 1}. {loc.name}</strong><br />{loc.notes && <span style={{ color: '#6c757d' }}>{loc.notes}</span>}</Popup></Marker>)}
         {routeSegments.map(segment => (
@@ -414,6 +519,34 @@ export default function MapDisplay({ days, locations, routes, onEditRoute, hover
         <SelectedLocationHandler selectedId={selectedLocationId} locations={locations} isPanelCollapsed={isPanelCollapsed} />
         <MapClickHandler onSelect={onSelectLocation} isDrillDown={isSubItinerary} />
       </MapContainer>
+      {onSelectDay && focusDays.length > 0 && (
+        <div className="map-focus-control">
+          <div className="map-focus-title">Focus Day</div>
+          <select
+            value={selectedDayId || ''}
+            onChange={(event) => handleSelectFocusDay(event.target.value)}
+            aria-label="Focus day"
+          >
+            <option value="">All days</option>
+            {focusDays.map((day, index) => (
+              <option key={day.id} value={day.id}>
+                {formatDayLabel(day, index)}
+              </option>
+            ))}
+          </select>
+          <div className="map-focus-row">
+            <button type="button" onClick={() => stepFocusDay(-1)} disabled={isPrevDisabled}>
+              Prev
+            </button>
+            <button type="button" onClick={() => stepFocusDay(1)} disabled={isNextDisabled}>
+              Next
+            </button>
+            <button type="button" onClick={() => handleSelectFocusDay('')} disabled={!selectedDayId}>
+              All
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

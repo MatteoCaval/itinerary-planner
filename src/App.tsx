@@ -467,6 +467,8 @@ function AppContent() {
           onEditRoute={(from, to) => setEditingRoute({ fromId: from, toId: to })}
           hoveredLocationId={hoveredLocationId} 
           selectedLocationId={selectedLocationId}
+          selectedDayId={selectedDayId}
+          onSelectDay={setSelectedDayId}
           onHoverLocation={setHoveredLocationId} 
           onSelectLocation={handleScrollToLocation}
           hideControls={opened}
@@ -474,7 +476,6 @@ function AppContent() {
           isPanelCollapsed={panelCollapsed}
           allLocations={locations}
           activeParent={activeParent}
-          selectedDayId={selectedDayId}
         />
 
         <MobileBottomSheet opened={opened}>
