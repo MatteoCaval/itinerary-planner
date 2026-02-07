@@ -22,6 +22,7 @@ import { usePlaceSearch } from './hooks/usePlaceSearch';
 import { useImportExport } from './hooks/useImportExport';
 import { AppErrorBoundary } from './components/AppErrorBoundary';
 import { trackError, trackEvent } from './services/telemetry';
+import { ACTION_LABELS } from './constants/actionLabels';
 
 function AppContent() {
   const {
@@ -337,12 +338,12 @@ function AppContent() {
             <ActionIcon variant="subtle" color="gray" onClick={() => navigateHistory(historyIndex + 1)} disabled={historyIndex >= historyLength - 1}>
                 <Redo size={18} />
             </ActionIcon>
-            <Button variant="default" size="xs" leftSection={<History size={16} />} onClick={openHistoryModal}>History</Button>
-            <Button variant="light" color="blue" size="xs" leftSection={<Sparkles size={16} />} onClick={openAIModal}>AI Planner</Button>
-            <Button variant="default" size="xs" leftSection={<FileText size={16} />} onClick={handleExportMarkdown}>Markdown</Button>
-            <Button variant="default" size="xs" leftSection={<Upload size={16} />} onClick={openImportPicker}>Import</Button>
-            <Button variant="default" size="xs" leftSection={<Download size={16} />} onClick={handleExport}>Export</Button>
-            <Button variant="filled" color="blue" size="xs" leftSection={<Cloud size={16} />} onClick={openCloudModal}>Sync</Button>
+            <Button variant="default" size="xs" leftSection={<History size={16} />} onClick={openHistoryModal}>{ACTION_LABELS.history}</Button>
+            <Button variant="light" color="blue" size="xs" leftSection={<Sparkles size={16} />} onClick={openAIModal}>{ACTION_LABELS.aiPlanner}</Button>
+            <Button variant="default" size="xs" leftSection={<FileText size={16} />} onClick={handleExportMarkdown}>{ACTION_LABELS.exportMarkdown}</Button>
+            <Button variant="default" size="xs" leftSection={<Upload size={16} />} onClick={openImportPicker}>{ACTION_LABELS.importJson}</Button>
+            <Button variant="default" size="xs" leftSection={<Download size={16} />} onClick={handleExport}>{ACTION_LABELS.exportJson}</Button>
+            <Button variant="filled" color="blue" size="xs" leftSection={<Cloud size={16} />} onClick={openCloudModal}>{ACTION_LABELS.cloudSync}</Button>
           </Group>
 
           <Box hiddenFrom="lg">
@@ -361,25 +362,19 @@ function AppContent() {
 
               <Menu.Dropdown>
                 <Menu.Label>Actions</Menu.Label>
-                <Menu.Item leftSection={<History size={16} />} onClick={openHistoryModal}>
-                  Time Machine
-                </Menu.Item>
-                <Menu.Item leftSection={<Sparkles size={16} />} onClick={openAIModal} color="blue">
-                  AI Magic
-                </Menu.Item>
-                <Menu.Item leftSection={<Cloud size={16} />} onClick={openCloudModal}>
-                  Sync
-                </Menu.Item>
+                <Menu.Item leftSection={<History size={16} />} onClick={openHistoryModal}>{ACTION_LABELS.history}</Menu.Item>
+                <Menu.Item leftSection={<Sparkles size={16} />} onClick={openAIModal} color="blue">{ACTION_LABELS.aiPlanner}</Menu.Item>
+                <Menu.Item leftSection={<Cloud size={16} />} onClick={openCloudModal}>{ACTION_LABELS.cloudSync}</Menu.Item>
                 <Menu.Item leftSection={<FileText size={16} />} onClick={handleExportMarkdown}>
-                  Export Markdown
+                  {ACTION_LABELS.exportMarkdown}
                 </Menu.Item>
                 <Menu.Divider />
                 <Menu.Label>Data</Menu.Label>
                 <Menu.Item leftSection={<Upload size={16} />} onClick={openImportPicker}>
-                  Import JSON
+                  {ACTION_LABELS.importJson}
                 </Menu.Item>
                 <Menu.Item leftSection={<Download size={16} />} onClick={handleExport}>
-                  Export JSON
+                  {ACTION_LABELS.exportJson}
                 </Menu.Item>
               </Menu.Dropdown>
             </Menu>

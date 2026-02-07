@@ -7,6 +7,7 @@ import { CalendarView } from './CalendarView';
 import { TripDashboard } from './TripDashboard';
 import { Location, Day, Route, DaySection } from '../types';
 import { PlaceSearchResult } from '../utils/geocoding';
+import { ACTION_LABELS } from '../constants/actionLabels';
 
 type EditingRoute = { fromId: string; toId: string } | null;
 
@@ -334,18 +335,18 @@ export function SidebarContent({
           </Button>
         </Group>
         <Group gap="xs">
-          <Button variant="light" size="xs" flex={1} leftSection={<History size={14} />} onClick={() => setShowHistoryModal(true)}>History</Button>
-          <Button variant="light" color="blue" size="xs" flex={1} leftSection={<Sparkles size={14} />} onClick={() => setShowAIModal(true)}>AI Planner</Button>
-          <Button variant="light" size="xs" flex={1} leftSection={<Cloud size={14} />} onClick={() => setShowCloudModal(true)}>Cloud Sync</Button>
+          <Button variant="light" size="xs" flex={1} leftSection={<History size={14} />} onClick={() => setShowHistoryModal(true)}>{ACTION_LABELS.history}</Button>
+          <Button variant="light" color="blue" size="xs" flex={1} leftSection={<Sparkles size={14} />} onClick={() => setShowAIModal(true)}>{ACTION_LABELS.aiPlanner}</Button>
+          <Button variant="light" size="xs" flex={1} leftSection={<Cloud size={14} />} onClick={() => setShowCloudModal(true)}>{ACTION_LABELS.cloudSync}</Button>
         </Group>
         <Group gap="xs" mt="xs">
-          <Tooltip label="Export Markdown">
+          <Tooltip label={ACTION_LABELS.exportMarkdown}>
             <ActionIcon variant="default" size="md" onClick={handleExportMarkdown}><FileText size={16} /></ActionIcon>
           </Tooltip>
-          <Tooltip label="Download JSON">
+          <Tooltip label={ACTION_LABELS.exportJson}>
             <ActionIcon variant="default" size="md" onClick={handleExport}><Download size={16} /></ActionIcon>
           </Tooltip>
-          <Tooltip label="Import JSON">
+          <Tooltip label={ACTION_LABELS.importJson}>
             <ActionIcon variant="default" size="md" component="label" style={{ cursor: 'pointer' }}>
               <Upload size={16} />
               <input type="file" accept=".json" onChange={handleImport} style={{ display: 'none' }} />
