@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, Button, TextInput, Alert, Tabs, Text, Stack, ActionIcon } from '@mantine/core';
+import { Modal, Button, TextInput, Alert, Tabs, Text, Stack, ActionIcon, Skeleton, Paper } from '@mantine/core';
 import { Upload, Download, RefreshCw, AlertCircle, CheckCircle } from 'lucide-react';
 import { saveItinerary, loadItinerary } from '../firebase';
 
@@ -99,6 +99,16 @@ export function CloudSyncModal({ show, onClose, getData, onLoadData }: CloudSync
           >
             {status.message}
           </Alert>
+        )}
+
+        {isLoading && (
+          <Paper withBorder p="sm" radius="md">
+            <Stack gap="xs">
+              <Skeleton height={12} radius="xl" />
+              <Skeleton height={12} radius="xl" width="85%" />
+              <Skeleton height={32} radius="sm" />
+            </Stack>
+          </Paper>
         )}
 
         <Tabs value={activeTab} onChange={setActiveTab}>

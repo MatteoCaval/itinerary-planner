@@ -19,6 +19,27 @@ const DefaultIcon = L.icon({
 
 L.Marker.prototype.options.icon = DefaultIcon;
 
+interface PathPoint {
+  id: string;
+  name: string;
+  lat: number;
+  lng: number;
+  isAccommodation: boolean;
+  sortValue: number;
+}
+
+type IndexedLocation = {
+  location: Location;
+  index: number;
+};
+
+type LocationCluster = {
+  id: string;
+  lat: number;
+  lng: number;
+  members: IndexedLocation[];
+};
+
 interface MapDisplayProps {
   days: Day[];
   locations: Location[];
@@ -26,8 +47,6 @@ interface MapDisplayProps {
   onEditRoute: (fromId: string, toId: string) => void;
   hoveredLocationId?: string | null;
   selectedLocationId?: string | null;
-  selectedDayId?: string | null;
-  onSelectDay?: (id: string | null) => void;
   onHoverLocation?: (id: string | null) => void;
   onSelectLocation?: (id: string | null) => void;
   hideControls?: boolean;
@@ -35,6 +54,7 @@ interface MapDisplayProps {
   isPanelCollapsed?: boolean;
   allLocations?: Location[];
   activeParent?: Location | null;
+  selectedDayId?: string | null;
 }
 
 function SelectedLocationHandler({ selectedId, locations, isPanelCollapsed }: { selectedId?: string | null, locations: Location[], isPanelCollapsed?: boolean }) {
@@ -62,14 +82,6 @@ function SelectedLocationHandler({ selectedId, locations, isPanelCollapsed }: { 
 
 function MapClickHandler({ onSelect, isDrillDown }: { onSelect?: (id: string | null) => void, isDrillDown?: boolean }) {
   useMapEvents({ click: () => { if (!isDrillDown) onSelect?.(null); } });
-  return null;
-}
-
-function MapReady({ onReady }: { onReady: (map: L.Map) => void }) {
-  const map = useMap();
-  useEffect(() => {
-    onReady(map);
-  }, [map, onReady]);
   return null;
 }
 
@@ -106,6 +118,13 @@ const createAccommodationIcon = () => L.divIcon({
   iconSize: [32, 32], iconAnchor: [16, 32],
 });
 
+const createClusterIcon = (count: number) => L.divIcon({
+  className: 'custom-marker-wrapper cluster-marker-wrapper',
+  html: `<div class="cluster-marker-circle">${count}</div>`,
+  iconSize: [42, 42],
+  iconAnchor: [21, 21],
+});
+
 function FitBounds({ locations, accommodations }: { locations: Location[], accommodations?: { lat: number, lng: number }[] }) {
   const map = useMap();
   useEffect(() => {
@@ -114,6 +133,157 @@ function FitBounds({ locations, accommodations }: { locations: Location[], accom
     if (points.length > 0) map.fitBounds(L.latLngBounds(points), { padding: [50, 50] });
   }, [locations, accommodations, map]);
   return null;
+}
+
+function ClusteredLocationMarkers({
+  locations,
+  hoveredLocationId,
+  onHoverLocation,
+  onSelectLocation,
+}: {
+  locations: Location[];
+  hoveredLocationId?: string | null;
+  onHoverLocation?: (id: string | null) => void;
+  onSelectLocation?: (id: string | null) => void;
+}) {
+  const map = useMapEvents({
+    zoomend: () => setZoom(map.getZoom()),
+    moveend: () => setViewportTick(value => value + 1),
+  });
+  const [zoom, setZoom] = useState(map.getZoom());
+  const [viewportTick, setViewportTick] = useState(0);
+
+  const indexedLocations = useMemo<IndexedLocation[]>(
+    () => locations.map((location, index) => ({ location, index })),
+    [locations],
+  );
+
+  const duplicateMeta = useMemo(() => {
+    const groups = new Map<string, IndexedLocation[]>();
+    indexedLocations.forEach(entry => {
+      const key = `${entry.location.lat.toFixed(4)}:${entry.location.lng.toFixed(4)}`;
+      groups.set(key, [...(groups.get(key) || []), entry]);
+    });
+
+    const result = new Map<string, { indexInGroup: number; count: number }>();
+    groups.forEach(group => {
+      group.forEach((entry, idx) => {
+        result.set(entry.location.id, { indexInGroup: idx, count: group.length });
+      });
+    });
+    return result;
+  }, [indexedLocations]);
+
+  const clusters = useMemo<LocationCluster[]>(() => {
+    if (indexedLocations.length === 0) return [];
+    const shouldCluster = zoom <= 10;
+    if (!shouldCluster) {
+      return indexedLocations.map(entry => ({
+        id: `single-${entry.location.id}`,
+        lat: entry.location.lat,
+        lng: entry.location.lng,
+        members: [entry],
+      }));
+    }
+
+    const thresholdPx = 44;
+    const nextClusters: {
+      lat: number;
+      lng: number;
+      members: IndexedLocation[];
+      projected: L.Point;
+    }[] = [];
+
+    indexedLocations.forEach(entry => {
+      const point = map.project([entry.location.lat, entry.location.lng], zoom);
+      const hit = nextClusters.find(cluster => cluster.projected.distanceTo(point) < thresholdPx);
+
+      if (!hit) {
+        nextClusters.push({
+          lat: entry.location.lat,
+          lng: entry.location.lng,
+          members: [entry],
+          projected: point,
+        });
+        return;
+      }
+
+      hit.members.push(entry);
+      const total = hit.members.length;
+      hit.lat = ((hit.lat * (total - 1)) + entry.location.lat) / total;
+      hit.lng = ((hit.lng * (total - 1)) + entry.location.lng) / total;
+      hit.projected = map.project([hit.lat, hit.lng], zoom);
+    });
+
+    return nextClusters.map((cluster, index) => ({
+      id: `cluster-${zoom}-${index}`,
+      lat: cluster.lat,
+      lng: cluster.lng,
+      members: cluster.members,
+    }));
+  }, [indexedLocations, map, zoom, viewportTick]);
+
+  const getJitteredPosition = (entry: IndexedLocation): [number, number] => {
+    const meta = duplicateMeta.get(entry.location.id);
+    if (!meta || meta.count <= 1 || zoom <= 10) {
+      return [entry.location.lat, entry.location.lng];
+    }
+
+    const angle = (2 * Math.PI * meta.indexInGroup) / meta.count;
+    const radiusPx = 11 + Math.min(8, meta.count * 1.5);
+    const projected = map.project([entry.location.lat, entry.location.lng], zoom);
+    const jittered = projected.add([Math.cos(angle) * radiusPx, Math.sin(angle) * radiusPx]);
+    const latLng = map.unproject(jittered, zoom);
+    return [latLng.lat, latLng.lng];
+  };
+
+  return (
+    <>
+      {clusters.map(cluster => {
+        if (cluster.members.length > 1) {
+          return (
+            <Marker
+              key={cluster.id}
+              position={[cluster.lat, cluster.lng]}
+              icon={createClusterIcon(cluster.members.length)}
+              eventHandlers={{
+                click: () => {
+                  map.flyTo([cluster.lat, cluster.lng], Math.min(map.getZoom() + 2, 16), {
+                    duration: 0.4,
+                  });
+                },
+              }}
+            >
+              <Popup>
+                <strong>{cluster.members.length} stops in this area</strong>
+              </Popup>
+            </Marker>
+          );
+        }
+
+        const entry = cluster.members[0];
+        const loc = entry.location;
+        return (
+          <Marker
+            key={loc.id}
+            position={getJitteredPosition(entry)}
+            icon={createIcon(loc, entry.index, hoveredLocationId === loc.id)}
+            eventHandlers={{
+              mouseover: () => onHoverLocation?.(loc.id),
+              mouseout: () => onHoverLocation?.(null),
+              click: () => onSelectLocation?.(loc.id),
+            }}
+          >
+            <Popup>
+              <strong>{entry.index + 1}. {loc.name}</strong>
+              <br />
+              {loc.notes && <span style={{ color: '#6c757d' }}>{loc.notes}</span>}
+            </Popup>
+          </Marker>
+        );
+      })}
+    </>
+  );
 }
 
 const distanceBetween = (a: LatLngTuple, b: LatLngTuple) => {
@@ -171,13 +341,26 @@ interface RouteSegmentProps {
   path?: LatLngTuple[] | null;
   onEditRoute: () => void;
   isHovered: boolean;
+  isHighlighted?: boolean;
+  isDimmed?: boolean;
+  showArrows?: boolean;
 }
 
-function RouteSegment({ from, to, route, path, onEditRoute, isHovered }: RouteSegmentProps) {
+function RouteSegment({
+  from,
+  to,
+  route,
+  path,
+  onEditRoute,
+  isHovered,
+  isHighlighted = false,
+  isDimmed = false,
+  showArrows = true,
+}: RouteSegmentProps) {
   const positions: LatLngTuple[] = (path && path.length > 1)
     ? path
     : [[from.lat, from.lng], [to.lat, to.lng]];
-  const color = route ? TRANSPORT_COLORS[route.transportType] : '#6b7280';
+  const color = isHighlighted ? '#c2410c' : route ? TRANSPORT_COLORS[route.transportType] : '#6b7280';
   const label = route ? TRANSPORT_LABELS[route.transportType].split(' ')[0] : '🔗';
   const buildTooltip = () => {
     const parts = [route ? TRANSPORT_LABELS[route.transportType] : '🔗'];
@@ -186,11 +369,27 @@ function RouteSegment({ from, to, route, path, onEditRoute, isHovered }: RouteSe
   };
   return (
     <>
-      <Polyline positions={positions} color={isHovered ? '#0d6efd' : color} weight={4} opacity={isHovered ? 1 : 0.6} dashArray={route ? undefined : "5, 10"} eventHandlers={{ click: (e) => { L.DomEvent.stopPropagation(e); onEditRoute(); } }}>
+      <Polyline
+        positions={positions}
+        color={isHovered ? '#0d6efd' : color}
+        weight={isHighlighted ? 6 : 4}
+        opacity={isDimmed ? 0.2 : isHovered ? 1 : isHighlighted ? 0.95 : 0.6}
+        dashArray={route ? undefined : '5, 10'}
+        eventHandlers={{ click: (e) => { L.DomEvent.stopPropagation(e); onEditRoute(); } }}
+      >
         <Tooltip permanent={false} direction="center" className="route-tooltip"><div className="route-tooltip-content">{buildTooltip()}</div></Tooltip>
       </Polyline>
-      <Marker position={getPointAt(positions, 0.5)} icon={L.divIcon({ className: 'transport-midpoint-icon', html: `<div class="midpoint-badge ${isHovered ? 'hovered' : ''}">${label}</div>`, iconSize: [20, 20], iconAnchor: [10, 10] })} eventHandlers={{ click: onEditRoute }} />
-      {[0.2, 0.4, 0.6, 0.8].map(offset => {
+      <Marker
+        position={getPointAt(positions, 0.5)}
+        icon={L.divIcon({
+          className: 'transport-midpoint-icon',
+          html: `<div class="midpoint-badge ${isHovered ? 'hovered' : ''}" style="opacity:${isDimmed ? '0.35' : '1'}">${label}</div>`,
+          iconSize: [20, 20],
+          iconAnchor: [10, 10],
+        })}
+        eventHandlers={{ click: onEditRoute }}
+      />
+      {showArrows && [0.2, 0.4, 0.6, 0.8].map(offset => {
         const point = getPointAt(positions, offset);
         const segmentAngle = getAngleAt(positions, offset);
         return (
@@ -199,7 +398,7 @@ function RouteSegment({ from, to, route, path, onEditRoute, isHovered }: RouteSe
             position={point}
             icon={L.divIcon({
               className: 'route-arrow-icon',
-              html: `<div style="transform: rotate(${-segmentAngle}deg); color: ${isHovered ? '#0d6efd' : color}; display: flex; align-items: center; justify-content: center; opacity: 0.9;">${renderToStaticMarkup(<ChevronRight size={isHovered ? 24 : 20} strokeWidth={5} />)}</div>`,
+              html: `<div style="transform: rotate(${-segmentAngle}deg); color: ${isHovered ? '#0d6efd' : color}; display: flex; align-items: center; justify-content: center; opacity: ${isDimmed ? '0.25' : '0.9'};">${renderToStaticMarkup(<ChevronRight size={isHovered ? 24 : 20} strokeWidth={5} />)}</div>`,
               iconSize: [24, 24],
               iconAnchor: [12, 12]
             })}
@@ -219,12 +418,13 @@ const containsLocation = (parent: Location, targetId: string): boolean => {
   return parent.subLocations?.some(sub => containsLocation(sub, targetId)) || false;
 };
 
-
-export default function MapDisplay({ days, locations, routes, onEditRoute, hoveredLocationId, selectedLocationId, selectedDayId, onSelectDay, onHoverLocation, onSelectLocation, hideControls, isSubItinerary, isPanelCollapsed, allLocations, activeParent }: MapDisplayProps) {
+export default function MapDisplay({ days, locations, routes, onEditRoute, hoveredLocationId, selectedLocationId, onHoverLocation, onSelectLocation, hideControls, isSubItinerary, isPanelCollapsed, allLocations, activeParent, selectedDayId }: MapDisplayProps) {
   const position: [number, number] = [51.505, -0.09];
   const [routeShapes, setRouteShapes] = useState<Record<string, LatLngTuple[]>>({});
   const routeShapesRef = useRef<Record<string, LatLngTuple[]>>({});
-  const [map, setMap] = useState<L.Map | null>(null);
+  const [showRouteArrows, setShowRouteArrows] = useState(true);
+  const [showRouteLegend, setShowRouteLegend] = useState(true);
+  const [highlightDayPath, setHighlightDayPath] = useState(true);
 
   const getAbsDayIdx = useCallback((loc: Location): number => {
     if (activeParent && loc.dayOffset !== undefined) {
@@ -234,93 +434,6 @@ export default function MapDisplay({ days, locations, routes, onEditRoute, hover
     if (loc.startDayId) return days.findIndex(d => d.id === loc.startDayId);
     return -1;
   }, [days, activeParent]);
-
-  const focusDays = useMemo(() => {
-    if (!activeParent || !activeParent.startDayId) return days;
-    const startIdx = days.findIndex(d => d.id === activeParent.startDayId);
-    if (startIdx === -1) return days;
-    const startSlotIdx = getSectionIndex(activeParent.startSlot);
-    const totalSlots = activeParent.duration || 1;
-    const endDayIdx = Math.floor((startIdx * 3 + startSlotIdx + totalSlots - 1) / 3);
-    return days.slice(startIdx, endDayIdx + 1);
-  }, [days, activeParent]);
-
-  const selectedFocusIndex = useMemo(() => {
-    if (!selectedDayId) return -1;
-    return focusDays.findIndex(day => day.id === selectedDayId);
-  }, [selectedDayId, focusDays]);
-
-  const formatDayLabel = (day: Day, index: number) => {
-    const dateStr = new Date(day.date + 'T00:00:00').toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric'
-    });
-    return `Day ${index + 1} · ${dateStr}`;
-  };
-
-  const focusLocations = useMemo(() => {
-    if (activeParent?.subLocations && activeParent.subLocations.length > 0) {
-      return activeParent.subLocations;
-    }
-    return allLocations && allLocations.length > 0 ? allLocations : locations;
-  }, [activeParent, allLocations, locations]);
-
-  const getPointsForDay = useCallback((dayId: string) => {
-    const targetIdx = days.findIndex(d => d.id === dayId);
-    if (targetIdx === -1) return [] as LatLngTuple[];
-    const points = focusLocations
-      .filter(loc => getAbsDayIdx(loc) === targetIdx)
-      .map(loc => [loc.lat, loc.lng] as LatLngTuple);
-
-    const day = days[targetIdx];
-    if (day?.accommodation?.lat && day?.accommodation?.lng) {
-      points.push([day.accommodation.lat, day.accommodation.lng]);
-    }
-    return points;
-  }, [days, focusLocations, getAbsDayIdx]);
-
-  const getAllPoints = useCallback(() => {
-    const points = focusLocations.map(loc => [loc.lat, loc.lng] as LatLngTuple);
-    focusDays.forEach(day => {
-      if (day.accommodation?.lat && day.accommodation?.lng) {
-        points.push([day.accommodation.lat, day.accommodation.lng]);
-      }
-    });
-    return points;
-  }, [focusLocations, focusDays]);
-
-  const fitPoints = useCallback((points: LatLngTuple[]) => {
-    if (!map || points.length === 0) return;
-    map.fitBounds(L.latLngBounds(points), { padding: [60, 60] });
-  }, [map]);
-
-  const handleSelectFocusDay = useCallback((value: string) => {
-    if (!onSelectDay) return;
-    if (!value) {
-      fitPoints(getAllPoints());
-      onSelectDay(null);
-      return;
-    }
-    fitPoints(getPointsForDay(value));
-    onSelectDay(value);
-  }, [fitPoints, getAllPoints, getPointsForDay, onSelectDay]);
-
-  const stepFocusDay = useCallback((direction: -1 | 1) => {
-    if (!onSelectDay || focusDays.length === 0) return;
-    const currentIndex = selectedDayId ? focusDays.findIndex(d => d.id === selectedDayId) : -1;
-    let nextIndex = currentIndex + direction;
-    if (currentIndex === -1) {
-      nextIndex = direction > 0 ? 0 : focusDays.length - 1;
-    }
-    if (nextIndex < 0) nextIndex = 0;
-    if (nextIndex > focusDays.length - 1) nextIndex = focusDays.length - 1;
-    const nextDay = focusDays[nextIndex];
-    if (!nextDay) return;
-    handleSelectFocusDay(nextDay.id);
-  }, [focusDays, handleSelectFocusDay, onSelectDay, selectedDayId]);
-
-  const isPrevDisabled = focusDays.length === 0 || selectedFocusIndex <= 0;
-  const isNextDisabled = focusDays.length === 0 || selectedFocusIndex === -1 || selectedFocusIndex >= focusDays.length - 1;
 
   const sortedLocations = useMemo(() => {
     return [...locations].sort((a, b) => {
@@ -417,6 +530,27 @@ export default function MapDisplay({ days, locations, routes, onEditRoute, hover
     return segments;
   }, [pathPoints, routes]);
 
+  const focusedDayIdx = selectedDayId ? days.findIndex(day => day.id === selectedDayId) : -1;
+  const hasFocusedDay = focusedDayIdx !== -1;
+
+  const isSegmentInFocusedDay = useCallback((segment: { from: PathPoint; to: PathPoint }) => {
+    const fromDay = Math.floor(segment.from.sortValue / 100);
+    const toDay = Math.floor(segment.to.sortValue / 100);
+    return fromDay === focusedDayIdx || toDay === focusedDayIdx || segment.from.isAccommodation || segment.to.isAccommodation;
+  }, [focusedDayIdx]);
+
+  const transportLegendItems = useMemo(() => {
+    const transportTypes = new Set<TransportType>();
+    routeSegments.forEach(segment => {
+      if (segment.route) {
+        transportTypes.add(segment.route.transportType);
+      } else {
+        transportTypes.add('other');
+      }
+    });
+    return Array.from(transportTypes);
+  }, [routeSegments]);
+
   useEffect(() => {
     const activeKeys = new Set(routeSegments.map(segment => segment.key));
     const next: Record<string, LatLngTuple[]> = {};
@@ -498,19 +632,17 @@ export default function MapDisplay({ days, locations, routes, onEditRoute, hover
   }, [days, selectedDayId, activeParent]);
 
   return (
-    <div className="map-container" style={{ position: 'relative' }}>
-      <MapContainer
-        center={position}
-        zoom={13}
-        scrollWheelZoom={true}
-        className="leaflet-container"
-        zoomControl={false}
-      >
+    <div className="map-container">
+      <MapContainer center={position} zoom={13} scrollWheelZoom={true} className="leaflet-container" zoomControl={false}>
         {!hideControls && <ZoomControl position="topleft" />}
         <TileLayer attribution='&copy; CARTO' url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png" />
-        <MapReady onReady={setMap} />
         {accommodations.map(acc => <Marker key={acc.id} position={[acc.lat, acc.lng]} icon={createAccommodationIcon()}><Popup><strong>🏨 {acc.name}</strong><br />{acc.notes && <span style={{ color: '#6c757d' }}>{acc.notes}</span>}</Popup></Marker>)}
-        {sortedLocations.map((loc, index) => <Marker key={loc.id} position={[loc.lat, loc.lng]} icon={createIcon(loc, index, hoveredLocationId === loc.id)} eventHandlers={{ mouseover: () => onHoverLocation?.(loc.id), mouseout: () => onHoverLocation?.(null), click: () => onSelectLocation?.(loc.id) }}><Popup><strong>{index + 1}. {loc.name}</strong><br />{loc.notes && <span style={{ color: '#6c757d' }}>{loc.notes}</span>}</Popup></Marker>)}
+        <ClusteredLocationMarkers
+          locations={sortedLocations}
+          hoveredLocationId={hoveredLocationId}
+          onHoverLocation={onHoverLocation}
+          onSelectLocation={onSelectLocation}
+        />
         {routeSegments.map(segment => (
           <RouteSegment
             key={`route-${segment.key}`}
@@ -520,48 +652,64 @@ export default function MapDisplay({ days, locations, routes, onEditRoute, hover
             path={routeShapes[segment.key]}
             onEditRoute={() => onEditRoute(segment.from.id, segment.to.id)}
             isHovered={hoveredLocationId === segment.from.id || hoveredLocationId === segment.to.id}
+            isHighlighted={hasFocusedDay && highlightDayPath && isSegmentInFocusedDay(segment)}
+            isDimmed={hasFocusedDay && highlightDayPath && !isSegmentInFocusedDay(segment)}
+            showArrows={showRouteArrows}
           />
         ))}
         <FitBounds locations={locations} accommodations={accommodations} />
         <SelectedLocationHandler selectedId={selectedLocationId} locations={locations} isPanelCollapsed={isPanelCollapsed} />
         <MapClickHandler onSelect={onSelectLocation} isDrillDown={isSubItinerary} />
       </MapContainer>
-      {onSelectDay && focusDays.length > 0 && (
-        <div className="map-focus-control">
-          <div className="map-focus-title">Focus Day</div>
-          <select
-            value={selectedDayId || ''}
-            onChange={(event) => handleSelectFocusDay(event.target.value)}
-            aria-label="Focus day"
-          >
-            <option value="">All days</option>
-            {focusDays.map((day, index) => (
-              <option key={day.id} value={day.id}>
-                {formatDayLabel(day, index)}
-              </option>
-            ))}
-          </select>
-          <div className="map-focus-row">
-            <button type="button" onClick={() => stepFocusDay(-1)} disabled={isPrevDisabled}>
-              Prev
-            </button>
-            <button type="button" onClick={() => stepFocusDay(1)} disabled={isNextDisabled}>
-              Next
-            </button>
-            <button type="button" onClick={() => handleSelectFocusDay('')} disabled={!selectedDayId}>
-              All
+      {!hideControls && (
+        <div className="map-route-controls" role="region" aria-label="Map route controls">
+          <div className="map-route-controls-row">
+            <label className="map-route-control-item">
+              <input
+                type="checkbox"
+                checked={showRouteArrows}
+                onChange={event => setShowRouteArrows(event.target.checked)}
+              />
+              Route arrows
+            </label>
+            <label className="map-route-control-item">
+              <input
+                type="checkbox"
+                checked={highlightDayPath}
+                onChange={event => setHighlightDayPath(event.target.checked)}
+                disabled={!hasFocusedDay}
+              />
+              Highlight selected day
+            </label>
+            <button
+              type="button"
+              className="map-route-legend-toggle"
+              onClick={() => setShowRouteLegend(value => !value)}
+            >
+              {showRouteLegend ? 'Hide legend' : 'Show legend'}
             </button>
           </div>
+          {hasFocusedDay && (
+            <div className="map-day-highlight-indicator">
+              Highlighting Day {focusedDayIdx + 1} path
+            </div>
+          )}
+          {showRouteLegend && (
+            <div className="map-route-legend">
+              {transportLegendItems.length === 0 ? (
+                <span className="map-route-legend-empty">No route segments yet</span>
+              ) : (
+                transportLegendItems.map(type => (
+                  <span key={type} className="map-route-legend-item">
+                    <span className="map-route-legend-dot" style={{ backgroundColor: TRANSPORT_COLORS[type] }} />
+                    {TRANSPORT_LABELS[type].replace(/^[^\s]+\s/, '')}
+                  </span>
+                ))
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>
   );
-}
-interface PathPoint {
-  id: string;
-  name: string;
-  lat: number;
-  lng: number;
-  isAccommodation: boolean;
-  sortValue: number;
 }

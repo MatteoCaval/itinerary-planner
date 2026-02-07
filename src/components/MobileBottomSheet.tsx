@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Box, Paper, ActionIcon, Group, Text, Stack } from '@mantine/core';
+import { Box, Paper, ActionIcon, Group, Text, Stack, Button } from '@mantine/core';
 import { ChevronUp, ChevronDown } from 'lucide-react';
 
 interface MobileBottomSheetProps {
@@ -12,6 +12,7 @@ type SheetState = 'peek' | 'half' | 'full';
 export function MobileBottomSheet({ children, opened }: MobileBottomSheetProps) {
   const [sheetState, setSheetState] = useState<SheetState>('half');
   const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchCurrent, setTouchCurrent] = useState<number | null>(null);
 
   React.useEffect(() => {
     if (opened) {
@@ -54,7 +55,15 @@ export function MobileBottomSheet({ children, opened }: MobileBottomSheetProps) 
       }
     }
     setTouchStart(null);
+    setTouchCurrent(null);
   };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (touchStart === null) return;
+    setTouchCurrent(e.touches[0].clientY);
+  };
+
+  const currentDelta = touchStart !== null && touchCurrent !== null ? touchStart - touchCurrent : 0;
 
   return (
     <Box
@@ -68,6 +77,7 @@ export function MobileBottomSheet({ children, opened }: MobileBottomSheetProps) 
         transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
         height: getHeight(),
         transform: opened ? 'translateY(0)' : 'translateY(100%)',
+        opacity: opened ? 1 : 0,
         display: 'flex',
         flexDirection: 'column'
       }}
@@ -88,21 +98,64 @@ export function MobileBottomSheet({ children, opened }: MobileBottomSheetProps) 
         {/* Handle / Header */}
         <Box 
           p={0} 
-          onClick={cycleState}
+          onClick={() => {
+            if (Math.abs(currentDelta) < 12) cycleState();
+          }}
           onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
+          role="button"
+          aria-label="Resize itinerary sheet"
+          tabIndex={0}
+          onKeyDown={event => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault();
+              cycleState();
+            }
+          }}
           style={{ 
             cursor: 'pointer',
             borderBottom: '1px solid var(--mantine-color-gray-2)',
             flexShrink: 0,
-            touchAction: 'none' // Prevent browser scroll while dragging header
+            touchAction: 'none',
+            minHeight: 64,
           }}
         >
-          <Stack gap={0} align="center" py={8}>
-            <Box mb={4} style={{ width: 40, height: 4, backgroundColor: 'var(--mantine-color-gray-3)', borderRadius: 2 }} />
+          <Stack gap={6} align="center" py={10}>
+            <Box mb={2} style={{ width: 52, height: 6, backgroundColor: 'var(--mantine-color-gray-4)', borderRadius: 99 }} />
             <Group gap="xs" px="md" w="100%" justify="space-between">
                 <Text size="xs" fw={700} c="dimmed" tt="uppercase">Itinerary</Text>
-                <Group gap={4}>
+                <Group gap={6}>
+                    <Button
+                      size="compact-xs"
+                      variant={sheetState === 'peek' ? 'filled' : 'light'}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        setSheetState('peek');
+                      }}
+                    >
+                      Peek
+                    </Button>
+                    <Button
+                      size="compact-xs"
+                      variant={sheetState === 'half' ? 'filled' : 'light'}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        setSheetState('half');
+                      }}
+                    >
+                      Half
+                    </Button>
+                    <Button
+                      size="compact-xs"
+                      variant={sheetState === 'full' ? 'filled' : 'light'}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        setSheetState('full');
+                      }}
+                    >
+                      Full
+                    </Button>
                     <ActionIcon variant="subtle" color="gray" size="sm">
                         {sheetState === 'full' ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
                     </ActionIcon>

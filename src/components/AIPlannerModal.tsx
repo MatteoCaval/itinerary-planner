@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Modal, Button, TextInput, Textarea, Stack, Group, Text, PasswordInput, Tabs, Alert, SegmentedControl, Box, Paper, ScrollArea } from '@mantine/core';
+import { Modal, Button, TextInput, Textarea, Stack, Group, Text, PasswordInput, Tabs, Alert, SegmentedControl, Box, Paper, ScrollArea, Skeleton } from '@mantine/core';
 import { Sparkles, Settings, AlertCircle, Calendar, MessageSquareQuote } from 'lucide-react';
 import { AISettings, Day, DaySection, Location, LocationCategory, Route, TransportType } from '../types';
 import { generateAIItinerary } from '../aiService';
@@ -182,6 +182,15 @@ export function AIPlannerModal({ show, onClose, days, currentLocations, currentR
                       disabled={!hasDates || loading}
                       label="What should I plan?"
                     />
+                    {loading && (
+                      <Paper withBorder p="md" radius="md">
+                        <Stack gap="xs">
+                          <Skeleton height={14} radius="sm" />
+                          <Skeleton height={14} radius="sm" />
+                          <Skeleton height={70} radius="sm" />
+                        </Stack>
+                      </Paper>
+                    )}
                 </>
             ) : (
                 <Paper withBorder p="md" bg="blue.0" radius="md">

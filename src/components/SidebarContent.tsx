@@ -1,6 +1,6 @@
 import React from 'react';
-import { Stack, Box, Paper, Group, Button, TextInput, ActionIcon, Slider, Tooltip, ScrollArea, Text, Modal } from '@mantine/core';
-import { List as ListIcon, Calendar as CalendarIcon, Wallet, Search, Trash2, FileText, Download, Upload, History, Sparkles, Cloud } from 'lucide-react';
+import { Stack, Box, Paper, Group, Button, TextInput, ActionIcon, Slider, Tooltip, ScrollArea, Text, Modal, Skeleton } from '@mantine/core';
+import { List as ListIcon, Calendar as CalendarIcon, Wallet, Search, Trash2, FileText, Download, Upload, History, Sparkles, Cloud, Compass, Plus } from 'lucide-react';
 import { DateRangePicker } from './DateRangePicker';
 import { DaySidebar } from './DaySidebar';
 import { CalendarView } from './CalendarView';
@@ -21,6 +21,8 @@ interface SidebarContentProps {
   searchQuery: string;
   setSearchQuery: (val: string) => void;
   isSearching: boolean;
+  suggestionLoading: boolean;
+  reorderShortcutHint: string;
   handleSearch: (e: React.FormEvent) => void;
   suggestions: PlaceSearchResult[];
   handleAddLocationWrapped: (lat: number, lng: number, name?: string) => Promise<void>;
@@ -63,7 +65,7 @@ export function SidebarContent({
   startDate, endDate, updateDateRange,
   sidebarView, setSidebarView,
   pendingAddToDay, setPendingAddToDay,
-  searchQuery, setSearchQuery, isSearching, handleSearch,
+  searchQuery, setSearchQuery, isSearching, suggestionLoading, reorderShortcutHint, handleSearch,
   suggestions, handleAddLocationWrapped,
   zoomLevel, setZoomLevel,
   activeParent, setSelectedLocationId,
@@ -79,6 +81,17 @@ export function SidebarContent({
   
   const [datePickerOpened, setDatePickerOpened] = React.useState(false);
   const [confirmClearOpened, setConfirmClearOpened] = React.useState(false);
+  const hasDates = Boolean(startDate && endDate);
+  const hasStops = locations.length > 0;
+
+  const setSuggestedTripRange = (dayCount: number) => {
+    const start = new Date();
+    const end = new Date(start);
+    end.setDate(start.getDate() + dayCount - 1);
+    const toIso = (date: Date) => date.toISOString().split('T')[0];
+    updateDateRange(toIso(start), toIso(end));
+    setDatePickerOpened(false);
+  };
 
   const formatDateRange = () => {
     if (!startDate || !endDate) return 'Select Trip Dates';
@@ -178,6 +191,15 @@ export function SidebarContent({
               }
             />
           </form>
+          {suggestionLoading && searchQuery.trim().length > 2 && (
+            <Paper withBorder shadow="sm" style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 1000 }}>
+              <Stack p="xs" gap="xs">
+                <Skeleton height={14} radius="sm" />
+                <Skeleton height={14} radius="sm" />
+                <Skeleton height={14} radius="sm" width="85%" />
+              </Stack>
+            </Paper>
+          )}
           {suggestions.length > 0 && (
             <Paper withBorder shadow="md" style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 1000, maxHeight: 250, overflowY: 'auto' }}>
               {suggestions.map((s) => (
@@ -200,21 +222,57 @@ export function SidebarContent({
         </Box>
 
         {sidebarView === 'timeline' && (
-          <Group gap="xs" align="center" mt="xs">
-            <Text size="xs" fw={500} c="dimmed">Zoom:</Text>
-            <Slider
-              flex={1}
-              size="sm"
-              min={0.5}
-              max={2.5}
-              step={0.1}
-              value={zoomLevel}
-              onChange={setZoomLevel}
-              label={(val) => `${Math.round(val * 100)}%`}
-              mb={4}
-            />
-            <Text size="xs" c="dimmed" w={35}>{Math.round(zoomLevel * 100)}%</Text>
-          </Group>
+          <Stack gap={4} mt="xs">
+            <Group gap="xs" align="center">
+              <Text size="xs" fw={500} c="dimmed">Zoom:</Text>
+              <Slider
+                flex={1}
+                size="sm"
+                min={0.5}
+                max={2.5}
+                step={0.1}
+                value={zoomLevel}
+                onChange={setZoomLevel}
+                label={(val) => `${Math.round(val * 100)}%`}
+                mb={4}
+              />
+              <Text size="xs" c="dimmed" w={35}>{Math.round(zoomLevel * 100)}%</Text>
+            </Group>
+            <Text size="10px" c="dimmed">Accessibility: use {reorderShortcutHint} to reorder selected timeline stops.</Text>
+          </Stack>
+        )}
+
+        {!hasDates && (
+          <Paper mt="sm" withBorder p="sm" bg="blue.0" radius="md">
+            <Stack gap={6}>
+              <Group gap={6}>
+                <Compass size={14} color="var(--app-accent-contrast)" />
+                <Text size="xs" fw={700}>Quick Start</Text>
+              </Group>
+              <Text size="xs" c="dimmed">Set dates to unlock timeline planning.</Text>
+              <Group gap="xs">
+                <Button size="compact-xs" variant="light" onClick={() => setSuggestedTripRange(2)}>2-day trip</Button>
+                <Button size="compact-xs" variant="light" onClick={() => setSuggestedTripRange(5)}>5-day trip</Button>
+              </Group>
+            </Stack>
+          </Paper>
+        )}
+
+        {hasDates && !hasStops && (
+          <Paper mt="sm" withBorder p="sm" radius="md">
+            <Stack gap={6}>
+              <Text size="xs" fw={700}>No stops yet</Text>
+              <Text size="xs" c="dimmed">Search a destination above or add directly to Day 1.</Text>
+              <Button
+                size="compact-xs"
+                variant="light"
+                leftSection={<Plus size={12} />}
+                onClick={() => setPendingAddToDay({ dayId: days[0]?.id || 'unassigned', slot: 'morning' })}
+              >
+                Add first stop
+              </Button>
+            </Stack>
+          </Paper>
         )}
       </Box>
 
@@ -262,6 +320,13 @@ export function SidebarContent({
       </Box>
 
       <Box p="md" style={{ borderTop: '1px solid var(--mantine-color-gray-3)' }}>
+        {locations.length > 1 && routes.length === 0 && (
+          <Paper withBorder p="xs" mb="xs" bg="yellow.0">
+            <Text size="xs" c="dimmed">
+              Routes are not configured yet. Add transport links from timeline connectors for better map guidance.
+            </Text>
+          </Paper>
+        )}
         <Group justify="space-between" mb="xs">
           <Text size="xs" fw={700} tt="uppercase" c="dimmed">{locations.length} Stops</Text>
           <Button variant="subtle" color="red" size="xs" leftSection={<Trash2 size={14} />} onClick={() => setConfirmClearOpened(true)}>

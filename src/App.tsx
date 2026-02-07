@@ -45,7 +45,7 @@ function AppContent() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const { sidebarWidth, startResizing } = useSidebarResize({ initialWidth: 500 });
-  const { suggestions, setSuggestions } = usePlaceSearch({ query: searchQuery, minLength: 3, debounceMs: 500 });
+  const { suggestions, setSuggestions, loading: suggestionLoading } = usePlaceSearch({ query: searchQuery, minLength: 3, debounceMs: 500 });
 
   // Clear selected day when location selection changes
   useEffect(() => {
@@ -59,6 +59,12 @@ function AppContent() {
   const [sidebarView, setSidebarView] = useState<'timeline' | 'calendar' | 'budget'>('timeline');
   const [showCloudModal, setShowCloudModal] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const reorderShortcutHint = useMemo(() => {
+    if (typeof navigator !== 'undefined' && /(Mac|iPhone|iPad|iPod)/i.test(navigator.platform)) {
+      return '⌘ + Shift + ↑/↓';
+    }
+    return 'Alt + Shift + ↑/↓';
+  }, []);
 
   const handleAddLocation = async (lat: number, lng: number, name?: string, targetDayId?: string, targetSlot?: DaySection) => {
     const resolvedName = name || await reverseGeocode(lat, lng);
@@ -395,6 +401,8 @@ function AppContent() {
               sidebarView={sidebarView} setSidebarView={setSidebarView}
               pendingAddToDay={pendingAddToDay} setPendingAddToDay={setPendingAddToDay}
               searchQuery={searchQuery} setSearchQuery={setSearchQuery} isSearching={isSearching} handleSearch={handleSearch}
+              suggestionLoading={suggestionLoading}
+              reorderShortcutHint={reorderShortcutHint}
               suggestions={suggestions} handleAddLocationWrapped={handleAddLocationWrapped}
               zoomLevel={zoomLevel} setZoomLevel={setZoomLevel}
               activeParent={activeParent} setSelectedLocationId={setSelectedLocationId}
@@ -438,6 +446,8 @@ function AppContent() {
             sidebarView={sidebarView} setSidebarView={setSidebarView}
             pendingAddToDay={pendingAddToDay} setPendingAddToDay={setPendingAddToDay}
             searchQuery={searchQuery} setSearchQuery={setSearchQuery} isSearching={isSearching} handleSearch={handleSearch}
+            suggestionLoading={suggestionLoading}
+            reorderShortcutHint={reorderShortcutHint}
             suggestions={suggestions} handleAddLocationWrapped={handleAddLocationWrapped}
             zoomLevel={zoomLevel} setZoomLevel={setZoomLevel}
             activeParent={activeParent} setSelectedLocationId={setSelectedLocationId}

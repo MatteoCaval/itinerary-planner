@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useRef, useEffect } from 'react';
-import { ActionIcon, Text, Group, Stack, Box, Paper, Tooltip, Popover, TextInput, Button, Autocomplete, NumberInput } from '@mantine/core';
+import { ActionIcon, Text, Group, Stack, Box, Paper, Tooltip, Popover, TextInput, Button, Autocomplete, NumberInput, Skeleton } from '@mantine/core';
 import { Plus, Sun, Moon, Coffee, ChevronDown, ChevronUp, Bed, Trash, Search, MapPin, Euro } from 'lucide-react';
 import {
     DndContext,
@@ -72,7 +72,7 @@ function DroppableCell({ id, section, row, isEvenDay, zoomLevel, onClick, isBloc
             break;
         case 'afternoon':
             icon = <Sun size={14} />;
-            color = "yellow";
+            color = "#b45309";
             break;
         case 'evening':
             icon = <Moon size={14} />;
@@ -86,6 +86,18 @@ function DroppableCell({ id, section, row, isEvenDay, zoomLevel, onClick, isBloc
         <Box
             ref={setNodeRef}
             onClick={!isBlocked ? onClick : undefined}
+            onKeyDown={(event) => {
+                if (isBlocked || !onClick) return;
+                if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    onClick();
+                }
+            }}
+            tabIndex={isBlocked ? -1 : 0}
+            role="button"
+            aria-disabled={isBlocked}
+            aria-label={`Add activity to ${section}`}
+            className="timeline-cell-focus"
             style={{
                 gridColumn: '2 / -1',
                 gridRow: `${row} / span 1`,
@@ -177,6 +189,7 @@ function DayLabel({ day, startRow, dayNum, isEvenDay, onAdd, onUpdateDay, existi
     
     // Search state
     const [suggestions, setSuggestions] = useState<PlaceSearchResult[]>([]);
+    const [isSuggesting, setIsSuggesting] = useState(false);
 
     // Reset local state when day prop changes (e.g. if loaded from cloud)
     useEffect(() => {
@@ -191,10 +204,13 @@ function DayLabel({ day, startRow, dayNum, isEvenDay, onAdd, onUpdateDay, existi
     useEffect(() => {
         const timer = setTimeout(async () => {
             if (opened && tempName.trim().length > 2 && !tempLat) {
+                setIsSuggesting(true);
                 const results = await searchPlace(tempName);
                 setSuggestions(results || []);
+                setIsSuggesting(false);
             } else {
                 setSuggestions([]);
+                setIsSuggesting(false);
             }
         }, 500);
         return () => clearTimeout(timer);
@@ -230,6 +246,16 @@ function DayLabel({ day, startRow, dayNum, isEvenDay, onAdd, onUpdateDay, existi
         <Box
             p="xs"
             onClick={onSelect}
+            onKeyDown={(event) => {
+                if (!onSelect) return;
+                if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    onSelect();
+                }
+            }}
+            tabIndex={onSelect ? 0 : -1}
+            role={onSelect ? 'button' : undefined}
+            aria-label={`Select day ${dayNum}`}
             className="day-label-box"
             style={{
                 gridColumn: '1 / span 1',
@@ -320,6 +346,14 @@ function DayLabel({ day, startRow, dayNum, isEvenDay, onAdd, onUpdateDay, existi
                                                 <Text size="xs" c="dimmed" truncate>{s.display_name}</Text>
                                             </Box>
                                         ))}
+                                    </Paper>
+                                )}
+                                {isSuggesting && tempName.trim().length > 2 && (
+                                    <Paper withBorder shadow="sm" style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 2200 }}>
+                                        <Stack p="xs" gap="xs">
+                                            <Skeleton height={12} radius="xl" />
+                                            <Skeleton height={12} radius="xl" width="88%" />
+                                        </Stack>
                                     </Paper>
                                 )}
                             </Box>
@@ -552,6 +586,10 @@ export function DaySidebar({
     const [activeId, setActiveId] = useState<string | null>(null);
     const [unassignedCollapsed, setUnassignedCollapsed] = useState(() => locations.filter(l => !l.startDayId).length === 0);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
+    const isMacPlatform = useMemo(
+        () => typeof navigator !== 'undefined' && /(Mac|iPhone|iPad|iPod)/i.test(navigator.platform),
+        []
+    );
 
     const sensors = useSensors(
         useSensor(MouseSensor, {
@@ -613,6 +651,45 @@ export function DaySidebar({
         });
         return { itemPositions, totalLanes: lanes.length || 1 };
     }, [sortedLocs, dayRowMap]);
+
+    useEffect(() => {
+        const onKeyDown = (event: KeyboardEvent) => {
+            if (!selectedLocationId) return;
+            if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return;
+            const eventTarget = event.target as HTMLElement | null;
+            if (eventTarget) {
+                const tag = eventTarget.tagName.toLowerCase();
+                const isTypingContext =
+                    eventTarget.isContentEditable ||
+                    tag === 'input' ||
+                    tag === 'textarea' ||
+                    tag === 'select';
+                if (isTypingContext) return;
+            }
+
+            const usesMacShortcut = isMacPlatform && event.metaKey && event.shiftKey;
+            const usesDefaultShortcut = !isMacPlatform && event.altKey && event.shiftKey;
+            if (!usesMacShortcut && !usesDefaultShortcut) return;
+
+            const currentIndex = sortedLocs.findIndex(location => location.id === selectedLocationId);
+            if (currentIndex === -1) return;
+            const targetIndex = event.key === 'ArrowUp' ? currentIndex - 1 : currentIndex + 1;
+            if (targetIndex < 0 || targetIndex >= sortedLocs.length) return;
+
+            event.preventDefault();
+            const current = sortedLocs[currentIndex];
+            const targetLocation = sortedLocs[targetIndex];
+            onReorderLocations(
+                current.id,
+                targetLocation.id,
+                current.startDayId || null,
+                current.startSlot || null
+            );
+        };
+
+        window.addEventListener('keydown', onKeyDown);
+        return () => window.removeEventListener('keydown', onKeyDown);
+    }, [selectedLocationId, sortedLocs, onReorderLocations, isMacPlatform]);
 
     const handleDragEnd = (event: DragEndEvent) => {
         const { active, over } = event;

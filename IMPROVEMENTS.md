@@ -17,13 +17,13 @@
 
 ## Graphic and UI Improvements
 
-- [ ] Define a stronger visual system (spacing scale, typography hierarchy, semantic colors) and move repeated styles from `index.css` into reusable theme tokens.
-- [ ] Improve map readability with marker clustering at low zoom and better collision handling for dense locations.
-- [ ] Add clearer route visualization controls (toggle arrows, route type legend, highlight current day path).
-- [ ] Improve mobile ergonomics for the bottom sheet: snap points, drag handle affordance, and larger touch targets.
-- [ ] Introduce skeleton/loading states for search results, AI generation, and cloud sync actions instead of abrupt content swaps.
-- [ ] Improve empty states for first-time users (no dates, no locations, no routes) with quick-start prompts and action buttons.
-- [ ] Increase accessibility coverage: keyboard navigation for timeline operations, better focus styles, and verified contrast for status colors.
+- [x] Define a stronger visual system (spacing scale, typography hierarchy, semantic colors) and move repeated styles from `index.css` into reusable theme tokens.
+- [x] Improve map readability with marker clustering at low zoom and better collision handling for dense locations.
+- [x] Add clearer route visualization controls (toggle arrows, route type legend, highlight current day path).
+- [x] Improve mobile ergonomics for the bottom sheet: snap points, drag handle affordance, and larger touch targets.
+- [x] Introduce skeleton/loading states for search results, AI generation, and cloud sync actions instead of abrupt content swaps.
+- [x] Improve empty states for first-time users (no dates, no locations, no routes) with quick-start prompts and action buttons.
+- [x] Increase accessibility coverage: keyboard navigation for timeline operations, better focus styles, and verified contrast for status colors.
 - [ ] Refine timeline cards with stronger visual grouping by day section and clearer distinction between parent locations and sub-locations.
 - [ ] Add subtle motion for key transitions (sidebar collapse, day selection, route edit) to improve orientation.
 - [ ] Create consistent icon and label patterns for actions (export/import/history/AI/cloud) to reduce cognitive load.
