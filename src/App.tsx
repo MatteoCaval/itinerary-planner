@@ -346,7 +346,13 @@ function AppContent() {
           </Group>
 
           <Box hiddenFrom="lg">
-            <Menu shadow="md" width={200} position="bottom-end" withinPortal>
+            <Menu
+              shadow="md"
+              width={220}
+              position="bottom-end"
+              withinPortal
+              zIndex={4000}
+            >
               <Menu.Target>
                 <ActionIcon variant="light" size="lg">
                   <MoreHorizontal size={20} />
@@ -441,7 +447,6 @@ function AppContent() {
             hoveredLocationId={hoveredLocationId}
             selectedLocationId={selectedLocationId}
             selectedDayId={selectedDayId}
-            onSelectDay={setSelectedDayId}
             onHoverLocation={setHoveredLocationId}
             onSelectLocation={handleScrollToLocation}
             hideControls={opened}
