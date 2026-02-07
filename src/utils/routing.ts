@@ -1,4 +1,6 @@
 import { TransportType } from '../types';
+import { fetchJson } from '../services/httpClient';
+import { trackError } from '../services/telemetry';
 
 export type LatLngTuple = [number, number];
 
@@ -15,14 +17,6 @@ const osrmProfileForTransport = (transportType: TransportType) => {
   return 'driving';
 };
 
-const fetchJson = async (url: string, signal?: AbortSignal) => {
-  const response = await fetch(url, { signal });
-  if (!response.ok) {
-    throw new Error(`Routing request failed: ${response.status}`);
-  }
-  return response.json();
-};
-
 const requestOsrmRoute = async (from: LatLngTuple, to: LatLngTuple, transportType: TransportType, signal?: AbortSignal) => {
   const profile = osrmProfileForTransport(transportType);
   const buildUrl = (p: string) => (
@@ -30,13 +24,23 @@ const requestOsrmRoute = async (from: LatLngTuple, to: LatLngTuple, transportTyp
   );
 
   try {
-    const data = await fetchJson(buildUrl(profile), signal);
+    const data = await fetchJson<{ routes?: { geometry?: { coordinates?: [number, number][] } }[] }>(buildUrl(profile), {
+      signal,
+      retries: 1,
+      retryDelayMs: 500,
+      timeoutMs: 12000,
+    });
     const coords = data?.routes?.[0]?.geometry?.coordinates;
     if (!coords || coords.length < 2) return null;
     return coords.map((coord: [number, number]) => [coord[1], coord[0]] as LatLngTuple);
   } catch (error) {
     if (profile !== 'driving') {
-      const fallback = await fetchJson(buildUrl('driving'), signal);
+      const fallback = await fetchJson<{ routes?: { geometry?: { coordinates?: [number, number][] } }[] }>(buildUrl('driving'), {
+        signal,
+        retries: 1,
+        retryDelayMs: 500,
+        timeoutMs: 12000,
+      });
       const coords = fallback?.routes?.[0]?.geometry?.coordinates;
       if (!coords || coords.length < 2) return null;
       return coords.map((coord: [number, number]) => [coord[1], coord[0]] as LatLngTuple);
@@ -66,7 +70,7 @@ export const fetchRouteGeometry = async (
       return geometry;
     }
   } catch (error) {
-    console.warn('Routing failed, falling back to straight line.', error);
+    trackError('routing_geometry_failed', error, { from, to, transportType });
   }
 
   return null;

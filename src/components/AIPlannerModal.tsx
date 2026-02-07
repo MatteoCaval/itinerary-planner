@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Modal, Button, TextInput, Textarea, Stack, Group, Text, PasswordInput, Tabs, Alert, SegmentedControl, Box, Paper, ScrollArea } from '@mantine/core';
 import { Sparkles, Settings, AlertCircle, Calendar, MessageSquareQuote } from 'lucide-react';
-import { AISettings, Day, Location, Route } from '../types';
+import { AISettings, Day, DaySection, Location, LocationCategory, Route, TransportType } from '../types';
 import { generateAIItinerary } from '../aiService';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -26,6 +26,14 @@ export function AIPlannerModal({ show, onClose, days, currentLocations, currentR
   const [pendingResults, setPendingResults] = useState<{ locations: Location[], routes: Route[], days?: Day[] } | null>(null);
 
   const hasDates = days.length > 0;
+  const validSlots: DaySection[] = ['morning', 'afternoon', 'evening'];
+  const validCategories: LocationCategory[] = ['sightseeing', 'dining', 'hotel', 'transit', 'other'];
+  const validTransportTypes: TransportType[] = ['walk', 'car', 'bus', 'train', 'flight', 'ferry', 'other'];
+
+  const normalizeErrorMessage = (error: unknown) => {
+    if (error instanceof Error) return error.message;
+    return 'An error occurred during generation';
+  };
 
   const handleGenerate = async () => {
     if (!settings.apiKey) {
@@ -49,6 +57,8 @@ export function AIPlannerModal({ show, onClose, days, currentLocations, currentR
       const mapLocation = (loc: Partial<Location>, index: number): Location => {
         const newId = uuidv4();
         if (loc.id) idMap[loc.id] = newId;
+        const mappedSlot = loc.startSlot && validSlots.includes(loc.startSlot) ? loc.startSlot : 'morning';
+        const mappedCategory = loc.category && validCategories.includes(loc.category) ? loc.category : 'sightseeing';
         
         return {
           id: newId,
@@ -57,10 +67,10 @@ export function AIPlannerModal({ show, onClose, days, currentLocations, currentR
           lng: loc.lng || 0,
           notes: loc.notes || '',
           startDayId: loc.startDayId,
-          startSlot: (loc.startSlot as any) || 'morning',
+          startSlot: mappedSlot,
           duration: loc.duration || 1,
           order: index + 1000,
-          category: (loc.category as any) || 'sightseeing',
+          category: mappedCategory,
           dayOffset: loc.dayOffset,
           dayIds: [],
           checklist: [],
@@ -75,7 +85,7 @@ export function AIPlannerModal({ show, onClose, days, currentLocations, currentR
         id: uuidv4(),
         fromLocationId: idMap[r.fromLocationId || ''] || r.fromLocationId || '',
         toLocationId: idMap[r.toLocationId || ''] || r.toLocationId || '',
-        transportType: (r.transportType as any) || 'car',
+        transportType: r.transportType && validTransportTypes.includes(r.transportType) ? r.transportType : 'car',
         duration: r.duration || '',
         notes: r.notes || ''
       }));
@@ -84,7 +94,7 @@ export function AIPlannerModal({ show, onClose, days, currentLocations, currentR
       const updatedDays: Day[] = days.map(d => {
         const aiDay = result.days?.find(ad => ad.id === d.id);
         if (aiDay && aiDay.accommodation) {
-          return { ...d, accommodation: aiDay.accommodation as any };
+          return { ...d, accommodation: { ...aiDay.accommodation } };
         }
         return d;
       });
@@ -98,8 +108,8 @@ export function AIPlannerModal({ show, onClose, days, currentLocations, currentR
         setPrompt('');
         onClose();
       }
-    } catch (err: any) {
-      setError(err.message || 'An error occurred during generation');
+    } catch (error) {
+      setError(normalizeErrorMessage(error));
     } finally {
       setLoading(false);
     }
@@ -151,7 +161,11 @@ export function AIPlannerModal({ show, onClose, days, currentLocations, currentR
                       <SegmentedControl
                         fullWidth
                         value={mode}
-                        onChange={(val) => setMode(val as any)}
+                        onChange={val => {
+                          if (val === 'scratch' || val === 'refactor') {
+                            setMode(val);
+                          }
+                        }}
                         data={[
                           { label: 'From Scratch', value: 'scratch' },
                           { label: 'Refactor', value: 'refactor' },

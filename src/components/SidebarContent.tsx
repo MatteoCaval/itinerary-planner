@@ -1,11 +1,14 @@
 import React from 'react';
-import { Stack, Box, Paper, Group, Button, TextInput, ActionIcon, Slider, Tooltip, ScrollArea, Text } from '@mantine/core';
+import { Stack, Box, Paper, Group, Button, TextInput, ActionIcon, Slider, Tooltip, ScrollArea, Text, Modal } from '@mantine/core';
 import { List as ListIcon, Calendar as CalendarIcon, Wallet, Search, Trash2, FileText, Download, Upload, History, Sparkles, Cloud } from 'lucide-react';
 import { DateRangePicker } from './DateRangePicker';
 import { DaySidebar } from './DaySidebar';
 import { CalendarView } from './CalendarView';
 import { TripDashboard } from './TripDashboard';
 import { Location, Day, Route, DaySection } from '../types';
+import { PlaceSearchResult } from '../utils/geocoding';
+
+type EditingRoute = { fromId: string; toId: string } | null;
 
 interface SidebarContentProps {
   startDate: string;
@@ -19,32 +22,32 @@ interface SidebarContentProps {
   setSearchQuery: (val: string) => void;
   isSearching: boolean;
   handleSearch: (e: React.FormEvent) => void;
-  suggestions: any[];
+  suggestions: PlaceSearchResult[];
   handleAddLocationWrapped: (lat: number, lng: number, name?: string) => Promise<void>;
   zoomLevel: number;
   setZoomLevel: (val: number) => void;
-  activeParent: any;
+  activeParent: Location | null;
   setSelectedLocationId: (id: string | null) => void;
   days: Day[];
   activeDays: Day[];
   sidebarLocations: Location[];
   routes: Route[];
-  handleSubReorder: any;
-  handleSubRemove: any;
-  handleSubUpdate: any;
-  setEditingRoute: any;
-  handleSubAdd: any;
-  updateDay: any;
+  handleSubReorder: (activeId: string, overId: string | null, newDayId: string | null, newSlot: DaySection | null) => void;
+  handleSubRemove: (id: string) => void;
+  handleSubUpdate: (id: string, updates: Partial<Location>) => void;
+  setEditingRoute: React.Dispatch<React.SetStateAction<EditingRoute>>;
+  handleSubAdd: (dayId: string, slot?: DaySection) => void;
+  updateDay: (id: string, updates: Partial<Day>) => void;
   hoveredLocationId: string | null;
   setHoveredLocationId: (id: string | null) => void;
   selectedLocationId: string | null;
-  reorderLocations: any;
-  removeLocation: any;
-  updateLocation: any;
+  reorderLocations: (activeId: string, overId: string | null, newDayId: string | null, newSlot: DaySection | null) => void;
+  removeLocation: (id: string) => void;
+  updateLocation: (id: string, updates: Partial<Location>) => void;
   selectedDayId: string | null;
   setSelectedDayId: (id: string | null) => void;
-  isSlotBlocked: any;
-  handleNestLocation: any;
+  isSlotBlocked: (dayId: string, slot: DaySection) => boolean;
+  handleNestLocation: (activeId: string, parentId: string) => void;
   handleScrollToLocation: (id: string | null) => void;
   locations: Location[];
   clearAll: () => void;
@@ -75,6 +78,7 @@ export function SidebarContent({
 }: SidebarContentProps) {
   
   const [datePickerOpened, setDatePickerOpened] = React.useState(false);
+  const [confirmClearOpened, setConfirmClearOpened] = React.useState(false);
 
   const formatDateRange = () => {
     if (!startDate || !endDate) return 'Select Trip Dates';
@@ -176,9 +180,9 @@ export function SidebarContent({
           </form>
           {suggestions.length > 0 && (
             <Paper withBorder shadow="md" style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 1000, maxHeight: 250, overflowY: 'auto' }}>
-              {suggestions.map((s, i) => (
+              {suggestions.map((s) => (
                 <Box
-                  key={i}
+                  key={s.place_id}
                   p="xs"
                   style={{ cursor: 'pointer', borderBottom: '1px solid var(--mantine-color-gray-2)' }}
                   className="hover-bg-light"
@@ -260,9 +264,7 @@ export function SidebarContent({
       <Box p="md" style={{ borderTop: '1px solid var(--mantine-color-gray-3)' }}>
         <Group justify="space-between" mb="xs">
           <Text size="xs" fw={700} tt="uppercase" c="dimmed">{locations.length} Stops</Text>
-          <Button variant="subtle" color="red" size="xs" leftSection={<Trash2 size={14} />} onClick={() => {
-            if (confirm('Are you sure you want to clear all data?')) clearAll();
-          }}>
+          <Button variant="subtle" color="red" size="xs" leftSection={<Trash2 size={14} />} onClick={() => setConfirmClearOpened(true)}>
             Clear
           </Button>
         </Group>
@@ -286,6 +288,21 @@ export function SidebarContent({
           </Tooltip>
         </Group>
       </Box>
+
+      <Modal opened={confirmClearOpened} onClose={() => setConfirmClearOpened(false)} title="Clear itinerary?" centered size="sm">
+        <Stack gap="md">
+          <Text size="sm">This will remove all current itinerary data from the planner.</Text>
+          <Group justify="flex-end">
+            <Button variant="default" onClick={() => setConfirmClearOpened(false)}>Cancel</Button>
+            <Button color="red" onClick={() => {
+              clearAll();
+              setConfirmClearOpened(false);
+            }}>
+              Clear all
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
     </Stack>
   );
 }

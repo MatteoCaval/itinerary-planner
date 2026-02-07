@@ -2,7 +2,7 @@ import { useEffect, useMemo, useCallback, useRef, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap, useMapEvents, Tooltip, ZoomControl } from 'react-leaflet';
 import { Location, Route, TRANSPORT_COLORS, TRANSPORT_LABELS, Day, DaySection, LocationCategory, CATEGORY_COLORS, TransportType } from '../types';
 import L from 'leaflet';
-import { Map as SightseeingIcon, Utensils, Bed, Train, Globe, ChevronRight } from 'lucide-react';
+import { Map as SightseeingIcon, Utensils, Bed, Train, Globe, ChevronRight, LucideIcon } from 'lucide-react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { fetchRouteGeometry, LatLngTuple } from '../utils/routing';
 
@@ -10,7 +10,7 @@ import { fetchRouteGeometry, LatLngTuple } from '../utils/routing';
 import icon from 'leaflet/dist/images/marker-icon.png';
 import iconShadow from 'leaflet/dist/images/marker-shadow.png';
 
-let DefaultIcon = L.icon({
+const DefaultIcon = L.icon({
   iconUrl: icon,
   shadowUrl: iconShadow,
   iconSize: [25, 41],
@@ -73,7 +73,7 @@ function MapReady({ onReady }: { onReady: (map: L.Map) => void }) {
   return null;
 }
 
-const CATEGORY_ICONS: Record<LocationCategory, any> = {
+const CATEGORY_ICONS: Record<LocationCategory, LucideIcon> = {
   sightseeing: SightseeingIcon, dining: Utensils, hotel: Bed, transit: Train, other: Globe
 };
 
@@ -165,8 +165,8 @@ const getAngleAt = (positions: LatLngTuple[], t: number) => {
 };
 
 interface RouteSegmentProps {
-  from: Location;
-  to: Location;
+  from: PathPoint;
+  to: PathPoint;
   route?: Route;
   path?: LatLngTuple[] | null;
   onEditRoute: () => void;
@@ -351,10 +351,19 @@ export default function MapDisplay({ days, locations, routes, onEditRoute, hover
   }, [allLocations, days, activeParent]);
 
   const pathPoints = useMemo(() => {
-    const points: any[] = [];
+    const points: PathPoint[] = [];
     sortedLocations.forEach(loc => {
       const gIdx = getAbsDayIdx(loc);
-      if (gIdx !== -1) points.push({ ...loc, isAccommodation: false, sortValue: gIdx * 100 + getSectionIndex(loc.startSlot) * 30 + (loc.order * 0.001) });
+      if (gIdx !== -1) {
+        points.push({
+          id: loc.id,
+          name: loc.name,
+          lat: loc.lat,
+          lng: loc.lng,
+          isAccommodation: false,
+          sortValue: gIdx * 100 + getSectionIndex(loc.startSlot) * 30 + (loc.order * 0.001),
+        });
+      }
 
     });
 
@@ -370,36 +379,34 @@ export default function MapDisplay({ days, locations, routes, onEditRoute, hover
         if (gIdx === focusedGIdx) { // Return to today's hotel
           if (hasActivityOnDay(gIdx) && !isEveningOccupied(gIdx)) show = true;
         }
-        if (show) points.push({ id: `path-acc-${gIdx === focusedGIdx ? 'end' : 'start'}-${day.id}`, name: day.accommodation.name, lat: day.accommodation.lat, lng: day.accommodation.lng, isAccommodation: true, sortValue: gIdx * 100 + 99 });
+        if (show && day.accommodation.lat !== undefined && day.accommodation.lng !== undefined) {
+          points.push({
+            id: `path-acc-${gIdx === focusedGIdx ? 'end' : 'start'}-${day.id}`,
+            name: day.accommodation.name,
+            lat: day.accommodation.lat,
+            lng: day.accommodation.lng,
+            isAccommodation: true,
+            sortValue: gIdx * 100 + 99,
+          });
+        }
       });
     }
     return points.sort((a, b) => a.sortValue - b.sortValue);
   }, [sortedLocations, days, selectedDayId, getAbsDayIdx, hasActivityOnDay, isEveningOccupied, activeParent]);
 
-  useEffect(() => {
-    if (selectedDayId && pathPoints.length > 0) {
-      const idx = days.findIndex(d => d.id === selectedDayId);
-      console.log(`%c--- Day ${idx + 1} Path ---`, 'font-weight: bold; background: #0d6efd; color: white; padding: 2px 5px;');
-      pathPoints.forEach((p, i) => {
-        if (i > 0) console.log('      ↓      ');
-        console.log(`${i + 1}. [Day ${Math.floor(p.sortValue / 100) + 1}] ${p.isAccommodation ? '🏨' : '📍'} ${p.name} (${p.sortValue.toFixed(1)})`);
-      });
-    }
-  }, [pathPoints, selectedDayId, days]);
-
   const routeSegments = useMemo(() => {
     if (pathPoints.length < 2) return [];
     const segments: {
       key: string;
-      from: Location;
-      to: Location;
+      from: PathPoint;
+      to: PathPoint;
       route?: Route;
       transportType: TransportType;
     }[] = [];
 
     for (let i = 0; i < pathPoints.length - 1; i++) {
-      const from = pathPoints[i] as Location;
-      const to = pathPoints[i + 1] as Location;
+      const from = pathPoints[i];
+      const to = pathPoints[i + 1];
       if (from.lat === to.lat && from.lng === to.lng) continue;
       const route = routes.find(r => (r.fromLocationId === from.id && r.toLocationId === to.id) || (r.fromLocationId === to.id && r.toLocationId === from.id));
       const transportType = (route?.transportType || 'other') as TransportType;
@@ -549,4 +556,12 @@ export default function MapDisplay({ days, locations, routes, onEditRoute, hover
       )}
     </div>
   );
+}
+interface PathPoint {
+  id: string;
+  name: string;
+  lat: number;
+  lng: number;
+  isAccommodation: boolean;
+  sortValue: number;
 }

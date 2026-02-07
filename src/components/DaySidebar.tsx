@@ -20,7 +20,7 @@ import {
 } from '@dnd-kit/sortable';
 import { Day, Location, Route, DaySection, TRANSPORT_COLORS, TRANSPORT_LABELS } from '../types';
 import { SortableItem } from './SortableItem';
-import { searchPlace } from '../utils/geocoding';
+import { PlaceSearchResult, searchPlace } from '../utils/geocoding';
 
 interface DaySidebarProps {
     days: Day[];
@@ -176,7 +176,7 @@ function DayLabel({ day, startRow, dayNum, isEvenDay, onAdd, onUpdateDay, existi
     const [tempLng, setTempLng] = useState(day.accommodation?.lng);
     
     // Search state
-    const [suggestions, setSuggestions] = useState<any[]>([]);
+    const [suggestions, setSuggestions] = useState<PlaceSearchResult[]>([]);
 
     // Reset local state when day prop changes (e.g. if loaded from cloud)
     useEffect(() => {
@@ -200,7 +200,7 @@ function DayLabel({ day, startRow, dayNum, isEvenDay, onAdd, onUpdateDay, existi
         return () => clearTimeout(timer);
     }, [tempName, opened, tempLat]);
 
-    const selectSuggestion = (s: any) => {
+    const selectSuggestion = (s: PlaceSearchResult) => {
         setTempName(s.display_name.split(',')[0]);
         setTempLat(parseFloat(s.lat));
         setTempLng(parseFloat(s.lon));
@@ -308,9 +308,9 @@ function DayLabel({ day, startRow, dayNum, isEvenDay, onAdd, onUpdateDay, existi
                                             overflowY: 'auto' 
                                         }}
                                     >
-                                        {suggestions.map((s, i) => (
+                                        {suggestions.map((s) => (
                                             <Box
-                                                key={i}
+                                                key={s.place_id}
                                                 p="xs"
                                                 style={{ cursor: 'pointer', borderBottom: '1px solid var(--mantine-color-gray-2)' }}
                                                 className="hover-bg-light"
@@ -429,7 +429,7 @@ function RouteConnector({ route, distance, row, col, onEdit }: { route: Route | 
                     <Group gap="xs">
                         {route ? (
                             <>
-                                <Text size="xs" fw={700} c={transportColor as any}>{transportLabel}</Text>
+                                <Text size="xs" fw={700} c={transportColor}>{transportLabel}</Text>
                                 <Box style={{ width: 1, height: 12, backgroundColor: 'var(--mantine-color-gray-3)' }} />
                                 <Text size="xs" c="dimmed" fw={500}>{route.duration || `${distance}km`}</Text>
                             </>

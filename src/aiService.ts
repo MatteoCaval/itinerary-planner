@@ -1,4 +1,14 @@
 import { AISettings, Location, Route, Day } from './types';
+import { fetchJson } from './services/httpClient';
+import { trackError } from './services/telemetry';
+
+interface GeminiResponse {
+  candidates?: {
+    content?: {
+      parts?: { text?: string }[];
+    };
+  }[];
+}
 
 export const generateAIItinerary = async (
   prompt: string,
@@ -126,28 +136,33 @@ export const generateAIItinerary = async (
 
     Return ONLY the valid JSON object. No markdown, no pre-amble.
   `;
-  // Standard Gemini v1beta endpoint
-  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${settings.model || 'gemini-3-flash-preview'}:generateContent?key=${settings.apiKey}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents: [{
-        parts: [{ text: `${systemPrompt}\n\nMode: ${mode}\nUser Request: ${prompt}` }]
-      }]
-    })
-  });
-
-  if (!response.ok) {
-      const err = await response.json();
-      throw new Error(err.error?.message || 'Gemini API Error');
+  let data: GeminiResponse;
+  try {
+    data = await fetchJson<GeminiResponse>(
+      `https://generativelanguage.googleapis.com/v1beta/models/${settings.model || 'gemini-3-flash-preview'}:generateContent?key=${settings.apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{ text: `${systemPrompt}\n\nMode: ${mode}\nUser Request: ${prompt}` }]
+          }]
+        }),
+        retries: 1,
+        retryDelayMs: 500,
+        timeoutMs: 30000,
+      }
+    );
+  } catch (error) {
+    trackError('ai_generate_failed', error, { mode, promptLength: prompt.length });
+    throw new Error('Gemini API Error');
   }
 
-  const data = await response.json();
   if (!data.candidates || data.candidates.length === 0) {
       throw new Error('AI returned no results.');
   }
 
-  let content = data.candidates[0].content.parts[0].text;
+  let content = data.candidates[0].content?.parts?.[0]?.text || '';
   content = content.replace(/```json/g, '').replace(/```/g, '').trim();
   
       try {
@@ -158,7 +173,8 @@ export const generateAIItinerary = async (
               routes: parsed.routes || [],
               days: parsed.days || []
           };
-      } catch (e) {      console.error("AI Response was:", content);
+      } catch (error) {
+      trackError('ai_invalid_json', error, { responsePreview: content.slice(0, 300) });
       throw new Error("AI returned invalid JSON format.");
   }
 };

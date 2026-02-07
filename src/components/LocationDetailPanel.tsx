@@ -4,7 +4,7 @@ import { X, Plus, Trash2, ExternalLink, CheckSquare, Link as LinkIcon, Map as Ma
 import { Location, Day, Route, DaySection, TRANSPORT_LABELS, TRANSPORT_COLORS, CATEGORY_COLORS } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 import { searchPhoto } from '../unsplash';
-import { searchPlace } from '../utils/geocoding';
+import { PlaceSearchResult, searchPlace } from '../utils/geocoding';
 
 interface LocationDetailPanelProps {
   location: Location | null;
@@ -33,7 +33,7 @@ export function LocationDetailPanel({
   
   // Sub-location search state
   const [subSearchQuery, setSubSearchQuery] = useState('');
-  const [subSuggestions, setSubSuggestions] = useState<any[]>([]);
+  const [subSuggestions, setSubSuggestions] = useState<PlaceSearchResult[]>([]);
 
   // 1. Unified Chronological Sort for Sub-locations
   const sortedSubLocations = useMemo(() => {
@@ -102,7 +102,7 @@ export function LocationDetailPanel({
   const schedule = getScheduleRecap();
 
   // Find Accommodations for this specific location (only if staying overnight)
-  const scheduledAccommodations = useMemo(() => {
+  const scheduledAccommodations = (() => {
     if (!startDay || typeof schedule === 'string') return [];
     
     const startSlotIdx = SECTION_ORDER.indexOf(location.startSlot || 'morning');
@@ -120,7 +120,7 @@ export function LocationDetailPanel({
       }
     }
     return Array.from(accoms);
-  }, [location, days, schedule, startDay, startDayIdx]);
+  })();
 
   // Find Chronological Neighbors for Travel Info
   const sortedLocs = [...allLocations]
@@ -149,7 +149,7 @@ export function LocationDetailPanel({
     (r.fromLocationId === nextLoc.id && r.toLocationId === location.id)
   ) : null;
 
-  const handleAddSubLocation = (place: any) => {
+  const handleAddSubLocation = (place: PlaceSearchResult) => {
     const newSub: Location = {
       id: uuidv4(),
       name: place.display_name.split(',')[0],
@@ -236,7 +236,7 @@ export function LocationDetailPanel({
   };
 
   // Group accommodations for this specific destination's duration
-  const accommodationGroups = useMemo(() => {
+  const accommodationGroups = (() => {
     const groups: { name: string; nights: number; startDay: number; endDay: number }[] = [];
     if (!startDay || typeof schedule === 'string') return groups;
 
@@ -274,7 +274,7 @@ export function LocationDetailPanel({
 
     if (currentGroup) groups.push(currentGroup);
     return groups;
-  }, [days, location, startDay, startDayIdx, schedule]);
+  })();
 
   return (
     <Stack h="100%" gap={0}>
@@ -397,9 +397,9 @@ export function LocationDetailPanel({
                 />
                 {subSuggestions.length > 0 && (
                   <Paper withBorder shadow="md" style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 1000, maxHeight: 200, overflowY: 'auto' }}>
-                    {subSuggestions.map((s, i) => (
+                    {subSuggestions.map((s) => (
                       <Box
-                        key={i}
+                        key={s.place_id}
                         p="xs"
                         style={{ cursor: 'pointer', borderBottom: '1px solid var(--mantine-color-gray-2)' }}
                         className="hover-bg-light"

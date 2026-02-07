@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { Paper, Group, Stack, Text, RingProgress, Box, SimpleGrid, Badge, Divider, Tooltip } from '@mantine/core';
-import { Wallet, Hotel, Utensils, Footprints, MapPin, PieChart } from 'lucide-react';
+import { Wallet, Hotel, Utensils, Footprints, MapPin, PieChart, LucideIcon } from 'lucide-react';
 import { Day, Location, Route } from '../types';
 
 interface TripDashboardProps {
@@ -79,7 +79,7 @@ export function TripDashboard({ days, locations, routes }: TripDashboardProps) {
     other: 'gray',
   };
 
-  const CATEGORY_ICONS: Record<string, any> = {
+  const CATEGORY_ICONS: Record<string, LucideIcon> = {
     sightseeing: MapPin,
     dining: Utensils,
     hotel: Hotel,

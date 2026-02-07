@@ -6,8 +6,8 @@ import { saveItinerary, loadItinerary } from '../firebase';
 interface CloudSyncModalProps {
   show: boolean;
   onClose: () => void;
-  getData: () => any;
-  onLoadData: (data: any) => void;
+  getData: () => unknown;
+  onLoadData: (data: unknown) => { success: boolean; error?: string };
 }
 
 export function CloudSyncModal({ show, onClose, getData, onLoadData }: CloudSyncModalProps) {
@@ -76,11 +76,15 @@ export function CloudSyncModal({ show, onClose, getData, onLoadData }: CloudSync
     setIsLoading(false);
     if (result.success && result.data) {
       localStorage.setItem('last-trip-passcode', passcode.trim());
-      onLoadData(result.data);
-      setStatus({ type: 'success', message: 'Itinerary loaded successfully!' });
-      setTimeout(onClose, 1500);
+      const loadResult = onLoadData(result.data);
+      if (loadResult.success) {
+        setStatus({ type: 'success', message: 'Itinerary loaded successfully!' });
+        setTimeout(onClose, 1500);
+      } else {
+        setStatus({ type: 'error', message: loadResult.error || 'The loaded itinerary has invalid format.' });
+      }
     } else {
-      setStatus({ type: 'error', message: result.error as string || 'Failed to load.' });
+      setStatus({ type: 'error', message: result.error || 'Failed to load.' });
     }
   };
 

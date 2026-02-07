@@ -41,6 +41,15 @@ export interface Itinerary {
   days: Day[];
 }
 
+export interface ItineraryData {
+  startDate: string;
+  endDate: string;
+  days: Day[];
+  locations: Location[];
+  routes: Route[];
+  version: string;
+}
+
 export interface Location {
   id: string;
   name: string;

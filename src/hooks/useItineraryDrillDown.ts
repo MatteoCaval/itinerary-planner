@@ -44,7 +44,7 @@ export function useItineraryDrillDown({ locations, days, selectedLocationId, sel
 
   // 3. Filter locations for the MAP
   const mapLocations = useMemo(() => {
-    let base = activeParent?.subLocations || (isSubItinerary ? [] : locations);
+    const base = activeParent?.subLocations || (isSubItinerary ? [] : locations);
 
     if (selectedDayId) {
       if (!activeParent) {

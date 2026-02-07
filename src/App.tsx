@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { AppShell, Burger, Group, Button, ActionIcon, Tooltip, Text, Box, Paper, Menu } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
+import { notifications } from '@mantine/notifications';
 import { v4 as uuidv4 } from 'uuid';
 import { Map as MapIcon, Download, Upload, Cloud, FileText, MoreHorizontal, History, Undo, Redo, Sparkles, ChevronLeft } from 'lucide-react';
 import MapDisplay from './components/MapDisplay';
@@ -12,11 +13,15 @@ import { HistoryModal } from './components/HistoryModal';
 import { AIPlannerModal } from './components/AIPlannerModal';
 import { SidebarContent } from './components/SidebarContent';
 import { MobileBottomSheet } from './components/MobileBottomSheet';
-import { generateMarkdown, downloadMarkdown } from './markdownExporter';
 import { Location, DaySection } from './types';
 import { ItineraryProvider, useItinerary } from './context/ItineraryContext';
 import { searchPlace, reverseGeocode } from './utils/geocoding';
 import { useItineraryDrillDown } from './hooks/useItineraryDrillDown';
+import { useSidebarResize } from './hooks/useSidebarResize';
+import { usePlaceSearch } from './hooks/usePlaceSearch';
+import { useImportExport } from './hooks/useImportExport';
+import { AppErrorBoundary } from './components/AppErrorBoundary';
+import { trackError, trackEvent } from './services/telemetry';
 
 function AppContent() {
   const {
@@ -38,52 +43,14 @@ function AppContent() {
   const [selectedDayId, setSelectedDayId] = useState<string | null>(null);
   const [panelCollapsed, setPanelCollapsed] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [suggestions, setSuggestions] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
-  
-  const [sidebarWidth, setSidebarWidth] = useState(500);
-  const startResizing = React.useCallback((mouseDownEvent: React.MouseEvent) => {
-    mouseDownEvent.preventDefault();
-    const startX = mouseDownEvent.clientX;
-    const startWidth = sidebarWidth;
-
-    const doDrag = (mouseMoveEvent: MouseEvent) => {
-      const newWidth = startWidth + mouseMoveEvent.clientX - startX;
-      if (newWidth > 300 && newWidth < window.innerWidth - 100) {
-        setSidebarWidth(newWidth);
-      }
-    };
-
-    const stopDrag = () => {
-      document.removeEventListener('mousemove', doDrag);
-      document.removeEventListener('mouseup', stopDrag);
-      document.body.style.cursor = '';
-      document.body.style.userSelect = '';
-    };
-
-    document.addEventListener('mousemove', doDrag);
-    document.addEventListener('mouseup', stopDrag);
-    document.body.style.cursor = 'col-resize';
-    document.body.style.userSelect = 'none';
-  }, [sidebarWidth]);
+  const { sidebarWidth, startResizing } = useSidebarResize({ initialWidth: 500 });
+  const { suggestions, setSuggestions } = usePlaceSearch({ query: searchQuery, minLength: 3, debounceMs: 500 });
 
   // Clear selected day when location selection changes
   useEffect(() => {
     setSelectedDayId(null);
   }, [selectedLocationId]);
-
-  // Debounced search for suggestions
-  useEffect(() => {
-    const timer = setTimeout(async () => {
-      if (searchQuery.trim().length > 2) {
-        const results = await searchPlace(searchQuery);
-        setSuggestions(results || []);
-      } else {
-        setSuggestions([]);
-      }
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [searchQuery]);
 
   const [editingRoute, setEditingRoute] = useState<{ fromId: string; toId: string } | null>(null);
   const [editingDayAssignment, setEditingDayAssignment] = useState<Location | null>(null);
@@ -96,7 +63,7 @@ function AppContent() {
   const handleAddLocation = async (lat: number, lng: number, name?: string, targetDayId?: string, targetSlot?: DaySection) => {
     const resolvedName = name || await reverseGeocode(lat, lng);
     let assignedDayId = targetDayId || pendingAddToDay?.dayId || (days.length > 0 ? days[0].id : undefined);
-    let assignedSlot = targetSlot || pendingAddToDay?.slot || 'morning';
+    const assignedSlot = targetSlot || pendingAddToDay?.slot || 'morning';
 
     // Handle explicit 'unassigned' target
     if (assignedDayId === 'unassigned') {
@@ -125,12 +92,19 @@ function AppContent() {
     e.preventDefault();
     if (!searchQuery.trim()) return;
     setIsSearching(true);
-    const results = await searchPlace(searchQuery);
-    setIsSearching(false);
-    if (results?.length > 0) {
-      await handleAddLocationWrapped(parseFloat(results[0].lat), parseFloat(results[0].lon), results[0].display_name);
-      setSearchQuery('');
-      setSuggestions([]);
+    try {
+      const results = await searchPlace(searchQuery);
+      if (results.length > 0) {
+        await handleAddLocationWrapped(parseFloat(results[0].lat), parseFloat(results[0].lon), results[0].display_name);
+        setSearchQuery('');
+        setSuggestions([]);
+        trackEvent('location_search_add', { queryLength: searchQuery.length });
+      }
+    } catch (error) {
+      trackError('location_search_submit_failed', error, { queryLength: searchQuery.length });
+      notifications.show({ color: 'red', title: 'Search failed', message: 'Could not complete place search.' });
+    } finally {
+      setIsSearching(false);
     }
   };
 
@@ -145,42 +119,17 @@ function AppContent() {
     }
   };
 
-  const handleExport = () => {
-    const data = getExportData();
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `itinerary-${new Date().toISOString().split('T')[0]}.json`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  };
-
-  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      try {
-        const data = JSON.parse(event.target?.result as string);
-        loadFromData(data);
-        alert('Itinerary imported successfully!');
-      } catch (err) {
-        alert('Error importing file. Please ensure it is a valid JSON itinerary.');
-      }
-    };
-    reader.readAsText(file);
-    e.target.value = '';
-  };
-
-  const handleExportMarkdown = () => {
-    const dateStr = new Date().toISOString().split('T')[0];
-    const md = generateMarkdown(days, locations, routes, startDate, endDate);
-    downloadMarkdown(md, `travel-itinerary-${dateStr}.md`);
-  };
+  const { handleExport, handleImport, handleExportMarkdown } = useImportExport({
+    days,
+    locations,
+    routes,
+    startDate,
+    endDate,
+    getExportData,
+    loadFromData,
+    notifySuccess: message => notifications.show({ color: 'green', title: 'Success', message }),
+    notifyError: message => notifications.show({ color: 'red', title: 'Import Error', message }),
+  });
 
   const selectedLocation = useMemo(() => {
     const top = locations.find(l => l.id === selectedLocationId);
@@ -208,7 +157,7 @@ function AppContent() {
   const handleSubReorder = (activeId: string, overId: string | null, newDayId: string | null, newSlot: DaySection | null) => {
     if (!activeParent) return;
 
-    let newSubLocations = [...(activeParent.subLocations || [])];
+    const newSubLocations = [...(activeParent.subLocations || [])];
     const activeIdx = newSubLocations.findIndex(s => s.id === activeId);
     if (activeIdx === -1) return;
 
@@ -300,7 +249,10 @@ function AppContent() {
       // or just call both.
       
       // Actually, context has setLocations!
-      loadFromData({ ...getExportData(), locations: updatedLocations });
+      const result = loadFromData({ ...getExportData(), locations: updatedLocations });
+      if (!result.success) {
+        notifications.show({ color: 'red', title: 'Update failed', message: result.error || 'Unable to nest location.' });
+      }
       
       // If we were selecting the nested item, select the parent now
       if (selectedLocationId === activeId) {
@@ -462,21 +414,23 @@ function AppContent() {
       </AppShell.Navbar>
 
       <AppShell.Main h="100vh" style={{ position: 'relative', overflow: 'hidden' }}>
-        <MapDisplay
-          days={days} locations={mapLocations} routes={routes}
-          onEditRoute={(from, to) => setEditingRoute({ fromId: from, toId: to })}
-          hoveredLocationId={hoveredLocationId} 
-          selectedLocationId={selectedLocationId}
-          selectedDayId={selectedDayId}
-          onSelectDay={setSelectedDayId}
-          onHoverLocation={setHoveredLocationId} 
-          onSelectLocation={handleScrollToLocation}
-          hideControls={opened}
-          isSubItinerary={isSubItinerary}
-          isPanelCollapsed={panelCollapsed}
-          allLocations={locations}
-          activeParent={activeParent}
-        />
+        <AppErrorBoundary title="Map rendering error" message="The map view crashed. You can retry or reload the app.">
+          <MapDisplay
+            days={days} locations={mapLocations} routes={routes}
+            onEditRoute={(from, to) => setEditingRoute({ fromId: from, toId: to })}
+            hoveredLocationId={hoveredLocationId}
+            selectedLocationId={selectedLocationId}
+            selectedDayId={selectedDayId}
+            onSelectDay={setSelectedDayId}
+            onHoverLocation={setHoveredLocationId}
+            onSelectLocation={handleScrollToLocation}
+            hideControls={opened}
+            isSubItinerary={isSubItinerary}
+            isPanelCollapsed={panelCollapsed}
+            allLocations={locations}
+            activeParent={activeParent}
+          />
+        </AppErrorBoundary>
 
         <MobileBottomSheet opened={opened}>
           <SidebarContent
@@ -571,21 +525,23 @@ function AppContent() {
         onNavigate={navigateHistory} 
       />
 
-      <AIPlannerModal
-        show={showAIModal}
-        onClose={() => setShowAIModal(false)}
-        days={days}
-        currentLocations={locations}
-        currentRoutes={routes}
-        settings={aiSettings}
-        onSettingsChange={setAiSettings}
-        onApplyItinerary={(locs, rts, updatedDays) => {
-             // We need to handle this manually since context doesn't have a 'setAll' that takes both.
-             // Or better, add a setItinerary to context.
-             // For now:
-             loadFromData({ days: updatedDays || days, locations: locs, routes: rts, startDate, endDate });
-        }}
-      />
+      <AppErrorBoundary title="AI planner error" message="The AI planner crashed. You can retry or reload the app.">
+        <AIPlannerModal
+          show={showAIModal}
+          onClose={() => setShowAIModal(false)}
+          days={days}
+          currentLocations={locations}
+          currentRoutes={routes}
+          settings={aiSettings}
+          onSettingsChange={setAiSettings}
+          onApplyItinerary={(locs, rts, updatedDays) => {
+               const result = loadFromData({ days: updatedDays || days, locations: locs, routes: rts, startDate, endDate });
+               if (!result.success) {
+                 notifications.show({ color: 'red', title: 'AI apply failed', message: result.error || 'Generated itinerary was invalid.' });
+               }
+          }}
+        />
+      </AppErrorBoundary>
 
       <RouteEditor
         show={!!editingRoute} route={routes.find(r => (r.fromLocationId === editingRoute?.fromId && r.toLocationId === editingRoute?.toId) || (r.fromLocationId === editingRoute?.toId && r.toLocationId === editingRoute?.fromId)) || (editingRoute ? { id: uuidv4(), fromLocationId: editingRoute.fromId, toLocationId: editingRoute.toId, transportType: 'car' } : null)}

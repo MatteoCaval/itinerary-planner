@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Box, Paper, ActionIcon, Group, Text } from '@mantine/core';
+import { Box, Paper, ActionIcon, Group, Text, Stack } from '@mantine/core';
 import { ChevronUp, ChevronDown } from 'lucide-react';
 
 interface MobileBottomSheetProps {
@@ -119,6 +119,3 @@ export function MobileBottomSheet({ children, opened }: MobileBottomSheetProps) 
     </Box>
   );
 }
-
-// Re-importing Stack to avoid error
-import { Stack } from '@mantine/core';

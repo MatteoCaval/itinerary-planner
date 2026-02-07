@@ -1,6 +1,8 @@
 import { createContext, useContext, useState, useEffect, useMemo, ReactNode } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import { Day, Location, Route, AISettings, DaySection } from '../types';
+import { Day, Location, Route, AISettings, DaySection, ItineraryData } from '../types';
+import { itineraryImportSchema, ItineraryImportData, LocationImportData, RouteImportData } from '../utils/itinerarySchema';
+import { trackError } from '../services/telemetry';
 
 // Storage Keys
 const STORAGE_KEY_LOCATIONS = 'itinerary-locations';
@@ -9,13 +11,49 @@ const STORAGE_KEY_DATES = 'itinerary-dates';
 const STORAGE_KEY_DAYS = 'itinerary-days';
 const STORAGE_KEY_AI = 'itinerary-ai-settings';
 
+type HistorySnapshot = {
+  startDate: string;
+  endDate: string;
+  days: Day[];
+  locations: Location[];
+  routes: Route[];
+  timestamp: number;
+  label: string;
+};
+
+export interface LoadDataResult {
+  success: boolean;
+  error?: string;
+}
+
+const parseNumeric = (value: number | string | undefined, defaultValue: number | undefined = 0): number | undefined => {
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (typeof value === 'string') {
+    const parsed = Number.parseFloat(value.replace(/[^0-9.-]/g, ''));
+    return Number.isFinite(parsed) ? parsed : defaultValue;
+  }
+  return defaultValue;
+};
+
+const readStorage = <T,>(key: string, fallback: T): T => {
+  const saved = localStorage.getItem(key);
+  if (!saved) return fallback;
+
+  try {
+    return JSON.parse(saved) as T;
+  } catch (error) {
+    trackError('storage_parse_failed', error, { key });
+    return fallback;
+  }
+};
+
 // Helper Functions (moved from App.tsx)
 const generateDays = (startDate: string, endDate: string): Day[] => {
   if (!startDate || !endDate) return [];
   const days: Day[] = [];
   const start = new Date(startDate);
   const end = new Date(endDate);
-  let current = new Date(start);
+  const current = new Date(start);
   while (current <= end) {
     days.push({
       id: uuidv4(),
@@ -26,35 +64,41 @@ const generateDays = (startDate: string, endDate: string): Day[] => {
   return days;
 };
 
-const migrateLocations = (oldLocations: any[]): Location[] => {
-  return oldLocations.map((loc, index) => ({
-    id: loc.id,
-    name: loc.name,
-    lat: loc.lat,
-    lng: loc.lng,
-    notes: loc.notes,
-    imageUrl: loc.imageUrl,
-    dayIds: loc.dayIds || [],
-    startDayId: loc.startDayId || (loc.dayIds?.length > 0 ? loc.dayIds[0] : undefined),
-    startSlot: loc.startSlot || 'morning',
-    duration: loc.duration || 1,
-    order: loc.order ?? index,
-    category: loc.category || 'sightseeing',
-    checklist: loc.checklist || [],
-    links: loc.links || [],
-    cost: typeof loc.cost === 'string' ? parseFloat(loc.cost) : (loc.cost || 0),
-    targetTime: loc.targetTime || '',
-    dayOffset: loc.dayOffset,
-    subLocations: loc.subLocations ? migrateLocations(loc.subLocations) : []
-  }));
+const migrateLocations = (oldLocations: LocationImportData[]): Location[] => {
+  return oldLocations.map((loc, index) => {
+    const dayIds = loc.dayIds || [];
+
+    return {
+      id: loc.id,
+      name: loc.name,
+      lat: loc.lat,
+      lng: loc.lng,
+      notes: loc.notes,
+      imageUrl: loc.imageUrl,
+      dayIds,
+      startDayId: loc.startDayId || (dayIds.length > 0 ? dayIds[0] : undefined),
+      startSlot: loc.startSlot || 'morning',
+      duration: loc.duration || 1,
+      order: loc.order ?? index,
+      category: loc.category || 'sightseeing',
+      checklist: loc.checklist || [],
+      links: loc.links || [],
+      cost: parseNumeric(loc.cost),
+      targetTime: loc.targetTime || '',
+      dayOffset: loc.dayOffset,
+      subLocations: loc.subLocations ? migrateLocations(loc.subLocations) : []
+    };
+  });
 };
 
-const migrateDays = (oldDays: any[]): Day[] => {
+type ImportedDay = NonNullable<ItineraryImportData['days']>[number];
+
+const migrateDays = (oldDays: ImportedDay[]): Day[] => {
   return oldDays.map(day => ({
     ...day,
     accommodation: day.accommodation ? {
       ...day.accommodation,
-      cost: typeof day.accommodation.cost === 'string' ? parseFloat(day.accommodation.cost) : day.accommodation.cost
+      cost: parseNumeric(day.accommodation.cost, undefined)
     } : undefined
   }));
 };
@@ -76,15 +120,7 @@ interface ItineraryContextType {
   // History State
   historyIndex: number;
   historyLength: number;
-  history: {
-    startDate: string;
-    endDate: string;
-    days: Day[];
-    locations: Location[];
-    routes: Route[];
-    timestamp: number;
-    label: string;
-  }[];
+  history: HistorySnapshot[];
   
   // Actions
   setStartDate: (date: string) => void;
@@ -112,8 +148,8 @@ interface ItineraryContextType {
   navigateHistory: (index: number) => void;
   
   // Import/Export
-  getExportData: () => any;
-  loadFromData: (data: any) => void;
+  getExportData: () => ItineraryData;
+  loadFromData: (data: unknown) => LoadDataResult;
   clearAll: () => void;
 }
 
@@ -122,28 +158,27 @@ const ItineraryContext = createContext<ItineraryContextType | undefined>(undefin
 export function ItineraryProvider({ children }: { children: ReactNode }) {
   // --- Core State ---
   const [startDate, setStartDate] = useState<string>(() => {
-    const saved = localStorage.getItem(STORAGE_KEY_DATES);
-    return saved ? JSON.parse(saved).startDate : '';
+    const saved = readStorage<{ startDate?: string }>(STORAGE_KEY_DATES, {});
+    return saved.startDate || '';
   });
 
   const [endDate, setEndDate] = useState<string>(() => {
-    const saved = localStorage.getItem(STORAGE_KEY_DATES);
-    return saved ? JSON.parse(saved).endDate : '';
+    const saved = readStorage<{ endDate?: string }>(STORAGE_KEY_DATES, {});
+    return saved.endDate || '';
   });
 
   const [days, setDays] = useState<Day[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEY_DAYS);
-    return saved ? migrateDays(JSON.parse(saved)) : [];
+    const saved = readStorage<ImportedDay[]>(STORAGE_KEY_DAYS, []);
+    return migrateDays(saved);
   });
 
   const [locations, setLocations] = useState<Location[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEY_LOCATIONS);
-    return saved ? migrateLocations(JSON.parse(saved)) : [];
+    const saved = readStorage<LocationImportData[]>(STORAGE_KEY_LOCATIONS, []);
+    return migrateLocations(saved);
   });
 
   const [routes, setRoutes] = useState<Route[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEY_ROUTES);
-    return saved ? JSON.parse(saved) : [];
+    return readStorage<Route[]>(STORAGE_KEY_ROUTES, []);
   });
 
   const [aiSettings, setAiSettings] = useState<AISettings>(() => {
@@ -163,7 +198,7 @@ export function ItineraryProvider({ children }: { children: ReactNode }) {
         apiKey: parsed.apiKey || '',
         model: parsed.model || 'gemini-3-flash-preview'
       };
-    } catch (e) {
+    } catch {
       return { apiKey: '', model: 'gemini-3-flash-preview' };
     }
   });
@@ -173,15 +208,7 @@ export function ItineraryProvider({ children }: { children: ReactNode }) {
   const [hoveredLocationId, setHoveredLocationId] = useState<string | null>(null);
 
   // --- History State ---
-  const [history, setHistory] = useState<{
-    startDate: string;
-    endDate: string;
-    days: Day[];
-    locations: Location[];
-    routes: Route[];
-    timestamp: number;
-    label: string;
-  }[]>([]);
+  const [history, setHistory] = useState<HistorySnapshot[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [isNavigatingHistory, setIsNavigatingHistory] = useState(false);
 
@@ -203,7 +230,7 @@ export function ItineraryProvider({ children }: { children: ReactNode }) {
         setHistory([{ ...currentState, timestamp: Date.now(), label: 'Initial State' }]);
         setHistoryIndex(0);
     }
-  }, [days.length]); // Depend on days.length to catch initial load
+  }, [currentState, days.length, history.length]);
 
   // Push to history
   useEffect(() => {
@@ -283,21 +310,26 @@ export function ItineraryProvider({ children }: { children: ReactNode }) {
       return ids;
     };
 
-    const locationToRemove = locations.find(l => l.id === id);
-    const idsToRemove = locationToRemove ? getAllIds(locationToRemove) : [id];
-    const idSet = new Set(idsToRemove);
+    setLocations(prevLocations => {
+      const locationToRemove = prevLocations.find(l => l.id === id);
+      const idsToRemove = locationToRemove ? getAllIds(locationToRemove) : [id];
+      const idSet = new Set(idsToRemove);
 
-    setLocations(locations.filter(l => l.id !== id));
-    setRoutes(routes.filter(r => !idSet.has(r.fromLocationId) && !idSet.has(r.toLocationId)));
-    if (selectedLocationId === id) setSelectedLocationId(null);
+      setRoutes(prevRoutes => prevRoutes.filter(r => !idSet.has(r.fromLocationId) && !idSet.has(r.toLocationId)));
+      if (selectedLocationId && idSet.has(selectedLocationId)) {
+        setSelectedLocationId(null);
+      }
+
+      return prevLocations.filter(l => l.id !== id);
+    });
   };
 
   const updateLocation = (id: string, updates: Partial<Location>) => {
-    setLocations(locations.map(l => l.id === id ? { ...l, ...updates } : l));
+    setLocations(prev => prev.map(l => l.id === id ? { ...l, ...updates } : l));
   };
 
   const updateDay = (id: string, updates: Partial<Day>) => {
-    setDays(days.map(d => d.id === id ? { ...d, ...updates } : d));
+    setDays(prev => prev.map(d => d.id === id ? { ...d, ...updates } : d));
   };
 
   const updateRoute = (route: Route) => {
@@ -316,7 +348,7 @@ export function ItineraryProvider({ children }: { children: ReactNode }) {
     setLocations(prev => {
       const activeIndex = prev.findIndex(l => l.id === activeId);
       if (activeIndex === -1) return prev;
-      let newLocations = [...prev];
+      const newLocations = [...prev];
       newLocations[activeIndex] = {
         ...newLocations[activeIndex],
         startDayId: newDayId || undefined,
@@ -340,18 +372,35 @@ export function ItineraryProvider({ children }: { children: ReactNode }) {
     startDate, endDate, days, locations, routes, version: '1.0'
   });
 
-  const loadFromData = (data: any) => {
-    if (data.startDate) setStartDate(data.startDate);
-    if (data.endDate) setEndDate(data.endDate);
-    if (data.days) setDays(migrateDays(data.days));
-    if (data.locations) setLocations(migrateLocations(data.locations));
-    if (data.routes) {
-      const migratedRoutes = data.routes.map((r: any) => ({
-        ...r,
-        cost: typeof r.cost === 'string' ? parseFloat(r.cost.replace(/[^0-9.]/g, '')) : r.cost
+  const loadFromData = (data: unknown): LoadDataResult => {
+    const parsed = itineraryImportSchema.safeParse(data);
+    if (!parsed.success) {
+      trackError('load_data_validation_failed', parsed.error, {
+        issues: parsed.error.issues.map(issue => issue.path.join('.')).join(','),
+      });
+      return { success: false, error: 'Invalid itinerary format. Please import a valid itinerary JSON file.' };
+    }
+
+    const payload = parsed.data;
+
+    if (payload.startDate) setStartDate(payload.startDate);
+    if (payload.endDate) setEndDate(payload.endDate);
+    if (payload.days) setDays(migrateDays(payload.days));
+    if (payload.locations) setLocations(migrateLocations(payload.locations));
+    if (payload.routes) {
+      const migratedRoutes: Route[] = payload.routes.map((route: RouteImportData) => ({
+        id: route.id,
+        fromLocationId: route.fromLocationId,
+        toLocationId: route.toLocationId,
+        transportType: route.transportType || 'other',
+        duration: route.duration,
+        notes: route.notes,
+        cost: parseNumeric(route.cost),
       }));
       setRoutes(migratedRoutes);
     }
+
+    return { success: true };
   };
 
   const value = {
