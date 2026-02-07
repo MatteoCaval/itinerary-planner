@@ -59,6 +59,7 @@ function AppContent() {
   const [sidebarView, setSidebarView] = useState<'timeline' | 'calendar' | 'budget'>('timeline');
   const [showCloudModal, setShowCloudModal] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const importFileInputRef = React.useRef<HTMLInputElement | null>(null);
   const reorderShortcutHint = useMemo(() => {
     if (typeof navigator !== 'undefined' && /(Mac|iPhone|iPad|iPod)/i.test(navigator.platform)) {
       return '⌘ + Shift + ↑/↓';
@@ -113,6 +114,11 @@ function AppContent() {
       setIsSearching(false);
     }
   };
+
+  const openHistoryModal = () => setShowHistoryModal(true);
+  const openAIModal = () => setShowAIModal(true);
+  const openCloudModal = () => setShowCloudModal(true);
+  const openImportPicker = () => importFileInputRef.current?.click();
 
   const handleScrollToLocation = (id: string | null) => {
     setSelectedLocationId(id);
@@ -317,30 +323,29 @@ function AppContent() {
       padding={0}
     >
       <AppShell.Header style={{ zIndex: 1200 }}>
-        <Group h="100%" px="md" justify="space-between">
-          <Group>
+        <Group h="100%" px="md" justify="space-between" wrap="nowrap">
+          <Group wrap="nowrap">
             <Burger opened={opened} onClick={toggle} size="sm" color="blue" hiddenFrom="sm" />
             <Text fw={700} fz="lg" c="blue" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <MapIcon size={20} /> <Box visibleFrom="xs">Itinerary Planner</Box>
             </Text>
           </Group>
-          <Group gap="xs" visibleFrom="sm">
+          <Group gap="xs" visibleFrom="lg" wrap="nowrap">
             <ActionIcon variant="subtle" color="gray" onClick={() => navigateHistory(historyIndex - 1)} disabled={historyIndex <= 0}>
                 <Undo size={18} />
             </ActionIcon>
             <ActionIcon variant="subtle" color="gray" onClick={() => navigateHistory(historyIndex + 1)} disabled={historyIndex >= historyLength - 1}>
                 <Redo size={18} />
             </ActionIcon>
-            <Button variant="default" size="xs" leftSection={<History size={16} />} onClick={() => setShowHistoryModal(true)}>History</Button>
-            <Button variant="light" color="blue" size="xs" leftSection={<Sparkles size={16} />} onClick={() => setShowAIModal(true)}>AI Planner</Button>
+            <Button variant="default" size="xs" leftSection={<History size={16} />} onClick={openHistoryModal}>History</Button>
+            <Button variant="light" color="blue" size="xs" leftSection={<Sparkles size={16} />} onClick={openAIModal}>AI Planner</Button>
             <Button variant="default" size="xs" leftSection={<FileText size={16} />} onClick={handleExportMarkdown}>Markdown</Button>
-            <Button variant="default" size="xs" leftSection={<Upload size={16} />} onClick={() => document.getElementById('import-file')?.click()}>Import</Button>
-            <input type="file" id="import-file" style={{ display: 'none' }} onChange={handleImport} accept=".json" />
+            <Button variant="default" size="xs" leftSection={<Upload size={16} />} onClick={openImportPicker}>Import</Button>
             <Button variant="default" size="xs" leftSection={<Download size={16} />} onClick={handleExport}>Export</Button>
-            <Button variant="filled" color="blue" size="xs" leftSection={<Cloud size={16} />} onClick={() => setShowCloudModal(true)}>Sync</Button>
+            <Button variant="filled" color="blue" size="xs" leftSection={<Cloud size={16} />} onClick={openCloudModal}>Sync</Button>
           </Group>
 
-          <Box hiddenFrom="sm">
+          <Box hiddenFrom="lg">
             <Menu shadow="md" width={200} position="bottom-end" withinPortal>
               <Menu.Target>
                 <ActionIcon variant="light" size="lg">
@@ -350,13 +355,13 @@ function AppContent() {
 
               <Menu.Dropdown>
                 <Menu.Label>Actions</Menu.Label>
-                <Menu.Item leftSection={<History size={16} />} onClick={() => setShowHistoryModal(true)}>
+                <Menu.Item leftSection={<History size={16} />} onClick={openHistoryModal}>
                   Time Machine
                 </Menu.Item>
-                <Menu.Item leftSection={<Sparkles size={16} />} onClick={() => setShowAIModal(true)} color="blue">
+                <Menu.Item leftSection={<Sparkles size={16} />} onClick={openAIModal} color="blue">
                   AI Magic
                 </Menu.Item>
-                <Menu.Item leftSection={<Cloud size={16} />} onClick={() => setShowCloudModal(true)}>
+                <Menu.Item leftSection={<Cloud size={16} />} onClick={openCloudModal}>
                   Sync
                 </Menu.Item>
                 <Menu.Item leftSection={<FileText size={16} />} onClick={handleExportMarkdown}>
@@ -364,7 +369,7 @@ function AppContent() {
                 </Menu.Item>
                 <Menu.Divider />
                 <Menu.Label>Data</Menu.Label>
-                <Menu.Item leftSection={<Upload size={16} />} onClick={() => document.getElementById('import-file')?.click()}>
+                <Menu.Item leftSection={<Upload size={16} />} onClick={openImportPicker}>
                   Import JSON
                 </Menu.Item>
                 <Menu.Item leftSection={<Download size={16} />} onClick={handleExport}>
@@ -373,6 +378,13 @@ function AppContent() {
               </Menu.Dropdown>
             </Menu>
           </Box>
+          <input
+            ref={importFileInputRef}
+            type="file"
+            style={{ display: 'none' }}
+            onChange={handleImport}
+            accept=".json"
+          />
         </Group>
       </AppShell.Header>
 
