@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { TextInput, Textarea, Button, ActionIcon, Paper, Group, Stack, Text, Badge, Image, Checkbox, LoadingOverlay, Box, Divider, ScrollArea, Anchor, Tooltip, NumberInput } from '@mantine/core';
-import { X, Plus, Trash2, ExternalLink, CheckSquare, Link as LinkIcon, Map as MapIcon, Calendar, ArrowRight, ArrowLeft, Bed, Search, ChevronRight, ArrowUp, ArrowDown, Utensils, Train, Globe, Euro } from 'lucide-react';
+import { X, Plus, Trash2, ExternalLink, CheckSquare, Link as LinkIcon, Map as MapIcon, Calendar, ArrowRight, ArrowLeft, Bed, Search, ChevronRight, ArrowUp, ArrowDown, Utensils, Train, Globe, Euro, Image as ImageIcon } from 'lucide-react';
 import { Location, Day, Route, DaySection, TRANSPORT_LABELS, TRANSPORT_COLORS, CATEGORY_COLORS } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 import { searchPhoto } from '../unsplash';
 import { PlaceSearchResult, searchPlace } from '../utils/geocoding';
+import { LocationThumbnail } from './LocationThumbnail';
 
 interface LocationDetailPanelProps {
   location: Location | null;
@@ -278,7 +279,12 @@ export function LocationDetailPanel({
 
   return (
     <Stack h="100%" gap={0}>
-      <Box w="100%" className="location-detail-panel-image" style={{ position: 'relative' }} bg="gray.1">
+      <Box
+        w="100%"
+        className="location-detail-panel-image"
+        style={{ position: 'relative' }}
+        bg={location.imageUrl ? 'gray.1' : 'dark.2'}
+      >
         {location.imageUrl && (
           <Image
             src={location.imageUrl}
@@ -289,6 +295,32 @@ export function LocationDetailPanel({
             onLoad={() => setImageLoading(false)}
           />
         )}
+        {!location.imageUrl && (
+          <Box className="location-detail-empty-preview">
+            <LocationThumbnail
+              name={location.name}
+              category={location.category}
+              lat={location.lat}
+              lng={location.lng}
+              size={72}
+              radius={16}
+            />
+            <Text size="sm" fw={600} c="gray.0" mt={10}>
+              Photo Preview
+            </Text>
+            <Text size="xs" c="gray.3">
+              Open this destination to auto-load a representative image
+            </Text>
+          </Box>
+        )}
+        <Badge
+          variant="filled"
+          color="dark"
+          leftSection={<ImageIcon size={12} />}
+          style={{ position: 'absolute', left: 12, top: 12, zIndex: 11, opacity: 0.9 }}
+        >
+          Destination Preview
+        </Badge>
         <LoadingOverlay visible={imageLoading && !location.imageUrl} />
         <Box style={{ position: 'absolute', top: 12, right: 12, zIndex: 10 }}>
           <Group gap="xs">
@@ -462,7 +494,7 @@ export function LocationDetailPanel({
 
                            return (
                              <React.Fragment key={sub.id}>
-                               <Paper p="xs" withBorder bg="white" shadow="xs" style={{ cursor: 'pointer' }} onClick={() => onSelectLocation?.(sub.id)}>
+                              <Paper p="xs" withBorder bg="white" shadow="xs" style={{ cursor: 'pointer' }} onClick={() => onSelectLocation?.(sub.id)}>
                                 <Group justify="space-between" wrap="nowrap">
                                   <Group gap="xs" style={{ flex: 1, minWidth: 0 }}>
                                     <Badge size="xs" color="blue" variant="light" tt="capitalize">{sub.startSlot || 'morning'}</Badge>
@@ -544,7 +576,9 @@ export function LocationDetailPanel({
                            return (
                              <Paper key={sub.id} p="xs" withBorder bg="gray.0" shadow="xs" style={{ cursor: 'pointer' }} onClick={() => onSelectLocation?.(sub.id)}>
                               <Group justify="space-between" wrap="nowrap">
-                                <Text size="sm" fw={500} truncate style={{ flex: 1 }}>{sub.name}</Text>
+                                <Group gap="xs" style={{ flex: 1, minWidth: 0 }}>
+                                  <Text size="sm" fw={500} truncate style={{ flex: 1 }}>{sub.name}</Text>
+                                </Group>
                                 <Group gap={2}>
                                   <ActionIcon size="sm" variant="subtle" disabled={sortedIdx === 0} onClick={(e) => { e.stopPropagation(); moveSubLocation(sub.id, 'up'); }}>
                                     <ArrowUp size={14} />

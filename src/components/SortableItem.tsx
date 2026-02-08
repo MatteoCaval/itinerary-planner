@@ -4,6 +4,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { GripVertical, X } from 'lucide-react';
 import { ActionIcon, Badge, Text, Group, Stack, Box, Paper } from '@mantine/core';
 import { Location, CATEGORY_COLORS } from '../types';
+import { LocationThumbnail } from './LocationThumbnail';
 
 interface SortableItemProps {
   id: string;
@@ -80,6 +81,8 @@ export function SortableItem({
 
   const catColor = CATEGORY_COLORS[location.category || 'sightseeing'];
   const subLocationCount = location.subLocations?.length || 0;
+  const isCompact = duration <= 1;
+  const thumbnailSize = isCompact ? 30 : 42;
   const hierarchyClass = isSubLocation
     ? 'sortable-item--sub'
     : subLocationCount > 0
@@ -93,8 +96,8 @@ export function SortableItem({
 
         shadow={isDragging || isResizing || isOver ? 'md' : 'sm'}
         withBorder
-        p="xs"
-        className={`sortable-item ${hierarchyClass} ${isDragging ? 'dragging' : ''} ${isResizing ? 'resizing' : ''} ${isOver ? 'nesting-target' : ''}`}
+        p={isCompact ? 6 : 'xs'}
+        className={`sortable-item ${isCompact ? 'sortable-item--compact' : ''} ${hierarchyClass} ${isDragging ? 'dragging' : ''} ${isResizing ? 'resizing' : ''} ${isOver ? 'nesting-target' : ''}`}
         style={{ 
           ...style, 
           borderColor: isOver ? 'var(--mantine-color-blue-6)' : (isSelected ? 'var(--mantine-color-blue-filled)' : catColor),
@@ -107,30 +110,45 @@ export function SortableItem({
         h="100%"
       >
         <Stack gap={4} h="100%">
-          <Group gap="xs" align="center" wrap="nowrap">
+          <Group gap={isCompact ? 6 : 'xs'} align="center" wrap="nowrap">
             <Box
               {...attributes}
               {...listeners}
               style={{ cursor: 'grab', color: 'var(--mantine-color-gray-5)', display: 'flex', alignItems: 'center' }}
               onClick={(e) => e.stopPropagation()}
             >
-              <GripVertical size={18} />
+              <GripVertical size={isCompact ? 16 : 18} />
             </Box>
 
             {index !== undefined && (
               <Badge size="xs" circle color="blue">{index}</Badge>
             )}
 
-            <Box style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: '4px', paddingRight: 20 }}>
+            {!isSubLocation && (
+              <LocationThumbnail
+                name={location.name}
+                category={location.category}
+                imageUrl={location.imageUrl}
+                lat={location.lat}
+                lng={location.lng}
+                subLocationCount={subLocationCount}
+                showSubLocationCount={!isCompact}
+                size={thumbnailSize}
+                radius={8}
+                className="timeline-card-thumb"
+              />
+            )}
+
+            <Box style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: isCompact ? 2 : 4, paddingRight: isCompact ? 16 : 20 }}>
               <Text
                 fw={600}
-                size="sm"
+                size={isCompact ? 'xs' : 'sm'}
                 truncate
                 style={{ flex: 1 }}
               >
                 {location.name}
               </Text>
-              {duration > 1 && (
+              {duration > 1 && !isCompact && (
                 <Badge variant="outline" color="gray" size="xs" style={{ fontWeight: 400 }}>
                   {(duration / 3).toFixed(1).replace('.0', '')}d
                 </Badge>
@@ -141,20 +159,20 @@ export function SortableItem({
             <ActionIcon
               variant="subtle"
               color="red"
-              size="sm"
+              size={isCompact ? 'xs' : 'sm'}
               onClick={(e) => {
                 e.stopPropagation();
                 onRemove(id);
               }}
               title="Remove location"
-              style={{ position: 'absolute', top: 4, right: 4 }}
+              style={{ position: 'absolute', top: isCompact ? 2 : 4, right: isCompact ? 2 : 4 }}
             >
-              <X size={14} />
+              <X size={isCompact ? 12 : 14} />
             </ActionIcon>
 
           </Group>
 
-          {location.notes && (
+          {location.notes && !isCompact && (
             <Text
               c="dimmed"
               size="xs"
