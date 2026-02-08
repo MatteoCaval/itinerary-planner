@@ -27,7 +27,7 @@
 - [x] Refine timeline cards with stronger visual grouping by day section and clearer distinction between parent locations and sub-locations.
 - [x] Add subtle motion for key transitions (sidebar collapse, day selection, route edit) to improve orientation.
 - [x] Create consistent icon and label patterns for actions (export/import/history/AI/cloud) to reduce cognitive load.
-- [ ] Add richer destination visuals (thumbnail/photo preview) in cards and detail panel for faster scanning.
+- [x] Add richer destination visuals (thumbnail/photo preview) in cards and detail panel for faster scanning.
 - [ ] Improve budget dashboard visuals with trend bars per day and clearer category labeling for quick interpretation.
 
 ## New Possible Features
