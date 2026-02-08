@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useRef, useEffect } from 'react';
-import { ActionIcon, Text, Group, Stack, Box, Paper, Tooltip, Popover, TextInput, Button, Autocomplete, NumberInput, Skeleton } from '@mantine/core';
+import { ActionIcon, Text, Group, Stack, Box, Paper, Tooltip, Popover, TextInput, Button, Autocomplete, NumberInput, Skeleton, Collapse } from '@mantine/core';
 import { Plus, Sun, Moon, Coffee, ChevronDown, ChevronUp, Bed, Trash, Search, MapPin, Euro } from 'lucide-react';
 import {
     DndContext,
@@ -80,7 +80,14 @@ function DroppableCell({ id, section, row, isEvenDay, zoomLevel, onClick, isBloc
             break;
     }
 
-    const bgClass = isBlocked ? 'var(--mantine-color-gray-2)' : (isEvenDay ? 'var(--mantine-color-gray-0)' : 'white');
+    const sectionVisuals: Record<DaySection, { tint: string; rail: string }> = {
+        morning: { tint: 'rgba(251, 146, 60, 0.08)', rail: 'rgba(249, 115, 22, 0.4)' },
+        afternoon: { tint: 'rgba(245, 158, 11, 0.09)', rail: 'rgba(217, 119, 6, 0.35)' },
+        evening: { tint: 'rgba(99, 102, 241, 0.09)', rail: 'rgba(79, 70, 229, 0.3)' },
+    };
+    const slotVisual = sectionVisuals[section];
+    const baseBg = isBlocked ? 'var(--mantine-color-gray-2)' : (isEvenDay ? 'var(--mantine-color-gray-0)' : 'white');
+    const cellBg = isBlocked ? baseBg : slotVisual.tint;
 
     return (
         <Box
@@ -97,7 +104,7 @@ function DroppableCell({ id, section, row, isEvenDay, zoomLevel, onClick, isBloc
             role="button"
             aria-disabled={isBlocked}
             aria-label={`Add activity to ${section}`}
-            className="timeline-cell-focus"
+            className={`timeline-cell-focus timeline-slot timeline-slot-${section}`}
             style={{
                 gridColumn: '2 / -1',
                 gridRow: `${row} / span 1`,
@@ -105,15 +112,15 @@ function DroppableCell({ id, section, row, isEvenDay, zoomLevel, onClick, isBloc
                 minHeight: `${80 * zoomLevel}px`,
                 zIndex: 0,
                 cursor: isBlocked ? 'not-allowed' : 'pointer',
-                backgroundColor: isOver ? 'var(--mantine-color-blue-0)' : bgClass,
+                backgroundColor: isOver ? 'var(--mantine-color-blue-0)' : cellBg,
                 display: 'flex',
                 alignItems: 'center',
                 transition: 'background-color 0.2s ease',
                 opacity: isBlocked ? 0.6 : 1,
             }}
         >
-            <Box style={{ width: 40, minWidth: 40, height: '100%', pointerEvents: 'none', borderRight: '1px solid var(--mantine-color-gray-3)', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: isBlocked ? 'rgba(0,0,0,0.05)' : 'transparent' }}>
-                <Stack gap={2} align="center" c={isBlocked ? 'gray' : color}>
+            <Box style={{ width: 48, minWidth: 48, height: '100%', pointerEvents: 'none', borderRight: '1px solid var(--mantine-color-gray-3)', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: isBlocked ? 'rgba(0,0,0,0.05)' : slotVisual.rail }}>
+                <Stack gap={1} align="center" c={isBlocked ? 'gray' : color}>
                     {icon}
                 </Stack>
             </Box>
@@ -127,12 +134,13 @@ function DroppableCell({ id, section, row, isEvenDay, zoomLevel, onClick, isBloc
     );
 }
 
-function UnassignedZone({ locations, onRemove, onUpdate, onSelect, selectedLocationId }: {
+function UnassignedZone({ locations, onRemove, onUpdate, onSelect, selectedLocationId, isSubLocation = false }: {
     locations: Location[],
     onRemove: (id: string) => void,
     onUpdate: (id: string, updates: Partial<Location>) => void,
     onSelect?: (id: string | null) => void,
-    selectedLocationId?: string | null
+    selectedLocationId?: string | null,
+    isSubLocation?: boolean
 }) {
     const { isOver, setNodeRef } = useDroppable({ id: 'unassigned-zone' });
     return (
@@ -158,6 +166,7 @@ function UnassignedZone({ locations, onRemove, onUpdate, onSelect, selectedLocat
                             isSelected={selectedLocationId === loc.id}
                             duration={loc.duration}
                             zoomLevel={1.0}
+                            isSubLocation={isSubLocation}
                         />
                     </Box>
                 ))}
@@ -256,7 +265,7 @@ function DayLabel({ day, startRow, dayNum, isEvenDay, onAdd, onUpdateDay, existi
             tabIndex={onSelect ? 0 : -1}
             role={onSelect ? 'button' : undefined}
             aria-label={`Select day ${dayNum}`}
-            className="day-label-box"
+            className={`day-label-box ${isSelected ? 'day-label-selected' : ''}`}
             style={{
                 gridColumn: '1 / span 1',
                 gridRow: `${startRow} / span 3`,
@@ -438,6 +447,7 @@ function RouteConnector({ route, distance, row, col, onEdit }: { route: Route | 
         >
             <Tooltip label="Edit Connection">
                 <Paper
+                    className={`route-connector-pill ${route ? 'route-connector-existing' : 'route-connector-empty'}`}
                     shadow="sm"
                     withBorder
                     bg={!route ? 'blue.0' : 'white'}
@@ -820,7 +830,7 @@ export function DaySidebar({
                                         onMouseEnter={() => onHoverLocation?.(loc.id)}
                                         onMouseLeave={() => onHoverLocation?.(null)}
                                         onClick={() => onSelectLocation?.(loc.id)}
-                                        className={`${hoveredLocationId === loc.id ? 'hovered' : ''} ${selectedLocationId === loc.id ? 'selected' : ''}`}
+                                        className={`timeline-location-cell ${hoveredLocationId === loc.id ? 'hovered' : ''} ${selectedLocationId === loc.id ? 'selected' : ''}`}
 
                                     >
                                         <SortableItem
@@ -832,6 +842,7 @@ export function DaySidebar({
                                             isSelected={selectedLocationId === loc.id}
                                             duration={loc.duration}
                                             zoomLevel={zoomLevel}
+                                            isSubLocation={Boolean(parentName)}
                                         />
                                     </Box>
                                     {nextPos && (
@@ -865,15 +876,16 @@ export function DaySidebar({
                             </ActionIcon>
                         </Tooltip>
                     </Group>
-                    {!unassignedCollapsed && (
+                    <Collapse in={!unassignedCollapsed} transitionDuration={180} transitionTimingFunction="ease">
                         <UnassignedZone
                             locations={unassignedLocations}
                             onRemove={onRemoveLocation}
                             onUpdate={onUpdateLocation}
                             onSelect={onSelectLocation}
                             selectedLocationId={selectedLocationId}
+                            isSubLocation={Boolean(parentName)}
                         />
-                    )}
+                    </Collapse>
                 </Paper>
 
                 <DragOverlay>

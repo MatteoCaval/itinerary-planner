@@ -389,7 +389,7 @@ function AppContent() {
         </Group>
       </AppShell.Header>
 
-      <AppShell.Navbar p={0} style={{ zIndex: 1000 }}>
+      <AppShell.Navbar p={0} style={{ zIndex: 1000 }} className="planner-navbar-motion">
         {/* Resize Handle */}
         <div
           onMouseDown={startResizing}

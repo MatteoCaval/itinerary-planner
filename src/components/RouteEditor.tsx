@@ -82,8 +82,16 @@ export function RouteEditor({ show, route, fromName, toName, onSave, onClose }: 
     };
 
     return (
-        <Modal opened={show} onClose={onClose} title="Edit Route Details" size="lg" centered zIndex={2000}>
-            <Paper withBorder p="sm" bg="gray.0" mb="md">
+        <Modal
+            opened={show}
+            onClose={onClose}
+            title="Edit Route Details"
+            size="lg"
+            centered
+            zIndex={2000}
+            transitionProps={{ transition: 'slide-up', duration: 180, timingFunction: 'ease' }}
+        >
+            <Paper withBorder p="sm" bg="gray.0" mb="md" className="route-editor-summary">
                 <Group justify="center" align="center" gap="md">
                     <Stack gap={2} align="center" style={{ flex: 1 }}>
                         <Text size="xs" fw={700} tt="uppercase" c="dimmed">From</Text>
@@ -106,6 +114,7 @@ export function RouteEditor({ show, route, fromName, toName, onSave, onClose }: 
                                 {TRANSPORT_OPTIONS.map(type => (
                                     <Button
                                         key={type}
+                                        className="route-transport-button"
                                         variant={transportType === type ? 'filled' : 'default'}
                                         size="xs"
                                         onClick={() => setTransportType(type)}
@@ -161,6 +170,7 @@ export function RouteEditor({ show, route, fromName, toName, onSave, onClose }: 
                                 {QUICK_DURATIONS.map(m => (
                                     <Badge
                                         key={m}
+                                        className="route-duration-chip"
                                         variant="outline"
                                         color="gray"
                                         style={{ cursor: 'pointer' }}

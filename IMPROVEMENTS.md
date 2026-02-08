@@ -24,9 +24,9 @@
 - [x] Introduce skeleton/loading states for search results, AI generation, and cloud sync actions instead of abrupt content swaps.
 - [x] Improve empty states for first-time users (no dates, no locations, no routes) with quick-start prompts and action buttons.
 - [x] Increase accessibility coverage: keyboard navigation for timeline operations, better focus styles, and verified contrast for status colors.
-- [ ] Refine timeline cards with stronger visual grouping by day section and clearer distinction between parent locations and sub-locations.
-- [ ] Add subtle motion for key transitions (sidebar collapse, day selection, route edit) to improve orientation.
-- [ ] Create consistent icon and label patterns for actions (export/import/history/AI/cloud) to reduce cognitive load.
+- [x] Refine timeline cards with stronger visual grouping by day section and clearer distinction between parent locations and sub-locations.
+- [x] Add subtle motion for key transitions (sidebar collapse, day selection, route edit) to improve orientation.
+- [x] Create consistent icon and label patterns for actions (export/import/history/AI/cloud) to reduce cognitive load.
 - [ ] Add richer destination visuals (thumbnail/photo preview) in cards and detail panel for faster scanning.
 - [ ] Improve budget dashboard visuals with trend bars per day and clearer category labeling for quick interpretation.
 

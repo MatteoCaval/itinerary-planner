@@ -15,6 +15,7 @@ interface SortableItemProps {
   isSelected?: boolean;
   duration?: number;
   zoomLevel: number;
+  isSubLocation?: boolean;
 }
 
 export function SortableItem({
@@ -26,7 +27,8 @@ export function SortableItem({
   onSelect,
   isSelected = false,
   duration = 1,
-  zoomLevel
+  zoomLevel,
+  isSubLocation = false
 }: SortableItemProps) {
   const {
     attributes,
@@ -77,6 +79,12 @@ export function SortableItem({
   };
 
   const catColor = CATEGORY_COLORS[location.category || 'sightseeing'];
+  const subLocationCount = location.subLocations?.length || 0;
+  const hierarchyClass = isSubLocation
+    ? 'sortable-item--sub'
+    : subLocationCount > 0
+      ? 'sortable-item--parent'
+      : '';
 
   return (
     <Box className="sortable-item-wrapper" h="100%" style={{ position: 'relative' }}>
@@ -86,7 +94,7 @@ export function SortableItem({
         shadow={isDragging || isResizing || isOver ? 'md' : 'sm'}
         withBorder
         p="xs"
-        className={`sortable-item ${isDragging ? 'dragging' : ''} ${isResizing ? 'resizing' : ''} ${isOver ? 'nesting-target' : ''}`}
+        className={`sortable-item ${hierarchyClass} ${isDragging ? 'dragging' : ''} ${isResizing ? 'resizing' : ''} ${isOver ? 'nesting-target' : ''}`}
         style={{ 
           ...style, 
           borderColor: isOver ? 'var(--mantine-color-blue-6)' : (isSelected ? 'var(--mantine-color-blue-filled)' : catColor),
