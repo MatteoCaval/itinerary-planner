@@ -45,17 +45,13 @@ export function useItineraryDrillDown({ locations, days, selectedLocationId, sel
   // 3. Filter locations for the MAP
   const mapLocations = useMemo(() => {
     const base = activeParent?.subLocations || (isSubItinerary ? [] : locations);
-
     if (selectedDayId) {
       if (!activeParent) {
-        // Global focus: match by startDayId
         return base.filter(l => l.startDayId === selectedDayId);
-      } else {
-        // Sub-itinerary focus: find relative index of selectedDayId within activeDays
-        const relIdx = activeDays.findIndex(d => d.id === selectedDayId);
-        if (relIdx === -1) return []; // Day is outside this destination's range
-        return base.filter(l => l.dayOffset === relIdx);
       }
+      const relIdx = activeDays.findIndex(d => d.id === selectedDayId);
+      if (relIdx === -1) return [];
+      return base.filter(l => l.dayOffset === relIdx);
     }
     return base;
   }, [locations, activeParent, selectedDayId, activeDays, isSubItinerary]);

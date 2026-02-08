@@ -424,7 +424,6 @@ export default function MapDisplay({ days, locations, routes, onEditRoute, hover
   const routeShapesRef = useRef<Record<string, LatLngTuple[]>>({});
   const [showRouteArrows, setShowRouteArrows] = useState(true);
   const [showRouteLegend, setShowRouteLegend] = useState(true);
-  const [highlightDayPath, setHighlightDayPath] = useState(true);
 
   const getAbsDayIdx = useCallback((loc: Location): number => {
     if (activeParent && loc.dayOffset !== undefined) {
@@ -531,13 +530,6 @@ export default function MapDisplay({ days, locations, routes, onEditRoute, hover
   }, [pathPoints, routes]);
 
   const focusedDayIdx = selectedDayId ? days.findIndex(day => day.id === selectedDayId) : -1;
-  const hasFocusedDay = focusedDayIdx !== -1;
-
-  const isSegmentInFocusedDay = useCallback((segment: { from: PathPoint; to: PathPoint }) => {
-    const fromDay = Math.floor(segment.from.sortValue / 100);
-    const toDay = Math.floor(segment.to.sortValue / 100);
-    return fromDay === focusedDayIdx || toDay === focusedDayIdx || segment.from.isAccommodation || segment.to.isAccommodation;
-  }, [focusedDayIdx]);
 
   const transportLegendItems = useMemo(() => {
     const transportTypes = new Set<TransportType>();
@@ -652,8 +644,6 @@ export default function MapDisplay({ days, locations, routes, onEditRoute, hover
             path={routeShapes[segment.key]}
             onEditRoute={() => onEditRoute(segment.from.id, segment.to.id)}
             isHovered={hoveredLocationId === segment.from.id || hoveredLocationId === segment.to.id}
-            isHighlighted={hasFocusedDay && highlightDayPath && isSegmentInFocusedDay(segment)}
-            isDimmed={hasFocusedDay && highlightDayPath && !isSegmentInFocusedDay(segment)}
             showArrows={showRouteArrows}
           />
         ))}
@@ -672,15 +662,6 @@ export default function MapDisplay({ days, locations, routes, onEditRoute, hover
               />
               Route arrows
             </label>
-            <label className="map-route-control-item">
-              <input
-                type="checkbox"
-                checked={highlightDayPath}
-                onChange={event => setHighlightDayPath(event.target.checked)}
-                disabled={!hasFocusedDay}
-              />
-              Highlight selected day
-            </label>
             <button
               type="button"
               className="map-route-legend-toggle"
@@ -689,11 +670,7 @@ export default function MapDisplay({ days, locations, routes, onEditRoute, hover
               {showRouteLegend ? 'Hide legend' : 'Show legend'}
             </button>
           </div>
-          {hasFocusedDay && (
-            <div className="map-day-highlight-indicator">
-              Highlighting Day {focusedDayIdx + 1} path
-            </div>
-          )}
+          {focusedDayIdx !== -1 && <div className="map-day-highlight-indicator">Day {focusedDayIdx + 1} selected</div>}
           {showRouteLegend && (
             <div className="map-route-legend">
               {transportLegendItems.length === 0 ? (
