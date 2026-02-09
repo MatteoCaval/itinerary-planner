@@ -111,12 +111,12 @@ const createAccommodationIcon = () => L.divIcon({
   className: 'custom-marker-wrapper accommodation-marker',
   html: `
     <div class="map-marker-container">
-      <div class="marker-circle" style="background-color: #6610f2; width: 32px; height: 32px;">
-        ${renderToStaticMarkup(<Bed size={16} color="white" />)}
+      <div class="marker-circle" style="background-color: #6610f2;">
+        ${renderToStaticMarkup(<Bed size={12} color="white" />)}
       </div>
     </div>
   `,
-  iconSize: [32, 32], iconAnchor: [16, 32],
+  iconSize: [30, 30], iconAnchor: [15, 15],
 });
 
 const createClusterIcon = (count: number) => L.divIcon({
@@ -426,7 +426,7 @@ export default function MapDisplay({ days, locations, routes, onEditRoute, hover
   const [routeShapes, setRouteShapes] = useState<Record<string, LatLngTuple[]>>({});
   const routeShapesRef = useRef<Record<string, LatLngTuple[]>>({});
   const [showRouteArrows, setShowRouteArrows] = useState(true);
-  const [enableMapGrouping, setEnableMapGrouping] = useState(true);
+  const [enableMapGrouping, setEnableMapGrouping] = useState(false);
   const [showRouteLegend, setShowRouteLegend] = useState(true);
 
   const getAbsDayIdx = useCallback((loc: Location): number => {
