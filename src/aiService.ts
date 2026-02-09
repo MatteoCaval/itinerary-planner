@@ -1,5 +1,5 @@
 import { AISettings, Location, Route, Day } from './types';
-import { fetchJson } from './services/httpClient';
+import { ApiError, fetchJson } from './services/httpClient';
 import { trackError } from './services/telemetry';
 
 interface GeminiResponse {
@@ -9,6 +9,44 @@ interface GeminiResponse {
     };
   }[];
 }
+
+const getGeminiErrorMessage = (error: unknown, model: string): string => {
+  if (error instanceof ApiError) {
+    const details = error.details as
+      | { error?: { message?: string } }
+      | string
+      | undefined;
+
+    const detailMessage = typeof details === 'string'
+      ? details
+      : details?.error?.message;
+
+    if (error.code === 'request_aborted') {
+      return 'Gemini request timed out. Try again, shorten the prompt, or use a faster model.';
+    }
+
+    if (error.status === 401 || error.status === 403) {
+      return 'Gemini API key is invalid or missing permissions. Check your API key in AI Settings.';
+    }
+
+    if (error.status === 404) {
+      return `Gemini model "${model}" was not found. Update the model name in AI Settings.`;
+    }
+
+    if (error.status === 429) {
+      return 'Gemini rate limit reached. Please wait a moment and retry.';
+    }
+
+    if (detailMessage) {
+      return `Gemini error: ${detailMessage}`;
+    }
+
+    return `Gemini request failed (status ${error.status ?? 'unknown'}).`;
+  }
+
+  if (error instanceof Error) return error.message;
+  return 'Gemini API Error';
+};
 
 export const generateAIItinerary = async (
   prompt: string,
@@ -23,6 +61,7 @@ export const generateAIItinerary = async (
   days?: Partial<Day>[],
   explanation?: string 
 }> => {
+  const selectedModel = settings.model?.trim() || 'gemini-3-flash-preview';
   
   const systemPrompt = `
     You are a professional travel planner. 
@@ -139,7 +178,7 @@ export const generateAIItinerary = async (
   let data: GeminiResponse;
   try {
     data = await fetchJson<GeminiResponse>(
-      `https://generativelanguage.googleapis.com/v1beta/models/${settings.model || 'gemini-3-flash-preview'}:generateContent?key=${settings.apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${settings.apiKey}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -150,12 +189,12 @@ export const generateAIItinerary = async (
         }),
         retries: 1,
         retryDelayMs: 500,
-        timeoutMs: 30000,
+        timeoutMs: 60000,
       }
     );
   } catch (error) {
     trackError('ai_generate_failed', error, { mode, promptLength: prompt.length });
-    throw new Error('Gemini API Error');
+    throw new Error(getGeminiErrorMessage(error, selectedModel));
   }
 
   if (!data.candidates || data.candidates.length === 0) {

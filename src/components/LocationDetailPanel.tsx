@@ -313,8 +313,6 @@ export function LocationDetailPanel({
             <LocationThumbnail
               name={location.name}
               category={location.category}
-              lat={location.lat}
-              lng={location.lng}
               size={72}
               radius={16}
             />
@@ -745,9 +743,10 @@ export function LocationDetailPanel({
           </Box>
 
           <Box mb="xl">
-            <Text size="xs" fw={700} tt="uppercase" c="dimmed" mb="xs">
-              <Group gap={6} display="inline-flex"><LinkIcon size={12} /> Helpful Links</Group>
-            </Text>
+            <Group gap={6} mb="xs">
+              <LinkIcon size={12} />
+              <Text size="xs" fw={700} tt="uppercase" c="dimmed">Helpful Links</Text>
+            </Group>
 
             <Stack gap="xs" mb="sm">
               {(location.links || []).map(link => (

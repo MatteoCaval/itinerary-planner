@@ -102,8 +102,11 @@ export function SortableItem({
           ...style, 
           borderColor: isOver ? 'var(--mantine-color-blue-6)' : (isSelected ? 'var(--mantine-color-blue-filled)' : catColor),
           borderWidth: isSelected || isOver ? 2 : 1,
-          borderLeft: `4px solid ${catColor}`,
-          borderStyle: isOver ? 'dashed' : 'solid'
+          borderLeftWidth: 4,
+          borderLeftStyle: 'solid',
+          borderLeftColor: catColor,
+          outline: isOver ? '2px dashed var(--mantine-color-blue-6)' : undefined,
+          outlineOffset: isOver ? -2 : undefined
         }}
         bg={isOver ? 'blue.0' : (isSelected ? 'blue.0' : 'white')}
         onClick={() => onSelect?.(id)}
@@ -129,8 +132,6 @@ export function SortableItem({
                 name={location.name}
                 category={location.category}
                 imageUrl={location.imageUrl}
-                lat={location.lat}
-                lng={location.lng}
                 subLocationCount={subLocationCount}
                 showSubLocationCount={!isCompact}
                 size={thumbnailSize}

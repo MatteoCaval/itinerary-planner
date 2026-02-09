@@ -146,9 +146,10 @@ export function RouteEditor({ show, route, fromName, toName, onSave, onClose }: 
                 <Grid.Col span={{ base: 12, md: 6 }}>
                     <Stack gap="md">
                         <Box>
-                            <Text size="xs" fw={700} tt="uppercase" c="dimmed" mb={4}>
-                                <Group gap={4} display="inline-flex"><Clock size={14} /> Duration</Group>
-                            </Text>
+                            <Group gap={4} mb={4}>
+                                <Clock size={14} />
+                                <Text size="xs" fw={700} tt="uppercase" c="dimmed">Duration</Text>
+                            </Group>
                             <Group align="end" gap="xs" mb="xs">
                                 <NumberInput
                                     min={0}

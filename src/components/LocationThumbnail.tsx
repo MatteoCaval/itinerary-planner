@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Box, Text } from '@mantine/core';
 import { Map as SightseeingIcon, Utensils, Bed, Train, Globe, type LucideIcon } from 'lucide-react';
 import { LocationCategory } from '../types';
@@ -7,8 +7,6 @@ interface LocationThumbnailProps {
   name: string;
   category?: LocationCategory;
   imageUrl?: string;
-  lat?: number;
-  lng?: number;
   subLocationCount?: number;
   size?: number;
   radius?: number;
@@ -37,8 +35,6 @@ export function LocationThumbnail({
   name,
   category = 'sightseeing',
   imageUrl,
-  lat,
-  lng,
   subLocationCount = 0,
   size = 44,
   radius = 10,
@@ -47,25 +43,14 @@ export function LocationThumbnail({
   className,
 }: LocationThumbnailProps) {
   const [primaryImageFailed, setPrimaryImageFailed] = useState(false);
-  const [fallbackImageFailed, setFallbackImageFailed] = useState(false);
   const Icon = CATEGORY_ICONS[category];
-  const staticMapUrl = useMemo(() => {
-    if (lat === undefined || lng === undefined) return null;
-    const width = Math.max(120, Math.round(size * 4));
-    const height = Math.max(90, Math.round(size * 3));
-    return `https://staticmap.openstreetmap.de/staticmap.php?center=${lat},${lng}&zoom=13&size=${width}x${height}&markers=${lat},${lng},lightblue1`;
-  }, [lat, lng, size]);
-
-  const resolvedImageUrl = !primaryImageFailed && imageUrl
-    ? imageUrl
-    : (!fallbackImageFailed ? staticMapUrl : null);
+  const resolvedImageUrl = !primaryImageFailed && imageUrl ? imageUrl : null;
 
   const hasImage = Boolean(resolvedImageUrl);
 
   useEffect(() => {
     setPrimaryImageFailed(false);
-    setFallbackImageFailed(false);
-  }, [imageUrl, staticMapUrl]);
+  }, [imageUrl]);
 
   return (
     <Box
@@ -92,11 +77,7 @@ export function LocationThumbnail({
           h="100%"
           style={{ objectFit: 'cover', display: 'block' }}
           onError={() => {
-            if (!primaryImageFailed && imageUrl) {
-              setPrimaryImageFailed(true);
-              return;
-            }
-            setFallbackImageFailed(true);
+            if (!primaryImageFailed && imageUrl) setPrimaryImageFailed(true);
           }}
         />
       ) : showIconFallback ? (
