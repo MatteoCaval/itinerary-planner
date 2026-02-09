@@ -43,6 +43,7 @@ interface DaySidebarProps {
     onSelectDay?: (id: string | null) => void;
     isSlotBlocked?: (dayId: string, slot: DaySection) => boolean;
     onNestLocation?: (activeId: string, parentId: string) => void;
+    onOpenSubItinerary?: (id: string) => void;
 }
 
 const SECTION_ORDER: DaySection[] = ['morning', 'afternoon', 'evening'];
@@ -134,13 +135,14 @@ function DroppableCell({ id, section, row, isEvenDay, zoomLevel, onClick, isBloc
     );
 }
 
-function UnassignedZone({ locations, onRemove, onUpdate, onSelect, selectedLocationId, isSubLocation = false }: {
+function UnassignedZone({ locations, onRemove, onUpdate, onSelect, selectedLocationId, isSubLocation = false, onOpenSubItinerary }: {
     locations: Location[],
     onRemove: (id: string) => void,
     onUpdate: (id: string, updates: Partial<Location>) => void,
     onSelect?: (id: string | null) => void,
     selectedLocationId?: string | null,
-    isSubLocation?: boolean
+    isSubLocation?: boolean,
+    onOpenSubItinerary?: (id: string) => void
 }) {
     const { isOver, setNodeRef } = useDroppable({ id: 'unassigned-zone' });
     return (
@@ -163,6 +165,7 @@ function UnassignedZone({ locations, onRemove, onUpdate, onSelect, selectedLocat
                             onRemove={onRemove}
                             onUpdate={onUpdate}
                             onSelect={(id) => onSelect?.(id)}
+                            onOpenSubItinerary={onOpenSubItinerary}
                             isSelected={selectedLocationId === loc.id}
                             duration={loc.duration}
                             zoomLevel={1.0}
@@ -591,7 +594,8 @@ export function DaySidebar({
     selectedDayId,
     onSelectDay,
     isSlotBlocked,
-    onNestLocation
+    onNestLocation,
+    onOpenSubItinerary
 }: DaySidebarProps) {
     const [activeId, setActiveId] = useState<string | null>(null);
     const [unassignedCollapsed, setUnassignedCollapsed] = useState(() => locations.filter(l => !l.startDayId).length === 0);
@@ -838,6 +842,7 @@ export function DaySidebar({
                                             onRemove={onRemoveLocation}
                                             onUpdate={onUpdateLocation}
                                             onSelect={onSelectLocation}
+                                            onOpenSubItinerary={!parentName ? onOpenSubItinerary : undefined}
                                             isSelected={selectedLocationId === loc.id}
                                             duration={loc.duration}
                                             zoomLevel={zoomLevel}
@@ -881,6 +886,7 @@ export function DaySidebar({
                             onRemove={onRemoveLocation}
                             onUpdate={onUpdateLocation}
                             onSelect={onSelectLocation}
+                            onOpenSubItinerary={!parentName ? onOpenSubItinerary : undefined}
                             selectedLocationId={selectedLocationId}
                             isSubLocation={Boolean(parentName)}
                         />

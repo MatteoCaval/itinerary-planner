@@ -460,6 +460,7 @@ function AppContent() {
               removeLocation={removeLocation} updateLocation={updateLocation}
               selectedDayId={selectedDayId} setSelectedDayId={setSelectedDayId}
               isSlotBlocked={isSlotBlocked} handleNestLocation={handleNestLocation}
+              openSubItinerary={handleEnterSubItinerary}
               handleScrollToLocation={handleScrollToLocation} locations={locations} clearAll={clearAll}
               setShowHistoryModal={setShowHistoryModal} setShowAIModal={setShowAIModal} setShowCloudModal={setShowCloudModal}
               handleExportMarkdown={handleExportMarkdown} handleExport={handleExport} handleImport={handleImport}
@@ -504,6 +505,7 @@ function AppContent() {
             removeLocation={removeLocation} updateLocation={updateLocation}
             selectedDayId={selectedDayId} setSelectedDayId={setSelectedDayId}
             isSlotBlocked={isSlotBlocked} handleNestLocation={handleNestLocation}
+            openSubItinerary={handleEnterSubItinerary}
             handleScrollToLocation={handleScrollToLocation} locations={locations} clearAll={clearAll}
             setShowHistoryModal={setShowHistoryModal} setShowAIModal={setShowAIModal} setShowCloudModal={setShowCloudModal}
             handleExportMarkdown={handleExportMarkdown} handleExport={handleExport} handleImport={handleImport}
@@ -534,6 +536,7 @@ function AppContent() {
                 onSelectDay={setSelectedDayId}
                 onCollapse={() => setPanelCollapsed(true)}
                 onEnterSubItinerary={handleEnterSubItinerary}
+                onExitSubItinerary={handleExitSubItinerary}
                 isSubItineraryActive={activeParent?.id === selectedLocation.id}
               />
             </Paper>

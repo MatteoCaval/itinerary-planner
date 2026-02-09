@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical, X } from 'lucide-react';
+import { GripVertical, X, GitFork } from 'lucide-react';
 import { ActionIcon, Badge, Text, Group, Stack, Box, Paper } from '@mantine/core';
 import { Location, CATEGORY_COLORS } from '../types';
 import { LocationThumbnail } from './LocationThumbnail';
@@ -13,6 +13,7 @@ interface SortableItemProps {
   onRemove: (id: string) => void;
   onUpdate: (id: string, updates: Partial<Location>) => void;
   onSelect?: (id: string) => void;
+  onOpenSubItinerary?: (id: string) => void;
   isSelected?: boolean;
   duration?: number;
   zoomLevel: number;
@@ -26,6 +27,7 @@ export function SortableItem({
   onRemove,
   onUpdate,
   onSelect,
+  onOpenSubItinerary,
   isSelected = false,
   duration = 1,
   zoomLevel,
@@ -88,6 +90,7 @@ export function SortableItem({
     : subLocationCount > 0
       ? 'sortable-item--parent'
       : '';
+  const canOpenSubItinerary = !isSubLocation && subLocationCount > 0 && Boolean(onOpenSubItinerary);
 
   return (
     <Box className="sortable-item-wrapper" h="100%" style={{ position: 'relative' }}>
@@ -166,10 +169,26 @@ export function SortableItem({
                 onRemove(id);
               }}
               title="Remove location"
-              style={{ position: 'absolute', top: isCompact ? 2 : 4, right: isCompact ? 2 : 4 }}
+              style={{ position: 'absolute', top: isCompact ? 2 : 4, right: canOpenSubItinerary ? (isCompact ? 20 : 26) : (isCompact ? 2 : 4) }}
             >
               <X size={isCompact ? 12 : 14} />
             </ActionIcon>
+
+            {canOpenSubItinerary && (
+              <ActionIcon
+                variant="subtle"
+                color="indigo"
+                size={isCompact ? 'xs' : 'sm'}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onOpenSubItinerary?.(id);
+                }}
+                title="Open sub-itinerary"
+                style={{ position: 'absolute', top: isCompact ? 2 : 4, right: isCompact ? 2 : 4 }}
+              >
+                <GitFork size={isCompact ? 12 : 14} />
+              </ActionIcon>
+            )}
 
           </Group>
 

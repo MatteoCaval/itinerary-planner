@@ -52,6 +52,7 @@ interface SidebarContentProps {
   setSelectedDayId: (id: string | null) => void;
   isSlotBlocked: (dayId: string, slot: DaySection) => boolean;
   handleNestLocation: (activeId: string, parentId: string) => void;
+  openSubItinerary: (parentId: string) => void;
   handleScrollToLocation: (id: string | null) => void;
   locations: Location[];
   clearAll: () => void;
@@ -76,6 +77,7 @@ export function SidebarContent({
   hoveredLocationId, setHoveredLocationId,
   selectedLocationId, reorderLocations, removeLocation, updateLocation,
   selectedDayId, setSelectedDayId, isSlotBlocked, handleNestLocation,
+  openSubItinerary,
   handleScrollToLocation, locations, clearAll,
   setShowHistoryModal, setShowAIModal, setShowCloudModal,
   handleExportMarkdown, handleExport, handleImport
@@ -309,6 +311,7 @@ export function SidebarContent({
                     onSelectDay={setSelectedDayId}
                     isSlotBlocked={activeParent ? isSlotBlocked : undefined}
                     onNestLocation={handleNestLocation}
+                    onOpenSubItinerary={openSubItinerary}
                 />
             </Box>
           </Stack>

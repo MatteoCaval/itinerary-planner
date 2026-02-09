@@ -21,6 +21,7 @@ interface LocationDetailPanelProps {
   onSelectDay?: (id: string | null) => void;
   onCollapse?: () => void;
   onEnterSubItinerary?: (parentId: string) => void;
+  onExitSubItinerary?: () => void;
   isSubItineraryActive?: boolean;
 }
 
@@ -29,7 +30,7 @@ const getSectionIndex = (section?: DaySection) => SECTION_ORDER.indexOf(section 
 
 export function LocationDetailPanel({ 
   location, parentLocation, days, allLocations, routes, onUpdate, onClose, onSelectLocation,
-  onEditRoute, selectedDayId, onSelectDay, onCollapse, onEnterSubItinerary, isSubItineraryActive = false
+  onEditRoute, selectedDayId, onSelectDay, onCollapse, onEnterSubItinerary, onExitSubItinerary, isSubItineraryActive = false
 }: LocationDetailPanelProps) {
   const [newChecklistItem, setNewChecklistItem] = useState('');
   const [newLink, setNewLink] = useState({ label: '', url: '' });
@@ -371,14 +372,20 @@ export function LocationDetailPanel({
           </Box>
           <Group gap="xs">
             {isMainDestinationWithSubItinerary && (
-              <Tooltip label={isSubItineraryActive ? 'Sub-itinerary is active' : 'Open sub-itinerary timeline'}>
+              <Tooltip label={isSubItineraryActive ? 'Back to main itinerary timeline' : 'Open sub-itinerary timeline'}>
                 <Button
                   size="xs"
-                  variant={isSubItineraryActive ? 'filled' : 'light'}
-                  color="indigo"
-                  onClick={() => onEnterSubItinerary?.(location.id)}
+                  variant={isSubItineraryActive ? 'outline' : 'light'}
+                  color={isSubItineraryActive ? 'gray' : 'indigo'}
+                  onClick={() => {
+                    if (isSubItineraryActive) {
+                      onExitSubItinerary?.();
+                    } else {
+                      onEnterSubItinerary?.(location.id);
+                    }
+                  }}
                 >
-                  {isSubItineraryActive ? 'Sub-Itinerary Open' : 'Open Sub-Itinerary'}
+                  {isSubItineraryActive ? 'Back to Main Itinerary' : 'Open Sub-Itinerary'}
                 </Button>
               </Tooltip>
             )}
