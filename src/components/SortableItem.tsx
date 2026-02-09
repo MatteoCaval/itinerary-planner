@@ -201,6 +201,13 @@ export function SortableItem({
         <Box
           className="resize-handle"
           onPointerDown={handleResizeStart}
+          onPointerUp={(e) => {
+            e.stopPropagation();
+          }}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
           title="Drag to change duration"
           style={{ touchAction: 'none' }} // Crucial for mobile pointer events to work without scrolling
         >

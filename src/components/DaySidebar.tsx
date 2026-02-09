@@ -829,7 +829,6 @@ export function DaySidebar({
                                         py={16}
                                         onMouseEnter={() => onHoverLocation?.(loc.id)}
                                         onMouseLeave={() => onHoverLocation?.(null)}
-                                        onClick={() => onSelectLocation?.(loc.id)}
                                         className={`timeline-location-cell ${hoveredLocationId === loc.id ? 'hovered' : ''} ${selectedLocationId === loc.id ? 'selected' : ''}`}
 
                                     >
