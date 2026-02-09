@@ -23,6 +23,7 @@ interface LocationDetailPanelProps {
 }
 
 const SECTION_ORDER: DaySection[] = ['morning', 'afternoon', 'evening'];
+const getSectionIndex = (section?: DaySection) => SECTION_ORDER.indexOf(section || 'morning');
 
 export function LocationDetailPanel({ 
   location, parentLocation, days, allLocations, routes, onUpdate, onClose, onSelectLocation,
@@ -124,21 +125,33 @@ export function LocationDetailPanel({
   })();
 
   // Find Chronological Neighbors for Travel Info
-  const sortedLocs = [...allLocations]
-    .filter(l => l.startDayId) // Only those on timeline
+  const sortedMainLocs = [...allLocations]
+    .filter(l => l.startDayId)
     .sort((a, b) => {
       const dayA = days.findIndex(d => d.id === a.startDayId);
       const dayB = days.findIndex(d => d.id === b.startDayId);
       if (dayA !== dayB) return dayA - dayB;
-      const slotA = SECTION_ORDER.indexOf(a.startSlot || 'morning');
-      const slotB = SECTION_ORDER.indexOf(b.startSlot || 'morning');
+      const slotA = getSectionIndex(a.startSlot);
+      const slotB = getSectionIndex(b.startSlot);
       if (slotA !== slotB) return slotA - slotB;
       return (a.order || 0) - (b.order || 0);
     });
 
-  const currentIdx = sortedLocs.findIndex(l => l.id === location.id);
-  const prevLoc = currentIdx > 0 ? sortedLocs[currentIdx - 1] : null;
-  const nextLoc = currentIdx < sortedLocs.length - 1 ? sortedLocs[currentIdx + 1] : null;
+  const sortedSiblingSubLocs = [...(parentLocation?.subLocations || [])].sort((a, b) => {
+    const dayA = a.dayOffset || 0;
+    const dayB = b.dayOffset || 0;
+    if (dayA !== dayB) return dayA - dayB;
+    const slotA = getSectionIndex(a.startSlot);
+    const slotB = getSectionIndex(b.startSlot);
+    if (slotA !== slotB) return slotA - slotB;
+    return (a.order || 0) - (b.order || 0);
+  });
+
+  const isSubDestination = Boolean(parentLocation?.subLocations?.some(sub => sub.id === location.id));
+  const orderedNeighbors = isSubDestination ? sortedSiblingSubLocs : sortedMainLocs;
+  const currentIdx = orderedNeighbors.findIndex(l => l.id === location.id);
+  const prevLoc = currentIdx > 0 ? orderedNeighbors[currentIdx - 1] : null;
+  const nextLoc = currentIdx < orderedNeighbors.length - 1 ? orderedNeighbors[currentIdx + 1] : null;
 
   const arrivalRoute = prevLoc ? routes.find(r =>
     (r.fromLocationId === prevLoc.id && r.toLocationId === location.id) ||
@@ -356,6 +369,28 @@ export function LocationDetailPanel({
             <Text size="xs" c="dimmed">{location.lat.toFixed(4)}, {location.lng.toFixed(4)}</Text>
           </Box>
           <Group gap="xs">
+            <Tooltip label={prevLoc ? `Previous: ${prevLoc.name}` : 'No previous destination'}>
+              <Button
+                size="xs"
+                variant="light"
+                leftSection={<ArrowLeft size={14} />}
+                disabled={!prevLoc}
+                onClick={() => prevLoc && onSelectLocation?.(prevLoc.id)}
+              >
+                Back
+              </Button>
+            </Tooltip>
+            <Tooltip label={nextLoc ? `Next: ${nextLoc.name}` : 'No next destination'}>
+              <Button
+                size="xs"
+                variant="light"
+                rightSection={<ArrowRight size={14} />}
+                disabled={!nextLoc}
+                onClick={() => nextLoc && onSelectLocation?.(nextLoc.id)}
+              >
+                Next
+              </Button>
+            </Tooltip>
             <Button
               size="xs"
               variant="outline"
