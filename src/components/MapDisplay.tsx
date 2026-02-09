@@ -140,11 +140,13 @@ function ClusteredLocationMarkers({
   hoveredLocationId,
   onHoverLocation,
   onSelectLocation,
+  enableGrouping = true,
 }: {
   locations: Location[];
   hoveredLocationId?: string | null;
   onHoverLocation?: (id: string | null) => void;
   onSelectLocation?: (id: string | null) => void;
+  enableGrouping?: boolean;
 }) {
   const map = useMapEvents({
     zoomend: () => setZoom(map.getZoom()),
@@ -176,7 +178,7 @@ function ClusteredLocationMarkers({
 
   const clusters = useMemo<LocationCluster[]>(() => {
     if (indexedLocations.length === 0) return [];
-    const shouldCluster = zoom <= 10;
+    const shouldCluster = enableGrouping && zoom <= 10;
     if (!shouldCluster) {
       return indexedLocations.map(entry => ({
         id: `single-${entry.location.id}`,
@@ -221,7 +223,7 @@ function ClusteredLocationMarkers({
       lng: cluster.lng,
       members: cluster.members,
     }));
-  }, [indexedLocations, map, zoom, viewportTick]);
+  }, [indexedLocations, map, zoom, viewportTick, enableGrouping]);
 
   const getJitteredPosition = (entry: IndexedLocation): [number, number] => {
     const meta = duplicateMeta.get(entry.location.id);
@@ -423,6 +425,7 @@ export default function MapDisplay({ days, locations, routes, onEditRoute, hover
   const [routeShapes, setRouteShapes] = useState<Record<string, LatLngTuple[]>>({});
   const routeShapesRef = useRef<Record<string, LatLngTuple[]>>({});
   const [showRouteArrows, setShowRouteArrows] = useState(true);
+  const [enableMapGrouping, setEnableMapGrouping] = useState(true);
   const [showRouteLegend, setShowRouteLegend] = useState(true);
 
   const getAbsDayIdx = useCallback((loc: Location): number => {
@@ -634,6 +637,7 @@ export default function MapDisplay({ days, locations, routes, onEditRoute, hover
           hoveredLocationId={hoveredLocationId}
           onHoverLocation={onHoverLocation}
           onSelectLocation={onSelectLocation}
+          enableGrouping={enableMapGrouping}
         />
         {routeSegments.map(segment => (
           <RouteSegment
@@ -661,6 +665,14 @@ export default function MapDisplay({ days, locations, routes, onEditRoute, hover
                 onChange={event => setShowRouteArrows(event.target.checked)}
               />
               Route arrows
+            </label>
+            <label className="map-route-control-item">
+              <input
+                type="checkbox"
+                checked={enableMapGrouping}
+                onChange={event => setEnableMapGrouping(event.target.checked)}
+              />
+              Marker grouping
             </label>
             <button
               type="button"
