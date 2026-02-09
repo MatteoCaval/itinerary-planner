@@ -365,19 +365,22 @@ export function LocationDetailPanel({
             Back to {parentLocation.name}
           </Button>
         )}
-        <Group justify="space-between" align="start">
-          <Box style={{ flex: 1, minWidth: 0 }}>
-            <Text fw={700} size="lg" truncate>{location.name}</Text>
+        <Box>
+          <Box style={{ minWidth: 0 }}>
+            <Text fw={700} size="lg">{location.name}</Text>
             <Text size="xs" c="dimmed">{location.lat.toFixed(4)}, {location.lng.toFixed(4)}</Text>
           </Box>
-          <Group gap="xs">
+          <Group gap="xs" mt="xs" wrap="wrap">
             {isMainDestinationWithSubItinerary && (
-              <Tooltip label={isSubItineraryActive ? 'Back to main itinerary timeline' : 'Open sub-itinerary timeline'}>
-                <Button
-                  size="xs"
+              <Tooltip
+                label={isSubItineraryActive ? 'Back to main itinerary timeline' : 'Open sub-itinerary timeline'}
+                openDelay={500}
+                withArrow
+              >
+                <ActionIcon
+                  size="sm"
                   variant={isSubItineraryActive ? 'outline' : 'light'}
                   color={isSubItineraryActive ? 'gray' : 'indigo'}
-                  leftSection={isSubItineraryActive ? <ArrowUp size={14} /> : <ArrowDown size={14} />}
                   onClick={() => {
                     if (isSubItineraryActive) {
                       onExitSubItinerary?.();
@@ -385,43 +388,46 @@ export function LocationDetailPanel({
                       onEnterSubItinerary?.(location.id);
                     }
                   }}
+                  aria-label={isSubItineraryActive ? 'Back to main itinerary' : 'Open sub-itinerary'}
                 >
-                  {isSubItineraryActive ? 'Main' : 'Sub'}
-                </Button>
+                  {isSubItineraryActive ? <ArrowUp size={14} /> : <ArrowDown size={14} />}
+                </ActionIcon>
               </Tooltip>
             )}
-            <Tooltip label={prevLoc ? `Previous: ${prevLoc.name}` : 'No previous destination'}>
-              <Button
-                size="xs"
+            <Tooltip label={prevLoc ? `Previous: ${prevLoc.name}` : 'No previous destination'} openDelay={500} withArrow>
+              <ActionIcon
+                size="sm"
                 variant="light"
-                leftSection={<ArrowLeft size={14} />}
                 disabled={!prevLoc}
                 onClick={() => prevLoc && onSelectLocation?.(prevLoc.id)}
+                aria-label="Previous destination"
               >
-                Back
-              </Button>
+                <ArrowLeft size={14} />
+              </ActionIcon>
             </Tooltip>
-            <Tooltip label={nextLoc ? `Next: ${nextLoc.name}` : 'No next destination'}>
-              <Button
-                size="xs"
+            <Tooltip label={nextLoc ? `Next: ${nextLoc.name}` : 'No next destination'} openDelay={500} withArrow>
+              <ActionIcon
+                size="sm"
                 variant="light"
-                rightSection={<ArrowRight size={14} />}
                 disabled={!nextLoc}
                 onClick={() => nextLoc && onSelectLocation?.(nextLoc.id)}
+                aria-label="Next destination"
               >
-                Next
-              </Button>
+                <ArrowRight size={14} />
+              </ActionIcon>
             </Tooltip>
-            <Button
-              size="xs"
-              variant="outline"
-              leftSection={<MapIcon size={14} />}
-              onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location.name)}`, '_blank')}
-            >
-              Maps
-            </Button>
+            <Tooltip label="Open in Google Maps" openDelay={500} withArrow>
+              <ActionIcon
+                size="sm"
+                variant="outline"
+                onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location.name)}`, '_blank')}
+                aria-label="Open in Google Maps"
+              >
+                <MapIcon size={14} />
+              </ActionIcon>
+            </Tooltip>
           </Group>
-        </Group>
+        </Box>
       </Box>
 
       <ScrollArea flex={1} type="auto">
