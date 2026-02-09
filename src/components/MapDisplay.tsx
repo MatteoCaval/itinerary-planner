@@ -63,6 +63,7 @@ function SelectedLocationHandler({ selectedId, locations, isPanelCollapsed }: { 
     if (selectedId) {
       const loc = locations.find(l => l.id === selectedId);
       if (loc) {
+        const currentZoom = map.getZoom();
         let offset = 0;
         const width = window.innerWidth;
         if (width > 768 && !isPanelCollapsed) {
@@ -70,10 +71,10 @@ function SelectedLocationHandler({ selectedId, locations, isPanelCollapsed }: { 
           else if (width >= 1200) offset = 450 / 2;
           else offset = 380 / 2;
         }
-        const targetPoint = map.project([loc.lat, loc.lng], 16);
+        const targetPoint = map.project([loc.lat, loc.lng], currentZoom);
         const actualPoint = L.point(targetPoint.x + offset, targetPoint.y);
-        const targetLatLng = map.unproject(actualPoint, 16);
-        map.setView(targetLatLng, 16, { animate: true, duration: 1 });
+        const targetLatLng = map.unproject(actualPoint, currentZoom);
+        map.flyTo(targetLatLng, currentZoom, { animate: true, duration: 0.8 });
       }
     }
   }, [selectedId, locations, map, isPanelCollapsed]);
