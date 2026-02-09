@@ -31,6 +31,7 @@ interface SidebarContentProps {
   setZoomLevel: (val: number) => void;
   activeParent: Location | null;
   setSelectedLocationId: (id: string | null) => void;
+  exitSubItinerary: () => void;
   days: Day[];
   activeDays: Day[];
   sidebarLocations: Location[];
@@ -69,7 +70,7 @@ export function SidebarContent({
   searchQuery, setSearchQuery, isSearching, suggestionLoading, reorderShortcutHint, handleSearch,
   suggestions, handleAddLocationWrapped,
   zoomLevel, setZoomLevel,
-  activeParent, setSelectedLocationId,
+  activeParent, setSelectedLocationId, exitSubItinerary,
   days, activeDays, sidebarLocations, routes,
   handleSubReorder, handleSubRemove, handleSubUpdate, setEditingRoute, handleSubAdd, updateDay,
   hoveredLocationId, setHoveredLocationId,
@@ -287,7 +288,7 @@ export function SidebarContent({
                             <Text size="xs" c="blue.1" fw={700} tt="uppercase">Planning Sub-Itinerary</Text>
                             <Text size="sm" c="white" fw={700} truncate>{activeParent.name}</Text>
                         </Box>
-                        <Button variant="white" size="compact-xs" onClick={() => setSelectedLocationId(null)}>Back to Main</Button>
+                        <Button variant="white" size="compact-xs" onClick={exitSubItinerary}>Back to Main</Button>
                     </Group>
                 </Paper>
              )}

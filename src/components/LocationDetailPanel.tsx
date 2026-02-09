@@ -20,6 +20,8 @@ interface LocationDetailPanelProps {
   selectedDayId?: string | null;
   onSelectDay?: (id: string | null) => void;
   onCollapse?: () => void;
+  onEnterSubItinerary?: (parentId: string) => void;
+  isSubItineraryActive?: boolean;
 }
 
 const SECTION_ORDER: DaySection[] = ['morning', 'afternoon', 'evening'];
@@ -27,7 +29,7 @@ const getSectionIndex = (section?: DaySection) => SECTION_ORDER.indexOf(section 
 
 export function LocationDetailPanel({ 
   location, parentLocation, days, allLocations, routes, onUpdate, onClose, onSelectLocation,
-  onEditRoute, selectedDayId, onSelectDay, onCollapse 
+  onEditRoute, selectedDayId, onSelectDay, onCollapse, onEnterSubItinerary, isSubItineraryActive = false
 }: LocationDetailPanelProps) {
   const [newChecklistItem, setNewChecklistItem] = useState('');
   const [newLink, setNewLink] = useState({ label: '', url: '' });
@@ -148,6 +150,7 @@ export function LocationDetailPanel({
   });
 
   const isSubDestination = Boolean(parentLocation?.subLocations?.some(sub => sub.id === location.id));
+  const isMainDestinationWithSubItinerary = !isSubDestination && Boolean(location.subLocations?.length);
   const orderedNeighbors = isSubDestination ? sortedSiblingSubLocs : sortedMainLocs;
   const currentIdx = orderedNeighbors.findIndex(l => l.id === location.id);
   const prevLoc = currentIdx > 0 ? orderedNeighbors[currentIdx - 1] : null;
@@ -367,6 +370,18 @@ export function LocationDetailPanel({
             <Text size="xs" c="dimmed">{location.lat.toFixed(4)}, {location.lng.toFixed(4)}</Text>
           </Box>
           <Group gap="xs">
+            {isMainDestinationWithSubItinerary && (
+              <Tooltip label={isSubItineraryActive ? 'Sub-itinerary is active' : 'Open sub-itinerary timeline'}>
+                <Button
+                  size="xs"
+                  variant={isSubItineraryActive ? 'filled' : 'light'}
+                  color="indigo"
+                  onClick={() => onEnterSubItinerary?.(location.id)}
+                >
+                  {isSubItineraryActive ? 'Sub-Itinerary Open' : 'Open Sub-Itinerary'}
+                </Button>
+              </Tooltip>
+            )}
             <Tooltip label={prevLoc ? `Previous: ${prevLoc.name}` : 'No previous destination'}>
               <Button
                 size="xs"

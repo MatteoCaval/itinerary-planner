@@ -6,18 +6,17 @@ interface DrillDownProps {
   days: Day[];
   selectedLocationId: string | null;
   selectedDayId: string | null;
+  drillDownParentId: string | null;
 }
 
-export function useItineraryDrillDown({ locations, days, selectedLocationId, selectedDayId }: DrillDownProps) {
-  // 1. Identify the "Active Parent" destination
+export function useItineraryDrillDown({ locations, days, selectedLocationId, selectedDayId, drillDownParentId }: DrillDownProps) {
+  // 1. Identify the explicitly active parent destination for drill-down mode
   const activeParent = useMemo(() => {
-    const top = locations.find(l => l.id === selectedLocationId);
+    if (!drillDownParentId) return null;
+    const top = locations.find(l => l.id === drillDownParentId);
     if (top && top.subLocations && top.subLocations.length > 0) return top;
-    for (const loc of locations) {
-      if (loc.subLocations?.some(sub => sub.id === selectedLocationId)) return loc;
-    }
     return null;
-  }, [locations, selectedLocationId]);
+  }, [locations, drillDownParentId]);
 
   const isSubItinerary = !!activeParent;
 

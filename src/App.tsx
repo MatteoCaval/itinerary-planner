@@ -42,6 +42,7 @@ function AppContent() {
   
   const [showAIModal, setShowAIModal] = useState(false);
   const [selectedDayId, setSelectedDayId] = useState<string | null>(null);
+  const [drillDownParentId, setDrillDownParentId] = useState<string | null>(null);
   const [panelCollapsed, setPanelCollapsed] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
@@ -121,8 +122,40 @@ function AppContent() {
   const openCloudModal = () => setShowCloudModal(true);
   const openImportPicker = () => importFileInputRef.current?.click();
 
-  const handleScrollToLocation = (id: string | null) => {
+  const handleSelectLocation = (id: string | null) => {
     setSelectedLocationId(id);
+    if (!id) {
+      setDrillDownParentId(null);
+      return;
+    }
+
+    const topLevel = locations.find(location => location.id === id);
+    if (topLevel) {
+      // Clicking a main destination should focus/select it without entering sub-itinerary mode.
+      setDrillDownParentId(null);
+      return;
+    }
+
+    const parent = locations.find(location => location.subLocations?.some(sub => sub.id === id));
+    if (parent) {
+      setDrillDownParentId(parent.id);
+    }
+  };
+
+  const handleEnterSubItinerary = (parentId: string) => {
+    setDrillDownParentId(parentId);
+    setSelectedLocationId(parentId);
+  };
+
+  const handleExitSubItinerary = () => {
+    if (activeParent) {
+      setSelectedLocationId(activeParent.id);
+    }
+    setDrillDownParentId(null);
+  };
+
+  const handleScrollToLocation = (id: string | null) => {
+    handleSelectLocation(id);
     if (id) {
       close(); // Close sidebar on mobile when selecting a location
       setTimeout(() => {
@@ -164,7 +197,7 @@ function AppContent() {
     mapLocations,
     sidebarLocations,
     isSlotBlocked
-  } = useItineraryDrillDown({ locations, days, selectedLocationId, selectedDayId });
+  } = useItineraryDrillDown({ locations, days, selectedLocationId, selectedDayId, drillDownParentId });
 
   // --- Specialized Handlers for Sub-Itinerary ---
   const handleSubReorder = (activeId: string, overId: string | null, newDayId: string | null, newSlot: DaySection | null) => {
@@ -418,7 +451,7 @@ function AppContent() {
               reorderShortcutHint={reorderShortcutHint}
               suggestions={suggestions} handleAddLocationWrapped={handleAddLocationWrapped}
               zoomLevel={zoomLevel} setZoomLevel={setZoomLevel}
-              activeParent={activeParent} setSelectedLocationId={setSelectedLocationId}
+              activeParent={activeParent} setSelectedLocationId={handleSelectLocation} exitSubItinerary={handleExitSubItinerary}
               days={days} activeDays={activeDays} sidebarLocations={sidebarLocations} routes={routes}
               handleSubReorder={handleSubReorder} handleSubRemove={handleSubRemove}
               handleSubUpdate={handleSubUpdate} setEditingRoute={setEditingRoute} handleSubAdd={handleSubAdd} updateDay={updateDay}
@@ -462,7 +495,7 @@ function AppContent() {
             reorderShortcutHint={reorderShortcutHint}
             suggestions={suggestions} handleAddLocationWrapped={handleAddLocationWrapped}
             zoomLevel={zoomLevel} setZoomLevel={setZoomLevel}
-            activeParent={activeParent} setSelectedLocationId={setSelectedLocationId}
+            activeParent={activeParent} setSelectedLocationId={handleSelectLocation} exitSubItinerary={handleExitSubItinerary}
             days={days} activeDays={activeDays} sidebarLocations={sidebarLocations} routes={routes}
             handleSubReorder={handleSubReorder} handleSubRemove={handleSubRemove}
             handleSubUpdate={handleSubUpdate} setEditingRoute={setEditingRoute} handleSubAdd={handleSubAdd} updateDay={updateDay}
@@ -494,12 +527,14 @@ function AppContent() {
                 allLocations={locations}
                 routes={routes}
                 onUpdate={updateLocation}
-                onClose={() => setSelectedLocationId(null)}
-                onSelectLocation={setSelectedLocationId}
+                onClose={() => handleSelectLocation(null)}
+                onSelectLocation={handleSelectLocation}
                 onEditRoute={(from, to) => setEditingRoute({ fromId: from, toId: to })}
                 selectedDayId={selectedDayId}
                 onSelectDay={setSelectedDayId}
                 onCollapse={() => setPanelCollapsed(true)}
+                onEnterSubItinerary={handleEnterSubItinerary}
+                isSubItineraryActive={activeParent?.id === selectedLocation.id}
               />
             </Paper>
 
