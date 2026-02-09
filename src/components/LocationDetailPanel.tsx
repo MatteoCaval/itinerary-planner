@@ -80,6 +80,14 @@ export function LocationDetailPanel({
     fetchImage();
   }, [location?.id]); // Only re-run if location ID changes
 
+  const resolvedParentLocation = useMemo(() => {
+    if (!location) return null;
+    if (parentLocation?.subLocations?.some(sub => sub.id === location.id)) {
+      return parentLocation;
+    }
+    return allLocations.find(loc => loc.subLocations?.some(sub => sub.id === location.id)) || null;
+  }, [allLocations, location, parentLocation]);
+
   if (!location) return null;
 
   // Calculate Schedule Recap
@@ -140,7 +148,7 @@ export function LocationDetailPanel({
       return (a.order || 0) - (b.order || 0);
     });
 
-  const sortedSiblingSubLocs = [...(parentLocation?.subLocations || [])].sort((a, b) => {
+  const sortedSiblingSubLocs = [...(resolvedParentLocation?.subLocations || [])].sort((a, b) => {
     const dayA = a.dayOffset || 0;
     const dayB = b.dayOffset || 0;
     if (dayA !== dayB) return dayA - dayB;
@@ -150,7 +158,7 @@ export function LocationDetailPanel({
     return (a.order || 0) - (b.order || 0);
   });
 
-  const isSubDestination = Boolean(parentLocation?.subLocations?.some(sub => sub.id === location.id));
+  const isSubDestination = Boolean(resolvedParentLocation?.subLocations?.some(sub => sub.id === location.id));
   const isMainDestinationWithSubItinerary = !isSubDestination && Boolean(location.subLocations?.length);
   const orderedNeighbors = isSubDestination ? sortedSiblingSubLocs : sortedMainLocs;
   const currentIdx = orderedNeighbors.findIndex(l => l.id === location.id);

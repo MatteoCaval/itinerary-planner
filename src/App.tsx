@@ -143,8 +143,20 @@ function AppContent() {
   };
 
   const handleEnterSubItinerary = (parentId: string) => {
+    const parent = locations.find(location => location.id === parentId);
+    const sectionOrder: DaySection[] = ['morning', 'afternoon', 'evening'];
+    const firstSub = [...(parent?.subLocations || [])].sort((a, b) => {
+      const dayA = a.dayOffset ?? Number.MAX_SAFE_INTEGER;
+      const dayB = b.dayOffset ?? Number.MAX_SAFE_INTEGER;
+      if (dayA !== dayB) return dayA - dayB;
+      const slotA = sectionOrder.indexOf(a.startSlot || 'morning');
+      const slotB = sectionOrder.indexOf(b.startSlot || 'morning');
+      if (slotA !== slotB) return slotA - slotB;
+      return (a.order || 0) - (b.order || 0);
+    })[0];
+
     setDrillDownParentId(parentId);
-    setSelectedLocationId(parentId);
+    setSelectedLocationId(firstSub?.id || parentId);
   };
 
   const handleExitSubItinerary = () => {
