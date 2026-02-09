@@ -377,6 +377,7 @@ export function LocationDetailPanel({
                   size="xs"
                   variant={isSubItineraryActive ? 'outline' : 'light'}
                   color={isSubItineraryActive ? 'gray' : 'indigo'}
+                  leftSection={isSubItineraryActive ? <ArrowUp size={14} /> : <ArrowDown size={14} />}
                   onClick={() => {
                     if (isSubItineraryActive) {
                       onExitSubItinerary?.();
@@ -385,7 +386,7 @@ export function LocationDetailPanel({
                     }
                   }}
                 >
-                  {isSubItineraryActive ? 'Back to Main Itinerary' : 'Open Sub-Itinerary'}
+                  {isSubItineraryActive ? 'Main' : 'Sub'}
                 </Button>
               </Tooltip>
             )}
