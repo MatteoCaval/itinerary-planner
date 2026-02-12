@@ -75,6 +75,7 @@ export const generateAIItinerary = async (
     - Locations can have "subLocations". Use this for major destinations (cities) where the user stays for multiple days.
     - Example: If visiting Tokyo for 3 days, create a single top-level Location "Tokyo" spanning 9 slots (3 days). Inside it, add "subLocations" for specific Tokyo spots (Shibuya, Senso-ji, etc.).
     - Sub-locations use "dayOffset" (0-based) instead of "startDayId". "dayOffset: 0" means the first day of the stay in that city.
+    - Sub-locations may share the same "startSlot" on the same "dayOffset" when multiple activities happen in the same part of the day.
     
     ACCOMMODATIONS:
     - Each day can have an "accommodation" with a "name", "lat", "lng", and "notes".
@@ -82,8 +83,9 @@ export const generateAIItinerary = async (
     
     SLOT CONSTRAINTS (CRITICAL):
     - A day has exactly 3 slots: "morning", "afternoon", "evening".
-    - You CANNOT have more than one Location per slot at the same level. 
-    - If you want to suggest multiple nearby activities for the same time of day, you MUST create a single Location entry and list both activities in the "notes" field.
+    - Top-level locations: You CANNOT have more than one Location per slot at the same level.
+    - Sub-locations: You MAY include multiple subLocations in the same slot for the same dayOffset.
+    - If you want multiple nearby activities at the same time of day for a top-level location, you MUST create a single Location entry and list both activities in the "notes" field.
     - An activity can have a "duration" of 1, 2, or 3 slots. Ensure durations do not cause overlaps.
     
     RULES:
@@ -155,6 +157,16 @@ export const generateAIItinerary = async (
               "lng": number,
               "dayOffset": number (0-based relative to parent start),
               "startSlot": "morning" | "afternoon" | "evening",
+              "duration": number (1-3),
+              "notes": "Details"
+            },
+            {
+              "id": "temp_sub_id_2",
+              "name": "Another Sub Location",
+              "lat": number,
+              "lng": number,
+              "dayOffset": number (same dayOffset as above),
+              "startSlot": "afternoon" (same slot allowed for subLocations),
               "duration": number (1-3),
               "notes": "Details"
             }

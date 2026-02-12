@@ -1,0 +1,254 @@
+Itinerary Planner - External AI Import Schema and Rules
+
+Purpose
+- Use this document to prompt any external AI so it returns JSON that can be imported directly into this app.
+- Return JSON only (no markdown code fences, no commentary).
+
+JSON Schema (Draft 2020-12)
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ItineraryImportPayload",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "startDate": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
+    "endDate": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
+    "version": { "type": "string" },
+    "days": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/day" }
+    },
+    "locations": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/location" }
+    },
+    "routes": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/route" }
+    }
+  },
+  "$defs": {
+    "checklistItem": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["id", "text", "completed"],
+      "properties": {
+        "id": { "type": "string" },
+        "text": { "type": "string" },
+        "completed": { "type": "boolean" }
+      }
+    },
+    "linkItem": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["id", "label", "url"],
+      "properties": {
+        "id": { "type": "string" },
+        "label": { "type": "string" },
+        "url": { "type": "string" }
+      }
+    },
+    "accommodation": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["name"],
+      "properties": {
+        "name": { "type": "string" },
+        "lat": { "type": "number" },
+        "lng": { "type": "number" },
+        "cost": {
+          "oneOf": [
+            { "type": "number" },
+            { "type": "string" }
+          ]
+        },
+        "notes": { "type": "string" },
+        "link": { "type": "string" }
+      }
+    },
+    "day": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["id", "date"],
+      "properties": {
+        "id": { "type": "string" },
+        "date": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
+        "label": { "type": "string" },
+        "accommodation": { "$ref": "#/$defs/accommodation" }
+      }
+    },
+    "route": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["id", "fromLocationId", "toLocationId"],
+      "properties": {
+        "id": { "type": "string" },
+        "fromLocationId": { "type": "string" },
+        "toLocationId": { "type": "string" },
+        "transportType": {
+          "type": "string",
+          "enum": ["walk", "car", "bus", "train", "flight", "ferry", "other"]
+        },
+        "duration": { "type": "string" },
+        "cost": {
+          "oneOf": [
+            { "type": "number" },
+            { "type": "string" }
+          ]
+        },
+        "notes": { "type": "string" }
+      }
+    },
+    "location": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["id", "name", "lat", "lng"],
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "lat": { "type": "number" },
+        "lng": { "type": "number" },
+        "notes": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "dayIds": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "startDayId": { "type": "string" },
+        "startSlot": {
+          "type": "string",
+          "enum": ["morning", "afternoon", "evening"]
+        },
+        "duration": { "type": "number", "minimum": 1 },
+        "order": { "type": "number" },
+        "category": {
+          "type": "string",
+          "enum": ["sightseeing", "dining", "hotel", "transit", "other"]
+        },
+        "checklist": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/checklistItem" }
+        },
+        "links": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/linkItem" }
+        },
+        "cost": {
+          "oneOf": [
+            { "type": "number" },
+            { "type": "string" }
+          ]
+        },
+        "targetTime": { "type": "string" },
+        "dayOffset": { "type": "integer", "minimum": 0 },
+        "subLocations": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/location" }
+        }
+      }
+    }
+  }
+}
+
+App Rules (Required for Good Import Behavior)
+- Return a single valid JSON object only.
+- IDs must be unique across days, locations, subLocations, and routes.
+- Use ISO dates: YYYY-MM-DD.
+- If days are provided, locations should reference those day IDs in startDayId.
+- Top-level locations: do not place more than one top-level location in the same day slot.
+- Sub-itinerary behavior: multiple subLocations ARE allowed in the same slot for the same dayOffset.
+- subLocations should use dayOffset (0-based from parent startDayId).
+- For top-level multi-activity in one slot, merge activities in notes instead of adding a second top-level location.
+- Duration unit is slots (morning/afternoon/evening). Use integer durations.
+- Transit should be represented as routes, not as standalone location activities.
+- fromLocationId and toLocationId in routes must match existing location/subLocation IDs.
+- Unassigned entries are allowed by omitting startDayId/startSlot (or dayOffset for subLocations).
+- Recommended version value: "1.0".
+
+Importable Output Shape (Summary)
+- Root: startDate, endDate, version, days[], locations[], routes[]
+- day: id, date, optional label, optional accommodation
+- location: id, name, lat, lng, optional scheduling fields, optional subLocations
+- route: id, fromLocationId, toLocationId, optional transport fields
+
+Example (Shows Multiple subLocations In Same Afternoon)
+{
+  "startDate": "2026-04-10",
+  "endDate": "2026-04-12",
+  "version": "1.0",
+  "days": [
+    { "id": "day-1", "date": "2026-04-10" },
+    { "id": "day-2", "date": "2026-04-11" },
+    { "id": "day-3", "date": "2026-04-12" }
+  ],
+  "locations": [
+    {
+      "id": "tokyo-base",
+      "name": "Tokyo",
+      "lat": 35.6762,
+      "lng": 139.6503,
+      "startDayId": "day-1",
+      "startSlot": "morning",
+      "duration": 9,
+      "category": "sightseeing",
+      "order": 0,
+      "subLocations": [
+        {
+          "id": "asakusa",
+          "name": "Asakusa",
+          "lat": 35.7148,
+          "lng": 139.7967,
+          "dayOffset": 0,
+          "startSlot": "morning",
+          "duration": 1,
+          "order": 0,
+          "category": "sightseeing"
+        },
+        {
+          "id": "shibuya-crossing",
+          "name": "Shibuya Crossing",
+          "lat": 35.6595,
+          "lng": 139.7005,
+          "dayOffset": 0,
+          "startSlot": "afternoon",
+          "duration": 1,
+          "order": 1,
+          "category": "sightseeing"
+        },
+        {
+          "id": "harajuku",
+          "name": "Harajuku",
+          "lat": 35.6702,
+          "lng": 139.7027,
+          "dayOffset": 0,
+          "startSlot": "afternoon",
+          "duration": 1,
+          "order": 2,
+          "category": "sightseeing"
+        }
+      ]
+    }
+  ],
+  "routes": [
+    {
+      "id": "r1",
+      "fromLocationId": "asakusa",
+      "toLocationId": "shibuya-crossing",
+      "transportType": "train",
+      "duration": "35 mins"
+    },
+    {
+      "id": "r2",
+      "fromLocationId": "shibuya-crossing",
+      "toLocationId": "harajuku",
+      "transportType": "walk",
+      "duration": "15 mins"
+    }
+  ]
+}
+
+Prompt Template For Any External AI
+- Task: Build an importable itinerary JSON for my app.
+- Requirements: <paste your trip requirements here>
+- Constraints: Follow EXACTLY the schema and rules above.
+- Output: Return only one valid JSON object. No markdown, no extra text.
