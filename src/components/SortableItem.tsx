@@ -20,7 +20,7 @@ interface SortableItemProps {
   isSubLocation?: boolean;
 }
 
-export function SortableItem({
+export const SortableItem = React.memo(function SortableItem({
   id,
   location,
   index,
@@ -235,4 +235,4 @@ export function SortableItem({
       )}
     </Box>
   );
-}
+});

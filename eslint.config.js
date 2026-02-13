@@ -24,7 +24,7 @@ export default tseslint.config(
     },
     rules: {
       ...reactHooks.configs.recommended.rules,
-      'react-hooks/exhaustive-deps': 'off',
+      'react-hooks/exhaustive-deps': 'warn',
       'react-refresh/only-export-components': [
         'error',
         { allowConstantExport: true, allowExportNames: ['useItinerary'] },
@@ -36,6 +36,11 @@ export default tseslint.config(
   },
   {
     files: ['**/*.{test,spec}.{ts,tsx}'],
+    languageOptions: {
+      parserOptions: {
+        project: null,
+      },
+    },
     rules: {
       '@typescript-eslint/no-explicit-any': 'off',
     },

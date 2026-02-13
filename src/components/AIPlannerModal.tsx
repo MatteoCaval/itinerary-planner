@@ -4,6 +4,7 @@ import { Sparkles, Settings, AlertCircle, Calendar, MessageSquareQuote } from 'l
 import { AISettings, Day, DaySection, Location, LocationCategory, Route, TransportType } from '../types';
 import { generateAIItinerary } from '../aiService';
 import { v4 as uuidv4 } from 'uuid';
+import { SECTION_ORDER, DEFAULT_SECTION, DEFAULT_CATEGORY } from '../constants/daySection';
 
 interface AIPlannerModalProps {
   show: boolean;
@@ -26,7 +27,7 @@ export function AIPlannerModal({ show, onClose, days, currentLocations, currentR
   const [pendingResults, setPendingResults] = useState<{ locations: Location[], routes: Route[], days?: Day[] } | null>(null);
 
   const hasDates = days.length > 0;
-  const validSlots: DaySection[] = ['morning', 'afternoon', 'evening'];
+  const validSlots: DaySection[] = SECTION_ORDER;
   const validCategories: LocationCategory[] = ['sightseeing', 'dining', 'hotel', 'transit', 'other'];
   const validTransportTypes: TransportType[] = ['walk', 'car', 'bus', 'train', 'flight', 'ferry', 'other'];
 
@@ -57,8 +58,8 @@ export function AIPlannerModal({ show, onClose, days, currentLocations, currentR
       const mapLocation = (loc: Partial<Location>, index: number): Location => {
         const newId = uuidv4();
         if (loc.id) idMap[loc.id] = newId;
-        const mappedSlot = loc.startSlot && validSlots.includes(loc.startSlot) ? loc.startSlot : 'morning';
-        const mappedCategory = loc.category && validCategories.includes(loc.category) ? loc.category : 'sightseeing';
+        const mappedSlot = loc.startSlot && validSlots.includes(loc.startSlot) ? loc.startSlot : DEFAULT_SECTION;
+        const mappedCategory = loc.category && validCategories.includes(loc.category) ? loc.category : DEFAULT_CATEGORY;
         
         return {
           id: newId,

@@ -1,5 +1,3 @@
-import { initializeApp } from "firebase/app";
-import { getDatabase, ref, set, get, child } from "firebase/database";
 import { trackError } from './services/telemetry';
 
 const firebaseConfig = {
@@ -12,8 +10,19 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
+let dbPromise: Promise<ReturnType<typeof import('firebase/database').getDatabase>> | null = null;
+
+async function getDb() {
+  if (!dbPromise) {
+    dbPromise = (async () => {
+      const { initializeApp } = await import('firebase/app');
+      const { getDatabase } = await import('firebase/database');
+      const app = initializeApp(firebaseConfig);
+      return getDatabase(app);
+    })();
+  }
+  return dbPromise;
+}
 
 // Helper to remove undefined values recursively (Firebase doesn't allow them)
 const sanitizeForFirebase = (obj: unknown): unknown => {
@@ -41,6 +50,8 @@ const formatErrorMessage = (error: unknown) => {
 
 export const saveItinerary = async (passcode: string, data: unknown): Promise<{ success: boolean; error?: string }> => {
   try {
+    const { ref, set } = await import('firebase/database');
+    const db = await getDb();
     const sanitizedData = sanitizeForFirebase(data);
     await set(ref(db, 'itineraries/' + passcode), sanitizedData);
     return { success: true };
@@ -52,6 +63,8 @@ export const saveItinerary = async (passcode: string, data: unknown): Promise<{ 
 
 export const loadItinerary = async (passcode: string): Promise<{ success: boolean; data?: unknown; error?: string }> => {
   try {
+    const { ref, get, child } = await import('firebase/database');
+    const db = await getDb();
     const dbRef = ref(db);
     const snapshot = await get(child(dbRef, `itineraries/${passcode}`));
     if (snapshot.exists()) {

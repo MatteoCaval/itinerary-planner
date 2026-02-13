@@ -1,7 +1,5 @@
-import { Day, Location, Route, TRANSPORT_LABELS, DaySection } from './types';
-
-const SECTION_ORDER: DaySection[] = ['morning', 'afternoon', 'evening'];
-const getSectionIndex = (section?: DaySection) => section ? SECTION_ORDER.indexOf(section) : 0;
+import { Day, Location, Route, TRANSPORT_LABELS } from './types';
+import { getSectionIndex } from './constants/daySection';
 
 export const generateMarkdown = (days: Day[], locations: Location[], routes: Route[], startDate: string, endDate: string) => {
   let md = `# Travel Itinerary\n`;

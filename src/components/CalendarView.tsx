@@ -1,5 +1,6 @@
 import { SimpleGrid, Paper, Text, Box, Stack } from '@mantine/core';
-import { Day, Location, LocationCategory, DaySection } from '../types';
+import { Day, Location, LocationCategory } from '../types';
+import { getSectionIndex } from '../constants/daySection';
 
 interface CalendarViewProps {
   days: Day[];
@@ -13,12 +14,6 @@ const CATEGORY_COLORS: Record<LocationCategory, string> = {
   hotel: 'grape',
   transit: 'teal',
   other: 'gray'
-};
-
-const SECTION_ORDER: DaySection[] = ['morning', 'afternoon', 'evening'];
-const getSectionIndex = (section?: DaySection) => {
-  if (!section) return 0;
-  return SECTION_ORDER.indexOf(section);
 };
 
 export function CalendarView({ days, locations, onSelectLocation }: CalendarViewProps) {

@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { AppShell, Burger, Group, Button, ActionIcon, Tooltip, Text, Box, Paper, Menu } from '@mantine/core';
+import { AppShell, ActionIcon, Tooltip, Box, Paper } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
 import { v4 as uuidv4 } from 'uuid';
-import { Map as MapIcon, Download, Upload, Cloud, FileText, MoreHorizontal, History, Undo, Redo, Sparkles, ChevronLeft } from 'lucide-react';
+import { ChevronLeft } from 'lucide-react';
 import MapDisplay from './components/MapDisplay';
 import { RouteEditor } from './components/RouteEditor';
 import { DayAssignmentModal } from './components/DayAssignmentModal';
@@ -21,29 +21,37 @@ import { useSidebarResize } from './hooks/useSidebarResize';
 import { usePlaceSearch } from './hooks/usePlaceSearch';
 import { useImportExport } from './hooks/useImportExport';
 import { AppErrorBoundary } from './components/AppErrorBoundary';
+import { AppHeader } from './components/AppHeader';
 import { trackError, trackEvent } from './services/telemetry';
-import { ACTION_LABELS } from './constants/actionLabels';
+import { SECTION_ORDER, DEFAULT_SECTION, DEFAULT_CATEGORY, UNASSIGNED_ZONE_ID, SLOT_PREFIX } from './constants/daySection';
+import { useAppModals } from './hooks/useAppModals';
 
 function AppContent() {
   const {
     startDate, endDate, days, locations, routes, aiSettings,
     selectedLocationId, hoveredLocationId,
     historyIndex, historyLength, history,
-    updateDateRange, updateDay,
-    addLocation, removeLocation, updateLocation, reorderLocations,
+    addLocation, updateLocation,
     updateRoute,
     setAiSettings,
     setSelectedLocationId, setHoveredLocationId,
     navigateHistory,
-    getExportData, loadFromData, clearAll
+    getExportData, loadFromData
   } = useItinerary();
 
   const [opened, { toggle, close }] = useDisclosure();
-  
-  const [showAIModal, setShowAIModal] = useState(false);
+  const {
+    showAIModal, setShowAIModal,
+    showCloudModal, setShowCloudModal,
+    showHistoryModal, setShowHistoryModal,
+    editingRoute, setEditingRoute,
+    editingDayAssignment, setEditingDayAssignment,
+    panelCollapsed, setPanelCollapsed,
+    pendingAddToDay, setPendingAddToDay,
+  } = useAppModals();
+
   const [selectedDayId, setSelectedDayId] = useState<string | null>(null);
   const [drillDownParentId, setDrillDownParentId] = useState<string | null>(null);
-  const [panelCollapsed, setPanelCollapsed] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const { sidebarWidth, startResizing } = useSidebarResize({ initialWidth: 500 });
@@ -54,13 +62,8 @@ function AppContent() {
     setSelectedDayId(null);
   }, [selectedLocationId]);
 
-  const [editingRoute, setEditingRoute] = useState<{ fromId: string; toId: string } | null>(null);
-  const [editingDayAssignment, setEditingDayAssignment] = useState<Location | null>(null);
-  const [pendingAddToDay, setPendingAddToDay] = useState<{ dayId: string, slot?: DaySection } | null>(null);
   const [zoomLevel, setZoomLevel] = useState(1.0);
   const [sidebarView, setSidebarView] = useState<'timeline' | 'calendar' | 'budget'>('timeline');
-  const [showCloudModal, setShowCloudModal] = useState(false);
-  const [showHistoryModal, setShowHistoryModal] = useState(false);
   const importFileInputRef = React.useRef<HTMLInputElement | null>(null);
   const reorderShortcutHint = useMemo(() => {
     if (typeof navigator !== 'undefined' && /(Mac|iPhone|iPad|iPod)/i.test(navigator.platform)) {
@@ -72,7 +75,7 @@ function AppContent() {
   const handleAddLocation = async (lat: number, lng: number, name?: string, targetDayId?: string, targetSlot?: DaySection) => {
     const resolvedName = name || await reverseGeocode(lat, lng);
     let assignedDayId = targetDayId || pendingAddToDay?.dayId || (days.length > 0 ? days[0].id : undefined);
-    const assignedSlot = targetSlot || pendingAddToDay?.slot || 'morning';
+    const assignedSlot = targetSlot || pendingAddToDay?.slot || DEFAULT_SECTION;
 
     // Handle explicit 'unassigned' target
     if (assignedDayId === 'unassigned') {
@@ -87,7 +90,7 @@ function AppContent() {
       startSlot: assignedSlot,
       duration: 3,
       order: locations.length,
-      category: 'sightseeing',
+      category: DEFAULT_CATEGORY,
       checklist: [],
       links: [],
       cost: 0,
@@ -120,7 +123,6 @@ function AppContent() {
   const openHistoryModal = () => setShowHistoryModal(true);
   const openAIModal = () => setShowAIModal(true);
   const openCloudModal = () => setShowCloudModal(true);
-  const openImportPicker = () => importFileInputRef.current?.click();
 
   const handleSelectLocation = (id: string | null) => {
     setSelectedLocationId(id);
@@ -144,13 +146,12 @@ function AppContent() {
 
   const handleEnterSubItinerary = (parentId: string) => {
     const parent = locations.find(location => location.id === parentId);
-    const sectionOrder: DaySection[] = ['morning', 'afternoon', 'evening'];
     const firstSub = [...(parent?.subLocations || [])].sort((a, b) => {
       const dayA = a.dayOffset ?? Number.MAX_SAFE_INTEGER;
       const dayB = b.dayOffset ?? Number.MAX_SAFE_INTEGER;
       if (dayA !== dayB) return dayA - dayB;
-      const slotA = sectionOrder.indexOf(a.startSlot || 'morning');
-      const slotB = sectionOrder.indexOf(b.startSlot || 'morning');
+      const slotA = SECTION_ORDER.indexOf(a.startSlot || DEFAULT_SECTION);
+      const slotB = SECTION_ORDER.indexOf(b.startSlot || DEFAULT_SECTION);
       if (slotA !== slotB) return slotA - slotB;
       return (a.order || 0) - (b.order || 0);
     })[0];
@@ -221,7 +222,7 @@ function AppContent() {
 
     // Calculate new dayOffset
     let newDayOffset: number | undefined = undefined;
-    if (newDayId && newDayId !== 'unassigned-zone') {
+    if (newDayId && newDayId !== UNASSIGNED_ZONE_ID) {
       const dayIdx = activeDays.findIndex(d => d.id === newDayId);
       if (dayIdx !== -1) newDayOffset = dayIdx;
     }
@@ -231,11 +232,11 @@ function AppContent() {
     const updatedItem = {
       ...originalItem,
       dayOffset: newDayOffset,
-      startSlot: newSlot || (newDayOffset !== undefined ? originalItem.startSlot || 'morning' : undefined)
+      startSlot: newSlot || (newDayOffset !== undefined ? originalItem.startSlot || DEFAULT_SECTION : undefined)
     };
 
     // Handle reordering within the array
-    if (overId && overId !== activeId && overId !== 'unassigned-zone' && !overId.startsWith('slot-')) {
+    if (overId && overId !== activeId && overId !== UNASSIGNED_ZONE_ID && !overId.startsWith(SLOT_PREFIX)) {
        newSubLocations.splice(activeIdx, 1);
        const overIdx = newSubLocations.findIndex(s => s.id === overId);
        if (overIdx !== -1) {
@@ -286,7 +287,7 @@ function AppContent() {
         ...itemToNest,
         dayOffset: 0,
         startDayId: undefined, // Sub-locations use dayOffset
-        startSlot: 'morning',
+        startSlot: DEFAULT_SECTION,
         order: (parent.subLocations || []).length
       };
 
@@ -332,8 +333,8 @@ function AppContent() {
         name: resolvedName.split(',')[0],
         lat, lng, order: (activeParent.subLocations || []).length,
         dayOffset: dayIdx === -1 ? 0 : dayIdx,
-        startSlot: targetSlot || pendingAddToDay?.slot || 'morning',
-        category: 'sightseeing',
+        startSlot: targetSlot || pendingAddToDay?.slot || DEFAULT_SECTION,
+        category: DEFAULT_CATEGORY,
         dayIds: []
       };
       
@@ -369,69 +370,20 @@ function AppContent() {
       padding={0}
     >
       <AppShell.Header style={{ zIndex: 1200 }}>
-        <Group h="100%" px="md" justify="space-between" wrap="nowrap">
-          <Group wrap="nowrap">
-            <Burger opened={opened} onClick={toggle} size="sm" color="blue" hiddenFrom="sm" />
-            <Text fw={700} fz="lg" c="blue" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <MapIcon size={20} /> <Box visibleFrom="xs">Itinerary Planner</Box>
-            </Text>
-          </Group>
-          <Group gap="xs" visibleFrom="lg" wrap="nowrap">
-            <ActionIcon variant="subtle" color="gray" onClick={() => navigateHistory(historyIndex - 1)} disabled={historyIndex <= 0}>
-                <Undo size={18} />
-            </ActionIcon>
-            <ActionIcon variant="subtle" color="gray" onClick={() => navigateHistory(historyIndex + 1)} disabled={historyIndex >= historyLength - 1}>
-                <Redo size={18} />
-            </ActionIcon>
-            <Button variant="default" size="xs" leftSection={<History size={16} />} onClick={openHistoryModal}>{ACTION_LABELS.history}</Button>
-            <Button variant="light" color="blue" size="xs" leftSection={<Sparkles size={16} />} onClick={openAIModal}>{ACTION_LABELS.aiPlanner}</Button>
-            <Button variant="default" size="xs" leftSection={<FileText size={16} />} onClick={handleExportMarkdown}>{ACTION_LABELS.exportMarkdown}</Button>
-            <Button variant="default" size="xs" leftSection={<Upload size={16} />} onClick={openImportPicker}>{ACTION_LABELS.importJson}</Button>
-            <Button variant="default" size="xs" leftSection={<Download size={16} />} onClick={handleExport}>{ACTION_LABELS.exportJson}</Button>
-            <Button variant="filled" color="blue" size="xs" leftSection={<Cloud size={16} />} onClick={openCloudModal}>{ACTION_LABELS.cloudSync}</Button>
-          </Group>
-
-          <Box hiddenFrom="lg">
-            <Menu
-              shadow="md"
-              width={220}
-              position="bottom-end"
-              withinPortal
-              zIndex={4000}
-            >
-              <Menu.Target>
-                <ActionIcon variant="light" size="lg">
-                  <MoreHorizontal size={20} />
-                </ActionIcon>
-              </Menu.Target>
-
-              <Menu.Dropdown>
-                <Menu.Label>Actions</Menu.Label>
-                <Menu.Item leftSection={<History size={16} />} onClick={openHistoryModal}>{ACTION_LABELS.history}</Menu.Item>
-                <Menu.Item leftSection={<Sparkles size={16} />} onClick={openAIModal} color="blue">{ACTION_LABELS.aiPlanner}</Menu.Item>
-                <Menu.Item leftSection={<Cloud size={16} />} onClick={openCloudModal}>{ACTION_LABELS.cloudSync}</Menu.Item>
-                <Menu.Item leftSection={<FileText size={16} />} onClick={handleExportMarkdown}>
-                  {ACTION_LABELS.exportMarkdown}
-                </Menu.Item>
-                <Menu.Divider />
-                <Menu.Label>Data</Menu.Label>
-                <Menu.Item leftSection={<Upload size={16} />} onClick={openImportPicker}>
-                  {ACTION_LABELS.importJson}
-                </Menu.Item>
-                <Menu.Item leftSection={<Download size={16} />} onClick={handleExport}>
-                  {ACTION_LABELS.exportJson}
-                </Menu.Item>
-              </Menu.Dropdown>
-            </Menu>
-          </Box>
-          <input
-            ref={importFileInputRef}
-            type="file"
-            style={{ display: 'none' }}
-            onChange={handleImport}
-            accept=".json"
-          />
-        </Group>
+        <AppHeader
+          opened={opened}
+          toggle={toggle}
+          historyIndex={historyIndex}
+          historyLength={historyLength}
+          navigateHistory={navigateHistory}
+          onOpenHistory={openHistoryModal}
+          onOpenAI={openAIModal}
+          onOpenCloud={openCloudModal}
+          onExportMarkdown={handleExportMarkdown}
+          onImport={handleImport}
+          onExport={handleExport}
+          importFileInputRef={importFileInputRef}
+        />
       </AppShell.Header>
 
       <AppShell.Navbar p={0} style={{ zIndex: 1000 }} className="planner-navbar-motion">
@@ -454,8 +406,8 @@ function AppContent() {
           onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
         />
         <Box visibleFrom="sm" h="100%">
+          <AppErrorBoundary title="Sidebar error" message="The sidebar crashed. You can retry or reload the app.">
             <SidebarContent
-              startDate={startDate} endDate={endDate} updateDateRange={updateDateRange}
               sidebarView={sidebarView} setSidebarView={setSidebarView}
               pendingAddToDay={pendingAddToDay} setPendingAddToDay={setPendingAddToDay}
               searchQuery={searchQuery} setSearchQuery={setSearchQuery} isSearching={isSearching} handleSearch={handleSearch}
@@ -463,20 +415,18 @@ function AppContent() {
               reorderShortcutHint={reorderShortcutHint}
               suggestions={suggestions} handleAddLocationWrapped={handleAddLocationWrapped}
               zoomLevel={zoomLevel} setZoomLevel={setZoomLevel}
-              activeParent={activeParent} setSelectedLocationId={handleSelectLocation} exitSubItinerary={handleExitSubItinerary}
-              days={days} activeDays={activeDays} sidebarLocations={sidebarLocations} routes={routes}
+              activeParent={activeParent} onSelectLocation={handleSelectLocation} exitSubItinerary={handleExitSubItinerary}
+              activeDays={activeDays} sidebarLocations={sidebarLocations}
               handleSubReorder={handleSubReorder} handleSubRemove={handleSubRemove}
-              handleSubUpdate={handleSubUpdate} setEditingRoute={setEditingRoute} handleSubAdd={handleSubAdd} updateDay={updateDay}
-              hoveredLocationId={hoveredLocationId} setHoveredLocationId={setHoveredLocationId}
-              selectedLocationId={selectedLocationId} reorderLocations={reorderLocations}
-              removeLocation={removeLocation} updateLocation={updateLocation}
+              handleSubUpdate={handleSubUpdate} setEditingRoute={setEditingRoute} handleSubAdd={handleSubAdd}
               selectedDayId={selectedDayId} setSelectedDayId={setSelectedDayId}
               isSlotBlocked={isSlotBlocked} handleNestLocation={handleNestLocation}
               openSubItinerary={handleEnterSubItinerary}
-              handleScrollToLocation={handleScrollToLocation} locations={locations} clearAll={clearAll}
+              handleScrollToLocation={handleScrollToLocation}
               setShowHistoryModal={setShowHistoryModal} setShowAIModal={setShowAIModal} setShowCloudModal={setShowCloudModal}
               handleExportMarkdown={handleExportMarkdown} handleExport={handleExport} handleImport={handleImport}
             />
+          </AppErrorBoundary>
         </Box>
       </AppShell.Navbar>
 
@@ -499,8 +449,8 @@ function AppContent() {
         </AppErrorBoundary>
 
         <MobileBottomSheet opened={opened}>
+          <AppErrorBoundary title="Sidebar error" message="The sidebar crashed. You can retry or reload the app.">
           <SidebarContent
-            startDate={startDate} endDate={endDate} updateDateRange={updateDateRange}
             sidebarView={sidebarView} setSidebarView={setSidebarView}
             pendingAddToDay={pendingAddToDay} setPendingAddToDay={setPendingAddToDay}
             searchQuery={searchQuery} setSearchQuery={setSearchQuery} isSearching={isSearching} handleSearch={handleSearch}
@@ -508,20 +458,18 @@ function AppContent() {
             reorderShortcutHint={reorderShortcutHint}
             suggestions={suggestions} handleAddLocationWrapped={handleAddLocationWrapped}
             zoomLevel={zoomLevel} setZoomLevel={setZoomLevel}
-            activeParent={activeParent} setSelectedLocationId={handleSelectLocation} exitSubItinerary={handleExitSubItinerary}
-            days={days} activeDays={activeDays} sidebarLocations={sidebarLocations} routes={routes}
+            activeParent={activeParent} onSelectLocation={handleSelectLocation} exitSubItinerary={handleExitSubItinerary}
+            activeDays={activeDays} sidebarLocations={sidebarLocations}
             handleSubReorder={handleSubReorder} handleSubRemove={handleSubRemove}
-            handleSubUpdate={handleSubUpdate} setEditingRoute={setEditingRoute} handleSubAdd={handleSubAdd} updateDay={updateDay}
-            hoveredLocationId={hoveredLocationId} setHoveredLocationId={setHoveredLocationId}
-            selectedLocationId={selectedLocationId} reorderLocations={reorderLocations}
-            removeLocation={removeLocation} updateLocation={updateLocation}
+            handleSubUpdate={handleSubUpdate} setEditingRoute={setEditingRoute} handleSubAdd={handleSubAdd}
             selectedDayId={selectedDayId} setSelectedDayId={setSelectedDayId}
             isSlotBlocked={isSlotBlocked} handleNestLocation={handleNestLocation}
             openSubItinerary={handleEnterSubItinerary}
-            handleScrollToLocation={handleScrollToLocation} locations={locations} clearAll={clearAll}
+            handleScrollToLocation={handleScrollToLocation}
             setShowHistoryModal={setShowHistoryModal} setShowAIModal={setShowAIModal} setShowCloudModal={setShowCloudModal}
             handleExportMarkdown={handleExportMarkdown} handleExport={handleExport} handleImport={handleImport}
           />
+          </AppErrorBoundary>
         </MobileBottomSheet>
 
         {selectedLocation && (
@@ -529,11 +477,12 @@ function AppContent() {
             <Paper
               shadow="xl"
               className="location-detail-panel-root"
-              style={{ 
+              style={{
                 transform: panelCollapsed ? 'translateX(100%)' : 'translateX(0)',
                 visibility: panelCollapsed ? 'hidden' : 'visible'
               }}
             >
+              <AppErrorBoundary title="Detail panel error" message="The detail panel crashed. You can retry or reload the app.">
               <LocationDetailPanel
                 location={selectedLocation}
                 parentLocation={parentLocation}
@@ -551,6 +500,7 @@ function AppContent() {
                 onExitSubItinerary={handleExitSubItinerary}
                 isSubItineraryActive={activeParent?.id === selectedLocation.id}
               />
+              </AppErrorBoundary>
             </Paper>
 
             {panelCollapsed && (
@@ -586,7 +536,9 @@ function AppContent() {
         )}
       </AppShell.Main>
 
-      <CloudSyncModal show={showCloudModal} onClose={() => setShowCloudModal(false)} getData={getExportData} onLoadData={loadFromData} />
+      <AppErrorBoundary title="Cloud sync error" message="Cloud sync crashed. You can retry or reload the app.">
+        <CloudSyncModal show={showCloudModal} onClose={() => setShowCloudModal(false)} getData={getExportData} onLoadData={loadFromData} />
+      </AppErrorBoundary>
       
       <HistoryModal 
         show={showHistoryModal} 

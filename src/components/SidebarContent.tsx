@@ -5,16 +5,14 @@ import { DateRangePicker } from './DateRangePicker';
 import { DaySidebar } from './DaySidebar';
 import { CalendarView } from './CalendarView';
 import { TripDashboard } from './TripDashboard';
-import { Location, Day, Route, DaySection } from '../types';
+import { Location, DaySection } from '../types';
 import { PlaceSearchResult } from '../utils/geocoding';
 import { ACTION_LABELS } from '../constants/actionLabels';
+import { useItinerary } from '../context/ItineraryContext';
 
 type EditingRoute = { fromId: string; toId: string } | null;
 
 interface SidebarContentProps {
-  startDate: string;
-  endDate: string;
-  updateDateRange: (start: string, end: string) => void;
   sidebarView: 'timeline' | 'calendar' | 'budget';
   setSidebarView: (view: 'timeline' | 'calendar' | 'budget') => void;
   pendingAddToDay: { dayId: string, slot?: DaySection } | null;
@@ -30,32 +28,21 @@ interface SidebarContentProps {
   zoomLevel: number;
   setZoomLevel: (val: number) => void;
   activeParent: Location | null;
-  setSelectedLocationId: (id: string | null) => void;
+  onSelectLocation: (id: string | null) => void;
   exitSubItinerary: () => void;
-  days: Day[];
-  activeDays: Day[];
+  activeDays: import('../types').Day[];
   sidebarLocations: Location[];
-  routes: Route[];
   handleSubReorder: (activeId: string, overId: string | null, newDayId: string | null, newSlot: DaySection | null) => void;
   handleSubRemove: (id: string) => void;
   handleSubUpdate: (id: string, updates: Partial<Location>) => void;
   setEditingRoute: React.Dispatch<React.SetStateAction<EditingRoute>>;
   handleSubAdd: (dayId: string, slot?: DaySection) => void;
-  updateDay: (id: string, updates: Partial<Day>) => void;
-  hoveredLocationId: string | null;
-  setHoveredLocationId: (id: string | null) => void;
-  selectedLocationId: string | null;
-  reorderLocations: (activeId: string, overId: string | null, newDayId: string | null, newSlot: DaySection | null) => void;
-  removeLocation: (id: string) => void;
-  updateLocation: (id: string, updates: Partial<Location>) => void;
   selectedDayId: string | null;
   setSelectedDayId: (id: string | null) => void;
   isSlotBlocked: (dayId: string, slot: DaySection) => boolean;
   handleNestLocation: (activeId: string, parentId: string) => void;
   openSubItinerary: (parentId: string) => void;
   handleScrollToLocation: (id: string | null) => void;
-  locations: Location[];
-  clearAll: () => void;
   setShowHistoryModal: (val: boolean) => void;
   setShowAIModal: (val: boolean) => void;
   setShowCloudModal: (val: boolean) => void;
@@ -65,23 +52,27 @@ interface SidebarContentProps {
 }
 
 export function SidebarContent({
-  startDate, endDate, updateDateRange,
   sidebarView, setSidebarView,
   pendingAddToDay, setPendingAddToDay,
   searchQuery, setSearchQuery, isSearching, suggestionLoading, reorderShortcutHint, handleSearch,
   suggestions, handleAddLocationWrapped,
   zoomLevel, setZoomLevel,
-  activeParent, setSelectedLocationId, exitSubItinerary,
-  days, activeDays, sidebarLocations, routes,
-  handleSubReorder, handleSubRemove, handleSubUpdate, setEditingRoute, handleSubAdd, updateDay,
-  hoveredLocationId, setHoveredLocationId,
-  selectedLocationId, reorderLocations, removeLocation, updateLocation,
+  activeParent, onSelectLocation, exitSubItinerary,
+  activeDays, sidebarLocations,
+  handleSubReorder, handleSubRemove, handleSubUpdate, setEditingRoute, handleSubAdd,
   selectedDayId, setSelectedDayId, isSlotBlocked, handleNestLocation,
   openSubItinerary,
-  handleScrollToLocation, locations, clearAll,
+  handleScrollToLocation,
   setShowHistoryModal, setShowAIModal, setShowCloudModal,
   handleExportMarkdown, handleExport, handleImport
 }: SidebarContentProps) {
+  const {
+    startDate, endDate, days, locations, routes,
+    hoveredLocationId, selectedLocationId,
+    updateDateRange, updateDay,
+    removeLocation, updateLocation, reorderLocations,
+    setHoveredLocationId, clearAll
+  } = useItinerary();
   
   const [datePickerOpened, setDatePickerOpened] = React.useState(false);
   const [confirmClearOpened, setConfirmClearOpened] = React.useState(false);
@@ -304,7 +295,7 @@ export function SidebarContent({
                     onAddToDay={activeParent ? handleSubAdd : (dayId, slot) => setPendingAddToDay({ dayId, slot })}
                     onUpdateDay={updateDay}
                     hoveredLocationId={hoveredLocationId} onHoverLocation={setHoveredLocationId} zoomLevel={zoomLevel}
-                    selectedLocationId={selectedLocationId} onSelectLocation={setSelectedLocationId}
+                    selectedLocationId={selectedLocationId} onSelectLocation={onSelectLocation}
                     dayNumberOffset={activeParent ? days.findIndex(d => d.id === activeParent.startDayId) + 1 : undefined}
                     parentName={activeParent?.name}
                     selectedDayId={selectedDayId}

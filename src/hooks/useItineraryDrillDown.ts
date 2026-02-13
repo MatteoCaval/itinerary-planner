@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { Location, Day, DaySection } from '../types';
+import { SECTION_ORDER, DEFAULT_SECTION } from '../constants/daySection';
 
 interface DrillDownProps {
   locations: Location[];
@@ -34,7 +35,7 @@ export function useItineraryDrillDown({ locations, days, selectedLocationId, sel
     if (startIdx === -1) return days;
     
     // Calculate how many days this destination spans
-    const startSlotIdx = ['morning', 'afternoon', 'evening'].indexOf(activeParent.startSlot || 'morning');
+    const startSlotIdx = SECTION_ORDER.indexOf(activeParent.startSlot || DEFAULT_SECTION);
     const totalSlots = activeParent.duration || 1;
     const endDayIdx = Math.floor((startIdx * 3 + startSlotIdx + totalSlots - 1) / 3);
     
@@ -70,10 +71,9 @@ export function useItineraryDrillDown({ locations, days, selectedLocationId, sel
     const currIdx = days.findIndex(d => d.id === dayId);
     if (startIdx === -1 || currIdx === -1) return false;
 
-    const sections = ['morning', 'afternoon', 'evening'];
-    const startAbs = startIdx * 3 + sections.indexOf(activeParent.startSlot || 'morning');
+    const startAbs = startIdx * 3 + SECTION_ORDER.indexOf(activeParent.startSlot || DEFAULT_SECTION);
     const endAbs = startAbs + (activeParent.duration || 1) - 1;
-    const currAbs = currIdx * 3 + sections.indexOf(slot);
+    const currAbs = currIdx * 3 + SECTION_ORDER.indexOf(slot);
 
     return currAbs < startAbs || currAbs > endAbs;
   };

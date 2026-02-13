@@ -1,6 +1,7 @@
 import { AISettings, Location, Route, Day } from './types';
 import { ApiError, fetchJson } from './services/httpClient';
 import { trackError } from './services/telemetry';
+import { DEFAULT_AI_MODEL } from './constants/daySection';
 
 interface GeminiResponse {
   candidates?: {
@@ -61,7 +62,7 @@ export const generateAIItinerary = async (
   days?: Partial<Day>[],
   explanation?: string 
 }> => {
-  const selectedModel = settings.model?.trim() || 'gemini-3-flash-preview';
+  const selectedModel = settings.model?.trim() || DEFAULT_AI_MODEL;
   
   const systemPrompt = `
     You are a professional travel planner. 

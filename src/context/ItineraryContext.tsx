@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { Day, Location, Route, AISettings, DaySection, ItineraryData } from '../types';
 import { itineraryImportSchema, ItineraryImportData, LocationImportData, RouteImportData } from '../utils/itinerarySchema';
 import { trackError } from '../services/telemetry';
+import { DEFAULT_SECTION, DEFAULT_CATEGORY, DEFAULT_AI_MODEL, UNASSIGNED_ZONE_ID, SLOT_PREFIX } from '../constants/daySection';
 
 // Storage Keys
 const STORAGE_KEY_LOCATIONS = 'itinerary-locations';
@@ -77,10 +78,10 @@ const migrateLocations = (oldLocations: LocationImportData[]): Location[] => {
       imageUrl: loc.imageUrl,
       dayIds,
       startDayId: loc.startDayId || (dayIds.length > 0 ? dayIds[0] : undefined),
-      startSlot: loc.startSlot || 'morning',
+      startSlot: loc.startSlot || DEFAULT_SECTION,
       duration: loc.duration || 1,
       order: loc.order ?? index,
-      category: loc.category || 'sightseeing',
+      category: loc.category || DEFAULT_CATEGORY,
       checklist: loc.checklist || [],
       links: loc.links || [],
       cost: parseNumeric(loc.cost),
@@ -183,7 +184,7 @@ export function ItineraryProvider({ children }: { children: ReactNode }) {
 
   const [aiSettings, setAiSettings] = useState<AISettings>(() => {
     const saved = localStorage.getItem(STORAGE_KEY_AI);
-    if (!saved) return { apiKey: '', model: 'gemini-3-flash-preview' };
+    if (!saved) return { apiKey: '', model: DEFAULT_AI_MODEL };
 
     try {
       const parsed = JSON.parse(saved);
@@ -191,15 +192,15 @@ export function ItineraryProvider({ children }: { children: ReactNode }) {
       if (parsed.configs && parsed.configs.gemini) {
         return {
           apiKey: parsed.configs.gemini.apiKey || '',
-          model: parsed.configs.gemini.model || 'gemini-3-flash-preview'
+          model: parsed.configs.gemini.model || DEFAULT_AI_MODEL
         };
       }
       return {
         apiKey: parsed.apiKey || '',
-        model: parsed.model || 'gemini-3-flash-preview'
+        model: parsed.model || DEFAULT_AI_MODEL
       };
     } catch {
-      return { apiKey: '', model: 'gemini-3-flash-preview' };
+      return { apiKey: '', model: DEFAULT_AI_MODEL };
     }
   });
 
@@ -352,9 +353,9 @@ export function ItineraryProvider({ children }: { children: ReactNode }) {
       newLocations[activeIndex] = {
         ...newLocations[activeIndex],
         startDayId: newDayId || undefined,
-        startSlot: newSlot || newLocations[activeIndex].startSlot || 'morning'
+        startSlot: newSlot || newLocations[activeIndex].startSlot || DEFAULT_SECTION
       };
-      if (overId && overId !== activeId && overId !== 'unassigned-zone' && !overId.startsWith('slot-')) {
+      if (overId && overId !== activeId && overId !== UNASSIGNED_ZONE_ID && !overId.startsWith(SLOT_PREFIX)) {
         const overIndex = newLocations.findIndex(l => l.id === overId);
         const [moved] = newLocations.splice(activeIndex, 1);
         newLocations.splice(overIndex, 0, moved);
