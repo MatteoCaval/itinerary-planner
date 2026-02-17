@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical, X, GitFork } from 'lucide-react';
+import { GripVertical, X, GitFork, MapPin, Utensils, Bed, Train, Globe } from 'lucide-react';
 import { ActionIcon, Badge, Text, Group, Stack, Box, Paper } from '@mantine/core';
 import { Location, CATEGORY_COLORS } from '../types';
 import { LocationThumbnail } from './LocationThumbnail';
@@ -81,7 +81,20 @@ export const SortableItem = React.memo(function SortableItem({
     window.addEventListener('pointerup', onPointerUp);
   };
 
-  const catColor = CATEGORY_COLORS[location.category || 'sightseeing'];
+  const category = location.category || 'sightseeing';
+  const catColor = CATEGORY_COLORS[category];
+  const categoryClass = `sortable-item--cat-${category}`;
+  const categoryMeta: Record<
+    typeof category,
+    { label: string; color: string; Icon: typeof MapPin }
+  > = {
+    sightseeing: { label: 'Sight', color: 'blue', Icon: MapPin },
+    dining: { label: 'Food', color: 'orange', Icon: Utensils },
+    hotel: { label: 'Stay', color: 'indigo', Icon: Bed },
+    transit: { label: 'Transit', color: 'green', Icon: Train },
+    other: { label: 'Other', color: 'gray', Icon: Globe },
+  };
+  const { label: categoryLabel, color: categoryBadgeColor, Icon: CategoryIcon } = categoryMeta[category];
   const subLocationCount = location.subLocations?.length || 0;
   const isCompact = duration <= 1;
   const thumbnailSize = isCompact ? 30 : 42;
@@ -100,7 +113,7 @@ export const SortableItem = React.memo(function SortableItem({
         shadow={isDragging || isResizing || isOver ? 'md' : 'sm'}
         withBorder
         p={isCompact ? 6 : 'xs'}
-        className={`sortable-item ${isCompact ? 'sortable-item--compact' : ''} ${hierarchyClass} ${isDragging ? 'dragging' : ''} ${isResizing ? 'resizing' : ''} ${isOver ? 'nesting-target' : ''}`}
+        className={`sortable-item ${isCompact ? 'sortable-item--compact' : ''} ${hierarchyClass} ${categoryClass} ${isDragging ? 'dragging' : ''} ${isResizing ? 'resizing' : ''} ${isOver ? 'nesting-target' : ''}`}
         style={{ 
           ...style, 
           borderColor: isOver ? 'var(--mantine-color-blue-6)' : (isSelected ? 'var(--mantine-color-blue-filled)' : catColor),
@@ -111,7 +124,7 @@ export const SortableItem = React.memo(function SortableItem({
           outline: isOver ? '2px dashed var(--mantine-color-blue-6)' : undefined,
           outlineOffset: isOver ? -2 : undefined
         }}
-        bg={isOver ? 'blue.0' : (isSelected ? 'blue.0' : 'white')}
+        bg={isOver ? 'blue.0' : (isSelected ? 'blue.0' : undefined)}
         onClick={() => onSelect?.(id)}
         h="100%"
       >
@@ -155,6 +168,17 @@ export const SortableItem = React.memo(function SortableItem({
               {duration > 1 && !isCompact && (
                 <Badge variant="outline" color="gray" size="xs" style={{ fontWeight: 400 }}>
                   {(duration / 3).toFixed(1).replace('.0', '')}d
+                </Badge>
+              )}
+              {!isCompact && (
+                <Badge
+                  variant="filled"
+                  color={categoryBadgeColor}
+                  size="xs"
+                  className="timeline-category-badge"
+                  leftSection={<CategoryIcon size={10} />}
+                >
+                  {categoryLabel}
                 </Badge>
               )}
             </Box>
