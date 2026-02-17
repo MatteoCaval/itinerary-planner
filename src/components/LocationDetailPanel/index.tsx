@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Textarea, Button, ActionIcon, Paper, Group, Stack, Text, Badge, Image, LoadingOverlay, Box, Divider, ScrollArea, Tooltip, NumberInput } from '@mantine/core';
-import { X, Map as MapIcon, Calendar, ArrowRight, ArrowLeft, Bed, ChevronRight, ArrowUp, ArrowDown, Utensils, Train, Globe, Euro, Image as ImageIcon } from 'lucide-react';
+import { Textarea, Button, ActionIcon, Paper, Group, Stack, Text, Badge, Image, LoadingOverlay, Box, Divider, ScrollArea, Tooltip, NumberInput, TextInput } from '@mantine/core';
+import { X, Map as MapIcon, Calendar, ArrowRight, ArrowLeft, Bed, ChevronRight, ArrowUp, ArrowDown, Utensils, Train, Globe, Euro, Image as ImageIcon, Clock3 } from 'lucide-react';
 import { Location, Day, Route, TRANSPORT_LABELS, CATEGORY_COLORS } from '../../types';
 import { searchPhoto } from '../../unsplash';
 import { LocationThumbnail } from '../LocationThumbnail';
@@ -413,6 +413,35 @@ export function LocationDetailPanel({
                   min={0}
                   decimalScale={2}
                 />
+              </Box>
+              <Box>
+                <Text size="xs" fw={700} tt="uppercase" c="dimmed" mb={4}>Target Time</Text>
+                <TextInput
+                  size="xs"
+                  placeholder="09:30"
+                  leftSection={<Clock3 size={14} />}
+                  value={location.targetTime || ''}
+                  onChange={(e) => onUpdate(location.id, { targetTime: e.target.value })}
+                />
+              </Box>
+              <Box>
+                <Text size="xs" fw={700} tt="uppercase" c="dimmed" mb={4}>Duration (Slots)</Text>
+                <NumberInput
+                  size="xs"
+                  value={location.duration || 1}
+                  onChange={(val) => {
+                    const parsed = Number(val);
+                    onUpdate(location.id, {
+                      duration: Number.isFinite(parsed) && parsed > 0 ? Math.round(parsed) : 1
+                    });
+                  }}
+                  min={1}
+                  step={1}
+                  allowDecimal={false}
+                />
+                <Text size="10px" c="dimmed" mt={2}>
+                  1 slot = morning, afternoon, or evening
+                </Text>
               </Box>
             </Group>
           </Box>

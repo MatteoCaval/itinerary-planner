@@ -104,6 +104,35 @@ const migrateDays = (oldDays: ImportedDay[]): Day[] => {
   }));
 };
 
+const updateLocationTree = (
+  items: Location[],
+  id: string,
+  updates: Partial<Location>,
+): { locations: Location[]; updated: boolean } => {
+  let hasUpdated = false;
+
+  const nextLocations = items.map((item) => {
+    if (item.id === id) {
+      hasUpdated = true;
+      return { ...item, ...updates };
+    }
+
+    if (item.subLocations?.length) {
+      const nestedResult = updateLocationTree(item.subLocations, id, updates);
+      if (nestedResult.updated) {
+        hasUpdated = true;
+        return { ...item, subLocations: nestedResult.locations };
+      }
+    }
+
+    return item;
+  });
+
+  return hasUpdated
+    ? { locations: nextLocations, updated: true }
+    : { locations: items, updated: false };
+};
+
 // Context Type Definition
 interface ItineraryContextType {
   // State
@@ -326,7 +355,10 @@ export function ItineraryProvider({ children }: { children: ReactNode }) {
   };
 
   const updateLocation = (id: string, updates: Partial<Location>) => {
-    setLocations(prev => prev.map(l => l.id === id ? { ...l, ...updates } : l));
+    setLocations((prev) => {
+      const result = updateLocationTree(prev, id, updates);
+      return result.updated ? result.locations : prev;
+    });
   };
 
   const updateDay = (id: string, updates: Partial<Day>) => {

@@ -74,4 +74,53 @@ describe('ItineraryContext', () => {
       expect(ctx?.routes[0].cost).toBe(15.5);
     });
   });
+
+  it('updates nested sub-locations by id', async () => {
+    localStorage.clear();
+    let ctx: ReturnType<typeof useItinerary> | null = null;
+
+    render(
+      <ItineraryProvider>
+        <Harness onReady={value => { ctx = value; }} />
+      </ItineraryProvider>
+    );
+
+    act(() => {
+      const result = ctx?.loadFromData({
+        locations: [
+          {
+            id: 'parent-1',
+            name: 'Rome',
+            lat: 41.9028,
+            lng: 12.4964,
+            subLocations: [
+              {
+                id: 'sub-1',
+                name: 'Colosseum',
+                lat: 41.8902,
+                lng: 12.4922,
+                dayOffset: 0,
+              },
+            ],
+          },
+        ],
+      });
+      expect(result?.success).toBe(true);
+    });
+
+    act(() => {
+      ctx?.updateLocation('sub-1', {
+        notes: 'Book skip-the-line tickets',
+        targetTime: '09:00',
+        duration: 2,
+      });
+    });
+
+    await waitFor(() => {
+      const sub = ctx?.locations[0]?.subLocations?.[0];
+      expect(sub?.notes).toBe('Book skip-the-line tickets');
+      expect(sub?.targetTime).toBe('09:00');
+      expect(sub?.duration).toBe(2);
+    });
+  });
 });
