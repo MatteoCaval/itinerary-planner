@@ -12,6 +12,23 @@ import { ClusteredLocationMarkers } from './ClusteredLocationMarkers';
 import { RouteSegment, PathPoint } from './RouteSegment';
 import { useRouteGeometry } from '../../hooks/useRouteGeometry';
 
+type BasemapMode = 'local' | 'english';
+
+const MAP_BASEMAP_STORAGE_KEY = 'itinerary-map-basemap';
+
+const BASEMAPS: Record<BasemapMode, { url: string; attribution: string }> = {
+  local: {
+    url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+    attribution: '&copy; CARTO',
+  },
+  english: {
+    // ArcGIS world street tiles are generally English/romanized-first.
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
+    attribution:
+      'Tiles &copy; Esri &mdash; Source: Esri, DeLorme, NAVTEQ, USGS, Intermap, iPC, NRCAN, Esri Japan, METI, Esri China (Hong Kong), Esri (Thailand), TomTom, 2012',
+  },
+};
+
 const DefaultIcon = L.icon({
   iconUrl: icon,
   shadowUrl: iconShadow,
@@ -87,6 +104,16 @@ export default function MapDisplay({ days, locations, routes, onEditRoute, hover
   const [showRouteArrows, setShowRouteArrows] = useState(true);
   const [enableMapGrouping, setEnableMapGrouping] = useState(false);
   const [showRouteLegend, setShowRouteLegend] = useState(true);
+  const [basemapMode, setBasemapMode] = useState<BasemapMode>(() => {
+    if (typeof window === 'undefined') return 'local';
+    const saved = window.localStorage.getItem(MAP_BASEMAP_STORAGE_KEY);
+    return saved === 'english' ? 'english' : 'local';
+  });
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    window.localStorage.setItem(MAP_BASEMAP_STORAGE_KEY, basemapMode);
+  }, [basemapMode]);
 
   const getAbsDayIdx = useCallback((loc: Location): number => {
     if (activeParent && loc.dayOffset !== undefined) {
@@ -207,6 +234,7 @@ export default function MapDisplay({ days, locations, routes, onEditRoute, hover
   }, [routeSegments]);
 
   const routeShapes = useRouteGeometry(routeSegments);
+  const activeBasemap = BASEMAPS[basemapMode];
 
   const accommodations = useMemo(() => {
     const focusedGIdx = selectedDayId ? days.findIndex(day => day.id === selectedDayId) : -1;
@@ -248,7 +276,7 @@ export default function MapDisplay({ days, locations, routes, onEditRoute, hover
     <div className="map-container">
       <MapContainer center={position} zoom={13} scrollWheelZoom={true} className="leaflet-container" zoomControl={false}>
         {!hideControls && <ZoomControl position="topleft" />}
-        <TileLayer attribution='&copy; CARTO' url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png" />
+        <TileLayer key={basemapMode} attribution={activeBasemap.attribution} url={activeBasemap.url} />
         {accommodations.map(acc => <Marker key={acc.id} position={[acc.lat, acc.lng]} icon={createAccommodationIcon()}><Popup><strong>{'\u{1F3E8}'} {acc.name}</strong><br />{acc.notes && <span style={{ color: '#6c757d' }}>{acc.notes}</span>}</Popup></Marker>)}
         <ClusteredLocationMarkers
           locations={sortedLocations}
@@ -291,6 +319,18 @@ export default function MapDisplay({ days, locations, routes, onEditRoute, hover
                 onChange={event => setEnableMapGrouping(event.target.checked)}
               />
               Marker grouping
+            </label>
+            <label className="map-route-control-item">
+              Labels
+              <select
+                className="map-basemap-select"
+                value={basemapMode}
+                onChange={event => setBasemapMode(event.target.value as BasemapMode)}
+                aria-label="Map label language"
+              >
+                <option value="local">Local</option>
+                <option value="english">English (best effort)</option>
+              </select>
             </label>
             <button
               type="button"

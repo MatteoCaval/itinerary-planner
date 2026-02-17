@@ -528,6 +528,15 @@ body,
   accent-color: var(--app-accent);
 }
 
+.map-basemap-select {
+  border: 1px solid var(--app-border);
+  background: var(--app-surface);
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 11px;
+  color: var(--app-text);
+}
+
 .map-route-legend-toggle {
   border: 1px solid var(--app-border);
   background: var(--app-surface);
