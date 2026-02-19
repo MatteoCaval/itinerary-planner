@@ -28,11 +28,13 @@ import { useAppModals } from './hooks/useAppModals';
 
 function AppContent() {
   const {
+    trips, activeTripId,
     startDate, endDate, days, locations, routes, aiSettings,
     selectedLocationId, hoveredLocationId,
     historyIndex, historyLength, history,
     addLocation, updateLocation,
     updateRoute,
+    switchTrip, createTrip, renameTrip, deleteTrip,
     setAiSettings,
     setSelectedLocationId, setHoveredLocationId,
     navigateHistory,
@@ -123,6 +125,64 @@ function AppContent() {
   const openHistoryModal = () => setShowHistoryModal(true);
   const openAIModal = () => setShowAIModal(true);
   const openCloudModal = () => setShowCloudModal(true);
+
+  const resetUiForTripChange = () => {
+    setSelectedDayId(null);
+    setDrillDownParentId(null);
+    setSearchQuery('');
+    setSuggestions([]);
+    setPendingAddToDay(null);
+    setPanelCollapsed(false);
+    close();
+  };
+
+  const handleSwitchTrip = (tripId: string) => {
+    if (tripId === activeTripId) return;
+    switchTrip(tripId);
+    resetUiForTripChange();
+    notifications.show({ color: 'blue', title: 'Trip switched', message: 'Active trip changed successfully.' });
+  };
+
+  const handleCreateTrip = () => {
+    const suggestedName = `Trip ${trips.length + 1}`;
+    const requestedName = window.prompt('Name for the new trip:', suggestedName);
+    if (requestedName === null) return;
+    const tripName = requestedName.trim() || suggestedName;
+    createTrip(tripName);
+    resetUiForTripChange();
+    notifications.show({ color: 'green', title: 'Trip created', message: `Now editing "${tripName}".` });
+  };
+
+  const handleRenameActiveTrip = () => {
+    const activeTrip = trips.find((trip) => trip.id === activeTripId);
+    if (!activeTrip) return;
+    const requestedName = window.prompt('Rename trip:', activeTrip.name);
+    if (requestedName === null) return;
+    const tripName = requestedName.trim();
+    if (!tripName) return;
+    renameTrip(activeTrip.id, tripName);
+    notifications.show({ color: 'green', title: 'Trip renamed', message: `Renamed to "${tripName}".` });
+  };
+
+  const handleDeleteActiveTrip = () => {
+    const activeTrip = trips.find((trip) => trip.id === activeTripId);
+    if (!activeTrip) return;
+    const shouldDelete = window.confirm(`Delete "${activeTrip.name}"? This cannot be undone.`);
+    if (!shouldDelete) return;
+
+    const deleted = deleteTrip(activeTrip.id);
+    if (!deleted) {
+      notifications.show({
+        color: 'yellow',
+        title: 'Trip not deleted',
+        message: 'At least one trip must remain. Create another trip first.',
+      });
+      return;
+    }
+
+    resetUiForTripChange();
+    notifications.show({ color: 'green', title: 'Trip deleted', message: 'Trip removed successfully.' });
+  };
 
   const handleSelectLocation = (id: string | null) => {
     setSelectedLocationId(id);
@@ -373,6 +433,12 @@ function AppContent() {
         <AppHeader
           opened={opened}
           toggle={toggle}
+          trips={trips}
+          activeTripId={activeTripId}
+          onSwitchTrip={handleSwitchTrip}
+          onCreateTrip={handleCreateTrip}
+          onRenameTrip={handleRenameActiveTrip}
+          onDeleteTrip={handleDeleteActiveTrip}
           historyIndex={historyIndex}
           historyLength={historyLength}
           navigateHistory={navigateHistory}

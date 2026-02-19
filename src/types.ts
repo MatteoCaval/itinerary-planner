@@ -41,6 +41,13 @@ export interface Itinerary {
   days: Day[];
 }
 
+export interface TripSummary {
+  id: string;
+  name: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
 export interface ItineraryData {
   startDate: string;
   endDate: string;

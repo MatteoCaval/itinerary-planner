@@ -1,16 +1,40 @@
-import { createContext, useContext, useState, useEffect, useMemo, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useMemo, useRef, ReactNode } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import { Day, Location, Route, AISettings, DaySection, ItineraryData } from '../types';
+import { Day, Location, Route, AISettings, DaySection, ItineraryData, TripSummary } from '../types';
 import { itineraryImportSchema, ItineraryImportData, LocationImportData, RouteImportData } from '../utils/itinerarySchema';
 import { trackError } from '../services/telemetry';
 import { DEFAULT_SECTION, DEFAULT_CATEGORY, DEFAULT_AI_MODEL, UNASSIGNED_ZONE_ID, SLOT_PREFIX } from '../constants/daySection';
 
 // Storage Keys
+const STORAGE_KEY_TRIPS = 'itinerary-trips-v1';
 const STORAGE_KEY_LOCATIONS = 'itinerary-locations';
 const STORAGE_KEY_ROUTES = 'itinerary-routes';
 const STORAGE_KEY_DATES = 'itinerary-dates';
 const STORAGE_KEY_DAYS = 'itinerary-days';
 const STORAGE_KEY_AI = 'itinerary-ai-settings';
+
+type StoredTrip = {
+  id: string;
+  name: string;
+  createdAt: number;
+  updatedAt: number;
+  startDate: string;
+  endDate: string;
+  days: Day[];
+  locations: Location[];
+  routes: Route[];
+  version: string;
+};
+
+type TripsStore = {
+  activeTripId: string;
+  trips: StoredTrip[];
+};
+
+type InitialSnapshot = {
+  store: TripsStore;
+  activeTrip: StoredTrip;
+};
 
 type HistorySnapshot = {
   startDate: string;
@@ -104,6 +128,115 @@ const migrateDays = (oldDays: ImportedDay[]): Day[] => {
   }));
 };
 
+const normalizeRoutes = (value: unknown): Route[] => {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((route): route is RouteImportData => {
+      return Boolean(
+        route &&
+        typeof route === 'object' &&
+        typeof (route as RouteImportData).id === 'string' &&
+        typeof (route as RouteImportData).fromLocationId === 'string' &&
+        typeof (route as RouteImportData).toLocationId === 'string',
+      );
+    })
+    .map((route) => ({
+      id: route.id,
+      fromLocationId: route.fromLocationId,
+      toLocationId: route.toLocationId,
+      transportType: route.transportType || 'other',
+      duration: route.duration,
+      notes: route.notes,
+      cost: parseNumeric(route.cost),
+    }));
+};
+
+const createEmptyStoredTrip = (name: string): StoredTrip => {
+  const now = Date.now();
+  return {
+    id: uuidv4(),
+    name,
+    createdAt: now,
+    updatedAt: now,
+    startDate: '',
+    endDate: '',
+    days: [],
+    locations: [],
+    routes: [],
+    version: '1.0',
+  };
+};
+
+const readTripsStore = (): TripsStore | null => {
+  const raw = localStorage.getItem(STORAGE_KEY_TRIPS);
+  if (!raw) return null;
+
+  try {
+    const parsed = JSON.parse(raw) as Partial<TripsStore>;
+    if (!parsed || !Array.isArray(parsed.trips)) return null;
+
+    const trips: StoredTrip[] = parsed.trips
+      .map((trip, index) => {
+        if (!trip || typeof trip !== 'object') return null;
+
+        const candidate = trip as Partial<StoredTrip>;
+        const id = typeof candidate.id === 'string' && candidate.id ? candidate.id : uuidv4();
+        const createdAt = typeof candidate.createdAt === 'number' ? candidate.createdAt : Date.now() + index;
+        const updatedAt = typeof candidate.updatedAt === 'number' ? candidate.updatedAt : createdAt;
+
+        return {
+          id,
+          name: typeof candidate.name === 'string' && candidate.name.trim() ? candidate.name : `Trip ${index + 1}`,
+          createdAt,
+          updatedAt,
+          startDate: typeof candidate.startDate === 'string' ? candidate.startDate : '',
+          endDate: typeof candidate.endDate === 'string' ? candidate.endDate : '',
+          days: migrateDays((Array.isArray(candidate.days) ? candidate.days : []) as ImportedDay[]),
+          locations: migrateLocations((Array.isArray(candidate.locations) ? candidate.locations : []) as LocationImportData[]),
+          routes: normalizeRoutes(candidate.routes),
+          version: typeof candidate.version === 'string' ? candidate.version : '1.0',
+        };
+      })
+      .filter((trip): trip is StoredTrip => Boolean(trip));
+
+    if (trips.length === 0) return null;
+
+    const activeTripId = typeof parsed.activeTripId === 'string' && trips.some((trip) => trip.id === parsed.activeTripId)
+      ? parsed.activeTripId
+      : trips[0].id;
+
+    return { activeTripId, trips };
+  } catch (error) {
+    trackError('trips_storage_parse_failed', error);
+    return null;
+  }
+};
+
+const migrateLegacyStore = (): TripsStore => {
+  const savedDates = readStorage<{ startDate?: string; endDate?: string }>(STORAGE_KEY_DATES, {});
+  const legacyTrip: StoredTrip = {
+    ...createEmptyStoredTrip('My Trip'),
+    startDate: savedDates.startDate || '',
+    endDate: savedDates.endDate || '',
+    days: migrateDays(readStorage<ImportedDay[]>(STORAGE_KEY_DAYS, [])),
+    locations: migrateLocations(readStorage<LocationImportData[]>(STORAGE_KEY_LOCATIONS, [])),
+    routes: normalizeRoutes(readStorage<RouteImportData[]>(STORAGE_KEY_ROUTES, [])),
+  };
+
+  return {
+    activeTripId: legacyTrip.id,
+    trips: [legacyTrip],
+  };
+};
+
+const buildInitialSnapshot = (): InitialSnapshot => {
+  const existingStore = readTripsStore() || migrateLegacyStore();
+  const activeTrip = existingStore.trips.find((trip) => trip.id === existingStore.activeTripId) || existingStore.trips[0];
+  const normalizedStore: TripsStore = { activeTripId: activeTrip.id, trips: existingStore.trips };
+  localStorage.setItem(STORAGE_KEY_TRIPS, JSON.stringify(normalizedStore));
+  return { store: normalizedStore, activeTrip };
+};
+
 const updateLocationTree = (
   items: Location[],
   id: string,
@@ -135,6 +268,14 @@ const updateLocationTree = (
 
 // Context Type Definition
 interface ItineraryContextType {
+  // Trip Management
+  trips: TripSummary[];
+  activeTripId: string;
+  switchTrip: (tripId: string) => void;
+  createTrip: (name?: string) => string;
+  renameTrip: (tripId: string, name: string) => void;
+  deleteTrip: (tripId: string) => boolean;
+
   // State
   startDate: string;
   endDate: string;
@@ -186,30 +327,20 @@ interface ItineraryContextType {
 const ItineraryContext = createContext<ItineraryContextType | undefined>(undefined);
 
 export function ItineraryProvider({ children }: { children: ReactNode }) {
+  const initialSnapshotRef = useRef<InitialSnapshot | null>(null);
+  if (!initialSnapshotRef.current) {
+    initialSnapshotRef.current = buildInitialSnapshot();
+  }
+  const initialSnapshot = initialSnapshotRef.current;
+
+  const [tripStore, setTripStore] = useState<TripsStore>(initialSnapshot.store);
+
   // --- Core State ---
-  const [startDate, setStartDate] = useState<string>(() => {
-    const saved = readStorage<{ startDate?: string }>(STORAGE_KEY_DATES, {});
-    return saved.startDate || '';
-  });
-
-  const [endDate, setEndDate] = useState<string>(() => {
-    const saved = readStorage<{ endDate?: string }>(STORAGE_KEY_DATES, {});
-    return saved.endDate || '';
-  });
-
-  const [days, setDays] = useState<Day[]>(() => {
-    const saved = readStorage<ImportedDay[]>(STORAGE_KEY_DAYS, []);
-    return migrateDays(saved);
-  });
-
-  const [locations, setLocations] = useState<Location[]>(() => {
-    const saved = readStorage<LocationImportData[]>(STORAGE_KEY_LOCATIONS, []);
-    return migrateLocations(saved);
-  });
-
-  const [routes, setRoutes] = useState<Route[]>(() => {
-    return readStorage<Route[]>(STORAGE_KEY_ROUTES, []);
-  });
+  const [startDate, setStartDate] = useState<string>(initialSnapshot.activeTrip.startDate);
+  const [endDate, setEndDate] = useState<string>(initialSnapshot.activeTrip.endDate);
+  const [days, setDays] = useState<Day[]>(initialSnapshot.activeTrip.days);
+  const [locations, setLocations] = useState<Location[]>(initialSnapshot.activeTrip.locations);
+  const [routes, setRoutes] = useState<Route[]>(initialSnapshot.activeTrip.routes);
 
   const [aiSettings, setAiSettings] = useState<AISettings>(() => {
     const saved = localStorage.getItem(STORAGE_KEY_AI);
@@ -242,12 +373,71 @@ export function ItineraryProvider({ children }: { children: ReactNode }) {
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [isNavigatingHistory, setIsNavigatingHistory] = useState(false);
 
+  const activeTripId = tripStore.activeTripId;
+  const tripSummaries = useMemo<TripSummary[]>(
+    () =>
+      tripStore.trips.map((trip) => ({
+        id: trip.id,
+        name: trip.name,
+        createdAt: trip.createdAt,
+        updatedAt: trip.updatedAt,
+      })),
+    [tripStore.trips],
+  );
+
+  const persistTripsStore = (nextStore: TripsStore) => {
+    localStorage.setItem(STORAGE_KEY_TRIPS, JSON.stringify(nextStore));
+  };
+
+  const applyTripToState = (trip: StoredTrip) => {
+    setStartDate(trip.startDate);
+    setEndDate(trip.endDate);
+    setDays(trip.days);
+    setLocations(trip.locations);
+    setRoutes(trip.routes);
+    setSelectedLocationId(null);
+    setHoveredLocationId(null);
+    setHistory([]);
+    setHistoryIndex(-1);
+    setIsNavigatingHistory(false);
+  };
+
   // --- Effects for Persistence ---
-  useEffect(() => { localStorage.setItem(STORAGE_KEY_LOCATIONS, JSON.stringify(locations)); }, [locations]);
-  useEffect(() => { localStorage.setItem(STORAGE_KEY_ROUTES, JSON.stringify(routes)); }, [routes]);
-  useEffect(() => { localStorage.setItem(STORAGE_KEY_DATES, JSON.stringify({ startDate, endDate })); }, [startDate, endDate]);
-  useEffect(() => { localStorage.setItem(STORAGE_KEY_DAYS, JSON.stringify(days)); }, [days]);
   useEffect(() => { localStorage.setItem(STORAGE_KEY_AI, JSON.stringify(aiSettings)); }, [aiSettings]);
+  useEffect(() => {
+    setTripStore((prev) => {
+      const activeIndex = prev.trips.findIndex((trip) => trip.id === prev.activeTripId);
+      if (activeIndex === -1) return prev;
+
+      const activeTrip = prev.trips[activeIndex];
+      if (
+        activeTrip.startDate === startDate &&
+        activeTrip.endDate === endDate &&
+        activeTrip.days === days &&
+        activeTrip.locations === locations &&
+        activeTrip.routes === routes
+      ) {
+        return prev;
+      }
+
+      const updatedTrip: StoredTrip = {
+        ...activeTrip,
+        startDate,
+        endDate,
+        days,
+        locations,
+        routes,
+        version: '1.0',
+        updatedAt: Date.now(),
+      };
+
+      const nextTrips = [...prev.trips];
+      nextTrips[activeIndex] = updatedTrip;
+      const nextStore = { ...prev, trips: nextTrips };
+      persistTripsStore(nextStore);
+      return nextStore;
+    });
+  }, [startDate, endDate, days, locations, routes]);
 
   // --- History Logic ---
   const currentState = useMemo(() => ({
@@ -303,6 +493,84 @@ export function ItineraryProvider({ children }: { children: ReactNode }) {
     setHistoryIndex(index);
     
     setTimeout(() => setIsNavigatingHistory(false), 100);
+  };
+
+  const switchTrip = (tripId: string) => {
+    if (tripId === tripStore.activeTripId) return;
+    const targetTrip = tripStore.trips.find((trip) => trip.id === tripId);
+    if (!targetTrip) return;
+
+    setTripStore((prev) => {
+      const nextStore = { ...prev, activeTripId: tripId };
+      persistTripsStore(nextStore);
+      return nextStore;
+    });
+
+    applyTripToState(targetTrip);
+  };
+
+  const createTrip = (name?: string): string => {
+    const normalizedName = name?.trim() || `Trip ${tripStore.trips.length + 1}`;
+    const newTrip = createEmptyStoredTrip(normalizedName);
+
+    setTripStore((prev) => {
+      const nextStore = {
+        activeTripId: newTrip.id,
+        trips: [...prev.trips, newTrip],
+      };
+      persistTripsStore(nextStore);
+      return nextStore;
+    });
+
+    applyTripToState(newTrip);
+    return newTrip.id;
+  };
+
+  const renameTrip = (tripId: string, name: string) => {
+    const normalizedName = name.trim();
+    if (!normalizedName) return;
+
+    setTripStore((prev) => {
+      const tripIndex = prev.trips.findIndex((trip) => trip.id === tripId);
+      if (tripIndex === -1) return prev;
+
+      const nextTrips = [...prev.trips];
+      nextTrips[tripIndex] = {
+        ...nextTrips[tripIndex],
+        name: normalizedName,
+        updatedAt: Date.now(),
+      };
+
+      const nextStore = { ...prev, trips: nextTrips };
+      persistTripsStore(nextStore);
+      return nextStore;
+    });
+  };
+
+  const deleteTrip = (tripId: string): boolean => {
+    if (tripStore.trips.length <= 1) return false;
+    const remainingTrips = tripStore.trips.filter((trip) => trip.id !== tripId);
+    if (remainingTrips.length === tripStore.trips.length) return false;
+
+    const nextActiveTripId = tripStore.activeTripId === tripId
+      ? remainingTrips[0].id
+      : tripStore.activeTripId;
+    const nextActiveTrip = remainingTrips.find((trip) => trip.id === nextActiveTripId) || remainingTrips[0];
+
+    setTripStore(() => {
+      const nextStore = {
+        activeTripId: nextActiveTrip.id,
+        trips: remainingTrips,
+      };
+      persistTripsStore(nextStore);
+      return nextStore;
+    });
+
+    if (tripStore.activeTripId === tripId) {
+      applyTripToState(nextActiveTrip);
+    }
+
+    return true;
   };
 
   // --- Actions ---
@@ -444,6 +712,12 @@ export function ItineraryProvider({ children }: { children: ReactNode }) {
   };
 
   const value = {
+    trips: tripSummaries,
+    activeTripId,
+    switchTrip,
+    createTrip,
+    renameTrip,
+    deleteTrip,
     startDate, endDate, days, locations, routes, aiSettings,
     selectedLocationId, hoveredLocationId,
     historyIndex, historyLength: history.length, history,

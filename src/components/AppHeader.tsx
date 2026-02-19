@@ -1,12 +1,19 @@
 import React from 'react';
 import { Group, Button, ActionIcon, Text, Box, Menu } from '@mantine/core';
 import { Burger } from '@mantine/core';
-import { Map as MapIcon, Download, Upload, Cloud, FileText, MoreHorizontal, History, Undo, Redo, Sparkles } from 'lucide-react';
+import { Map as MapIcon, Download, Upload, Cloud, FileText, MoreHorizontal, History, Undo, Redo, Sparkles, FolderKanban, Plus, Pencil, Trash2, Check } from 'lucide-react';
 import { ACTION_LABELS } from '../constants/actionLabels';
+import { TripSummary } from '../types';
 
 interface AppHeaderProps {
   opened: boolean;
   toggle: () => void;
+  trips: TripSummary[];
+  activeTripId: string;
+  onSwitchTrip: (tripId: string) => void;
+  onCreateTrip: () => void;
+  onRenameTrip: () => void;
+  onDeleteTrip: () => void;
   historyIndex: number;
   historyLength: number;
   navigateHistory: (index: number) => void;
@@ -22,6 +29,12 @@ interface AppHeaderProps {
 export function AppHeader({
   opened,
   toggle,
+  trips,
+  activeTripId,
+  onSwitchTrip,
+  onCreateTrip,
+  onRenameTrip,
+  onDeleteTrip,
   historyIndex,
   historyLength,
   navigateHistory,
@@ -34,14 +47,46 @@ export function AppHeader({
   importFileInputRef,
 }: AppHeaderProps) {
   const openImportPicker = () => importFileInputRef.current?.click();
+  const activeTrip = trips.find((trip) => trip.id === activeTripId);
+  const activeTripName = activeTrip?.name || 'Trip';
 
   return (
     <Group h="100%" px="md" justify="space-between" wrap="nowrap">
-      <Group wrap="nowrap">
+      <Group wrap="nowrap" gap="xs">
         <Burger opened={opened} onClick={toggle} size="sm" color="blue" hiddenFrom="sm" />
         <Text fw={700} fz="lg" c="blue" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <MapIcon size={20} /> <Box visibleFrom="xs">Itinerary Planner</Box>
         </Text>
+        <Menu shadow="md" width={280} position="bottom-start" withinPortal zIndex={4000}>
+          <Menu.Target>
+            <Button variant="default" size="xs" leftSection={<FolderKanban size={14} />}>
+              <Box visibleFrom="sm">{activeTripName}</Box>
+              <Box hiddenFrom="sm">Trip</Box>
+            </Button>
+          </Menu.Target>
+          <Menu.Dropdown>
+            <Menu.Label>Trips</Menu.Label>
+            {trips.map((trip) => (
+              <Menu.Item
+                key={trip.id}
+                leftSection={trip.id === activeTripId ? <Check size={14} /> : undefined}
+                onClick={() => onSwitchTrip(trip.id)}
+              >
+                {trip.name}
+              </Menu.Item>
+            ))}
+            <Menu.Divider />
+            <Menu.Item leftSection={<Plus size={14} />} onClick={onCreateTrip}>
+              New trip
+            </Menu.Item>
+            <Menu.Item leftSection={<Pencil size={14} />} onClick={onRenameTrip}>
+              Rename current trip
+            </Menu.Item>
+            <Menu.Item leftSection={<Trash2 size={14} />} color="red" onClick={onDeleteTrip}>
+              Delete current trip
+            </Menu.Item>
+          </Menu.Dropdown>
+        </Menu>
       </Group>
       <Group gap="xs" visibleFrom="lg" wrap="nowrap">
         <ActionIcon variant="subtle" color="gray" onClick={() => navigateHistory(historyIndex - 1)} disabled={historyIndex <= 0}>
