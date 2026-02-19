@@ -350,7 +350,15 @@ export function SidebarContent({
         </Group>
       </Box>
 
-      <Modal opened={confirmClearOpened} onClose={() => setConfirmClearOpened(false)} title="Clear itinerary?" centered size="sm">
+      <Modal
+        opened={confirmClearOpened}
+        onClose={() => setConfirmClearOpened(false)}
+        title="Clear itinerary?"
+        centered
+        size="sm"
+        zIndex={3000}
+        withinPortal
+      >
         <Stack gap="md">
           <Text size="sm">This will remove all current itinerary data from the planner.</Text>
           <Group justify="flex-end">

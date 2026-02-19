@@ -397,8 +397,15 @@ export function ItineraryProvider({ children }: { children: ReactNode }) {
   };
 
   const clearAll = () => {
+    setStartDate('');
+    setEndDate('');
+    setDays([]);
     setLocations([]);
-    // Optionally reset other things? User prompt said "clear all data", typically implies just the itinerary content
+    setRoutes([]);
+    setSelectedLocationId(null);
+    setHoveredLocationId(null);
+    setHistory([]);
+    setHistoryIndex(-1);
   };
 
   const getExportData = () => ({
