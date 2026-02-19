@@ -413,8 +413,23 @@ export function DaySidebar({
                         nextLoc.lat,
                         nextLoc.lng,
                       )}
-                      row={pos.row + pos.span}
-                      col={pos.col}
+                      row={
+                        pos.row === nextPos.row && pos.span === nextPos.span
+                          ? pos.row
+                          : pos.row + pos.span
+                      }
+                      rowSpan={
+                        pos.row === nextPos.row && pos.span === nextPos.span
+                          ? pos.span
+                          : 1
+                      }
+                      col={Math.min(pos.col, nextPos.col)}
+                      colSpan={Math.abs(nextPos.col - pos.col) + 1}
+                      orientation={
+                        pos.row === nextPos.row && pos.span === nextPos.span
+                          ? 'horizontal'
+                          : 'vertical'
+                      }
                       onEdit={() => onEditRoute(loc.id, nextLoc.id)}
                     />
                   )}

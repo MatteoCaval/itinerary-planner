@@ -7,6 +7,9 @@ interface RouteConnectorProps {
   distance: string;
   row: number;
   col: number;
+  rowSpan?: number;
+  colSpan?: number;
+  orientation?: 'vertical' | 'horizontal';
   onEdit: () => void;
 }
 
@@ -15,29 +18,39 @@ export const RouteConnector = React.memo(function RouteConnector({
   distance,
   row,
   col,
+  rowSpan = 1,
+  colSpan = 1,
+  orientation = 'vertical',
   onEdit,
 }: RouteConnectorProps) {
-  const transportLabel = route ? TRANSPORT_LABELS[route.transportType] : null;
+  const isHorizontal = orientation === 'horizontal';
   const transportColor = route
     ? TRANSPORT_COLORS[route.transportType]
     : '#0d6efd';
+  const transportIcon = route
+    ? TRANSPORT_LABELS[route.transportType].split(' ')[0]
+    : '+';
+  const tooltipLabel = route
+    ? 'Edit connection'
+    : `Set route (${distance}km)`;
 
   return (
     <Box
       style={{
-        gridColumn: `${3 + col} / span 1`,
-        gridRow: `${row} / span 1`,
+        gridColumn: `${3 + col} / span ${colSpan}`,
+        gridRow: `${row} / span ${rowSpan}`,
         zIndex: 10,
         pointerEvents: 'none',
-        height: 0,
         position: 'relative',
         display: 'flex',
         justifyContent: 'center',
+        alignItems: isHorizontal ? 'center' : 'flex-start',
+        height: isHorizontal ? '100%' : 0,
       }}
     >
-      <Tooltip label="Edit Connection">
+      <Tooltip label={tooltipLabel}>
         <Paper
-          className={`route-connector-pill ${route ? 'route-connector-existing' : 'route-connector-empty'}`}
+          className={`route-connector-pill ${isHorizontal ? 'route-connector-pill-inline' : ''} ${route ? 'route-connector-existing' : 'route-connector-empty'}`}
           shadow="sm"
           withBorder
           bg={!route ? 'blue.0' : 'white'}
@@ -45,53 +58,34 @@ export const RouteConnector = React.memo(function RouteConnector({
             cursor: 'pointer',
             pointerEvents: 'auto',
             padding: '4px 12px',
-            transform: 'translateY(-50%)',
+            transform: isHorizontal ? 'none' : 'translateY(-50%)',
             whiteSpace: 'nowrap',
             transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
             borderStyle: route ? 'solid' : 'dashed',
             borderWidth: 2,
-            position: 'absolute',
-            top: 0,
+            position: isHorizontal ? 'relative' : 'absolute',
+            top: isHorizontal ? undefined : 0,
             borderColor: !route
               ? 'var(--mantine-color-blue-3)'
               : 'var(--mantine-color-gray-3)',
             borderRadius: 999,
+            minWidth: 32,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
           }}
           onClick={(e) => {
             e.stopPropagation();
             onEdit();
           }}
         >
-          <Group gap="xs">
-            {route ? (
-              <>
-                <Text size="xs" fw={700} c={transportColor}>
-                  {transportLabel}
-                </Text>
-                <Box
-                  style={{
-                    width: 1,
-                    height: 12,
-                    backgroundColor: 'var(--mantine-color-gray-3)',
-                  }}
-                />
-                <Text size="xs" c="dimmed" fw={500}>
-                  {route.duration || `${distance}km`}
-                </Text>
-              </>
-            ) : (
-              <>
-                <Text size="sm" fw={700} c="blue" lh={1}>
-                  +
-                </Text>
-                <Text size="xs" fw={500}>
-                  Set travel{' '}
-                  <Text span size="xs" c="dimmed">
-                    ({distance}km)
-                  </Text>
-                </Text>
-              </>
-            )}
+          <Group gap={6} wrap="nowrap">
+            <Text size="sm" fw={700} c={route ? transportColor : 'blue'} lh={1}>
+              {transportIcon}
+            </Text>
+            <Text size="10px" fw={600} c="dimmed" lh={1}>
+              {distance}km
+            </Text>
           </Group>
         </Paper>
       </Tooltip>

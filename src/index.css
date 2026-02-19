@@ -688,6 +688,10 @@ body,
   box-shadow: 0 8px 14px rgba(15, 23, 42, 0.14);
 }
 
+.route-connector-pill.route-connector-pill-inline:hover {
+  transform: scale(1.03);
+}
+
 .route-connector-empty {
   animation: route-connector-enter 180ms ease-out;
 }
