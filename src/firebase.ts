@@ -1,3 +1,6 @@
+import type { FirebaseApp } from 'firebase/app';
+import type { Auth } from 'firebase/auth';
+import type { Database } from 'firebase/database';
 import { trackError } from './services/telemetry';
 
 const firebaseConfig = {
@@ -10,18 +13,43 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
-let dbPromise: Promise<ReturnType<typeof import('firebase/database').getDatabase>> | null = null;
+let appPromise: Promise<FirebaseApp> | null = null;
+let dbPromise: Promise<Database> | null = null;
+let authPromise: Promise<Auth> | null = null;
+
+const getFirebaseApp = async () => {
+  if (!appPromise) {
+    appPromise = (async () => {
+      const { initializeApp, getApps, getApp } = await import('firebase/app');
+      if (getApps().length > 0) {
+        return getApp();
+      }
+      return initializeApp(firebaseConfig);
+    })();
+  }
+  return appPromise;
+};
 
 async function getDb() {
   if (!dbPromise) {
     dbPromise = (async () => {
-      const { initializeApp } = await import('firebase/app');
       const { getDatabase } = await import('firebase/database');
-      const app = initializeApp(firebaseConfig);
+      const app = await getFirebaseApp();
       return getDatabase(app);
     })();
   }
   return dbPromise;
+}
+
+export async function getFirebaseAuth() {
+  if (!authPromise) {
+    authPromise = (async () => {
+      const { getAuth } = await import('firebase/auth');
+      const app = await getFirebaseApp();
+      return getAuth(app);
+    })();
+  }
+  return authPromise;
 }
 
 // Helper to remove undefined values recursively (Firebase doesn't allow them)
@@ -74,5 +102,40 @@ export const loadItinerary = async (passcode: string): Promise<{ success: boolea
   } catch (error) {
     trackError('cloud_load_failed', error, { passcode });
     return { success: false, error: formatErrorMessage(error) };
+  }
+};
+
+export const saveUserTripStore = async (
+  uid: string,
+  tripStore: unknown,
+): Promise<{ success: boolean; error?: string }> => {
+  try {
+    const { ref, set } = await import('firebase/database');
+    const db = await getDb();
+    await set(ref(db, `users/${uid}/tripStore`), sanitizeForFirebase(tripStore));
+    return { success: true };
+  } catch (error) {
+    trackError('account_trip_store_save_failed', error, { uid });
+    return { success: false, error: formatErrorMessage(error) };
+  }
+};
+
+export const loadUserTripStore = async (
+  uid: string,
+): Promise<{ success: boolean; exists: boolean; data?: unknown; error?: string }> => {
+  try {
+    const { ref, get, child } = await import('firebase/database');
+    const db = await getDb();
+    const dbRef = ref(db);
+    const snapshot = await get(child(dbRef, `users/${uid}/tripStore`));
+
+    if (snapshot.exists()) {
+      return { success: true, exists: true, data: snapshot.val() };
+    }
+
+    return { success: true, exists: false };
+  } catch (error) {
+    trackError('account_trip_store_load_failed', error, { uid });
+    return { success: false, exists: false, error: formatErrorMessage(error) };
   }
 };

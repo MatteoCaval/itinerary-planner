@@ -1,8 +1,9 @@
 import React from 'react';
 import { Group, Button, ActionIcon, Text, Box, Menu } from '@mantine/core';
 import { Burger } from '@mantine/core';
-import { Map as MapIcon, Download, Upload, Cloud, FileText, MoreHorizontal, History, Undo, Redo, Sparkles, FolderKanban, Plus, Pencil, Trash2, Check } from 'lucide-react';
+import { Map as MapIcon, Download, Upload, Cloud, FileText, MoreHorizontal, History, Undo, Redo, Sparkles, FolderKanban, Plus, Pencil, Trash2, Check, LogIn, LogOut, UserCircle2 } from 'lucide-react';
 import { ACTION_LABELS } from '../constants/actionLabels';
+import { ENABLE_ACCOUNT_AUTH } from '../constants/featureFlags';
 import { TripSummary } from '../types';
 
 interface AppHeaderProps {
@@ -20,6 +21,11 @@ interface AppHeaderProps {
   onOpenHistory: () => void;
   onOpenAI: () => void;
   onOpenCloud: () => void;
+  isAuthLoading: boolean;
+  isAuthenticated: boolean;
+  authEmail: string | null;
+  onOpenAuth: () => void;
+  onSignOut: () => void;
   onExportMarkdown: () => void;
   onImport: React.ChangeEventHandler<HTMLInputElement>;
   onExport: () => void;
@@ -41,6 +47,11 @@ export function AppHeader({
   onOpenHistory,
   onOpenAI,
   onOpenCloud,
+  isAuthLoading,
+  isAuthenticated,
+  authEmail,
+  onOpenAuth,
+  onSignOut,
   onExportMarkdown,
   onImport,
   onExport,
@@ -101,6 +112,36 @@ export function AppHeader({
         <Button variant="default" size="xs" leftSection={<Upload size={16} />} onClick={openImportPicker}>{ACTION_LABELS.importJson}</Button>
         <Button variant="default" size="xs" leftSection={<Download size={16} />} onClick={onExport}>{ACTION_LABELS.exportJson}</Button>
         <Button variant="filled" color="blue" size="xs" leftSection={<Cloud size={16} />} onClick={onOpenCloud}>{ACTION_LABELS.cloudSync}</Button>
+        {!ENABLE_ACCOUNT_AUTH ? (
+          <Button variant="default" size="xs" leftSection={<UserCircle2 size={16} />} disabled>
+            Account (Coming soon)
+          </Button>
+        ) : isAuthLoading ? (
+          <Button variant="default" size="xs" leftSection={<UserCircle2 size={16} />} disabled>
+            Account...
+          </Button>
+        ) : isAuthenticated ? (
+          <Menu shadow="md" width={260} position="bottom-end" withinPortal zIndex={4000}>
+            <Menu.Target>
+              <Button variant="default" size="xs" leftSection={<UserCircle2 size={16} />}>
+                <Box visibleFrom="xl">{authEmail || 'Account'}</Box>
+                <Box hiddenFrom="xl">Account</Box>
+              </Button>
+            </Menu.Target>
+            <Menu.Dropdown>
+              <Menu.Label>Signed in</Menu.Label>
+              <Menu.Item disabled>{authEmail || 'Account'}</Menu.Item>
+              <Menu.Divider />
+              <Menu.Item color="red" leftSection={<LogOut size={16} />} onClick={onSignOut}>
+                Sign out
+              </Menu.Item>
+            </Menu.Dropdown>
+          </Menu>
+        ) : (
+          <Button variant="default" size="xs" leftSection={<LogIn size={16} />} onClick={onOpenAuth}>
+            Sign in
+          </Button>
+        )}
       </Group>
 
       <Box hiddenFrom="lg">
@@ -119,6 +160,30 @@ export function AppHeader({
             <Menu.Item leftSection={<FileText size={16} />} onClick={onExportMarkdown}>
               {ACTION_LABELS.exportMarkdown}
             </Menu.Item>
+            <Menu.Divider />
+            <Menu.Label>Account</Menu.Label>
+            {!ENABLE_ACCOUNT_AUTH ? (
+              <Menu.Item leftSection={<UserCircle2 size={16} />} disabled>
+                Account (Coming soon)
+              </Menu.Item>
+            ) : isAuthLoading ? (
+              <Menu.Item leftSection={<UserCircle2 size={16} />} disabled>
+                Account...
+              </Menu.Item>
+            ) : isAuthenticated ? (
+              <>
+                <Menu.Item leftSection={<UserCircle2 size={16} />} disabled>
+                  {authEmail || 'Signed in'}
+                </Menu.Item>
+                <Menu.Item leftSection={<LogOut size={16} />} color="red" onClick={onSignOut}>
+                  Sign out
+                </Menu.Item>
+              </>
+            ) : (
+              <Menu.Item leftSection={<LogIn size={16} />} onClick={onOpenAuth}>
+                Sign in (optional)
+              </Menu.Item>
+            )}
             <Menu.Divider />
             <Menu.Label>Data</Menu.Label>
             <Menu.Item leftSection={<Upload size={16} />} onClick={openImportPicker}>

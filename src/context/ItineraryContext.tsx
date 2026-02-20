@@ -4,6 +4,8 @@ import { Day, Location, Route, AISettings, DaySection, ItineraryData, TripSummar
 import { itineraryImportSchema, ItineraryImportData, LocationImportData, RouteImportData } from '../utils/itinerarySchema';
 import { trackError } from '../services/telemetry';
 import { DEFAULT_SECTION, DEFAULT_CATEGORY, DEFAULT_AI_MODEL, UNASSIGNED_ZONE_ID, SLOT_PREFIX } from '../constants/daySection';
+import { loadUserTripStore, saveUserTripStore } from '../firebase';
+import { useAuth } from './AuthContext';
 
 // Storage Keys
 const STORAGE_KEY_TRIPS = 'itinerary-trips-v1';
@@ -167,45 +169,51 @@ const createEmptyStoredTrip = (name: string): StoredTrip => {
   };
 };
 
+const parseTripsStore = (value: unknown): TripsStore | null => {
+  if (!value || typeof value !== 'object') return null;
+
+  const parsed = value as Partial<TripsStore>;
+  if (!Array.isArray(parsed.trips)) return null;
+
+  const trips: StoredTrip[] = parsed.trips
+    .map((trip, index) => {
+      if (!trip || typeof trip !== 'object') return null;
+
+      const candidate = trip as Partial<StoredTrip>;
+      const id = typeof candidate.id === 'string' && candidate.id ? candidate.id : uuidv4();
+      const createdAt = typeof candidate.createdAt === 'number' ? candidate.createdAt : Date.now() + index;
+      const updatedAt = typeof candidate.updatedAt === 'number' ? candidate.updatedAt : createdAt;
+
+      return {
+        id,
+        name: typeof candidate.name === 'string' && candidate.name.trim() ? candidate.name : `Trip ${index + 1}`,
+        createdAt,
+        updatedAt,
+        startDate: typeof candidate.startDate === 'string' ? candidate.startDate : '',
+        endDate: typeof candidate.endDate === 'string' ? candidate.endDate : '',
+        days: migrateDays((Array.isArray(candidate.days) ? candidate.days : []) as ImportedDay[]),
+        locations: migrateLocations((Array.isArray(candidate.locations) ? candidate.locations : []) as LocationImportData[]),
+        routes: normalizeRoutes(candidate.routes),
+        version: typeof candidate.version === 'string' ? candidate.version : '1.0',
+      };
+    })
+    .filter((trip): trip is StoredTrip => Boolean(trip));
+
+  if (trips.length === 0) return null;
+
+  const activeTripId = typeof parsed.activeTripId === 'string' && trips.some((trip) => trip.id === parsed.activeTripId)
+    ? parsed.activeTripId
+    : trips[0].id;
+
+  return { activeTripId, trips };
+};
+
 const readTripsStore = (): TripsStore | null => {
   const raw = localStorage.getItem(STORAGE_KEY_TRIPS);
   if (!raw) return null;
 
   try {
-    const parsed = JSON.parse(raw) as Partial<TripsStore>;
-    if (!parsed || !Array.isArray(parsed.trips)) return null;
-
-    const trips: StoredTrip[] = parsed.trips
-      .map((trip, index) => {
-        if (!trip || typeof trip !== 'object') return null;
-
-        const candidate = trip as Partial<StoredTrip>;
-        const id = typeof candidate.id === 'string' && candidate.id ? candidate.id : uuidv4();
-        const createdAt = typeof candidate.createdAt === 'number' ? candidate.createdAt : Date.now() + index;
-        const updatedAt = typeof candidate.updatedAt === 'number' ? candidate.updatedAt : createdAt;
-
-        return {
-          id,
-          name: typeof candidate.name === 'string' && candidate.name.trim() ? candidate.name : `Trip ${index + 1}`,
-          createdAt,
-          updatedAt,
-          startDate: typeof candidate.startDate === 'string' ? candidate.startDate : '',
-          endDate: typeof candidate.endDate === 'string' ? candidate.endDate : '',
-          days: migrateDays((Array.isArray(candidate.days) ? candidate.days : []) as ImportedDay[]),
-          locations: migrateLocations((Array.isArray(candidate.locations) ? candidate.locations : []) as LocationImportData[]),
-          routes: normalizeRoutes(candidate.routes),
-          version: typeof candidate.version === 'string' ? candidate.version : '1.0',
-        };
-      })
-      .filter((trip): trip is StoredTrip => Boolean(trip));
-
-    if (trips.length === 0) return null;
-
-    const activeTripId = typeof parsed.activeTripId === 'string' && trips.some((trip) => trip.id === parsed.activeTripId)
-      ? parsed.activeTripId
-      : trips[0].id;
-
-    return { activeTripId, trips };
+    return parseTripsStore(JSON.parse(raw));
   } catch (error) {
     trackError('trips_storage_parse_failed', error);
     return null;
@@ -327,6 +335,7 @@ interface ItineraryContextType {
 const ItineraryContext = createContext<ItineraryContextType | undefined>(undefined);
 
 export function ItineraryProvider({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
   const initialSnapshotRef = useRef<InitialSnapshot | null>(null);
   if (!initialSnapshotRef.current) {
     initialSnapshotRef.current = buildInitialSnapshot();
@@ -372,6 +381,11 @@ export function ItineraryProvider({ children }: { children: ReactNode }) {
   const [history, setHistory] = useState<HistorySnapshot[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [isNavigatingHistory, setIsNavigatingHistory] = useState(false);
+  const [isRemoteSyncReady, setIsRemoteSyncReady] = useState(false);
+
+  const tripStoreRef = useRef<TripsStore>(initialSnapshot.store);
+  const remoteSyncUidRef = useRef<string | null>(null);
+  const lastSyncedRemoteStoreRef = useRef<string>('');
 
   const activeTripId = tripStore.activeTripId;
   const tripSummaries = useMemo<TripSummary[]>(
@@ -401,6 +415,10 @@ export function ItineraryProvider({ children }: { children: ReactNode }) {
     setHistoryIndex(-1);
     setIsNavigatingHistory(false);
   };
+
+  useEffect(() => {
+    tripStoreRef.current = tripStore;
+  }, [tripStore]);
 
   // --- Effects for Persistence ---
   useEffect(() => { localStorage.setItem(STORAGE_KEY_AI, JSON.stringify(aiSettings)); }, [aiSettings]);
@@ -438,6 +456,92 @@ export function ItineraryProvider({ children }: { children: ReactNode }) {
       return nextStore;
     });
   }, [startDate, endDate, days, locations, routes]);
+
+  useEffect(() => {
+    const uid = user?.uid;
+    if (!uid) {
+      remoteSyncUidRef.current = null;
+      lastSyncedRemoteStoreRef.current = '';
+      setIsRemoteSyncReady(false);
+      return;
+    }
+
+    if (remoteSyncUidRef.current === uid) {
+      return;
+    }
+
+    remoteSyncUidRef.current = uid;
+    setIsRemoteSyncReady(false);
+
+    let cancelled = false;
+
+    const bootstrapRemoteStore = async () => {
+      const remoteResult = await loadUserTripStore(uid);
+      if (cancelled) return;
+
+      if (!remoteResult.success) {
+        trackError('account_trip_store_bootstrap_failed', remoteResult.error || 'load_failed', { uid });
+        setIsRemoteSyncReady(true);
+        return;
+      }
+
+      if (remoteResult.exists) {
+        const parsedRemote = parseTripsStore(remoteResult.data);
+        if (parsedRemote) {
+          const serializedRemote = JSON.stringify(parsedRemote);
+          lastSyncedRemoteStoreRef.current = serializedRemote;
+          setTripStore(parsedRemote);
+          persistTripsStore(parsedRemote);
+
+          const activeTrip = parsedRemote.trips.find((trip) => trip.id === parsedRemote.activeTripId) || parsedRemote.trips[0];
+          applyTripToState(activeTrip);
+          setIsRemoteSyncReady(true);
+          return;
+        }
+
+        trackError('account_trip_store_parse_failed', 'Invalid remote store format', { uid });
+      }
+
+      const localStore = tripStoreRef.current;
+      const serializedLocal = JSON.stringify(localStore);
+      const saveResult = await saveUserTripStore(uid, localStore);
+      if (cancelled) return;
+
+      if (saveResult.success) {
+        lastSyncedRemoteStoreRef.current = serializedLocal;
+      } else {
+        trackError('account_trip_store_initial_upload_failed', saveResult.error || 'save_failed', { uid });
+      }
+
+      setIsRemoteSyncReady(true);
+    };
+
+    bootstrapRemoteStore();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.uid]);
+
+  useEffect(() => {
+    if (!user?.uid || !isRemoteSyncReady) return;
+
+    const serializedStore = JSON.stringify(tripStore);
+    if (serializedStore === lastSyncedRemoteStoreRef.current) {
+      return;
+    }
+
+    const timer = window.setTimeout(async () => {
+      const saveResult = await saveUserTripStore(user.uid, tripStore);
+      if (saveResult.success) {
+        lastSyncedRemoteStoreRef.current = serializedStore;
+      } else {
+        trackError('account_trip_store_sync_failed', saveResult.error || 'save_failed', { uid: user.uid });
+      }
+    }, 600);
+
+    return () => window.clearTimeout(timer);
+  }, [tripStore, user?.uid, isRemoteSyncReady]);
 
   // --- History Logic ---
   const currentState = useMemo(() => ({

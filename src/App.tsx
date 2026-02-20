@@ -9,12 +9,14 @@ import { RouteEditor } from './components/RouteEditor';
 import { DayAssignmentModal } from './components/DayAssignmentModal';
 import { LocationDetailPanel } from './components/LocationDetailPanel';
 import { CloudSyncModal } from './components/CloudSyncModal';
+import { AuthModal } from './components/AuthModal';
 import { HistoryModal } from './components/HistoryModal';
 import { AIPlannerModal } from './components/AIPlannerModal';
 import { SidebarContent } from './components/SidebarContent';
 import { MobileBottomSheet } from './components/MobileBottomSheet';
 import { Location, DaySection } from './types';
 import { ItineraryProvider, useItinerary } from './context/ItineraryContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import { searchPlace, reverseGeocode } from './utils/geocoding';
 import { useItineraryDrillDown } from './hooks/useItineraryDrillDown';
 import { useSidebarResize } from './hooks/useSidebarResize';
@@ -40,6 +42,7 @@ function AppContent() {
     navigateHistory,
     getExportData, loadFromData
   } = useItinerary();
+  const { user, isLoading: isAuthLoading, signOutUser } = useAuth();
 
   const [opened, { toggle, close }] = useDisclosure();
   const {
@@ -53,6 +56,7 @@ function AppContent() {
   } = useAppModals();
 
   const [selectedDayId, setSelectedDayId] = useState<string | null>(null);
+  const [showAuthModal, setShowAuthModal] = useState(false);
   const [drillDownParentId, setDrillDownParentId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
@@ -125,6 +129,28 @@ function AppContent() {
   const openHistoryModal = () => setShowHistoryModal(true);
   const openAIModal = () => setShowAIModal(true);
   const openCloudModal = () => setShowCloudModal(true);
+  const openAuthModal = () => setShowAuthModal(true);
+
+  const handleSignOut = async () => {
+    const shouldSignOut = window.confirm('Sign out from this account? Your local guest data will remain on this device.');
+    if (!shouldSignOut) return;
+
+    const result = await signOutUser();
+    if (!result.success) {
+      notifications.show({
+        color: 'red',
+        title: 'Sign out failed',
+        message: result.error || 'Unable to sign out right now.',
+      });
+      return;
+    }
+
+    notifications.show({
+      color: 'blue',
+      title: 'Signed out',
+      message: 'You are now in guest mode.',
+    });
+  };
 
   const resetUiForTripChange = () => {
     setSelectedDayId(null);
@@ -445,6 +471,11 @@ function AppContent() {
           onOpenHistory={openHistoryModal}
           onOpenAI={openAIModal}
           onOpenCloud={openCloudModal}
+          isAuthLoading={isAuthLoading}
+          isAuthenticated={Boolean(user)}
+          authEmail={user?.email || null}
+          onOpenAuth={openAuthModal}
+          onSignOut={handleSignOut}
           onExportMarkdown={handleExportMarkdown}
           onImport={handleImport}
           onExport={handleExport}
@@ -605,6 +636,8 @@ function AppContent() {
       <AppErrorBoundary title="Cloud sync error" message="Cloud sync crashed. You can retry or reload the app.">
         <CloudSyncModal show={showCloudModal} onClose={() => setShowCloudModal(false)} getData={getExportData} onLoadData={loadFromData} />
       </AppErrorBoundary>
+
+      <AuthModal show={showAuthModal} onClose={() => setShowAuthModal(false)} />
       
       <HistoryModal 
         show={showHistoryModal} 
@@ -647,9 +680,11 @@ function AppContent() {
 
 function App() {
   return (
-    <ItineraryProvider>
-      <AppContent />
-    </ItineraryProvider>
+    <AuthProvider>
+      <ItineraryProvider>
+        <AppContent />
+      </ItineraryProvider>
+    </AuthProvider>
   );
 }
 
