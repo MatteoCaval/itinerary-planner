@@ -11,7 +11,7 @@ interface AuthModalProps {
 }
 
 export function AuthModal({ show, onClose }: AuthModalProps) {
-  const { signIn, signUp, isLoading: authLoading } = useAuth();
+  const { signIn, signInWithGoogle, signUp, isLoading: authLoading } = useAuth();
   const [activeTab, setActiveTab] = useState<string | null>('signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -81,6 +81,21 @@ export function AuthModal({ show, onClose }: AuthModalProps) {
     onClose();
   };
 
+  const handleGoogleSignIn = async () => {
+    setError(null);
+    setIsSubmitting(true);
+    const result = await signInWithGoogle();
+    setIsSubmitting(false);
+
+    if (!result.success) {
+      setError(result.error || 'Unable to sign in with Google.');
+      return;
+    }
+
+    notifications.show({ color: 'green', title: 'Signed in', message: 'Your trips now sync to your account.' });
+    onClose();
+  };
+
   const isBusy = authLoading || isSubmitting;
 
   if (!ENABLE_ACCOUNT_AUTH) {
@@ -107,8 +122,8 @@ export function AuthModal({ show, onClose }: AuthModalProps) {
           Creating an account is optional. You can continue in guest mode at any time.
         </Text>
 
-        <Button variant="default" disabled>
-          Continue with Google (Coming soon)
+        <Button variant="default" onClick={handleGoogleSignIn} loading={isBusy}>
+          Continue with Google
         </Button>
 
         <Text size="xs" c="dimmed" ta="center">
