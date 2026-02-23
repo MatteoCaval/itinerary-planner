@@ -72,9 +72,9 @@ const calculateDistance = (
   const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
     Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2);
+    Math.cos((lat2 * Math.PI) / 180) *
+    Math.sin(dLon / 2) *
+    Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return (R * c).toFixed(1);
 };
@@ -362,12 +362,12 @@ export function DaySidebar({
                 : null;
               const route = nextLoc
                 ? routes.find(
-                    (r) =>
-                      (r.fromLocationId === loc.id &&
-                        r.toLocationId === nextLoc.id) ||
-                      (r.fromLocationId === nextLoc.id &&
-                        r.toLocationId === loc.id),
-                  )
+                  (r) =>
+                    (r.fromLocationId === loc.id &&
+                      r.toLocationId === nextLoc.id) ||
+                    (r.fromLocationId === nextLoc.id &&
+                      r.toLocationId === loc.id),
+                )
                 : undefined;
 
               const style: React.CSSProperties = {
@@ -441,9 +441,8 @@ export function DaySidebar({
 
         <Paper
           p="md"
-          bg="gray.0"
-          withBorder
-          style={{ position: 'sticky', bottom: 0, zIndex: 10 }}
+          bg="var(--mantine-color-neutral-0)"
+          style={{ position: 'sticky', bottom: 0, zIndex: 10, borderTop: '1px solid var(--mantine-color-neutral-2)' }}
         >
           <Group
             justify="space-between"
@@ -499,13 +498,14 @@ export function DaySidebar({
         <DragOverlay>
           {activeLocation ? (
             <Paper
-              shadow="md"
+              shadow="xl"
               withBorder
-              p="xs"
-              radius="md"
-              style={{ height: 80, cursor: 'grabbing' }}
+              p="sm"
+              radius="lg"
+              bg="var(--mantine-color-brand-0)"
+              style={{ height: 80, cursor: 'grabbing', borderColor: 'var(--mantine-color-brand-3)' }}
             >
-              <Text fw={700}>{activeLocation.name}</Text>
+              <Text fw={700} c="brand.8">{activeLocation.name}</Text>
             </Paper>
           ) : null}
         </DragOverlay>

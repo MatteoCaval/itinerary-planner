@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useCallback, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents, ZoomControl } from 'react-leaflet';
+import { Paper, Group, Checkbox, Select, Button, Text, Box, Badge } from '@mantine/core';
 import { Location, Route, TRANSPORT_COLORS, TRANSPORT_LABELS, Day, TransportType } from '../../types';
 import { getSectionIndex } from '../../constants/daySection';
 import L from 'leaflet';
@@ -302,60 +303,96 @@ export default function MapDisplay({ days, locations, routes, onEditRoute, hover
         <MapClickHandler onSelect={onSelectLocation} isDrillDown={isSubItinerary} />
       </MapContainer>
       {!hideControls && (
-        <div className="map-route-controls" role="region" aria-label="Map route controls">
-          <div className="map-route-controls-row">
-            <label className="map-route-control-item">
-              <input
-                type="checkbox"
-                checked={showRouteArrows}
-                onChange={event => setShowRouteArrows(event.target.checked)}
-              />
-              Route arrows
-            </label>
-            <label className="map-route-control-item">
-              <input
-                type="checkbox"
-                checked={enableMapGrouping}
-                onChange={event => setEnableMapGrouping(event.target.checked)}
-              />
-              Marker grouping
-            </label>
-            <label className="map-route-control-item">
-              Labels
-              <select
-                className="map-basemap-select"
-                value={basemapMode}
-                onChange={event => setBasemapMode(event.target.value as BasemapMode)}
-                aria-label="Map label language"
-              >
-                <option value="local">Local</option>
-                <option value="english">English (best effort)</option>
-              </select>
-            </label>
-            <button
-              type="button"
-              className="map-route-legend-toggle"
-              onClick={() => setShowRouteLegend(value => !value)}
+        <Paper
+          className="map-route-controls"
+          role="region"
+          aria-label="Map route controls"
+          radius="md"
+          p="sm"
+          withBorder
+          shadow="sm"
+          style={{
+            position: 'absolute',
+            top: 'calc(var(--app-shell-header-height, 60px) + 12px)',
+            right: 12,
+            zIndex: 900,
+            maxWidth: 'min(420px, calc(100vw - 24px))',
+            backgroundColor: 'rgba(255, 255, 255, 0.9)',
+            backdropFilter: 'blur(8px)',
+            borderColor: 'var(--mantine-color-neutral-3)'
+          }}
+        >
+          <Group gap="sm" wrap="wrap">
+            <Checkbox
+              size="xs"
+              label="Route arrows"
+              checked={showRouteArrows}
+              onChange={event => setShowRouteArrows(event.currentTarget.checked)}
+              color="brand"
+            />
+            <Checkbox
+              size="xs"
+              label="Marker grouping"
+              checked={enableMapGrouping}
+              onChange={event => setEnableMapGrouping(event.currentTarget.checked)}
+              color="brand"
+            />
+            <Select
+              size="xs"
+              data={[
+                { value: 'local', label: 'Local Labels' },
+                { value: 'english', label: 'English Labels' }
+              ]}
+              value={basemapMode}
+              onChange={val => setBasemapMode((val as BasemapMode) || 'local')}
+              allowDeselect={false}
+              w={140}
+            />
+            <Button
+              variant="subtle"
+              size="compact-xs"
+              color="neutral.6"
+              onClick={() => setShowRouteLegend(v => !v)}
             >
-              {showRouteLegend ? 'Hide legend' : 'Show legend'}
-            </button>
-          </div>
-          {focusedDayIdx !== -1 && <div className="map-day-highlight-indicator">Day {focusedDayIdx + 1} selected</div>}
+              {showRouteLegend ? 'Hide Legend' : 'Legend'}
+            </Button>
+          </Group>
+
+          {focusedDayIdx !== -1 && (
+            <Text size="xs" fw={700} c="brand.8" mt="xs">
+              Day {focusedDayIdx + 1} selected
+            </Text>
+          )}
+
           {showRouteLegend && (
-            <div className="map-route-legend">
+            <Group gap="xs" mt="xs" wrap="wrap">
               {transportLegendItems.length === 0 ? (
-                <span className="map-route-legend-empty">No route segments yet</span>
+                <Text size="xs" c="dimmed">No route segments yet</Text>
               ) : (
                 transportLegendItems.map(type => (
-                  <span key={type} className="map-route-legend-item">
-                    <span className="map-route-legend-dot" style={{ backgroundColor: TRANSPORT_COLORS[type] }} />
+                  <Badge
+                    key={type}
+                    variant="outline"
+                    color="neutral.5"
+                    size="sm"
+                    styles={{
+                      root: { paddingLeft: 4, paddingRight: 8, borderColor: 'var(--mantine-color-neutral-3)', backgroundColor: 'var(--mantine-color-neutral-0)' }
+                    }}
+                    leftSection={
+                      <Box
+                        w={8}
+                        h={8}
+                        style={{ borderRadius: '50%', backgroundColor: TRANSPORT_COLORS[type], marginLeft: 4 }}
+                      />
+                    }
+                  >
                     {TRANSPORT_LABELS[type].replace(/^[^\s]+\s/, '')}
-                  </span>
+                  </Badge>
                 ))
               )}
-            </div>
+            </Group>
           )}
-        </div>
+        </Paper>
       )}
     </div>
   );

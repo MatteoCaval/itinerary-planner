@@ -62,11 +62,11 @@ export function AppHeader({
   const activeTripName = activeTrip?.name || 'Trip';
 
   return (
-    <Group h="100%" px="md" justify="space-between" wrap="nowrap">
-      <Group wrap="nowrap" gap="xs">
-        <Burger opened={opened} onClick={toggle} size="sm" color="blue" hiddenFrom="sm" />
-        <Text fw={700} fz="lg" c="blue" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <MapIcon size={20} /> <Box visibleFrom="xs">Itinerary Planner</Box>
+    <Group h="100%" px="lg" justify="space-between" wrap="nowrap" bg="transparent">
+      <Group wrap="nowrap" gap="sm">
+        <Burger opened={opened} onClick={toggle} size="sm" color="var(--mantine-color-brand-6)" hiddenFrom="sm" />
+        <Text fw={800} fz="xl" c="brand.7" style={{ display: 'flex', alignItems: 'center', gap: '8px', letterSpacing: '-0.02em' }}>
+          <MapIcon size={24} strokeWidth={2.5} /> <Box visibleFrom="xs">Itinerary Planner</Box>
         </Text>
         <Menu shadow="md" width={280} position="bottom-start" withinPortal zIndex={4000}>
           <Menu.Target>
@@ -107,11 +107,11 @@ export function AppHeader({
           <Redo size={18} />
         </ActionIcon>
         <Button variant="default" size="xs" leftSection={<History size={16} />} onClick={onOpenHistory}>{ACTION_LABELS.history}</Button>
-        <Button variant="light" color="blue" size="xs" leftSection={<Sparkles size={16} />} onClick={onOpenAI}>{ACTION_LABELS.aiPlanner}</Button>
+        <Button variant="light" color="brand" size="xs" leftSection={<Sparkles size={16} />} onClick={onOpenAI}>{ACTION_LABELS.aiPlanner}</Button>
         <Button variant="default" size="xs" leftSection={<FileText size={16} />} onClick={onExportMarkdown}>{ACTION_LABELS.exportMarkdown}</Button>
         <Button variant="default" size="xs" leftSection={<Upload size={16} />} onClick={openImportPicker}>{ACTION_LABELS.importJson}</Button>
         <Button variant="default" size="xs" leftSection={<Download size={16} />} onClick={onExport}>{ACTION_LABELS.exportJson}</Button>
-        <Button variant="filled" color="blue" size="xs" leftSection={<Cloud size={16} />} onClick={onOpenCloud}>{ACTION_LABELS.cloudSync}</Button>
+        <Button variant="filled" color="brand" size="xs" leftSection={<Cloud size={16} />} onClick={onOpenCloud}>{ACTION_LABELS.cloudSync}</Button>
         {!ENABLE_ACCOUNT_AUTH ? (
           <Button variant="default" size="xs" leftSection={<UserCircle2 size={16} />} disabled>
             Account (Coming soon)

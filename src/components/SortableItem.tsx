@@ -114,17 +114,17 @@ export const SortableItem = React.memo(function SortableItem({
         withBorder
         p={isCompact ? 6 : 'xs'}
         className={`sortable-item ${isCompact ? 'sortable-item--compact' : ''} ${hierarchyClass} ${categoryClass} ${isDragging ? 'dragging' : ''} ${isResizing ? 'resizing' : ''} ${isOver ? 'nesting-target' : ''}`}
-        style={{ 
-          ...style, 
-          borderColor: isOver ? 'var(--mantine-color-blue-6)' : (isSelected ? 'var(--mantine-color-blue-filled)' : catColor),
+        style={{
+          ...style,
+          borderColor: isOver ? 'var(--mantine-color-brand-5)' : (isSelected ? 'var(--app-accent)' : catColor),
           borderWidth: isSelected || isOver ? 2 : 1,
           borderLeftWidth: 4,
           borderLeftStyle: 'solid',
           borderLeftColor: catColor,
-          outline: isOver ? '2px dashed var(--mantine-color-blue-6)' : undefined,
+          outline: isOver ? '2px dashed var(--mantine-color-brand-5)' : undefined,
           outlineOffset: isOver ? -2 : undefined
         }}
-        bg={isOver ? 'blue.0' : (isSelected ? 'blue.0' : undefined)}
+        bg={isOver ? 'brand.0' : (isSelected ? 'brand.0' : undefined)}
         onClick={() => onSelect?.(id)}
         h="100%"
       >
@@ -140,7 +140,7 @@ export const SortableItem = React.memo(function SortableItem({
             </Box>
 
             {index !== undefined && (
-              <Badge size="xs" circle color="blue">{index}</Badge>
+              <Badge size="xs" circle color="brand">{index}</Badge>
             )}
 
             {!isSubLocation && (
@@ -201,7 +201,7 @@ export const SortableItem = React.memo(function SortableItem({
             {canOpenSubItinerary && (
               <ActionIcon
                 variant="subtle"
-                color="indigo"
+                color="brand"
                 size={isCompact ? 'xs' : 'sm'}
                 onClick={(e) => {
                   e.stopPropagation();

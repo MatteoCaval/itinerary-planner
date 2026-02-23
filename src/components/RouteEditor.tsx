@@ -85,22 +85,24 @@ export function RouteEditor({ show, route, fromName, toName, onSave, onClose }: 
         <Modal
             opened={show}
             onClose={onClose}
-            title="Edit Route Details"
+            title={<Text fw={700} size="lg" c="brand.7">Edit Route Details</Text>}
             size="lg"
             centered
             zIndex={2000}
+            radius="lg"
+            overlayProps={{ backgroundOpacity: 0.55, blur: 3 }}
             transitionProps={{ transition: 'slide-up', duration: 180, timingFunction: 'ease' }}
         >
-            <Paper withBorder p="sm" bg="gray.0" mb="md" className="route-editor-summary">
+            <Paper withBorder p="md" bg="var(--mantine-color-neutral-0)" mb="md" className="route-editor-summary" radius="md" style={{ borderColor: 'var(--mantine-color-neutral-2)' }}>
                 <Group justify="center" align="center" gap="md">
                     <Stack gap={2} align="center" style={{ flex: 1 }}>
-                        <Text size="xs" fw={700} tt="uppercase" c="dimmed">From</Text>
-                        <Text fw={600} ta="center" size="sm" lineClamp={1}>{fromName}</Text>
+                        <Text size="xs" fw={700} tt="uppercase" c="dimmed" style={{ letterSpacing: '0.05em' }}>From</Text>
+                        <Text fw={600} ta="center" size="sm" lineClamp={1} c="neutral.8">{fromName}</Text>
                     </Stack>
-                    <ArrowRight size={16} className="text-muted" />
+                    <ArrowRight size={16} className="text-muted" color="var(--mantine-color-neutral-4)" />
                     <Stack gap={2} align="center" style={{ flex: 1 }}>
-                        <Text size="xs" fw={700} tt="uppercase" c="dimmed">To</Text>
-                        <Text fw={600} ta="center" size="sm" lineClamp={1}>{toName}</Text>
+                        <Text size="xs" fw={700} tt="uppercase" c="dimmed" style={{ letterSpacing: '0.05em' }}>To</Text>
+                        <Text fw={600} ta="center" size="sm" lineClamp={1} c="neutral.8">{toName}</Text>
                     </Stack>
                 </Group>
             </Paper>
@@ -199,9 +201,9 @@ export function RouteEditor({ show, route, fromName, toName, onSave, onClose }: 
                 </Grid.Col>
             </Grid>
 
-            <Group justify="flex-end" mt="xl">
-                <Button variant="default" onClick={onClose}>Cancel</Button>
-                <Button onClick={handleSave}>Save Route</Button>
+            <Group justify="flex-end" mt="xl" pt="md" style={{ borderTop: '1px solid var(--mantine-color-neutral-2)' }}>
+                <Button variant="subtle" color="neutral.6" onClick={onClose}>Cancel</Button>
+                <Button onClick={handleSave} color="brand" radius="md">Save Route</Button>
             </Group>
         </Modal>
     );

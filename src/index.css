@@ -1,16 +1,17 @@
 :root {
   --app-surface: #ffffff;
-  --app-surface-muted: #f6f8fb;
-  --app-surface-subtle: #edf1f7;
-  --app-border: #d7dde8;
-  --app-text: #1f2937;
-  --app-text-muted: #4b5563;
+  --app-surface-muted: #f8fafc;
+  --app-surface-subtle: #f1f5f9;
+  --app-border: #e2e8f0;
+  --app-text: #0f172a;
+  --app-text-muted: #475569;
   --app-accent: #2563eb;
-  --app-accent-soft: #dbeafe;
+  --app-accent-soft: #eff6ff;
   --app-accent-contrast: #1d4ed8;
-  --app-warning-soft: #fff7d6;
-  --app-shadow-soft: 0 2px 10px rgba(15, 23, 42, 0.08);
+  --app-warning-soft: #fef9c3;
+  --app-shadow-soft: 0 4px 6px -1px rgba(15, 23, 42, 0.08), 0 2px 4px -2px rgba(15, 23, 42, 0.04);
 }
+
 
 html,
 body,
@@ -48,14 +49,14 @@ body,
   touch-action: none;
   background: var(--app-surface);
   border: 1px solid var(--app-border);
-  border-radius: 6px;
-  padding: 10px;
+  border-radius: 12px;
+  padding: 12px;
   cursor: grab;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  transition: border-color 0.2s, box-shadow 0.2s;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
 }
 
 .sortable-item--cat-sightseeing {
@@ -216,11 +217,11 @@ body,
 }
 
 .day-label-box:hover {
-  background-color: var(--mantine-color-blue-0) !important;
+  background-color: var(--app-accent-soft) !important;
 }
 
 .day-label-box:active {
-  background-color: var(--mantine-color-blue-1) !important;
+  background-color: #dbeafe !important;
 }
 
 .day-label-selected {
@@ -340,9 +341,10 @@ body,
 
 /* Grid Layout Styles */
 .grid-cell {
-  border-right: 1px solid #dee2e6;
+  border-right: 1px solid var(--app-border);
+  border-bottom: 1px dashed rgba(226, 232, 240, 0.6);
   background-color: white;
-  /* Default background */
+  transition: background-color 0.2s ease;
 }
 
 /* Timeline / Ruler View Colors */
@@ -379,9 +381,9 @@ body,
 }
 
 .sortable-item.selected {
-  border-color: #0d6efd;
+  border-color: var(--app-accent);
   border-width: 2px;
-  background-color: #f0f7ff !important;
+  background-color: var(--app-accent-soft) !important;
 }
 
 .text-orange {
@@ -407,15 +409,15 @@ body,
 }
 
 .marker-circle {
-  width: 24px;
-  height: 24px;
+  width: 26px;
+  height: 26px;
   border-radius: 50%;
   border: 2px solid white;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .cluster-marker-circle {
@@ -433,9 +435,9 @@ body,
 }
 
 .map-marker-container.hovered .marker-circle {
-  transform: scale(1.2);
-  border-color: #0d6efd;
-  box-shadow: 0 4px 8px rgba(13, 110, 253, 0.4);
+  transform: scale(1.15) translateY(-2px);
+  border-color: var(--app-accent);
+  box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.4);
 }
 
 .marker-number {
@@ -623,9 +625,8 @@ body,
 }
 
 .route-hint {
-  background-color: #f0f7ff !important;
-  /* Very light blue hint */
-  border-color: #bfdbfe !important;
+  background-color: var(--app-accent-soft) !important;
+  border-color: var(--mantine-color-brand-2) !important;
 }
 
 .route-hint:hover {
@@ -802,6 +803,7 @@ body,
   from {
     transform: scale(0.985);
   }
+
   to {
     transform: scale(1);
   }
@@ -812,6 +814,7 @@ body,
     opacity: 0;
     transform: translateY(-45%) scale(0.96);
   }
+
   to {
     opacity: 1;
     transform: translateY(-50%) scale(1);
@@ -823,6 +826,7 @@ body,
     opacity: 0;
     transform: translateY(4px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);

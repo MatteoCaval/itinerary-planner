@@ -27,7 +27,7 @@ interface LocationDetailPanelProps {
   isSubItineraryActive?: boolean;
 }
 
-export function LocationDetailPanel({ 
+export function LocationDetailPanel({
   location, parentLocation, days, allLocations, routes, onUpdate, onClose, onSelectLocation,
   onEditRoute, selectedDayId, onSelectDay, onCollapse, onEnterSubItinerary, onExitSubItinerary, isSubItineraryActive = false
 }: LocationDetailPanelProps) {
@@ -84,7 +84,7 @@ export function LocationDetailPanel({
   // Find Accommodations for this specific location (only if staying overnight)
   const scheduledAccommodations = (() => {
     if (!startDay || typeof schedule === 'string') return [];
-    
+
     const startSlotIdx = SECTION_ORDER.indexOf(location.startSlot || DEFAULT_SECTION);
     const totalSlots = location.duration || 1;
     const startAbsSlot = (startDayIdx * 3) + startSlotIdx;
@@ -156,10 +156,10 @@ export function LocationDetailPanel({
     // We define this as covering the "Evening" slot (index 2) of Day i
     const nightsCovered: number[] = [];
     for (let i = startDayIdx; i < days.length; i++) {
-        const eveningAbsSlot = i * 3 + 2;
-        if (eveningAbsSlot >= startAbsSlot && eveningAbsSlot <= endAbsSlot) {
-            nightsCovered.push(i);
-        }
+      const eveningAbsSlot = i * 3 + 2;
+      if (eveningAbsSlot >= startAbsSlot && eveningAbsSlot <= endAbsSlot) {
+        nightsCovered.push(i);
+      }
     }
 
     if (nightsCovered.length === 0) return [];
@@ -167,16 +167,16 @@ export function LocationDetailPanel({
     let currentGroup: { name: string; nights: number; startDay: number; endDay: number } | null = null;
 
     nightsCovered.forEach((dayIdx) => {
-        const day = days[dayIdx];
-        const name = day.accommodation?.name || 'No accommodation set';
-        
-        if (!currentGroup || currentGroup.name !== name) {
-            if (currentGroup) groups.push(currentGroup);
-            currentGroup = { name, nights: 1, startDay: dayIdx + 1, endDay: dayIdx + 1 };
-        } else {
-            currentGroup.nights++;
-            currentGroup.endDay = dayIdx + 1;
-        }
+      const day = days[dayIdx];
+      const name = day.accommodation?.name || 'No accommodation set';
+
+      if (!currentGroup || currentGroup.name !== name) {
+        if (currentGroup) groups.push(currentGroup);
+        currentGroup = { name, nights: 1, startDay: dayIdx + 1, endDay: dayIdx + 1 };
+      } else {
+        currentGroup.nights++;
+        currentGroup.endDay = dayIdx + 1;
+      }
     });
 
     if (currentGroup) groups.push(currentGroup);
@@ -189,7 +189,7 @@ export function LocationDetailPanel({
         w="100%"
         className="location-detail-panel-image"
         style={{ position: 'relative' }}
-        bg={location.imageUrl ? 'gray.1' : 'dark.2'}
+        bg={location.imageUrl ? 'neutral.1' : 'neutral.8'}
       >
         {location.imageUrl && (
           <Image
@@ -209,10 +209,10 @@ export function LocationDetailPanel({
               size={72}
               radius={16}
             />
-            <Text size="sm" fw={600} c="gray.0" mt={10}>
+            <Text size="sm" fw={600} c="neutral.0" mt={10}>
               Photo Preview
             </Text>
-            <Text size="xs" c="gray.3">
+            <Text size="xs" c="neutral.3">
               Open this destination to auto-load a representative image
             </Text>
           </Box>
@@ -242,14 +242,15 @@ export function LocationDetailPanel({
         </Box>
       </Box>
 
-      <Box className="location-detail-panel-header" p="md" style={{ borderBottom: '1px solid var(--mantine-color-gray-3)' }} bg="gray.0">
+      <Box className="location-detail-panel-header" p="lg" style={{ borderBottom: '1px solid var(--mantine-color-neutral-2)' }} bg="var(--mantine-color-neutral-0)">
         {parentLocation && (
-          <Button 
-            variant="subtle" 
-            size="xs" 
-            mb="xs" 
-            leftSection={<ArrowLeft size={14} />} 
+          <Button
+            variant="subtle"
+            size="xs"
+            mb="sm"
+            leftSection={<ArrowLeft size={14} />}
             onClick={() => onSelectLocation?.(parentLocation.id)}
+            style={{ paddingLeft: 0, '&:hover': { background: 'transparent' } }}
           >
             Back to {parentLocation.name}
           </Button>
@@ -320,23 +321,23 @@ export function LocationDetailPanel({
       </Box>
 
       <ScrollArea flex={1} type="auto">
-        <Box p="md">
-          <Paper p="sm" withBorder shadow="sm" mb="md">
+        <Box p="lg">
+          <Paper p="md" withBorder shadow="sm" mb="lg" radius="md">
             <Group align="start" gap="md">
-              <Calendar size={18} className="text-primary mt-1" style={{ color: 'var(--mantine-color-blue-6)' }} />
+              <Calendar size={18} className="text-primary mt-1" style={{ color: 'var(--mantine-color-brand-6)' }} />
               <Box>
-                <Text size="xs" fw={700} tt="uppercase" c="dimmed">Schedule Recap</Text>
+                <Text size="xs" fw={700} tt="uppercase" c="dimmed" style={{ letterSpacing: '0.05em' }}>Schedule Recap</Text>
                 {typeof schedule === 'string' ? (
-                  <Text size="sm">{schedule}</Text>
+                  <Text size="sm" mt={2} fw={500}>{schedule}</Text>
                 ) : (
-                  <Box>
-                    <Text size="sm"><Text span fw={500}>From: </Text>{schedule.startStr}</Text>
-                    <Text size="sm"><Text span fw={500}>To: </Text>{schedule.endStr}</Text>
+                  <Box mt={4}>
+                    <Text size="sm"><Text span fw={600} c="neutral.6">From: </Text>{schedule.startStr}</Text>
+                    <Text size="sm"><Text span fw={600} c="neutral.6">To: </Text>{schedule.endStr}</Text>
                     {scheduledAccommodations.length > 0 && (
-                      <Box mt={4} pt={4} style={{ borderTop: '1px dashed var(--mantine-color-gray-3)' }}>
-                        <Group gap={4}>
-                          <Bed size={12} color="var(--mantine-color-indigo-6)" />
-                          <Text size="xs" fw={500} c="indigo.7">
+                      <Box mt={8} pt={8} style={{ borderTop: '1px dashed var(--mantine-color-neutral-3)' }}>
+                        <Group gap={6}>
+                          <Bed size={14} color="var(--mantine-color-brand-6)" />
+                          <Text size="xs" fw={600} c="brand.7">
                             Staying at: {scheduledAccommodations.join(', ')}
                           </Text>
                         </Group>
@@ -385,8 +386,8 @@ export function LocationDetailPanel({
                 <Group gap={4}>
                   {(['sightseeing', 'dining', 'hotel', 'transit', 'other'] as const).map(cat => (
                     <Tooltip key={cat} label={cat.charAt(0).toUpperCase() + cat.slice(1)}>
-                      <ActionIcon 
-                        variant={location.category === cat ? 'filled' : 'light'} 
+                      <ActionIcon
+                        variant={location.category === cat ? 'filled' : 'light'}
                         color={location.category === cat ? undefined : 'gray'}
                         style={{ backgroundColor: location.category === cat ? CATEGORY_COLORS[cat] : undefined }}
                         onClick={() => onUpdate(location.id, { category: cat })}
@@ -464,17 +465,17 @@ export function LocationDetailPanel({
                 <Bed size={14} />
                 <Text size="xs" fw={700} tt="uppercase" c="dimmed">Stay Overview</Text>
               </Group>
-              <Stack gap="xs">
+              <Stack gap="sm">
                 {accommodationGroups.map((group, i) => (
-                  <Paper key={i} p="xs" withBorder bg={group.name === 'No accommodation set' ? 'gray.0' : 'indigo.0'}>
+                  <Paper key={i} p="sm" withBorder bg={group.name === 'No accommodation set' ? 'neutral.0' : 'brand.0'} radius="md">
                     <Group justify="space-between" wrap="nowrap">
-                        <Box style={{ flex: 1, minWidth: 0 }}>
-                          <Text size="sm" fw={700} truncate>{group.name}</Text>
-                          <Text size="xs" c="dimmed">
-                            Day {group.startDay}{group.nights > 1 ? ` - ${group.endDay}` : ''}
-                          </Text>
-                        </Box>
-                        <Badge variant="light" color="indigo">{group.nights} {group.nights === 1 ? 'night' : 'nights'}</Badge>
+                      <Box style={{ flex: 1, minWidth: 0 }}>
+                        <Text size="sm" fw={700} truncate>{group.name}</Text>
+                        <Text size="xs" c="dimmed">
+                          Day {group.startDay}{group.nights > 1 ? ` - ${group.endDay}` : ''}
+                        </Text>
+                      </Box>
+                      <Badge variant="light" color="brand">{group.nights} {group.nights === 1 ? 'night' : 'nights'}</Badge>
                     </Group>
                   </Paper>
                 ))}

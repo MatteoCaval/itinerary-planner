@@ -73,7 +73,7 @@ export function SidebarContent({
     removeLocation, updateLocation, reorderLocations,
     setHoveredLocationId, clearAll
   } = useItinerary();
-  
+
   const [datePickerOpened, setDatePickerOpened] = React.useState(false);
   const [confirmClearOpened, setConfirmClearOpened] = React.useState(false);
   const hasDates = Boolean(startDate && endDate);
@@ -97,37 +97,39 @@ export function SidebarContent({
   };
 
   return (
-    <Stack h="100%" gap={0}>
-      <Box p="md" style={{ borderBottom: '1px solid var(--mantine-color-gray-3)' }}>
+    <Stack h="100%" gap={0} bg="var(--mantine-color-neutral-0)">
+      <Box p="lg" style={{ borderBottom: '1px solid var(--mantine-color-neutral-2)' }}>
         {/* Collapsible Date Header */}
         <Box mb="xs">
-            {!datePickerOpened ? (
-                <Paper 
-                    withBorder 
-                    p="xs" 
-                    bg="gray.0" 
-                    style={{ cursor: 'pointer' }}
-                    onClick={() => setDatePickerOpened(true)}
-                >
-                    <Group justify="space-between" wrap="nowrap">
-                        <Group gap="xs">
-                            <CalendarIcon size={14} color="var(--mantine-color-blue-6)" />
-                            <Text size="xs" fw={700}>{formatDateRange()}</Text>
-                        </Group>
-                        <Text size="10px" c="blue" fw={700}>EDIT</Text>
-                    </Group>
-                </Paper>
-            ) : (
-                <Stack gap="xs">
-                    <DateRangePicker startDate={startDate} endDate={endDate} onDateRangeChange={(s, e) => {
-                        updateDateRange(s, e);
-                        // We don't auto-close to allow fine-tuning, but user can close it
-                    }} />
-                    <Button variant="subtle" size="compact-xs" color="gray" onClick={() => setDatePickerOpened(false)}>
-                        Collapse Date Picker
-                    </Button>
-                </Stack>
-            )}
+          {!datePickerOpened ? (
+            <Paper
+              withBorder
+              p="sm"
+              bg="var(--mantine-color-neutral-0)"
+              shadow="sm"
+              style={{ cursor: 'pointer', transition: 'box-shadow 0.2s ease', borderColor: 'var(--mantine-color-neutral-2)' }}
+              onClick={() => setDatePickerOpened(true)}
+              className="date-picker-trigger hover-shadow"
+            >
+              <Group justify="space-between" wrap="nowrap">
+                <Group gap="xs">
+                  <CalendarIcon size={16} color="var(--mantine-color-brand-6)" />
+                  <Text size="sm" fw={600} c="var(--mantine-color-neutral-8)">{formatDateRange()}</Text>
+                </Group>
+                <Text size="xs" c="brand" fw={700} style={{ letterSpacing: '0.05em' }}>EDIT</Text>
+              </Group>
+            </Paper>
+          ) : (
+            <Stack gap="xs">
+              <DateRangePicker startDate={startDate} endDate={endDate} onDateRangeChange={(s, e) => {
+                updateDateRange(s, e);
+                // We don't auto-close to allow fine-tuning, but user can close it
+              }} />
+              <Button variant="subtle" size="compact-xs" color="gray" onClick={() => setDatePickerOpened(false)}>
+                Collapse Date Picker
+              </Button>
+            </Stack>
+          )}
         </Box>
 
         {/* View Toggle */}
@@ -160,7 +162,7 @@ export function SidebarContent({
         </Group>
 
         {pendingAddToDay && (
-          <Paper withBorder p="xs" bg="blue.0" mt="sm" mb="xs">
+          <Paper withBorder p="sm" bg="var(--mantine-color-brand-0)" style={{ borderColor: 'var(--mantine-color-brand-2)' }} shadow="xs" mt="sm" mb="xs" radius="md">
             <Group justify="space-between">
               <Text size="sm">
                 {pendingAddToDay.dayId === 'unassigned'
@@ -176,13 +178,17 @@ export function SidebarContent({
         <Box mb="xs" style={{ position: 'relative' }}>
           <form onSubmit={handleSearch}>
             <TextInput
-              placeholder={pendingAddToDay ? "Search place to add..." : "Search place..."}
+              placeholder={pendingAddToDay ? "Search place to add..." : "Search destination or stop..."}
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
+              size="md"
+              radius="md"
+              leftSection={<Search size={18} color="var(--mantine-color-neutral-4)" />}
               rightSection={
-                <ActionIcon size="sm" variant="transparent" type="submit" loading={isSearching}>
-                  <Search size={16} />
-                </ActionIcon>
+                isSearching && (
+                  <ActionIcon size="sm" variant="transparent" loading>
+                  </ActionIcon>
+                )
               }
             />
           </form>
@@ -274,36 +280,36 @@ export function SidebarContent({
       <Box style={{ flex: 1, overflow: 'hidden' }}>
         {sidebarView === 'timeline' ? (
           <Stack h="100%" gap={0}>
-             {activeParent && (
-                <Paper p="xs" bg="blue.6" radius={0}>
-                    <Group justify="space-between">
-                        <Box>
-                            <Text size="xs" c="blue.1" fw={700} tt="uppercase">Planning Sub-Itinerary</Text>
-                            <Text size="sm" c="white" fw={700} truncate>{activeParent.name}</Text>
-                        </Box>
-                        <Button variant="white" size="compact-xs" onClick={exitSubItinerary}>Back to Main</Button>
-                    </Group>
-                </Paper>
-             )}
+            {activeParent && (
+              <Paper p="md" bg="brand.6" radius={0}>
+                <Group justify="space-between">
+                  <Box>
+                    <Text size="xs" c="brand.1" fw={700} tt="uppercase" style={{ letterSpacing: '0.05em' }}>Sub-Itinerary</Text>
+                    <Text size="md" c="white" fw={700} truncate>{activeParent.name}</Text>
+                  </Box>
+                  <Button variant="white" color="brand" size="xs" radius="md" fw={600} onClick={exitSubItinerary}>Back</Button>
+                </Group>
+              </Paper>
+            )}
             <Box flex={1} style={{ overflow: 'hidden' }}>
-                <DaySidebar
-                    days={activeDays} locations={sidebarLocations} routes={routes}
-                    onReorderLocations={activeParent ? handleSubReorder : reorderLocations} 
-                    onRemoveLocation={activeParent ? handleSubRemove : removeLocation}
-                    onUpdateLocation={activeParent ? handleSubUpdate : updateLocation} 
-                    onEditRoute={(from, to) => setEditingRoute({ fromId: from, toId: to })}
-                    onAddToDay={activeParent ? handleSubAdd : (dayId, slot) => setPendingAddToDay({ dayId, slot })}
-                    onUpdateDay={updateDay}
-                    hoveredLocationId={hoveredLocationId} onHoverLocation={setHoveredLocationId} zoomLevel={zoomLevel}
-                    selectedLocationId={selectedLocationId} onSelectLocation={onSelectLocation}
-                    dayNumberOffset={activeParent ? days.findIndex(d => d.id === activeParent.startDayId) + 1 : undefined}
-                    parentName={activeParent?.name}
-                    selectedDayId={selectedDayId}
-                    onSelectDay={setSelectedDayId}
-                    isSlotBlocked={activeParent ? isSlotBlocked : undefined}
-                    onNestLocation={handleNestLocation}
-                    onOpenSubItinerary={openSubItinerary}
-                />
+              <DaySidebar
+                days={activeDays} locations={sidebarLocations} routes={routes}
+                onReorderLocations={activeParent ? handleSubReorder : reorderLocations}
+                onRemoveLocation={activeParent ? handleSubRemove : removeLocation}
+                onUpdateLocation={activeParent ? handleSubUpdate : updateLocation}
+                onEditRoute={(from, to) => setEditingRoute({ fromId: from, toId: to })}
+                onAddToDay={activeParent ? handleSubAdd : (dayId, slot) => setPendingAddToDay({ dayId, slot })}
+                onUpdateDay={updateDay}
+                hoveredLocationId={hoveredLocationId} onHoverLocation={setHoveredLocationId} zoomLevel={zoomLevel}
+                selectedLocationId={selectedLocationId} onSelectLocation={onSelectLocation}
+                dayNumberOffset={activeParent ? days.findIndex(d => d.id === activeParent.startDayId) + 1 : undefined}
+                parentName={activeParent?.name}
+                selectedDayId={selectedDayId}
+                onSelectDay={setSelectedDayId}
+                isSlotBlocked={activeParent ? isSlotBlocked : undefined}
+                onNestLocation={handleNestLocation}
+                onOpenSubItinerary={openSubItinerary}
+              />
             </Box>
           </Stack>
         ) : sidebarView === 'calendar' ? (
@@ -315,9 +321,9 @@ export function SidebarContent({
         )}
       </Box>
 
-      <Box p="md" style={{ borderTop: '1px solid var(--mantine-color-gray-3)' }}>
+      <Box p="lg" style={{ borderTop: '1px solid var(--mantine-color-neutral-2)', backgroundColor: 'var(--mantine-color-neutral-0)' }}>
         {locations.length > 1 && routes.length === 0 && (
-          <Paper withBorder p="xs" mb="xs" bg="yellow.0">
+          <Paper withBorder p="sm" mb="md" bg="var(--app-warning-soft)" shadow="xs">
             <Text size="xs" c="dimmed">
               Routes are not configured yet. Add transport links from timeline connectors for better map guidance.
             </Text>

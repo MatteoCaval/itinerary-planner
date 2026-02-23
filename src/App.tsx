@@ -323,13 +323,13 @@ function AppContent() {
 
     // Handle reordering within the array
     if (overId && overId !== activeId && overId !== UNASSIGNED_ZONE_ID && !overId.startsWith(SLOT_PREFIX)) {
-       newSubLocations.splice(activeIdx, 1);
-       const overIdx = newSubLocations.findIndex(s => s.id === overId);
-       if (overIdx !== -1) {
-         newSubLocations.splice(overIdx, 0, updatedItem);
-       } else {
-         newSubLocations.push(updatedItem);
-       }
+      newSubLocations.splice(activeIdx, 1);
+      const overIdx = newSubLocations.findIndex(s => s.id === overId);
+      if (overIdx !== -1) {
+        newSubLocations.splice(overIdx, 0, updatedItem);
+      } else {
+        newSubLocations.push(updatedItem);
+      }
     } else {
       newSubLocations[activeIdx] = updatedItem;
     }
@@ -366,7 +366,7 @@ function AppContent() {
     if (itemToNest && parent && activeId !== parentId) {
       // 1. Remove from top-level
       const newLocations = locations.filter(l => l.id !== activeId);
-      
+
       // 2. Prepare the item for nesting
       // We'll put it in the first available slot of the parent for now
       const nestedItem: Location = {
@@ -392,13 +392,13 @@ function AppContent() {
       // Since context only has updateLocation and removeLocation, 
       // let's use loadFromData for a atomic swap if possible, 
       // or just call both.
-      
+
       // Actually, context has setLocations!
       const result = loadFromData({ ...getExportData(), locations: updatedLocations });
       if (!result.success) {
         notifications.show({ color: 'red', title: 'Update failed', message: result.error || 'Unable to nest location.' });
       }
-      
+
       // If we were selecting the nested item, select the parent now
       if (selectedLocationId === activeId) {
         setSelectedLocationId(parentId);
@@ -413,7 +413,7 @@ function AppContent() {
       const resolvedName = name || await reverseGeocode(lat, lng);
       const dayId = targetDayId || pendingAddToDay?.dayId;
       const dayIdx = activeDays.findIndex(d => d.id === dayId);
-      
+
       const newSub: Location = {
         id: uuidv4(),
         name: resolvedName.split(',')[0],
@@ -423,7 +423,7 @@ function AppContent() {
         category: DEFAULT_CATEGORY,
         dayIds: []
       };
-      
+
       updateLocation(activeParent.id, {
         subLocations: [...(activeParent.subLocations || []), newSub]
       });
@@ -455,7 +455,7 @@ function AppContent() {
       }}
       padding={0}
     >
-      <AppShell.Header style={{ zIndex: 1200 }}>
+      <AppShell.Header style={{ zIndex: 1200, borderBottom: '1px solid var(--mantine-color-neutral-2)', background: 'rgba(255, 255, 255, 0.85)', backdropFilter: 'blur(12px)' }}>
         <AppHeader
           opened={opened}
           toggle={toggle}
@@ -547,25 +547,25 @@ function AppContent() {
 
         <MobileBottomSheet opened={opened}>
           <AppErrorBoundary title="Sidebar error" message="The sidebar crashed. You can retry or reload the app.">
-          <SidebarContent
-            sidebarView={sidebarView} setSidebarView={setSidebarView}
-            pendingAddToDay={pendingAddToDay} setPendingAddToDay={setPendingAddToDay}
-            searchQuery={searchQuery} setSearchQuery={setSearchQuery} isSearching={isSearching} handleSearch={handleSearch}
-            suggestionLoading={suggestionLoading}
-            reorderShortcutHint={reorderShortcutHint}
-            suggestions={suggestions} handleAddLocationWrapped={handleAddLocationWrapped}
-            zoomLevel={zoomLevel} setZoomLevel={setZoomLevel}
-            activeParent={activeParent} onSelectLocation={handleSelectLocation} exitSubItinerary={handleExitSubItinerary}
-            activeDays={activeDays} sidebarLocations={sidebarLocations}
-            handleSubReorder={handleSubReorder} handleSubRemove={handleSubRemove}
-            handleSubUpdate={handleSubUpdate} setEditingRoute={setEditingRoute} handleSubAdd={handleSubAdd}
-            selectedDayId={selectedDayId} setSelectedDayId={setSelectedDayId}
-            isSlotBlocked={isSlotBlocked} handleNestLocation={handleNestLocation}
-            openSubItinerary={handleEnterSubItinerary}
-            handleScrollToLocation={handleScrollToLocation}
-            setShowHistoryModal={setShowHistoryModal} setShowAIModal={setShowAIModal} setShowCloudModal={setShowCloudModal}
-            handleExportMarkdown={handleExportMarkdown} handleExport={handleExport} handleImport={handleImport}
-          />
+            <SidebarContent
+              sidebarView={sidebarView} setSidebarView={setSidebarView}
+              pendingAddToDay={pendingAddToDay} setPendingAddToDay={setPendingAddToDay}
+              searchQuery={searchQuery} setSearchQuery={setSearchQuery} isSearching={isSearching} handleSearch={handleSearch}
+              suggestionLoading={suggestionLoading}
+              reorderShortcutHint={reorderShortcutHint}
+              suggestions={suggestions} handleAddLocationWrapped={handleAddLocationWrapped}
+              zoomLevel={zoomLevel} setZoomLevel={setZoomLevel}
+              activeParent={activeParent} onSelectLocation={handleSelectLocation} exitSubItinerary={handleExitSubItinerary}
+              activeDays={activeDays} sidebarLocations={sidebarLocations}
+              handleSubReorder={handleSubReorder} handleSubRemove={handleSubRemove}
+              handleSubUpdate={handleSubUpdate} setEditingRoute={setEditingRoute} handleSubAdd={handleSubAdd}
+              selectedDayId={selectedDayId} setSelectedDayId={setSelectedDayId}
+              isSlotBlocked={isSlotBlocked} handleNestLocation={handleNestLocation}
+              openSubItinerary={handleEnterSubItinerary}
+              handleScrollToLocation={handleScrollToLocation}
+              setShowHistoryModal={setShowHistoryModal} setShowAIModal={setShowAIModal} setShowCloudModal={setShowCloudModal}
+              handleExportMarkdown={handleExportMarkdown} handleExport={handleExport} handleImport={handleImport}
+            />
           </AppErrorBoundary>
         </MobileBottomSheet>
 
@@ -580,23 +580,23 @@ function AppContent() {
               }}
             >
               <AppErrorBoundary title="Detail panel error" message="The detail panel crashed. You can retry or reload the app.">
-              <LocationDetailPanel
-                location={selectedLocation}
-                parentLocation={parentLocation}
-                days={days}
-                allLocations={locations}
-                routes={routes}
-                onUpdate={updateLocation}
-                onClose={() => handleSelectLocation(null)}
-                onSelectLocation={handleSelectLocation}
-                onEditRoute={(from, to) => setEditingRoute({ fromId: from, toId: to })}
-                selectedDayId={selectedDayId}
-                onSelectDay={setSelectedDayId}
-                onCollapse={() => setPanelCollapsed(true)}
-                onEnterSubItinerary={handleEnterSubItinerary}
-                onExitSubItinerary={handleExitSubItinerary}
-                isSubItineraryActive={activeParent?.id === selectedLocation.id}
-              />
+                <LocationDetailPanel
+                  location={selectedLocation}
+                  parentLocation={parentLocation}
+                  days={days}
+                  allLocations={locations}
+                  routes={routes}
+                  onUpdate={updateLocation}
+                  onClose={() => handleSelectLocation(null)}
+                  onSelectLocation={handleSelectLocation}
+                  onEditRoute={(from, to) => setEditingRoute({ fromId: from, toId: to })}
+                  selectedDayId={selectedDayId}
+                  onSelectDay={setSelectedDayId}
+                  onCollapse={() => setPanelCollapsed(true)}
+                  onEnterSubItinerary={handleEnterSubItinerary}
+                  onExitSubItinerary={handleExitSubItinerary}
+                  isSubItineraryActive={activeParent?.id === selectedLocation.id}
+                />
               </AppErrorBoundary>
             </Paper>
 
@@ -611,13 +611,13 @@ function AppContent() {
                 }}
               >
                 <Tooltip label="Expand Details" position="left">
-                  <ActionIcon 
-                    variant="filled" 
-                    color="blue" 
-                    size="xl" 
-                    radius="md" 
+                  <ActionIcon
+                    variant="filled"
+                    color="blue"
+                    size="xl"
+                    radius="md"
                     onClick={() => setPanelCollapsed(false)}
-                    style={{ 
+                    style={{
                       borderRadius: '12px 0 0 12px',
                       height: 100,
                       width: 24,
@@ -638,14 +638,14 @@ function AppContent() {
       </AppErrorBoundary>
 
       <AuthModal show={showAuthModal} onClose={() => setShowAuthModal(false)} />
-      
-      <HistoryModal 
-        show={showHistoryModal} 
-        onClose={() => setShowHistoryModal(false)} 
-        currentIndex={historyIndex} 
+
+      <HistoryModal
+        show={showHistoryModal}
+        onClose={() => setShowHistoryModal(false)}
+        currentIndex={historyIndex}
         totalStates={historyLength}
         snapshots={history}
-        onNavigate={navigateHistory} 
+        onNavigate={navigateHistory}
       />
 
       <AppErrorBoundary title="AI planner error" message="The AI planner crashed. You can retry or reload the app.">
@@ -658,17 +658,17 @@ function AppContent() {
           settings={aiSettings}
           onSettingsChange={setAiSettings}
           onApplyItinerary={(locs, rts, updatedDays) => {
-               const result = loadFromData({ days: updatedDays || days, locations: locs, routes: rts, startDate, endDate });
-               if (!result.success) {
-                 notifications.show({ color: 'red', title: 'AI apply failed', message: result.error || 'Generated itinerary was invalid.' });
-               }
+            const result = loadFromData({ days: updatedDays || days, locations: locs, routes: rts, startDate, endDate });
+            if (!result.success) {
+              notifications.show({ color: 'red', title: 'AI apply failed', message: result.error || 'Generated itinerary was invalid.' });
+            }
           }}
         />
       </AppErrorBoundary>
 
       <RouteEditor
         show={!!editingRoute} route={routes.find(r => (r.fromLocationId === editingRoute?.fromId && r.toLocationId === editingRoute?.toId) || (r.fromLocationId === editingRoute?.toId && r.toLocationId === editingRoute?.fromId)) || (editingRoute ? { id: uuidv4(), fromLocationId: editingRoute.fromId, toLocationId: editingRoute.toId, transportType: 'car' } : null)}
-        fromName={findLocationById(editingRoute?.fromId || '')?.name || ''} 
+        fromName={findLocationById(editingRoute?.fromId || '')?.name || ''}
         toName={findLocationById(editingRoute?.toId || '')?.name || ''}
         onSave={route => { updateRoute(route); setEditingRoute(null); }}
         onClose={() => setEditingRoute(null)}
