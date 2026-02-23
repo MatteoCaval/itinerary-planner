@@ -31,13 +31,50 @@ body,
 }
 
 .map-container {
-  height: calc(100vh - var(--app-shell-header-height, 60px));
-  width: 100%;
+  height: 100vh;
+  width: 100vw;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 10;
 }
+
+/* Offset Leaflet's built-in controls below our header */
+.leaflet-top {
+  top: 80px !important;
+  /* 60px app header + 20px padding */
+}
+
+/* On desktop, keep left side zoom controls away from the 440px sidebar */
+@media (min-width: 768px) {
+  .leaflet-left {
+    left: 480px !important;
+    /* 440px sidebar + 20px left + 20px gap */
+  }
+}
+
 
 .leaflet-container {
   height: 100%;
   width: 100%;
+}
+
+.floating-sidebar-container {
+  position: absolute;
+  top: 80px;
+  /* 60px header + 20px padding */
+  left: 20px;
+  bottom: 20px;
+  width: 440px;
+  max-height: calc(100vh - 100px);
+  /* Leaves 20px padding on bottom */
+  z-index: 1000;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
 }
 
 /* Sortable Items */
@@ -633,19 +670,7 @@ body,
   background-color: white !important;
 }
 
-/* Location Detail Panel Container */
-.location-detail-panel-root {
-  position: absolute;
-  top: var(--app-shell-header-height, 60px);
-  right: 0;
-  height: calc(100% - var(--app-shell-header-height, 60px));
-  width: 380px;
-  max-width: 100%;
-  z-index: 1100;
-  border-left: 1px solid var(--mantine-color-gray-3);
-  overflow: hidden;
-  transition: transform 0.3s ease-out;
-}
+
 
 .planner-navbar-motion {
   transition: width 200ms ease, transform 200ms ease, opacity 200ms ease;
@@ -718,30 +743,7 @@ body,
   background-color: rgba(37, 99, 235, 0.08);
 }
 
-@media (min-width: 1200px) {
-  .location-detail-panel-root {
-    width: 450px;
-  }
-}
 
-@media (min-width: 1600px) {
-  .location-detail-panel-root {
-    width: 500px;
-  }
-}
-
-@media (max-width: 768px) {
-  .location-detail-panel-root {
-    top: auto;
-    bottom: 0;
-    height: 70%;
-    width: 100%;
-    border-left: none;
-    border-top: 1px solid var(--mantine-color-gray-3);
-    border-radius: 12px 12px 0 0;
-    box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.1);
-  }
-}
 
 .location-detail-panel-image {
   height: 160px;

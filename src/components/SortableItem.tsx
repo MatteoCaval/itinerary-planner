@@ -4,7 +4,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { GripVertical, X, GitFork, MapPin, Utensils, Bed, Train, Globe } from 'lucide-react';
 import { ActionIcon, Badge, Text, Group, Stack, Box, Paper } from '@mantine/core';
 import { Location, CATEGORY_COLORS } from '../types';
-import { LocationThumbnail } from './LocationThumbnail';
+
 
 interface SortableItemProps {
   id: string;
@@ -97,7 +97,7 @@ export const SortableItem = React.memo(function SortableItem({
   const { label: categoryLabel, color: categoryBadgeColor, Icon: CategoryIcon } = categoryMeta[category];
   const subLocationCount = location.subLocations?.length || 0;
   const isCompact = duration <= 1;
-  const thumbnailSize = isCompact ? 30 : 42;
+
   const hierarchyClass = isSubLocation
     ? 'sortable-item--sub'
     : subLocationCount > 0
@@ -122,7 +122,11 @@ export const SortableItem = React.memo(function SortableItem({
           borderLeftStyle: 'solid',
           borderLeftColor: catColor,
           outline: isOver ? '2px dashed var(--mantine-color-brand-5)' : undefined,
-          outlineOffset: isOver ? -2 : undefined
+          outlineOffset: isOver ? -2 : undefined,
+          backgroundImage: location.imageUrl ? `linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.7)), url(${location.imageUrl})` : undefined,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          overflow: 'hidden',
         }}
         bg={isOver ? 'brand.0' : (isSelected ? 'brand.0' : undefined)}
         onClick={() => onSelect?.(id)}
@@ -133,40 +137,27 @@ export const SortableItem = React.memo(function SortableItem({
             <Box
               {...attributes}
               {...listeners}
-              style={{ cursor: 'grab', color: 'var(--mantine-color-gray-5)', display: 'flex', alignItems: 'center' }}
+              style={{ cursor: 'grab', color: location.imageUrl ? 'rgba(255,255,255,0.7)' : 'var(--mantine-color-gray-5)', display: 'flex', alignItems: 'center', zIndex: 10 }}
               onClick={(e) => e.stopPropagation()}
             >
               <GripVertical size={isCompact ? 16 : 18} />
             </Box>
 
             {index !== undefined && (
-              <Badge size="xs" circle color="brand">{index}</Badge>
+              <Badge size="xs" circle color={location.imageUrl ? 'rgba(0,0,0,0.4)' : 'brand'} style={{ zIndex: 10, color: 'white', border: '1px solid rgba(255,255,255,0.2)' }}>{index}</Badge>
             )}
 
-            {!isSubLocation && (
-              <LocationThumbnail
-                name={location.name}
-                category={location.category}
-                imageUrl={location.imageUrl}
-                subLocationCount={subLocationCount}
-                showSubLocationCount={!isCompact}
-                size={thumbnailSize}
-                radius={8}
-                className="timeline-card-thumb"
-              />
-            )}
-
-            <Box style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: isCompact ? 2 : 4, paddingRight: isCompact ? 16 : 20 }}>
+            <Box style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: isCompact ? 2 : 4, paddingRight: isCompact ? 16 : 20, zIndex: 10 }}>
               <Text
-                fw={600}
+                fw={700}
                 size={isCompact ? 'xs' : 'sm'}
                 truncate
-                style={{ flex: 1 }}
+                style={{ flex: 1, color: location.imageUrl ? 'white' : 'var(--mantine-color-text)', textShadow: location.imageUrl ? '0 1px 3px rgba(0,0,0,0.8)' : 'none' }}
               >
                 {location.name}
               </Text>
               {duration > 1 && !isCompact && (
-                <Badge variant="outline" color="gray" size="xs" style={{ fontWeight: 400 }}>
+                <Badge variant="outline" color={location.imageUrl ? 'gray.4' : 'gray.6'} size="xs" style={{ fontWeight: 600, backgroundColor: location.imageUrl ? 'rgba(0,0,0,0.4)' : 'transparent', border: location.imageUrl ? 'none' : undefined }}>
                   {(duration / 3).toFixed(1).replace('.0', '')}d
                 </Badge>
               )}
@@ -177,6 +168,7 @@ export const SortableItem = React.memo(function SortableItem({
                   size="xs"
                   className="timeline-category-badge"
                   leftSection={<CategoryIcon size={10} />}
+                  style={{ opacity: location.imageUrl ? 0.9 : 1 }}
                 >
                   {categoryLabel}
                 </Badge>
@@ -186,14 +178,14 @@ export const SortableItem = React.memo(function SortableItem({
 
             <ActionIcon
               variant="subtle"
-              color="red"
+              color={location.imageUrl ? 'gray.3' : 'red'}
               size={isCompact ? 'xs' : 'sm'}
               onClick={(e) => {
                 e.stopPropagation();
                 onRemove(id);
               }}
               title="Remove location"
-              style={{ position: 'absolute', top: isCompact ? 2 : 4, right: canOpenSubItinerary ? (isCompact ? 20 : 26) : (isCompact ? 2 : 4) }}
+              style={{ position: 'absolute', top: isCompact ? 2 : 4, right: canOpenSubItinerary ? (isCompact ? 20 : 26) : (isCompact ? 2 : 4), zIndex: 10 }}
             >
               <X size={isCompact ? 12 : 14} />
             </ActionIcon>
@@ -201,14 +193,14 @@ export const SortableItem = React.memo(function SortableItem({
             {canOpenSubItinerary && (
               <ActionIcon
                 variant="subtle"
-                color="brand"
+                color={location.imageUrl ? 'gray.3' : 'brand'}
                 size={isCompact ? 'xs' : 'sm'}
                 onClick={(e) => {
                   e.stopPropagation();
                   onOpenSubItinerary?.(id);
                 }}
                 title="Open sub-itinerary"
-                style={{ position: 'absolute', top: isCompact ? 2 : 4, right: isCompact ? 2 : 4 }}
+                style={{ position: 'absolute', top: isCompact ? 2 : 4, right: isCompact ? 2 : 4, zIndex: 10 }}
               >
                 <GitFork size={isCompact ? 12 : 14} />
               </ActionIcon>
@@ -218,7 +210,7 @@ export const SortableItem = React.memo(function SortableItem({
 
           {location.notes && !isCompact && (
             <Text
-              c="dimmed"
+              c={location.imageUrl ? 'gray.3' : 'dimmed'}
               size="xs"
               px={4}
               style={{
@@ -226,8 +218,10 @@ export const SortableItem = React.memo(function SortableItem({
                 WebkitLineClamp: duration > 1 ? 4 : 1,
                 WebkitBoxOrient: 'vertical',
                 overflow: 'hidden',
-                lineHeight: 1.3,
-                maxHeight: duration > 1 ? '5em' : '1.3em'
+                lineHeight: 1.4,
+                maxHeight: duration > 1 ? '5.6em' : '1.4em',
+                zIndex: 10,
+                textShadow: location.imageUrl ? '0 1px 2px rgba(0,0,0,0.8)' : 'none'
               }}
             >
               {location.notes}

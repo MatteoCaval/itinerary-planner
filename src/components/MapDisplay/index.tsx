@@ -313,13 +313,15 @@ export default function MapDisplay({ days, locations, routes, onEditRoute, hover
           shadow="sm"
           style={{
             position: 'absolute',
-            top: 'calc(var(--app-shell-header-height, 60px) + 12px)',
-            right: 12,
+            top: 'calc(var(--app-shell-header-height, 60px) + 20px)',
+            right: isPanelCollapsed ? 20 : 460, // 420px panel + 20px margin + 20px offset
+            transition: 'right 0.4s cubic-bezier(0.25, 0.8, 0.25, 1)',
             zIndex: 900,
             maxWidth: 'min(420px, calc(100vw - 24px))',
-            backgroundColor: 'rgba(255, 255, 255, 0.9)',
+            backgroundColor: 'rgba(255, 255, 255, 0.95)',
             backdropFilter: 'blur(8px)',
-            borderColor: 'var(--mantine-color-neutral-3)'
+            borderColor: 'var(--mantine-color-neutral-3)',
+            boxShadow: '0 8px 30px rgba(0,0,0,0.1)'
           }}
         >
           <Group gap="sm" wrap="wrap">

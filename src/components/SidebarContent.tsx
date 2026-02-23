@@ -97,7 +97,7 @@ export function SidebarContent({
   };
 
   return (
-    <Stack h="100%" gap={0} bg="var(--mantine-color-neutral-0)">
+    <Stack style={{ height: '100%' }} gap={0} bg="var(--mantine-color-neutral-0)">
       <Box p="lg" style={{ borderBottom: '1px solid var(--mantine-color-neutral-2)' }}>
         {/* Collapsible Date Header */}
         <Box mb="xs">
@@ -277,7 +277,7 @@ export function SidebarContent({
         )}
       </Box>
 
-      <Box style={{ flex: 1, overflow: 'hidden' }}>
+      <Box style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
         {sidebarView === 'timeline' ? (
           <Stack h="100%" gap={0}>
             {activeParent && (

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { AppShell, ActionIcon, Tooltip, Box, Paper } from '@mantine/core';
+import { ActionIcon, Tooltip, Box, Paper } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
 import { v4 as uuidv4 } from 'uuid';
@@ -19,7 +19,7 @@ import { ItineraryProvider, useItinerary } from './context/ItineraryContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { searchPlace, reverseGeocode } from './utils/geocoding';
 import { useItineraryDrillDown } from './hooks/useItineraryDrillDown';
-import { useSidebarResize } from './hooks/useSidebarResize';
+
 import { usePlaceSearch } from './hooks/usePlaceSearch';
 import { useImportExport } from './hooks/useImportExport';
 import { AppErrorBoundary } from './components/AppErrorBoundary';
@@ -60,7 +60,7 @@ function AppContent() {
   const [drillDownParentId, setDrillDownParentId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
-  const { sidebarWidth, startResizing } = useSidebarResize({ initialWidth: 500 });
+  // useSidebarResize is cleanly removed since the sidebar is now absolute/floating
   const { suggestions, setSuggestions, loading: suggestionLoading } = usePlaceSearch({ query: searchQuery, minLength: 3, debounceMs: 500 });
 
   // Clear selected day when location selection changes
@@ -446,16 +446,8 @@ function AppContent() {
   };
 
   return (
-    <AppShell
-      header={{ height: 60 }}
-      navbar={{
-        width: { base: '100%', sm: sidebarWidth },
-        breakpoint: 'sm',
-        collapsed: { mobile: true, desktop: false },
-      }}
-      padding={0}
-    >
-      <AppShell.Header style={{ zIndex: 1200, borderBottom: '1px solid var(--mantine-color-neutral-2)', background: 'rgba(255, 255, 255, 0.85)', backdropFilter: 'blur(12px)' }}>
+    <>
+      <Box h={60} w="100%" style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 1200, borderBottom: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255, 255, 255, 0.7)', backdropFilter: 'blur(20px)' }}>
         <AppHeader
           opened={opened}
           toggle={toggle}
@@ -481,53 +473,34 @@ function AppContent() {
           onExport={handleExport}
           importFileInputRef={importFileInputRef}
         />
-      </AppShell.Header>
+      </Box>
 
-      <AppShell.Navbar p={0} style={{ zIndex: 1000 }} className="planner-navbar-motion">
-        {/* Resize Handle */}
-        <div
-          onMouseDown={startResizing}
-          style={{
-            position: 'absolute',
-            right: 0,
-            top: 0,
-            bottom: 0,
-            width: 8,
-            cursor: 'col-resize',
-            zIndex: 1100,
-            backgroundColor: 'transparent',
-            transition: 'background-color 0.2s',
-          }}
-          className="sidebar-resize-handle"
-          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.1)'}
-          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-        />
-        <Box visibleFrom="sm" h="100%">
-          <AppErrorBoundary title="Sidebar error" message="The sidebar crashed. You can retry or reload the app.">
-            <SidebarContent
-              sidebarView={sidebarView} setSidebarView={setSidebarView}
-              pendingAddToDay={pendingAddToDay} setPendingAddToDay={setPendingAddToDay}
-              searchQuery={searchQuery} setSearchQuery={setSearchQuery} isSearching={isSearching} handleSearch={handleSearch}
-              suggestionLoading={suggestionLoading}
-              reorderShortcutHint={reorderShortcutHint}
-              suggestions={suggestions} handleAddLocationWrapped={handleAddLocationWrapped}
-              zoomLevel={zoomLevel} setZoomLevel={setZoomLevel}
-              activeParent={activeParent} onSelectLocation={handleSelectLocation} exitSubItinerary={handleExitSubItinerary}
-              activeDays={activeDays} sidebarLocations={sidebarLocations}
-              handleSubReorder={handleSubReorder} handleSubRemove={handleSubRemove}
-              handleSubUpdate={handleSubUpdate} setEditingRoute={setEditingRoute} handleSubAdd={handleSubAdd}
-              selectedDayId={selectedDayId} setSelectedDayId={setSelectedDayId}
-              isSlotBlocked={isSlotBlocked} handleNestLocation={handleNestLocation}
-              openSubItinerary={handleEnterSubItinerary}
-              handleScrollToLocation={handleScrollToLocation}
-              setShowHistoryModal={setShowHistoryModal} setShowAIModal={setShowAIModal} setShowCloudModal={setShowCloudModal}
-              handleExportMarkdown={handleExportMarkdown} handleExport={handleExport} handleImport={handleImport}
-            />
-          </AppErrorBoundary>
-        </Box>
-      </AppShell.Navbar>
+      {/* Floating Sidebar Content */}
+      <Box className="floating-sidebar-container" visibleFrom="sm" style={{ display: 'flex', flexDirection: 'column' }}>
+        <AppErrorBoundary title="Sidebar error" message="The sidebar crashed. You can retry or reload the app.">
+          <SidebarContent
+            sidebarView={sidebarView} setSidebarView={setSidebarView}
+            pendingAddToDay={pendingAddToDay} setPendingAddToDay={setPendingAddToDay}
+            searchQuery={searchQuery} setSearchQuery={setSearchQuery} isSearching={isSearching} handleSearch={handleSearch}
+            suggestionLoading={suggestionLoading}
+            reorderShortcutHint={reorderShortcutHint}
+            suggestions={suggestions} handleAddLocationWrapped={handleAddLocationWrapped}
+            zoomLevel={zoomLevel} setZoomLevel={setZoomLevel}
+            activeParent={activeParent} onSelectLocation={handleSelectLocation} exitSubItinerary={handleExitSubItinerary}
+            activeDays={activeDays} sidebarLocations={sidebarLocations}
+            handleSubReorder={handleSubReorder} handleSubRemove={handleSubRemove}
+            handleSubUpdate={handleSubUpdate} setEditingRoute={setEditingRoute} handleSubAdd={handleSubAdd}
+            selectedDayId={selectedDayId} setSelectedDayId={setSelectedDayId}
+            isSlotBlocked={isSlotBlocked} handleNestLocation={handleNestLocation}
+            openSubItinerary={handleEnterSubItinerary}
+            handleScrollToLocation={handleScrollToLocation}
+            setShowHistoryModal={setShowHistoryModal} setShowAIModal={setShowAIModal} setShowCloudModal={setShowCloudModal}
+            handleExportMarkdown={handleExportMarkdown} handleExport={handleExport} handleImport={handleImport}
+          />
+        </AppErrorBoundary>
+      </Box>
 
-      <AppShell.Main h="100vh" style={{ position: 'relative', overflow: 'hidden' }}>
+      <Box style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, overflow: 'hidden', zIndex: 1 }}>
         <AppErrorBoundary title="Map rendering error" message="The map view crashed. You can retry or reload the app.">
           <MapDisplay
             days={days} locations={mapLocations} routes={routes}
@@ -574,9 +547,23 @@ function AppContent() {
             <Paper
               shadow="xl"
               className="location-detail-panel-root"
+              radius="lg"
               style={{
-                transform: panelCollapsed ? 'translateX(100%)' : 'translateX(0)',
-                visibility: panelCollapsed ? 'hidden' : 'visible'
+                position: 'absolute',
+                top: 'calc(var(--app-shell-header-height, 60px) + 20px)',
+                right: '20px',
+                bottom: '20px',
+                width: 'min(420px, calc(100vw - 40px))',
+                zIndex: 1150,
+                transform: panelCollapsed ? 'translateX(120%)' : 'translateX(0)',
+                visibility: panelCollapsed ? 'hidden' : 'visible',
+                transition: 'transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), visibility 0.4s',
+                overflow: 'hidden',
+                display: 'flex',
+                flexDirection: 'column',
+                background: 'rgba(255, 255, 255, 0.95)',
+                backdropFilter: 'blur(20px)',
+                border: '1px solid rgba(255,255,255,0.4)',
               }}
             >
               <AppErrorBoundary title="Detail panel error" message="The detail panel crashed. You can retry or reload the app.">
@@ -631,7 +618,7 @@ function AppContent() {
             )}
           </>
         )}
-      </AppShell.Main>
+      </Box> {/* This closing Box corresponds to the Map container Box. */}
 
       <AppErrorBoundary title="Cloud sync error" message="Cloud sync crashed. You can retry or reload the app.">
         <CloudSyncModal show={showCloudModal} onClose={() => setShowCloudModal(false)} getData={getExportData} onLoadData={loadFromData} />
@@ -674,7 +661,7 @@ function AppContent() {
         onClose={() => setEditingRoute(null)}
       />
       <DayAssignmentModal show={!!editingDayAssignment} location={editingDayAssignment} days={days} onSave={(id, ids) => { updateLocation(id, { dayIds: ids }); setEditingDayAssignment(null); }} onClose={() => setEditingDayAssignment(null)} />
-    </AppShell>
+    </>
   );
 }
 
