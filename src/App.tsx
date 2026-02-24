@@ -553,7 +553,7 @@ function AppContent() {
                 top: 'calc(var(--app-shell-header-height, 60px) + 20px)',
                 right: '20px',
                 bottom: '20px',
-                width: 'min(420px, calc(100vw - 40px))',
+                width: 'min(var(--detail-panel-width, 460px), calc(100vw - 40px))',
                 zIndex: 1150,
                 transform: panelCollapsed ? 'translateX(120%)' : 'translateX(0)',
                 visibility: panelCollapsed ? 'hidden' : 'visible',

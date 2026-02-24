@@ -10,6 +10,22 @@
   --app-accent-contrast: #1d4ed8;
   --app-warning-soft: #fef9c3;
   --app-shadow-soft: 0 4px 6px -1px rgba(15, 23, 42, 0.08), 0 2px 4px -2px rgba(15, 23, 42, 0.04);
+  --floating-sidebar-width: 460px;
+  --detail-panel-width: 460px;
+}
+
+@media (min-width: 1921px) {
+  :root {
+    --floating-sidebar-width: 560px;
+    --detail-panel-width: 520px;
+  }
+}
+
+@media (min-width: 2560px) {
+  :root {
+    --floating-sidebar-width: 620px;
+    --detail-panel-width: 580px;
+  }
 }
 
 
@@ -59,7 +75,7 @@ body,
   /* 60px header + 20px padding */
   left: 20px;
   bottom: 20px;
-  width: 440px;
+  width: var(--floating-sidebar-width);
   max-height: calc(100vh - 100px);
   /* Leaves 20px padding on bottom */
   z-index: 1000;

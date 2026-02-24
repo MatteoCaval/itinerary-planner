@@ -320,7 +320,7 @@ export default function MapDisplay({ days, locations, routes, onEditRoute, hover
           style={{
             position: 'absolute',
             top: 80, // 60px header + 20px margin, aligned with side panels.
-            right: (selectedLocationId && !isPanelCollapsed) ? 460 : 20,
+            right: (selectedLocationId && !isPanelCollapsed) ? 'calc(var(--detail-panel-width, 460px) + 40px)' : 20,
             transition: 'right 0.4s cubic-bezier(0.25, 0.8, 0.25, 1)',
             zIndex: 1100,
             maxWidth: showMapControls ? 'min(360px, calc(100vw - 40px))' : 'fit-content',
