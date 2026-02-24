@@ -109,7 +109,8 @@ export default function MapDisplay({ days, locations, routes, onEditRoute, hover
   const position: [number, number] = [51.505, -0.09];
   const [showRouteArrows, setShowRouteArrows] = useState(true);
   const [enableMapGrouping, setEnableMapGrouping] = useState(false);
-  const [showRouteLegend, setShowRouteLegend] = useState(true);
+  const [showRouteLegend, setShowRouteLegend] = useState(false);
+  const [showMapControls, setShowMapControls] = useState(false);
   const [basemapMode, setBasemapMode] = useState<BasemapMode>(() => {
     if (typeof window === 'undefined') return 'local';
     const saved = window.localStorage.getItem(MAP_BASEMAP_STORAGE_KEY);
@@ -318,60 +319,75 @@ export default function MapDisplay({ days, locations, routes, onEditRoute, hover
           shadow="sm"
           style={{
             position: 'absolute',
-            top: 72, // 60px header + 12px margin. Less 'low'.
+            top: 80, // 60px header + 20px margin, aligned with side panels.
             right: (selectedLocationId && !isPanelCollapsed) ? 460 : 20,
             transition: 'right 0.4s cubic-bezier(0.25, 0.8, 0.25, 1)',
             zIndex: 1100,
-            maxWidth: 'min(500px, calc(100vw - 40px))',
+            maxWidth: showMapControls ? 'min(360px, calc(100vw - 40px))' : 'fit-content',
             backgroundColor: 'rgba(255, 255, 255, 0.95)',
             backdropFilter: 'blur(8px)',
             borderColor: 'var(--mantine-color-neutral-3)',
             boxShadow: '0 8px 30px rgba(0,0,0,0.1)'
           }}
         >
-          <Group gap="sm" wrap="wrap">
-            <Checkbox
-              size="xs"
-              label="Route arrows"
-              checked={showRouteArrows}
-              onChange={event => setShowRouteArrows(event.currentTarget.checked)}
-              color="brand"
-            />
-            <Checkbox
-              size="xs"
-              label="Marker grouping"
-              checked={enableMapGrouping}
-              onChange={event => setEnableMapGrouping(event.currentTarget.checked)}
-              color="brand"
-            />
-            <Select
-              size="xs"
-              data={[
-                { value: 'local', label: 'Local Labels' },
-                { value: 'english', label: 'English Labels' }
-              ]}
-              value={basemapMode}
-              onChange={val => setBasemapMode((val as BasemapMode) || 'local')}
-              allowDeselect={false}
-              w={140}
-            />
+          <Group gap="xs" wrap="nowrap">
             <Button
-              variant="subtle"
+              variant={showMapControls ? 'light' : 'default'}
               size="compact-xs"
-              color="neutral.6"
-              onClick={() => setShowRouteLegend(v => !v)}
+              color="neutral.7"
+              onClick={() => setShowMapControls(v => !v)}
             >
-              {showRouteLegend ? 'Hide Legend' : 'Legend'}
+              {showMapControls ? 'Hide map options' : 'Map options'}
             </Button>
+            {showMapControls && (
+              <Button
+                variant="subtle"
+                size="compact-xs"
+                color="neutral.6"
+                onClick={() => setShowRouteLegend(v => !v)}
+              >
+                {showRouteLegend ? 'Hide legend' : 'Legend'}
+              </Button>
+            )}
           </Group>
 
-          {focusedDayIdx !== -1 && (
+          {showMapControls && (
+            <Group gap="sm" wrap="wrap" mt="xs">
+              <Checkbox
+                size="xs"
+                label="Route arrows"
+                checked={showRouteArrows}
+                onChange={event => setShowRouteArrows(event.currentTarget.checked)}
+                color="brand"
+              />
+              <Checkbox
+                size="xs"
+                label="Marker grouping"
+                checked={enableMapGrouping}
+                onChange={event => setEnableMapGrouping(event.currentTarget.checked)}
+                color="brand"
+              />
+              <Select
+                size="xs"
+                data={[
+                  { value: 'local', label: 'Local Labels' },
+                  { value: 'english', label: 'English Labels' }
+                ]}
+                value={basemapMode}
+                onChange={val => setBasemapMode((val as BasemapMode) || 'local')}
+                allowDeselect={false}
+                w={140}
+              />
+            </Group>
+          )}
+
+          {showMapControls && focusedDayIdx !== -1 && (
             <Text size="xs" fw={700} c="brand.8" mt="xs">
               Day {focusedDayIdx + 1} selected
             </Text>
           )}
 
-          {showRouteLegend && (
+          {showMapControls && showRouteLegend && (
             <Group gap="xs" mt="xs" wrap="wrap">
               {transportLegendItems.length === 0 ? (
                 <Text size="xs" c="dimmed">No route segments yet</Text>
