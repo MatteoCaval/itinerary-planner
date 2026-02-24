@@ -28,6 +28,17 @@ import { trackError, trackEvent } from './services/telemetry';
 import { SECTION_ORDER, DEFAULT_SECTION, DEFAULT_CATEGORY, UNASSIGNED_ZONE_ID, SLOT_PREFIX } from './constants/daySection';
 import { useAppModals } from './hooks/useAppModals';
 
+const SAMPLE_DEMO_QUERY_PARAM = 'demo';
+const SAMPLE_DEMO_QUERY_VALUE = 'sample';
+
+const isSampleDemoRequest = () => {
+  if (typeof window === 'undefined') return false;
+  const pathname = window.location.pathname.replace(/\/+$/, '');
+  if (pathname.endsWith('/sample')) return true;
+  const params = new URLSearchParams(window.location.search);
+  return params.get(SAMPLE_DEMO_QUERY_PARAM) === SAMPLE_DEMO_QUERY_VALUE;
+};
+
 function AppContent() {
   const {
     trips, activeTripId,
@@ -71,6 +82,7 @@ function AppContent() {
   const [zoomLevel, setZoomLevel] = useState(1.0);
   const [sidebarView, setSidebarView] = useState<'timeline' | 'calendar' | 'budget'>('timeline');
   const importFileInputRef = React.useRef<HTMLInputElement | null>(null);
+  const sampleDemoLoadedRef = React.useRef(false);
   const reorderShortcutHint = useMemo(() => {
     if (typeof navigator !== 'undefined' && /(Mac|iPhone|iPad|iPod)/i.test(navigator.platform)) {
       return '⌘ + Shift + ↑/↓';
@@ -275,6 +287,57 @@ function AppContent() {
     notifySuccess: message => notifications.show({ color: 'green', title: 'Success', message }),
     notifyError: message => notifications.show({ color: 'red', title: 'Import Error', message }),
   });
+
+  useEffect(() => {
+    if (sampleDemoLoadedRef.current || !isSampleDemoRequest()) return;
+    sampleDemoLoadedRef.current = true;
+
+    const loadSampleDemo = async () => {
+      try {
+        const response = await fetch(`${import.meta.env.BASE_URL}sample-trip.json`, { cache: 'no-store' });
+        if (!response.ok) {
+          throw new Error(`sample_demo_http_${response.status}`);
+        }
+
+        const sampleTrip = await response.json();
+
+        const result = loadFromData(sampleTrip);
+        if (!result.success) {
+          notifications.show({
+            color: 'red',
+            title: 'Sample demo unavailable',
+            message: result.error || 'Unable to load sample itinerary data.',
+          });
+          return;
+        }
+
+        const params = new URLSearchParams(window.location.search);
+        const shouldNormalizePath = params.get(SAMPLE_DEMO_QUERY_PARAM) === SAMPLE_DEMO_QUERY_VALUE;
+        if (shouldNormalizePath) {
+          params.delete(SAMPLE_DEMO_QUERY_PARAM);
+          const nextPath = `${import.meta.env.BASE_URL.replace(/\/$/, '')}/sample`;
+          const nextSearch = params.toString();
+          const nextUrl = nextSearch ? `${nextPath}?${nextSearch}` : nextPath;
+          window.history.replaceState({}, '', nextUrl);
+        }
+
+        notifications.show({
+          color: 'blue',
+          title: 'Sample demo loaded',
+          message: 'Preloaded demo trip is ready to explore.',
+        });
+      } catch (error) {
+        trackError('sample_demo_load_failed', error);
+        notifications.show({
+          color: 'red',
+          title: 'Sample demo unavailable',
+          message: 'Could not load the demo itinerary.',
+        });
+      }
+    };
+
+    void loadSampleDemo();
+  }, [loadFromData]);
 
   const selectedLocation = useMemo(() => {
     const top = locations.find(l => l.id === selectedLocationId);

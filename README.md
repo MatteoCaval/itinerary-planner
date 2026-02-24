@@ -37,6 +37,10 @@ npm run dev
 npm run build
 ```
 
+**Quick Demo Route**
+- A preloaded demo trip is available at `/itinerary-planner/sample` (and `/sample` in local dev).
+- The route autoloads `sample-trip.json` so reviewers can explore the app immediately.
+
 **Optional Environment Variables**
 These are only required if you want to enable the related integrations:
 - `VITE_UNSPLASH_ACCESS_KEY`
