@@ -65,10 +65,15 @@ function SelectedLocationHandler({ selectedId, locations, isPanelCollapsed }: { 
         const currentZoom = map.getZoom();
         let offset = 0;
         const width = window.innerWidth;
-        if (width > 768 && !isPanelCollapsed) {
-          if (width >= 1600) offset = 500 / 2;
-          else if (width >= 1200) offset = 450 / 2;
-          else offset = 380 / 2;
+        if (width > 768) {
+          const leftPanel = document.querySelector('.floating-sidebar-container') as HTMLElement | null;
+          const rightPanel = !isPanelCollapsed
+            ? document.querySelector('.location-detail-panel-root') as HTMLElement | null
+            : null;
+
+          const leftOcclusion = leftPanel ? Math.max(0, leftPanel.getBoundingClientRect().right) : 0;
+          const rightOcclusion = rightPanel ? Math.max(0, width - rightPanel.getBoundingClientRect().left) : 0;
+          offset = (rightOcclusion - leftOcclusion) / 2;
         }
         const targetPoint = map.project([loc.lat, loc.lng], currentZoom);
         const actualPoint = L.point(targetPoint.x + offset, targetPoint.y);
