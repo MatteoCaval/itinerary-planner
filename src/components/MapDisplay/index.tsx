@@ -276,7 +276,7 @@ export default function MapDisplay({ days, locations, routes, onEditRoute, hover
   return (
     <div className="map-container">
       <MapContainer center={position} zoom={13} scrollWheelZoom={true} className="leaflet-container" zoomControl={false}>
-        {!hideControls && <ZoomControl position="topleft" />}
+        {!hideControls && <ZoomControl position="bottomright" />}
         <TileLayer key={basemapMode} attribution={activeBasemap.attribution} url={activeBasemap.url} />
         {accommodations.map(acc => <Marker key={acc.id} position={[acc.lat, acc.lng]} icon={createAccommodationIcon()}><Popup><strong>{'\u{1F3E8}'} {acc.name}</strong><br />{acc.notes && <span style={{ color: '#6c757d' }}>{acc.notes}</span>}</Popup></Marker>)}
         <ClusteredLocationMarkers
@@ -313,11 +313,11 @@ export default function MapDisplay({ days, locations, routes, onEditRoute, hover
           shadow="sm"
           style={{
             position: 'absolute',
-            top: 'calc(var(--app-shell-header-height, 60px) + 20px)',
-            right: isPanelCollapsed ? 20 : 460, // 420px panel + 20px margin + 20px offset
+            top: 72, // 60px header + 12px margin. Less 'low'.
+            right: (selectedLocationId && !isPanelCollapsed) ? 460 : 20,
             transition: 'right 0.4s cubic-bezier(0.25, 0.8, 0.25, 1)',
-            zIndex: 900,
-            maxWidth: 'min(420px, calc(100vw - 24px))',
+            zIndex: 1100,
+            maxWidth: 'min(500px, calc(100vw - 40px))',
             backgroundColor: 'rgba(255, 255, 255, 0.95)',
             backdropFilter: 'blur(8px)',
             borderColor: 'var(--mantine-color-neutral-3)',

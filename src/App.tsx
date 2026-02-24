@@ -500,7 +500,7 @@ function AppContent() {
         </AppErrorBoundary>
       </Box>
 
-      <Box style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, overflow: 'hidden', zIndex: 1 }}>
+      <Box style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, overflow: 'hidden', zIndex: 1, margin: 0, padding: 0 }}>
         <AppErrorBoundary title="Map rendering error" message="The map view crashed. You can retry or reload the app.">
           <MapDisplay
             days={days} locations={mapLocations} routes={routes}

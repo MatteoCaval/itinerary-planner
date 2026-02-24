@@ -126,9 +126,9 @@ export const SortableItem = React.memo(function SortableItem({
           backgroundImage: location.imageUrl ? `linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.7)), url(${location.imageUrl})` : undefined,
           backgroundSize: 'cover',
           backgroundPosition: 'center',
+          backgroundColor: (!location.imageUrl && (isOver || isSelected)) ? 'var(--mantine-color-brand-0)' : undefined,
           overflow: 'hidden',
         }}
-        bg={isOver ? 'brand.0' : (isSelected ? 'brand.0' : undefined)}
         onClick={() => onSelect?.(id)}
         h="100%"
       >

@@ -31,26 +31,20 @@ body,
 }
 
 .map-container {
-  height: 100vh;
-  width: 100vw;
+  height: 100vh !important;
+  width: 100vw !important;
   position: absolute;
   top: 0;
   left: 0;
   z-index: 10;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
 }
 
-/* Offset Leaflet's built-in controls below our header */
+/* Leaflet controls are now bottom-right, no collision with sidebar anymore */
 .leaflet-top {
-  top: 80px !important;
-  /* 60px app header + 20px padding */
-}
-
-/* On desktop, keep left side zoom controls away from the 440px sidebar */
-@media (min-width: 768px) {
-  .leaflet-left {
-    left: 480px !important;
-    /* 440px sidebar + 20px left + 20px gap */
-  }
+  top: 72px !important;
 }
 
 
