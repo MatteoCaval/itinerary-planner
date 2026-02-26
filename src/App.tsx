@@ -510,7 +510,7 @@ function AppContent() {
 
   return (
     <>
-      <Box h={60} w="100%" style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 1200, borderBottom: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255, 255, 255, 0.7)', backdropFilter: 'blur(20px)' }}>
+      <Box h={60} w="100%" className="app-topbar">
         <AppHeader
           opened={opened}
           toggle={toggle}
@@ -563,7 +563,7 @@ function AppContent() {
         </AppErrorBoundary>
       </Box>
 
-      <Box style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, overflow: 'hidden', zIndex: 1, margin: 0, padding: 0 }}>
+      <Box className="app-workspace">
         <AppErrorBoundary title="Map rendering error" message="The map view crashed. You can retry or reload the app.">
           <MapDisplay
             days={days} locations={mapLocations} routes={routes}
@@ -612,21 +612,8 @@ function AppContent() {
               className="location-detail-panel-root"
               radius="lg"
               style={{
-                position: 'absolute',
-                top: 'calc(var(--app-shell-header-height, 60px) + 20px)',
-                right: '20px',
-                bottom: '20px',
-                width: 'min(var(--detail-panel-width, 460px), calc(100vw - 40px))',
-                zIndex: 1150,
                 transform: panelCollapsed ? 'translateX(120%)' : 'translateX(0)',
                 visibility: panelCollapsed ? 'hidden' : 'visible',
-                transition: 'transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), visibility 0.4s',
-                overflow: 'hidden',
-                display: 'flex',
-                flexDirection: 'column',
-                background: 'rgba(255, 255, 255, 0.95)',
-                backdropFilter: 'blur(20px)',
-                border: '1px solid rgba(255,255,255,0.4)',
               }}
             >
               <AppErrorBoundary title="Detail panel error" message="The detail panel crashed. You can retry or reload the app.">
@@ -651,28 +638,15 @@ function AppContent() {
             </Paper>
 
             {panelCollapsed && (
-              <Box
-                style={{
-                  position: 'absolute',
-                  top: '50%',
-                  right: 0,
-                  transform: 'translateY(-50%)',
-                  zIndex: 1150
-                }}
-              >
+              <Box className="location-detail-expand-wrap">
                 <Tooltip label="Expand Details" position="left">
                   <ActionIcon
+                    className="location-detail-expand-handle"
                     variant="filled"
-                    color="blue"
+                    color="brand"
                     size="xl"
                     radius="md"
                     onClick={() => setPanelCollapsed(false)}
-                    style={{
-                      borderRadius: '12px 0 0 12px',
-                      height: 100,
-                      width: 24,
-                      boxShadow: 'var(--mantine-shadow-xl)'
-                    }}
                   >
                     <ChevronLeft size={20} />
                   </ActionIcon>

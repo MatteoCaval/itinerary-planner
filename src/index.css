@@ -901,3 +901,387 @@ body,
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.22);
   border-color: var(--app-accent) !important;
 }
+
+/* 2026 UX refresh (inspired by split timeline + map planners) */
+:root {
+  --app-shell-header-height: 60px;
+  --app-page-bg: #eef2f6;
+  --app-card-bg: #ffffff;
+  --app-panel-border: #d7dfe9;
+}
+
+body {
+  font-family: 'Manrope', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  color: var(--app-text);
+  background: linear-gradient(180deg, #f8fafd 0%, #eef3f8 100%);
+}
+
+.app-topbar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1200;
+  border-bottom: 1px solid var(--app-panel-border);
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08);
+  backdrop-filter: blur(14px);
+}
+
+.app-workspace {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  overflow: hidden;
+}
+
+.app-header-root {
+  color: #0f172a;
+  gap: 10px;
+}
+
+.app-header-left {
+  min-width: 0;
+}
+
+.app-header-brand {
+  color: #102a43 !important;
+  letter-spacing: -0.026em !important;
+}
+
+.app-trip-pill {
+  border: 1px solid var(--app-panel-border);
+  background: #ffffff;
+  color: #1f344a;
+  border-radius: 10px;
+  height: 34px;
+}
+
+.app-trip-pill:hover {
+  background: #f2f8ff;
+}
+
+.app-header-actions {
+  gap: 6px !important;
+}
+
+.app-header-actions .mantine-ActionIcon-root {
+  width: 34px;
+  min-width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  border: 1px solid var(--app-panel-border);
+  background: #ffffff;
+  color: #2e4158;
+}
+
+.app-header-actions .mantine-ActionIcon-root:hover {
+  background: #f4f8fd;
+}
+
+.app-header-actions .mantine-ActionIcon-root:disabled,
+.app-header-actions .mantine-ActionIcon-root[data-disabled],
+.app-header-actions .mantine-ActionIcon-root[data-disabled='true'] {
+  opacity: 1;
+  color: #9ba7b6;
+  background: #f4f7fa;
+  border-color: #dfe5ee;
+}
+
+.app-header-actions .mantine-Button-root {
+  height: 34px;
+  border-radius: 10px;
+  border-color: var(--app-panel-border);
+  background: #ffffff;
+  color: #1e3248;
+  font-weight: 600;
+  padding-inline: 11px;
+}
+
+.app-header-actions .mantine-Button-root:hover {
+  background: #f4f8fd;
+  transform: translateY(-1px);
+}
+
+.app-header-actions .mantine-Button-root[data-variant='filled'] {
+  border-color: transparent;
+  box-shadow: 0 8px 16px rgba(37, 99, 235, 0.2);
+}
+
+.app-header-mobile-more {
+  border: 1px solid var(--app-panel-border);
+  background: #ffffff;
+  color: #2f435b;
+}
+
+.map-container {
+  inset: calc(var(--app-shell-header-height, 60px) + 10px) 12px 12px 12px;
+  width: auto !important;
+  height: auto !important;
+  border-radius: 20px;
+  border: 1px solid var(--app-panel-border);
+  box-shadow: 0 16px 32px rgba(15, 23, 42, 0.12);
+}
+
+.leaflet-top {
+  top: 10px !important;
+}
+
+.floating-sidebar-container {
+  top: calc(var(--app-shell-header-height, 60px) + 10px);
+  left: 12px;
+  bottom: 12px;
+  width: min(var(--floating-sidebar-width), calc(100vw - 32px));
+  border-radius: 20px;
+  border: 1px solid var(--app-panel-border);
+  box-shadow: 0 18px 30px rgba(15, 23, 42, 0.14);
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+}
+
+.sidebar-shell {
+  background: linear-gradient(180deg, #ffffff, #f9fbfe 66%);
+}
+
+.sidebar-top-panel {
+  background: #ffffff;
+}
+
+.sidebar-top-panel .date-picker-trigger {
+  border-radius: 12px;
+  border-color: #d9e1ec !important;
+}
+
+.sidebar-view-toggle .mantine-Button-root {
+  border-radius: 999px;
+  border: 1px solid #d8dfeb;
+  font-weight: 600;
+}
+
+.sidebar-view-toggle .mantine-Button-root[data-variant='light'] {
+  background: #e9f2ff;
+  border-color: #c6dbff;
+  color: #174ea6;
+}
+
+.sidebar-view-toggle .mantine-Button-root[data-variant='subtle'] {
+  background: #f7f9fc;
+}
+
+.sidebar-content-body {
+  background: linear-gradient(180deg, #fcfdff, #f7fafe);
+}
+
+.sidebar-search-suggestions {
+  border-radius: 12px;
+  border-color: #d9e1ec !important;
+  box-shadow: 0 14px 24px rgba(15, 23, 42, 0.12);
+}
+
+.sidebar-search-suggestion-item {
+  transition: background-color 0.15s ease, transform 0.15s ease;
+}
+
+.sidebar-search-suggestion-item:hover {
+  background: #ecf4ff;
+  transform: translateX(1px);
+}
+
+.sidebar-footer {
+  background: #ffffff;
+}
+
+.sidebar-footer .mantine-Button-root {
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+.sidebar-footer .mantine-ActionIcon-root {
+  border: 1px solid #d8dfeb;
+  background: #ffffff;
+  border-radius: 9px;
+}
+
+.sidebar-footer .mantine-ActionIcon-root:hover {
+  background: #f4f8ff;
+}
+
+.day-sidebar-grid {
+  background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+}
+
+.day-sidebar-grid::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.day-sidebar-grid::-webkit-scrollbar-thumb {
+  background: rgba(100, 116, 139, 0.25);
+  border-radius: 999px;
+}
+
+.timeline-slot {
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.timeline-slot:hover {
+  box-shadow: inset 0 0 0 1px rgba(37, 99, 235, 0.1);
+}
+
+.timeline-slot-rail {
+  transition: filter 0.2s ease;
+}
+
+.timeline-slot:hover .timeline-slot-rail {
+  filter: brightness(1.03);
+}
+
+.day-label-box {
+  border-radius: 10px 0 0 10px;
+}
+
+.day-label-selected {
+  box-shadow: inset 0 0 0 1px rgba(37, 99, 235, 0.26), 0 4px 10px rgba(37, 99, 235, 0.1);
+}
+
+.sortable-item {
+  border-radius: 14px;
+  border-color: #d7dfeb;
+  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.06);
+}
+
+.sortable-item:hover {
+  box-shadow: 0 10px 18px rgba(15, 23, 42, 0.12);
+}
+
+.sortable-item--cat-sightseeing,
+.sortable-item--cat-dining,
+.sortable-item--cat-hotel,
+.sortable-item--cat-transit,
+.sortable-item--cat-other {
+  background-image: none !important;
+}
+
+.sortable-item--parent {
+  box-shadow: inset 0 0 0 1px rgba(37, 99, 235, 0.2);
+}
+
+.sortable-item--sub {
+  box-shadow: inset 0 0 0 1px rgba(99, 102, 241, 0.2);
+}
+
+.timeline-card-thumb {
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.1);
+}
+
+.timeline-category-badge {
+  letter-spacing: 0.01em;
+}
+
+.route-connector-pill {
+  border-color: #d6deea !important;
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.1);
+}
+
+.route-connector-empty {
+  background: #eff6ff !important;
+  border-color: #9cc2ff !important;
+}
+
+.route-connector-existing {
+  background: #ffffff !important;
+}
+
+.unassigned-panel {
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafd 100%) !important;
+}
+
+.map-route-controls {
+  top: calc(var(--app-shell-header-height, 60px) + 20px);
+  right: 20px;
+  border-radius: 14px;
+  border-color: var(--app-panel-border);
+  box-shadow: 0 14px 26px rgba(15, 23, 42, 0.16);
+  backdrop-filter: blur(10px);
+}
+
+.map-route-controls .mantine-Button-root {
+  border-radius: 999px;
+}
+
+.map-route-controls .mantine-Checkbox-label,
+.map-route-controls .mantine-Text-root {
+  font-weight: 500;
+}
+
+.location-detail-panel-root {
+  position: absolute;
+  top: calc(var(--app-shell-header-height, 60px) + 10px);
+  right: 12px;
+  bottom: 12px;
+  width: min(var(--detail-panel-width, 460px), calc(100vw - 32px));
+  z-index: 1150;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.35s cubic-bezier(0.25, 0.8, 0.25, 1), visibility 0.35s;
+  background: rgba(255, 255, 255, 0.98);
+  border: 1px solid var(--app-panel-border);
+  box-shadow: 0 18px 32px rgba(15, 23, 42, 0.18);
+}
+
+.location-detail-panel-root .mantine-ScrollArea-viewport {
+  background: #fbfcff;
+}
+
+.location-detail-panel-image {
+  border-bottom: 1px solid #d7dfeb;
+}
+
+.location-detail-panel-header {
+  background: #ffffff;
+}
+
+.location-detail-expand-wrap {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  transform: translateY(-50%);
+  z-index: 1150;
+}
+
+.location-detail-expand-handle {
+  border-radius: 14px 0 0 14px !important;
+  width: 24px !important;
+  height: 92px !important;
+  box-shadow: 0 10px 24px rgba(37, 99, 235, 0.3);
+}
+
+@media (max-width: 768px) {
+  .app-header-brand {
+    font-size: 1.02rem !important;
+  }
+
+  .map-container {
+    inset: calc(var(--app-shell-header-height, 60px) + 6px) 8px 8px 8px;
+    border-radius: 16px;
+  }
+
+  .floating-sidebar-container {
+    border-radius: 16px;
+  }
+
+  .location-detail-panel-root {
+    left: 8px;
+    right: 8px;
+    width: auto;
+    top: calc(var(--app-shell-header-height, 60px) + 8px);
+    bottom: 8px;
+  }
+
+  .map-route-controls {
+    top: calc(var(--app-shell-header-height, 60px) + 12px);
+    right: 10px;
+    left: 10px;
+  }
+}

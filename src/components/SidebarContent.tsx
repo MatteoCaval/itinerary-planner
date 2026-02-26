@@ -97,8 +97,8 @@ export function SidebarContent({
   };
 
   return (
-    <Stack style={{ height: '100%' }} gap={0} bg="var(--mantine-color-neutral-0)">
-      <Box p="lg" style={{ borderBottom: '1px solid var(--mantine-color-neutral-2)' }}>
+    <Stack className="sidebar-shell" style={{ height: '100%' }} gap={0} bg="var(--mantine-color-neutral-0)">
+      <Box className="sidebar-top-panel" p="lg" style={{ borderBottom: '1px solid var(--mantine-color-neutral-2)' }}>
         {/* Collapsible Date Header */}
         <Box mb="xs">
           {!datePickerOpened ? (
@@ -133,7 +133,7 @@ export function SidebarContent({
         </Box>
 
         {/* View Toggle */}
-        <Group grow mt="sm" mb="md">
+        <Group className="sidebar-view-toggle" grow mt="sm" mb="md">
           <Button
             variant={sidebarView === 'timeline' ? 'light' : 'subtle'}
             onClick={() => setSidebarView('timeline')}
@@ -193,7 +193,7 @@ export function SidebarContent({
             />
           </form>
           {suggestionLoading && searchQuery.trim().length > 2 && (
-            <Paper withBorder shadow="sm" style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 1000 }}>
+            <Paper className="sidebar-search-suggestions" withBorder shadow="sm" style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 1000 }}>
               <Stack p="xs" gap="xs">
                 <Skeleton height={14} radius="sm" />
                 <Skeleton height={14} radius="sm" />
@@ -202,13 +202,13 @@ export function SidebarContent({
             </Paper>
           )}
           {suggestions.length > 0 && (
-            <Paper withBorder shadow="md" style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 1000, maxHeight: 250, overflowY: 'auto' }}>
+            <Paper className="sidebar-search-suggestions" withBorder shadow="md" style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 1000, maxHeight: 250, overflowY: 'auto' }}>
               {suggestions.map((s) => (
                 <Box
+                  className="sidebar-search-suggestion-item hover-bg-light"
                   key={s.place_id}
                   p="xs"
                   style={{ cursor: 'pointer', borderBottom: '1px solid var(--mantine-color-gray-2)' }}
-                  className="hover-bg-light"
                   onClick={async () => {
                     await handleAddLocationWrapped(parseFloat(s.lat), parseFloat(s.lon), s.display_name);
                     setSearchQuery('');
@@ -277,7 +277,7 @@ export function SidebarContent({
         )}
       </Box>
 
-      <Box style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+      <Box className="sidebar-content-body" style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
         {sidebarView === 'timeline' ? (
           <Stack h="100%" gap={0}>
             {activeParent && (
@@ -321,7 +321,7 @@ export function SidebarContent({
         )}
       </Box>
 
-      <Box p="lg" style={{ borderTop: '1px solid var(--mantine-color-neutral-2)', backgroundColor: 'var(--mantine-color-neutral-0)' }}>
+      <Box className="sidebar-footer" p="lg" style={{ borderTop: '1px solid var(--mantine-color-neutral-2)', backgroundColor: 'var(--mantine-color-neutral-0)' }}>
         {locations.length > 1 && routes.length === 0 && (
           <Paper withBorder p="sm" mb="md" bg="var(--app-warning-soft)" shadow="xs">
             <Text size="xs" c="dimmed">

@@ -292,6 +292,7 @@ export function DaySidebar({
       >
         <Box
           ref={scrollContainerRef}
+          className="day-sidebar-grid"
           bg="white"
           style={{
             flex: 1,
@@ -440,6 +441,7 @@ export function DaySidebar({
         </Box>
 
         <Paper
+          className="unassigned-panel"
           p="md"
           bg="var(--mantine-color-neutral-0)"
           style={{ position: 'sticky', bottom: 0, zIndex: 10, borderTop: '1px solid var(--mantine-color-neutral-2)' }}

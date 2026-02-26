@@ -32,7 +32,7 @@ const DroppableCellInner = React.memo(function DroppableCell({
   switch (section) {
     case 'morning':
       icon = <Coffee size={14} />;
-      color = 'orange';
+      color = '#b45309';
       break;
     case 'afternoon':
       icon = <Sun size={14} />;
@@ -40,22 +40,25 @@ const DroppableCellInner = React.memo(function DroppableCell({
       break;
     case 'evening':
       icon = <Moon size={14} />;
-      color = 'indigo';
+      color = '#4338ca';
       break;
   }
 
-  const sectionVisuals: Record<DaySection, { tint: string; rail: string }> = {
+  const sectionVisuals: Record<DaySection, { tint: string; rail: string; iconBg: string }> = {
     morning: {
-      tint: 'rgba(251, 146, 60, 0.08)',
-      rail: 'rgba(249, 115, 22, 0.4)',
+      tint: 'rgba(245, 158, 11, 0.04)',
+      rail: 'rgba(251, 191, 36, 0.13)',
+      iconBg: 'rgba(251, 191, 36, 0.16)',
     },
     afternoon: {
-      tint: 'rgba(245, 158, 11, 0.09)',
-      rail: 'rgba(217, 119, 6, 0.35)',
+      tint: 'rgba(234, 179, 8, 0.05)',
+      rail: 'rgba(234, 179, 8, 0.13)',
+      iconBg: 'rgba(234, 179, 8, 0.16)',
     },
     evening: {
-      tint: 'rgba(99, 102, 241, 0.09)',
-      rail: 'rgba(79, 70, 229, 0.3)',
+      tint: 'rgba(99, 102, 241, 0.05)',
+      rail: 'rgba(129, 140, 248, 0.14)',
+      iconBg: 'rgba(129, 140, 248, 0.18)',
     },
   };
   const slotVisual = sectionVisuals[section];
@@ -89,7 +92,7 @@ const DroppableCellInner = React.memo(function DroppableCell({
         minHeight: `${80 * zoomLevel}px`,
         zIndex: 0,
         cursor: isBlocked ? 'not-allowed' : 'pointer',
-        backgroundColor: isOver ? 'var(--mantine-color-blue-0)' : cellBg,
+        backgroundColor: isOver ? 'rgba(59, 130, 246, 0.1)' : cellBg,
         display: 'flex',
         alignItems: 'center',
         transition: 'background-color 0.2s ease',
@@ -97,9 +100,10 @@ const DroppableCellInner = React.memo(function DroppableCell({
       }}
     >
       <Box
+        className="timeline-slot-rail"
         style={{
-          width: 48,
-          minWidth: 48,
+          width: 44,
+          minWidth: 44,
           height: '100%',
           pointerEvents: 'none',
           borderRight: '1px solid var(--mantine-color-gray-3)',
@@ -109,9 +113,21 @@ const DroppableCellInner = React.memo(function DroppableCell({
           backgroundColor: isBlocked ? 'rgba(0,0,0,0.05)' : slotVisual.rail,
         }}
       >
-        <Stack gap={1} align="center" c={isBlocked ? 'gray' : color}>
-          {icon}
-        </Stack>
+        <Box
+          style={{
+            width: 24,
+            height: 24,
+            borderRadius: '999px',
+            backgroundColor: isBlocked ? 'rgba(0,0,0,0.08)' : slotVisual.iconBg,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Stack gap={1} align="center" c={isBlocked ? 'gray' : color}>
+            {icon}
+          </Stack>
+        </Box>
       </Box>
       {isBlocked && (
         <Box px="md">

@@ -62,15 +62,15 @@ export function AppHeader({
   const activeTripName = activeTrip?.name || 'Trip';
 
   return (
-    <Group h="100%" px="lg" justify="space-between" wrap="nowrap" bg="transparent">
-      <Group wrap="nowrap" gap="sm">
+    <Group className="app-header-root" h="100%" px="lg" justify="space-between" wrap="nowrap" bg="transparent">
+      <Group className="app-header-left" wrap="nowrap" gap="sm">
         <Burger opened={opened} onClick={toggle} size="sm" color="var(--mantine-color-brand-6)" hiddenFrom="sm" />
-        <Text fw={800} fz="xl" c="brand.7" style={{ display: 'flex', alignItems: 'center', gap: '8px', letterSpacing: '-0.02em' }}>
+        <Text className="app-header-brand" fw={800} fz="xl" c="brand.7" style={{ display: 'flex', alignItems: 'center', gap: '8px', letterSpacing: '-0.02em' }}>
           <MapIcon size={24} strokeWidth={2.5} /> <Box visibleFrom="xs">Itinerary Planner</Box>
         </Text>
         <Menu shadow="md" width={280} position="bottom-start" withinPortal zIndex={4000}>
           <Menu.Target>
-            <Button variant="default" size="xs" leftSection={<FolderKanban size={14} />}>
+            <Button className="app-trip-pill" variant="default" size="xs" leftSection={<FolderKanban size={14} />}>
               <Box visibleFrom="sm">{activeTripName}</Box>
               <Box hiddenFrom="sm">Trip</Box>
             </Button>
@@ -99,7 +99,7 @@ export function AppHeader({
           </Menu.Dropdown>
         </Menu>
       </Group>
-      <Group gap="xs" visibleFrom="lg" wrap="nowrap">
+      <Group className="app-header-actions" gap="xs" visibleFrom="lg" wrap="nowrap">
         <ActionIcon variant="subtle" color="gray" onClick={() => navigateHistory(historyIndex - 1)} disabled={historyIndex <= 0}>
           <Undo size={18} />
         </ActionIcon>
@@ -147,7 +147,7 @@ export function AppHeader({
       <Box hiddenFrom="lg">
         <Menu shadow="md" width={220} position="bottom-end" withinPortal zIndex={4000}>
           <Menu.Target>
-            <ActionIcon variant="light" size="lg">
+            <ActionIcon className="app-header-mobile-more" variant="light" size="lg">
               <MoreHorizontal size={20} />
             </ActionIcon>
           </Menu.Target>

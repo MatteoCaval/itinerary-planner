@@ -97,6 +97,7 @@ export const SortableItem = React.memo(function SortableItem({
   const { label: categoryLabel, color: categoryBadgeColor, Icon: CategoryIcon } = categoryMeta[category];
   const subLocationCount = location.subLocations?.length || 0;
   const isCompact = duration <= 1;
+  const isInteractiveFocus = isOver || isSelected;
 
   const hierarchyClass = isSubLocation
     ? 'sortable-item--sub'
@@ -112,7 +113,7 @@ export const SortableItem = React.memo(function SortableItem({
 
         shadow={isDragging || isResizing || isOver ? 'md' : 'sm'}
         withBorder
-        p={isCompact ? 6 : 'xs'}
+        p={isCompact ? 8 : 'sm'}
         className={`sortable-item ${isCompact ? 'sortable-item--compact' : ''} ${hierarchyClass} ${categoryClass} ${isDragging ? 'dragging' : ''} ${isResizing ? 'resizing' : ''} ${isOver ? 'nesting-target' : ''}`}
         style={{
           ...style,
@@ -123,10 +124,7 @@ export const SortableItem = React.memo(function SortableItem({
           borderLeftColor: catColor,
           outline: isOver ? '2px dashed var(--mantine-color-brand-5)' : undefined,
           outlineOffset: isOver ? -2 : undefined,
-          backgroundImage: location.imageUrl ? `linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.7)), url(${location.imageUrl})` : undefined,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          backgroundColor: (!location.imageUrl && (isOver || isSelected)) ? 'var(--mantine-color-brand-0)' : undefined,
+          backgroundColor: isInteractiveFocus ? 'rgba(37, 99, 235, 0.06)' : 'var(--app-surface)',
           overflow: 'hidden',
         }}
         onClick={() => onSelect?.(id)}
@@ -137,14 +135,31 @@ export const SortableItem = React.memo(function SortableItem({
             <Box
               {...attributes}
               {...listeners}
-              style={{ cursor: 'grab', color: location.imageUrl ? 'rgba(255,255,255,0.7)' : 'var(--mantine-color-gray-5)', display: 'flex', alignItems: 'center', zIndex: 10 }}
+              style={{ cursor: 'grab', color: 'var(--mantine-color-gray-5)', display: 'flex', alignItems: 'center', zIndex: 10 }}
               onClick={(e) => e.stopPropagation()}
             >
               <GripVertical size={isCompact ? 16 : 18} />
             </Box>
 
             {index !== undefined && (
-              <Badge size="xs" circle color={location.imageUrl ? 'rgba(0,0,0,0.4)' : 'brand'} style={{ zIndex: 10, color: 'white', border: '1px solid rgba(255,255,255,0.2)' }}>{index}</Badge>
+              <Badge size="xs" circle color="brand" style={{ zIndex: 10, color: 'white' }}>{index}</Badge>
+            )}
+
+            {location.imageUrl && (
+              <Box
+                className="timeline-card-thumb"
+                style={{
+                  width: isCompact ? 28 : 42,
+                  height: isCompact ? 28 : 42,
+                  minWidth: isCompact ? 28 : 42,
+                  borderRadius: 10,
+                  backgroundImage: `url(${location.imageUrl})`,
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                  border: '1px solid rgba(148, 163, 184, 0.3)',
+                  zIndex: 10,
+                }}
+              />
             )}
 
             <Box style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: isCompact ? 2 : 4, paddingRight: isCompact ? 16 : 20, zIndex: 10 }}>
@@ -152,23 +167,22 @@ export const SortableItem = React.memo(function SortableItem({
                 fw={700}
                 size={isCompact ? 'xs' : 'sm'}
                 truncate
-                style={{ flex: 1, color: location.imageUrl ? 'white' : 'var(--mantine-color-text)', textShadow: location.imageUrl ? '0 1px 3px rgba(0,0,0,0.8)' : 'none' }}
+                style={{ flex: 1, color: 'var(--mantine-color-text)' }}
               >
                 {location.name}
               </Text>
               {duration > 1 && !isCompact && (
-                <Badge variant="outline" color={location.imageUrl ? 'gray.4' : 'gray.6'} size="xs" style={{ fontWeight: 600, backgroundColor: location.imageUrl ? 'rgba(0,0,0,0.4)' : 'transparent', border: location.imageUrl ? 'none' : undefined }}>
+                <Badge variant="outline" color="gray.6" size="xs" style={{ fontWeight: 600 }}>
                   {(duration / 3).toFixed(1).replace('.0', '')}d
                 </Badge>
               )}
               {!isCompact && (
                 <Badge
-                  variant="filled"
+                  variant="light"
                   color={categoryBadgeColor}
                   size="xs"
                   className="timeline-category-badge"
                   leftSection={<CategoryIcon size={10} />}
-                  style={{ opacity: location.imageUrl ? 0.9 : 1 }}
                 >
                   {categoryLabel}
                 </Badge>
@@ -178,7 +192,7 @@ export const SortableItem = React.memo(function SortableItem({
 
             <ActionIcon
               variant="subtle"
-              color={location.imageUrl ? 'gray.3' : 'red'}
+              color="red"
               size={isCompact ? 'xs' : 'sm'}
               onClick={(e) => {
                 e.stopPropagation();
@@ -193,7 +207,7 @@ export const SortableItem = React.memo(function SortableItem({
             {canOpenSubItinerary && (
               <ActionIcon
                 variant="subtle"
-                color={location.imageUrl ? 'gray.3' : 'brand'}
+                color="brand"
                 size={isCompact ? 'xs' : 'sm'}
                 onClick={(e) => {
                   e.stopPropagation();
@@ -210,7 +224,7 @@ export const SortableItem = React.memo(function SortableItem({
 
           {location.notes && !isCompact && (
             <Text
-              c={location.imageUrl ? 'gray.3' : 'dimmed'}
+              c="dimmed"
               size="xs"
               px={4}
               style={{
@@ -221,7 +235,6 @@ export const SortableItem = React.memo(function SortableItem({
                 lineHeight: 1.4,
                 maxHeight: duration > 1 ? '5.6em' : '1.4em',
                 zIndex: 10,
-                textShadow: location.imageUrl ? '0 1px 2px rgba(0,0,0,0.8)' : 'none'
               }}
             >
               {location.notes}

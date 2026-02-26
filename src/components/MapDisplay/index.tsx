@@ -318,16 +318,9 @@ export default function MapDisplay({ days, locations, routes, onEditRoute, hover
           withBorder
           shadow="sm"
           style={{
-            position: 'absolute',
-            top: 80, // 60px header + 20px margin, aligned with side panels.
             right: (selectedLocationId && !isPanelCollapsed) ? 'calc(var(--detail-panel-width, 460px) + 40px)' : 20,
             transition: 'right 0.4s cubic-bezier(0.25, 0.8, 0.25, 1)',
-            zIndex: 1100,
             maxWidth: showMapControls ? 'min(360px, calc(100vw - 40px))' : 'fit-content',
-            backgroundColor: 'rgba(255, 255, 255, 0.95)',
-            backdropFilter: 'blur(8px)',
-            borderColor: 'var(--mantine-color-neutral-3)',
-            boxShadow: '0 8px 30px rgba(0,0,0,0.1)'
           }}
         >
           <Group gap="xs" wrap="nowrap">
