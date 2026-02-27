@@ -64,15 +64,25 @@ function SelectedLocationHandler({ selectedId, locations, isPanelCollapsed }: { 
       if (loc) {
         const currentZoom = map.getZoom();
         let offset = 0;
-        const width = window.innerWidth;
-        if (width > 768) {
+        if (window.innerWidth > 768) {
+          const mapRect = map.getContainer().getBoundingClientRect();
           const leftPanel = document.querySelector('.floating-sidebar-container') as HTMLElement | null;
           const rightPanel = !isPanelCollapsed
             ? document.querySelector('.location-detail-panel-root') as HTMLElement | null
             : null;
 
-          const leftOcclusion = leftPanel ? Math.max(0, leftPanel.getBoundingClientRect().right) : 0;
-          const rightOcclusion = rightPanel ? Math.max(0, width - rightPanel.getBoundingClientRect().left) : 0;
+          const leftOcclusion = leftPanel
+            ? Math.max(
+              0,
+              Math.min(mapRect.right, leftPanel.getBoundingClientRect().right) - mapRect.left
+            )
+            : 0;
+          const rightOcclusion = rightPanel
+            ? Math.max(
+              0,
+              mapRect.right - Math.max(mapRect.left, rightPanel.getBoundingClientRect().left)
+            )
+            : 0;
           offset = (rightOcclusion - leftOcclusion) / 2;
         }
         const targetPoint = map.project([loc.lat, loc.lng], currentZoom);

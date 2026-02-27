@@ -908,6 +908,9 @@ body,
   --app-page-bg: #eef2f6;
   --app-card-bg: #ffffff;
   --app-panel-border: #d7dfe9;
+  --app-shell-gutter: 12px;
+  --app-shell-top-offset: calc(var(--app-shell-header-height, 60px) + 10px);
+  --app-shell-bottom-offset: 12px;
 }
 
 body {
@@ -1015,7 +1018,14 @@ body {
 }
 
 .map-container {
-  inset: calc(var(--app-shell-header-height, 60px) + 10px) 12px 12px 12px;
+  top: var(--app-shell-top-offset);
+  right: var(--app-shell-gutter);
+  bottom: var(--app-shell-bottom-offset);
+  left: calc(
+    var(--app-shell-gutter) +
+    min(var(--floating-sidebar-width), calc(100vw - 32px)) +
+    var(--app-shell-gutter)
+  );
   width: auto !important;
   height: auto !important;
   border-radius: 20px;
@@ -1028,15 +1038,15 @@ body {
 }
 
 .floating-sidebar-container {
-  top: calc(var(--app-shell-header-height, 60px) + 10px);
-  left: 12px;
-  bottom: 12px;
+  top: var(--app-shell-top-offset);
+  left: var(--app-shell-gutter);
+  bottom: var(--app-shell-bottom-offset);
   width: min(var(--floating-sidebar-width), calc(100vw - 32px));
+  max-height: none;
   border-radius: 20px;
   border: 1px solid var(--app-panel-border);
   box-shadow: 0 18px 30px rgba(15, 23, 42, 0.14);
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
+  background: #ffffff;
 }
 
 .sidebar-shell {
@@ -1220,6 +1230,7 @@ body {
   right: 12px;
   bottom: 12px;
   width: min(var(--detail-panel-width, 460px), calc(100vw - 32px));
+  max-height: none;
   z-index: 1150;
   overflow: hidden;
   display: flex;
@@ -1263,7 +1274,10 @@ body {
   }
 
   .map-container {
-    inset: calc(var(--app-shell-header-height, 60px) + 6px) 8px 8px 8px;
+    top: calc(var(--app-shell-header-height, 60px) + 6px);
+    right: 8px;
+    bottom: 8px;
+    left: 8px;
     border-radius: 16px;
   }
 
