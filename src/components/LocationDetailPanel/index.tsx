@@ -258,64 +258,61 @@ export function LocationDetailPanel({
         <Box>
           <Box style={{ minWidth: 0 }}>
             <Text fw={700} size="lg">{location.name}</Text>
-            <Text size="xs" c="dimmed">{location.lat.toFixed(4)}, {location.lng.toFixed(4)}</Text>
+            <Text
+              size="10px"
+              c="dimmed"
+              style={{ cursor: 'pointer', opacity: 0.6, letterSpacing: '0.02em' }}
+              title="Click to copy coordinates"
+              onClick={() => navigator.clipboard.writeText(`${location.lat.toFixed(6)}, ${location.lng.toFixed(6)}`)}
+            >
+              {location.lat.toFixed(4)}, {location.lng.toFixed(4)}
+            </Text>
           </Box>
-          <Group gap="xs" mt="xs" wrap="wrap">
+          <Group gap={4} mt="xs" wrap="wrap">
             {isMainDestinationWithSubItinerary && (
-              <Tooltip
-                label={isSubItineraryActive ? 'Back to main itinerary timeline' : 'Open sub-itinerary timeline'}
-                openDelay={500}
-                withArrow
+              <Button
+                size="compact-xs"
+                variant={isSubItineraryActive ? 'outline' : 'light'}
+                color={isSubItineraryActive ? 'gray' : 'indigo'}
+                leftSection={isSubItineraryActive ? <ArrowUp size={12} /> : <ArrowDown size={12} />}
+                onClick={() => isSubItineraryActive ? onExitSubItinerary?.() : onEnterSubItinerary?.(location.id)}
               >
-                <ActionIcon
-                  size="sm"
-                  variant={isSubItineraryActive ? 'outline' : 'light'}
-                  color={isSubItineraryActive ? 'gray' : 'indigo'}
-                  onClick={() => {
-                    if (isSubItineraryActive) {
-                      onExitSubItinerary?.();
-                    } else {
-                      onEnterSubItinerary?.(location.id);
-                    }
-                  }}
-                  aria-label={isSubItineraryActive ? 'Back to main itinerary' : 'Open sub-itinerary'}
-                >
-                  {isSubItineraryActive ? <ArrowUp size={14} /> : <ArrowDown size={14} />}
-                </ActionIcon>
-              </Tooltip>
+                {isSubItineraryActive ? 'Main' : 'Stops'}
+              </Button>
             )}
-            <Tooltip label={prevLoc ? `Previous: ${prevLoc.name}` : 'No previous destination'} openDelay={500} withArrow>
-              <ActionIcon
-                size="sm"
-                variant="light"
+            <Tooltip label={prevLoc?.name} openDelay={200} withArrow disabled={!prevLoc}>
+              <Button
+                size="compact-xs"
+                variant="subtle"
+                color="gray"
+                leftSection={<ArrowLeft size={12} />}
                 disabled={!prevLoc}
                 onClick={() => prevLoc && onSelectLocation?.(prevLoc.id)}
-                aria-label="Previous destination"
               >
-                <ArrowLeft size={14} />
-              </ActionIcon>
+                Prev
+              </Button>
             </Tooltip>
-            <Tooltip label={nextLoc ? `Next: ${nextLoc.name}` : 'No next destination'} openDelay={500} withArrow>
-              <ActionIcon
-                size="sm"
-                variant="light"
+            <Tooltip label={nextLoc?.name} openDelay={200} withArrow disabled={!nextLoc}>
+              <Button
+                size="compact-xs"
+                variant="subtle"
+                color="gray"
+                rightSection={<ArrowRight size={12} />}
                 disabled={!nextLoc}
                 onClick={() => nextLoc && onSelectLocation?.(nextLoc.id)}
-                aria-label="Next destination"
               >
-                <ArrowRight size={14} />
-              </ActionIcon>
+                Next
+              </Button>
             </Tooltip>
-            <Tooltip label="Open in Google Maps" openDelay={500} withArrow>
-              <ActionIcon
-                size="sm"
-                variant="outline"
-                onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location.name)}`, '_blank')}
-                aria-label="Open in Google Maps"
-              >
-                <MapIcon size={14} />
-              </ActionIcon>
-            </Tooltip>
+            <Button
+              size="compact-xs"
+              variant="subtle"
+              color="gray"
+              leftSection={<MapIcon size={12} />}
+              onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location.name)}`, '_blank')}
+            >
+              Maps
+            </Button>
           </Group>
         </Box>
       </Box>

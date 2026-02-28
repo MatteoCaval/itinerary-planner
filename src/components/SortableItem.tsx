@@ -241,9 +241,13 @@ export const SortableItem = React.memo(function SortableItem({
             </Text>
           )}
 
-          <Box mt="auto" pt={4}>
-            {/* Route info detached */}
-          </Box>
+          {subLocationCount > 0 && !isCompact && (
+            <Box mt="auto" pt={4}>
+              <Badge size="xs" variant="light" color="indigo" leftSection={<GitFork size={9} />}>
+                {subLocationCount} {subLocationCount === 1 ? 'stop' : 'stops'}
+              </Badge>
+            </Box>
+          )}
         </Stack>
       </Paper>
 
