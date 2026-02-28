@@ -218,7 +218,7 @@ Is it edit history? Previous AI generations? Version history? Past trips? Clarif
 | 🟡 Medium | Coordinates deprioritized in inspector | Low | ✅ Done |
 | 🟡 Medium | Sidebar footer buttons — remove unlabeled export icons | Trivial | ✅ Done |
 | 🟡 Medium | Sub-destination count badge on timeline cards | Low | ✅ Done |
-| 🟢 Low | Left pane gradient — commit or drop | Trivial | |
-| 🟢 Low | Border radius consolidation (10 values → 5) | Medium | |
-| 🟢 Low | Inspector image gradient overlay fix | Low | |
-| 🟢 Low | Transport pills — smaller, right-aligned | Low | |
+| 🟢 Low | Left pane gradient — committed with visible endpoint | Trivial | ✅ Done |
+| 🟢 Low | Border radius — 5 CSS tokens defined, main panes unified to 20px | Medium | ✅ Done |
+| 🟢 Low | Inspector image — bottom-to-transparent gradient overlay | Low | ✅ Done |
+| 🟢 Low | Transport pills — smaller (3×8px), right-aligned | Low | ✅ Done |

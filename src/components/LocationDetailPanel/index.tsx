@@ -192,14 +192,28 @@ export function LocationDetailPanel({
         bg={location.imageUrl ? 'neutral.1' : 'neutral.8'}
       >
         {location.imageUrl && (
-          <Image
-            src={location.imageUrl}
-            alt={location.name}
-            h="100%"
-            w="100%"
-            fit="cover"
-            onLoad={() => setImageLoading(false)}
-          />
+          <>
+            <Image
+              src={location.imageUrl}
+              alt={location.name}
+              h="100%"
+              w="100%"
+              fit="cover"
+              onLoad={() => setImageLoading(false)}
+            />
+            <Box
+              style={{
+                position: 'absolute',
+                bottom: 0,
+                left: 0,
+                right: 0,
+                height: 72,
+                background: 'linear-gradient(to top, rgba(8, 18, 36, 0.52), transparent)',
+                pointerEvents: 'none',
+                zIndex: 1,
+              }}
+            />
+          </>
         )}
         {!location.imageUrl && (
           <Box className="location-detail-empty-preview">

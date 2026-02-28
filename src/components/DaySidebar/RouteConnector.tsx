@@ -43,7 +43,7 @@ export const RouteConnector = React.memo(function RouteConnector({
         pointerEvents: 'none',
         position: 'relative',
         display: 'flex',
-        justifyContent: 'center',
+        justifyContent: 'flex-end',
         alignItems: isHorizontal ? 'center' : 'flex-start',
         height: isHorizontal ? '100%' : 0,
       }}
@@ -57,7 +57,7 @@ export const RouteConnector = React.memo(function RouteConnector({
           style={{
             cursor: 'pointer',
             pointerEvents: 'auto',
-            padding: '4px 12px',
+            padding: '3px 8px',
             transform: isHorizontal ? 'none' : 'translateY(-50%)',
             whiteSpace: 'nowrap',
             transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
