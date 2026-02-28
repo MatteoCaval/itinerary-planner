@@ -113,7 +113,7 @@ export function AppHeader({
         <AppButton variant="default" size="xs" leftSection={<FileText size={16} />} onClick={onExportMarkdown}>{ACTION_LABELS.exportMarkdown}</AppButton>
         <AppButton variant="default" size="xs" leftSection={<Upload size={16} />} onClick={openImportPicker}>{ACTION_LABELS.importJson}</AppButton>
         <AppButton variant="default" size="xs" leftSection={<Download size={16} />} onClick={onExport}>{ACTION_LABELS.exportJson}</AppButton>
-        <AppButton variant="filled" color="brand" size="xs" leftSection={<Cloud size={16} />} onClick={onOpenCloud}>{ACTION_LABELS.cloudSync}</AppButton>
+        <AppButton variant="default" size="xs" leftSection={<Cloud size={16} />} onClick={onOpenCloud}>{ACTION_LABELS.cloudSync}</AppButton>
         {!ENABLE_ACCOUNT_AUTH ? (
           <AppButton variant="default" size="xs" leftSection={<UserCircle2 size={16} />} disabled>
             Account (Coming soon)
