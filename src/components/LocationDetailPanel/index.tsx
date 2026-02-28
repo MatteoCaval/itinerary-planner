@@ -9,7 +9,7 @@ import { SubDestinationsPanel } from './SubDestinationsPanel';
 import { ChecklistSection } from './ChecklistSection';
 import { LinksSection } from './LinksSection';
 
-interface LocationDetailPanelProps {
+export interface LocationDetailPanelProps {
   location: Location | null;
   parentLocation?: Location | null;
   days: Day[];

@@ -1,10 +1,12 @@
 import React from 'react';
-import { Group, Button, ActionIcon, Text, Box, Menu } from '@mantine/core';
+import { Group, Text, Box, Menu } from '@mantine/core';
 import { Burger } from '@mantine/core';
 import { Map as MapIcon, Download, Upload, Cloud, FileText, MoreHorizontal, History, Undo, Redo, Sparkles, FolderKanban, Plus, Pencil, Trash2, Check, LogIn, LogOut, UserCircle2 } from 'lucide-react';
 import { ACTION_LABELS } from '../constants/actionLabels';
 import { ENABLE_ACCOUNT_AUTH } from '../constants/featureFlags';
 import { TripSummary } from '../types';
+import { AppButton } from '../features/ui/primitives/AppButton';
+import { AppIconButton } from '../features/ui/primitives/AppIconButton';
 
 interface AppHeaderProps {
   opened: boolean;
@@ -70,10 +72,10 @@ export function AppHeader({
         </Text>
         <Menu shadow="md" width={280} position="bottom-start" withinPortal zIndex={4000}>
           <Menu.Target>
-            <Button className="app-trip-pill" variant="default" size="xs" leftSection={<FolderKanban size={14} />}>
+            <AppButton className="app-trip-pill" variant="default" size="xs" leftSection={<FolderKanban size={14} />}>
               <Box visibleFrom="sm">{activeTripName}</Box>
               <Box hiddenFrom="sm">Trip</Box>
-            </Button>
+            </AppButton>
           </Menu.Target>
           <Menu.Dropdown>
             <Menu.Label>Trips</Menu.Label>
@@ -100,33 +102,33 @@ export function AppHeader({
         </Menu>
       </Group>
       <Group className="app-header-actions" gap="xs" visibleFrom="lg" wrap="nowrap">
-        <ActionIcon variant="subtle" color="gray" onClick={() => navigateHistory(historyIndex - 1)} disabled={historyIndex <= 0}>
+        <AppIconButton variant="subtle" color="gray" onClick={() => navigateHistory(historyIndex - 1)} disabled={historyIndex <= 0}>
           <Undo size={18} />
-        </ActionIcon>
-        <ActionIcon variant="subtle" color="gray" onClick={() => navigateHistory(historyIndex + 1)} disabled={historyIndex >= historyLength - 1}>
+        </AppIconButton>
+        <AppIconButton variant="subtle" color="gray" onClick={() => navigateHistory(historyIndex + 1)} disabled={historyIndex >= historyLength - 1}>
           <Redo size={18} />
-        </ActionIcon>
-        <Button variant="default" size="xs" leftSection={<History size={16} />} onClick={onOpenHistory}>{ACTION_LABELS.history}</Button>
-        <Button variant="light" color="brand" size="xs" leftSection={<Sparkles size={16} />} onClick={onOpenAI}>{ACTION_LABELS.aiPlanner}</Button>
-        <Button variant="default" size="xs" leftSection={<FileText size={16} />} onClick={onExportMarkdown}>{ACTION_LABELS.exportMarkdown}</Button>
-        <Button variant="default" size="xs" leftSection={<Upload size={16} />} onClick={openImportPicker}>{ACTION_LABELS.importJson}</Button>
-        <Button variant="default" size="xs" leftSection={<Download size={16} />} onClick={onExport}>{ACTION_LABELS.exportJson}</Button>
-        <Button variant="filled" color="brand" size="xs" leftSection={<Cloud size={16} />} onClick={onOpenCloud}>{ACTION_LABELS.cloudSync}</Button>
+        </AppIconButton>
+        <AppButton variant="default" size="xs" leftSection={<History size={16} />} onClick={onOpenHistory}>{ACTION_LABELS.history}</AppButton>
+        <AppButton variant="light" color="brand" size="xs" leftSection={<Sparkles size={16} />} onClick={onOpenAI}>{ACTION_LABELS.aiPlanner}</AppButton>
+        <AppButton variant="default" size="xs" leftSection={<FileText size={16} />} onClick={onExportMarkdown}>{ACTION_LABELS.exportMarkdown}</AppButton>
+        <AppButton variant="default" size="xs" leftSection={<Upload size={16} />} onClick={openImportPicker}>{ACTION_LABELS.importJson}</AppButton>
+        <AppButton variant="default" size="xs" leftSection={<Download size={16} />} onClick={onExport}>{ACTION_LABELS.exportJson}</AppButton>
+        <AppButton variant="filled" color="brand" size="xs" leftSection={<Cloud size={16} />} onClick={onOpenCloud}>{ACTION_LABELS.cloudSync}</AppButton>
         {!ENABLE_ACCOUNT_AUTH ? (
-          <Button variant="default" size="xs" leftSection={<UserCircle2 size={16} />} disabled>
+          <AppButton variant="default" size="xs" leftSection={<UserCircle2 size={16} />} disabled>
             Account (Coming soon)
-          </Button>
+          </AppButton>
         ) : isAuthLoading ? (
-          <Button variant="default" size="xs" leftSection={<UserCircle2 size={16} />} disabled>
+          <AppButton variant="default" size="xs" leftSection={<UserCircle2 size={16} />} disabled>
             Account...
-          </Button>
+          </AppButton>
         ) : isAuthenticated ? (
           <Menu shadow="md" width={260} position="bottom-end" withinPortal zIndex={4000}>
             <Menu.Target>
-              <Button variant="default" size="xs" leftSection={<UserCircle2 size={16} />}>
+              <AppButton variant="default" size="xs" leftSection={<UserCircle2 size={16} />}>
                 <Box visibleFrom="xl">{authEmail || 'Account'}</Box>
                 <Box hiddenFrom="xl">Account</Box>
-              </Button>
+              </AppButton>
             </Menu.Target>
             <Menu.Dropdown>
               <Menu.Label>Signed in</Menu.Label>
@@ -138,18 +140,18 @@ export function AppHeader({
             </Menu.Dropdown>
           </Menu>
         ) : (
-          <Button variant="default" size="xs" leftSection={<LogIn size={16} />} onClick={onOpenAuth}>
+          <AppButton variant="default" size="xs" leftSection={<LogIn size={16} />} onClick={onOpenAuth}>
             Sign in
-          </Button>
+          </AppButton>
         )}
       </Group>
 
       <Box hiddenFrom="lg">
         <Menu shadow="md" width={220} position="bottom-end" withinPortal zIndex={4000}>
           <Menu.Target>
-            <ActionIcon className="app-header-mobile-more" variant="light" size="lg">
+            <AppIconButton className="app-header-mobile-more" variant="light" size="lg">
               <MoreHorizontal size={20} />
-            </ActionIcon>
+            </AppIconButton>
           </Menu.Target>
 
           <Menu.Dropdown>

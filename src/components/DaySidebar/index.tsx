@@ -267,7 +267,7 @@ export function DaySidebar({
   const allLocationIds = locations.map((l) => l.id);
   const unassignedLocations = locations.filter((l) => !l.startDayId);
 
-  const gridTemplateCols = `80px 40px repeat(${Math.max(1, layout.totalLanes)}, 1fr)`;
+  const gridTemplateCols = `80px 40px repeat(${Math.max(1, layout.totalLanes)}, minmax(0, 1fr))`;
 
   const existingAccommodations = useMemo(() => {
     const names = new Set<string>();
@@ -371,12 +371,13 @@ export function DaySidebar({
                 )
                 : undefined;
 
-              const style: React.CSSProperties = {
+              const style: React.CSSProperties & { ['--item-order']?: number } = {
                 gridColumn: `${3 + pos.col} / span 1`,
                 gridRow: `${pos.row} / span ${pos.span}`,
                 zIndex: 1,
                 height: '100%',
                 marginBottom: 0,
+                '--item-order': Math.min(currentIndex, 16),
               };
 
               return (
@@ -388,7 +389,7 @@ export function DaySidebar({
                     py={16}
                     onMouseEnter={() => onHoverLocation?.(loc.id)}
                     onMouseLeave={() => onHoverLocation?.(null)}
-                    className={`timeline-location-cell ${hoveredLocationId === loc.id ? 'hovered' : ''} ${selectedLocationId === loc.id ? 'selected' : ''}`}
+                    className={`timeline-location-cell timeline-location-cell--reveal ${hoveredLocationId === loc.id ? 'hovered' : ''} ${selectedLocationId === loc.id ? 'selected' : ''}`}
                   >
                     <SortableItem
                       id={loc.id}

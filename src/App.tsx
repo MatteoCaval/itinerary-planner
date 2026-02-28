@@ -1,19 +1,14 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { ActionIcon, Tooltip, Box, Paper } from '@mantine/core';
+import { Box } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
 import { v4 as uuidv4 } from 'uuid';
-import { ChevronLeft } from 'lucide-react';
-import MapDisplay from './components/MapDisplay';
 import { RouteEditor } from './components/RouteEditor';
 import { DayAssignmentModal } from './components/DayAssignmentModal';
-import { LocationDetailPanel } from './components/LocationDetailPanel';
 import { CloudSyncModal } from './components/CloudSyncModal';
 import { AuthModal } from './components/AuthModal';
 import { HistoryModal } from './components/HistoryModal';
 import { AIPlannerModal } from './components/AIPlannerModal';
-import { SidebarContent } from './components/SidebarContent';
-import { MobileBottomSheet } from './components/MobileBottomSheet';
 import { Location, DaySection } from './types';
 import { ItineraryProvider, useItinerary } from './context/ItineraryContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -25,8 +20,17 @@ import { useImportExport } from './hooks/useImportExport';
 import { AppErrorBoundary } from './components/AppErrorBoundary';
 import { AppHeader } from './components/AppHeader';
 import { trackError, trackEvent } from './services/telemetry';
-import { SECTION_ORDER, DEFAULT_SECTION, DEFAULT_CATEGORY, UNASSIGNED_ZONE_ID, SLOT_PREFIX } from './constants/daySection';
+import { DEFAULT_SECTION, DEFAULT_CATEGORY } from './constants/daySection';
 import { useAppModals } from './hooks/useAppModals';
+import { PlannerPane, PlannerPaneProps } from './features/planner/PlannerPane';
+import { MobilePlannerSheet } from './features/planner/MobilePlannerSheet';
+import { MapPane, MapPaneProps } from './features/map/MapPane';
+import { DesktopInspectorPane, MobileInspectorPanel } from './features/inspector/InspectorPane';
+import { useTripActions } from './features/controllers/useTripActions';
+import { useSelectionFlow } from './features/controllers/useSelectionFlow';
+import { useSubItineraryActions } from './features/controllers/useSubItineraryActions';
+import { TripActionDialogs } from './features/trips/TripActionDialogs';
+import './features/shell/shell.css';
 
 const SAMPLE_DEMO_QUERY_PARAM = 'demo';
 const SAMPLE_DEMO_QUERY_VALUE = 'sample';
@@ -81,6 +85,8 @@ function AppContent() {
 
   const [zoomLevel, setZoomLevel] = useState(1.0);
   const [sidebarView, setSidebarView] = useState<'timeline' | 'calendar' | 'budget'>('timeline');
+  const [tripDialog, setTripDialog] = useState<'none' | 'create' | 'rename' | 'delete' | 'signout'>('none');
+  const [tripNameDraft, setTripNameDraft] = useState('');
   const importFileInputRef = React.useRef<HTMLInputElement | null>(null);
   const sampleDemoLoadedRef = React.useRef(false);
   const reorderShortcutHint = useMemo(() => {
@@ -118,51 +124,10 @@ function AppContent() {
     setPendingAddToDay(null);
   };
 
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!searchQuery.trim()) return;
-    setIsSearching(true);
-    try {
-      const results = await searchPlace(searchQuery);
-      if (results.length > 0) {
-        await handleAddLocationWrapped(parseFloat(results[0].lat), parseFloat(results[0].lon), results[0].display_name);
-        setSearchQuery('');
-        setSuggestions([]);
-        trackEvent('location_search_add', { queryLength: searchQuery.length });
-      }
-    } catch (error) {
-      trackError('location_search_submit_failed', error, { queryLength: searchQuery.length });
-      notifications.show({ color: 'red', title: 'Search failed', message: 'Could not complete place search.' });
-    } finally {
-      setIsSearching(false);
-    }
-  };
-
   const openHistoryModal = () => setShowHistoryModal(true);
   const openAIModal = () => setShowAIModal(true);
   const openCloudModal = () => setShowCloudModal(true);
   const openAuthModal = () => setShowAuthModal(true);
-
-  const handleSignOut = async () => {
-    const shouldSignOut = window.confirm('Sign out from this account? Your local guest data will remain on this device.');
-    if (!shouldSignOut) return;
-
-    const result = await signOutUser();
-    if (!result.success) {
-      notifications.show({
-        color: 'red',
-        title: 'Sign out failed',
-        message: result.error || 'Unable to sign out right now.',
-      });
-      return;
-    }
-
-    notifications.show({
-      color: 'blue',
-      title: 'Signed out',
-      message: 'You are now in guest mode.',
-    });
-  };
 
   const resetUiForTripChange = () => {
     setSelectedDayId(null);
@@ -171,110 +136,44 @@ function AppContent() {
     setSuggestions([]);
     setPendingAddToDay(null);
     setPanelCollapsed(false);
+    setTripDialog('none');
     close();
   };
 
-  const handleSwitchTrip = (tripId: string) => {
-    if (tripId === activeTripId) return;
-    switchTrip(tripId);
-    resetUiForTripChange();
-    notifications.show({ color: 'blue', title: 'Trip switched', message: 'Active trip changed successfully.' });
-  };
+  const {
+    activeTrip,
+    suggestedTripName,
+    executeSignOut,
+    executeSwitchTrip,
+    executeCreateTrip,
+    executeRenameActiveTrip,
+    executeDeleteActiveTrip,
+  } = useTripActions({
+    trips,
+    activeTripId,
+    switchTrip,
+    createTrip,
+    renameTrip,
+    deleteTrip,
+    signOutUser,
+    onResetUiForTripChange: resetUiForTripChange,
+  });
 
-  const handleCreateTrip = () => {
-    const suggestedName = `Trip ${trips.length + 1}`;
-    const requestedName = window.prompt('Name for the new trip:', suggestedName);
-    if (requestedName === null) return;
-    const tripName = requestedName.trim() || suggestedName;
-    createTrip(tripName);
-    resetUiForTripChange();
-    notifications.show({ color: 'green', title: 'Trip created', message: `Now editing "${tripName}".` });
+  const closeTripDialog = () => setTripDialog('none');
+  const openCreateTripDialog = () => {
+    setTripNameDraft(suggestedTripName);
+    setTripDialog('create');
   };
-
-  const handleRenameActiveTrip = () => {
-    const activeTrip = trips.find((trip) => trip.id === activeTripId);
+  const openRenameTripDialog = () => {
     if (!activeTrip) return;
-    const requestedName = window.prompt('Rename trip:', activeTrip.name);
-    if (requestedName === null) return;
-    const tripName = requestedName.trim();
-    if (!tripName) return;
-    renameTrip(activeTrip.id, tripName);
-    notifications.show({ color: 'green', title: 'Trip renamed', message: `Renamed to "${tripName}".` });
+    setTripNameDraft(activeTrip.name);
+    setTripDialog('rename');
   };
-
-  const handleDeleteActiveTrip = () => {
-    const activeTrip = trips.find((trip) => trip.id === activeTripId);
+  const openDeleteTripDialog = () => {
     if (!activeTrip) return;
-    const shouldDelete = window.confirm(`Delete "${activeTrip.name}"? This cannot be undone.`);
-    if (!shouldDelete) return;
-
-    const deleted = deleteTrip(activeTrip.id);
-    if (!deleted) {
-      notifications.show({
-        color: 'yellow',
-        title: 'Trip not deleted',
-        message: 'At least one trip must remain. Create another trip first.',
-      });
-      return;
-    }
-
-    resetUiForTripChange();
-    notifications.show({ color: 'green', title: 'Trip deleted', message: 'Trip removed successfully.' });
+    setTripDialog('delete');
   };
-
-  const handleSelectLocation = (id: string | null) => {
-    setSelectedLocationId(id);
-    if (!id) {
-      setDrillDownParentId(null);
-      return;
-    }
-
-    const topLevel = locations.find(location => location.id === id);
-    if (topLevel) {
-      // Clicking a main destination should focus/select it without entering sub-itinerary mode.
-      setDrillDownParentId(null);
-      return;
-    }
-
-    const parent = locations.find(location => location.subLocations?.some(sub => sub.id === id));
-    if (parent) {
-      setDrillDownParentId(parent.id);
-    }
-  };
-
-  const handleEnterSubItinerary = (parentId: string) => {
-    const parent = locations.find(location => location.id === parentId);
-    const firstSub = [...(parent?.subLocations || [])].sort((a, b) => {
-      const dayA = a.dayOffset ?? Number.MAX_SAFE_INTEGER;
-      const dayB = b.dayOffset ?? Number.MAX_SAFE_INTEGER;
-      if (dayA !== dayB) return dayA - dayB;
-      const slotA = SECTION_ORDER.indexOf(a.startSlot || DEFAULT_SECTION);
-      const slotB = SECTION_ORDER.indexOf(b.startSlot || DEFAULT_SECTION);
-      if (slotA !== slotB) return slotA - slotB;
-      return (a.order || 0) - (b.order || 0);
-    })[0];
-
-    setDrillDownParentId(parentId);
-    setSelectedLocationId(firstSub?.id || parentId);
-  };
-
-  const handleExitSubItinerary = () => {
-    if (activeParent) {
-      setSelectedLocationId(activeParent.id);
-    }
-    setDrillDownParentId(null);
-  };
-
-  const handleScrollToLocation = (id: string | null) => {
-    handleSelectLocation(id);
-    if (id) {
-      close(); // Close sidebar on mobile when selecting a location
-      setTimeout(() => {
-        const element = document.getElementById(`item-${id}`);
-        element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }, 100);
-    }
-  };
+  const openSignOutDialog = () => setTripDialog('signout');
 
   const { handleExport, handleImport, handleExportMarkdown } = useImportExport({
     days,
@@ -361,138 +260,57 @@ function AppContent() {
     isSlotBlocked
   } = useItineraryDrillDown({ locations, days, selectedLocationId, selectedDayId, drillDownParentId });
 
-  // --- Specialized Handlers for Sub-Itinerary ---
-  const handleSubReorder = (activeId: string, overId: string | null, newDayId: string | null, newSlot: DaySection | null) => {
-    if (!activeParent) return;
+  const {
+    handleSelectLocation,
+    handleEnterSubItinerary,
+    handleExitSubItinerary,
+    handleScrollToLocation,
+  } = useSelectionFlow({
+    locations,
+    activeParent,
+    setSelectedLocationId,
+    setDrillDownParentId,
+    onCloseMobilePlanner: close,
+  });
 
-    const newSubLocations = [...(activeParent.subLocations || [])];
-    const activeIdx = newSubLocations.findIndex(s => s.id === activeId);
-    if (activeIdx === -1) return;
+  const {
+    handleSubReorder,
+    handleSubAdd,
+    handleSubRemove,
+    handleSubUpdate,
+    handleNestLocation,
+    handleAddLocationWrapped,
+  } = useSubItineraryActions({
+    activeParent,
+    activeDays,
+    locations,
+    selectedLocationId,
+    pendingAddToDay,
+    setPendingAddToDay,
+    setSelectedLocationId,
+    updateLocation,
+    loadFromData,
+    getExportData,
+    handleAddLocationMain: handleAddLocation,
+  });
 
-    // Calculate new dayOffset
-    let newDayOffset: number | undefined = undefined;
-    if (newDayId && newDayId !== UNASSIGNED_ZONE_ID) {
-      const dayIdx = activeDays.findIndex(d => d.id === newDayId);
-      if (dayIdx !== -1) newDayOffset = dayIdx;
-    }
-
-    // Update the item properties (do NOT create a new object if not needed to keep dnd-kit happy)
-    const originalItem = newSubLocations[activeIdx];
-    const updatedItem = {
-      ...originalItem,
-      dayOffset: newDayOffset,
-      startSlot: newSlot || (newDayOffset !== undefined ? originalItem.startSlot || DEFAULT_SECTION : undefined)
-    };
-
-    // Handle reordering within the array
-    if (overId && overId !== activeId && overId !== UNASSIGNED_ZONE_ID && !overId.startsWith(SLOT_PREFIX)) {
-      newSubLocations.splice(activeIdx, 1);
-      const overIdx = newSubLocations.findIndex(s => s.id === overId);
-      if (overIdx !== -1) {
-        newSubLocations.splice(overIdx, 0, updatedItem);
-      } else {
-        newSubLocations.push(updatedItem);
+  const handleSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!searchQuery.trim()) return;
+    setIsSearching(true);
+    try {
+      const results = await searchPlace(searchQuery);
+      if (results.length > 0) {
+        await handleAddLocationWrapped(parseFloat(results[0].lat), parseFloat(results[0].lon), results[0].display_name);
+        setSearchQuery('');
+        setSuggestions([]);
+        trackEvent('location_search_add', { queryLength: searchQuery.length });
       }
-    } else {
-      newSubLocations[activeIdx] = updatedItem;
-    }
-
-    updateLocation(activeParent.id, {
-      subLocations: newSubLocations.map((s, idx) => ({ ...s, order: idx }))
-    });
-  };
-
-  const handleSubAdd = async (dayId: string, slot?: DaySection) => {
-    if (!activeParent) return;
-    setPendingAddToDay({ dayId, slot });
-  };
-
-  const handleSubRemove = (id: string) => {
-    if (!activeParent) return;
-    updateLocation(activeParent.id, {
-      subLocations: (activeParent.subLocations || []).filter(s => s.id !== id)
-    });
-    if (selectedLocationId === id) setSelectedLocationId(activeParent.id);
-  };
-
-  const handleSubUpdate = (id: string, updates: Partial<Location>) => {
-    if (!activeParent) return;
-    updateLocation(activeParent.id, {
-      subLocations: (activeParent.subLocations || []).map(s => s.id === id ? { ...s, ...updates } : s)
-    });
-  };
-
-  const handleNestLocation = (activeId: string, parentId: string) => {
-    const itemToNest = locations.find(l => l.id === activeId);
-    const parent = locations.find(l => l.id === parentId);
-
-    if (itemToNest && parent && activeId !== parentId) {
-      // 1. Remove from top-level
-      const newLocations = locations.filter(l => l.id !== activeId);
-
-      // 2. Prepare the item for nesting
-      // We'll put it in the first available slot of the parent for now
-      const nestedItem: Location = {
-        ...itemToNest,
-        dayOffset: 0,
-        startDayId: undefined, // Sub-locations use dayOffset
-        startSlot: DEFAULT_SECTION,
-        order: (parent.subLocations || []).length
-      };
-
-      // 3. Add to parent's subLocations
-      const updatedLocations = newLocations.map(l => {
-        if (l.id === parentId) {
-          return {
-            ...l,
-            subLocations: [...(l.subLocations || []), nestedItem]
-          }
-        }
-        return l;
-      });
-
-      // We need a bulk setLocations or multiple updates.
-      // Since context only has updateLocation and removeLocation, 
-      // let's use loadFromData for a atomic swap if possible, 
-      // or just call both.
-
-      // Actually, context has setLocations!
-      const result = loadFromData({ ...getExportData(), locations: updatedLocations });
-      if (!result.success) {
-        notifications.show({ color: 'red', title: 'Update failed', message: result.error || 'Unable to nest location.' });
-      }
-
-      // If we were selecting the nested item, select the parent now
-      if (selectedLocationId === activeId) {
-        setSelectedLocationId(parentId);
-      }
-    }
-  };
-
-  // Override handleAddLocation to handle sub-mode
-  const handleAddLocationOriginal = handleAddLocation;
-  const handleAddLocationWrapped = async (lat: number, lng: number, name?: string, targetDayId?: string, targetSlot?: DaySection) => {
-    if (activeParent) {
-      const resolvedName = name || await reverseGeocode(lat, lng);
-      const dayId = targetDayId || pendingAddToDay?.dayId;
-      const dayIdx = activeDays.findIndex(d => d.id === dayId);
-
-      const newSub: Location = {
-        id: uuidv4(),
-        name: resolvedName.split(',')[0],
-        lat, lng, order: (activeParent.subLocations || []).length,
-        dayOffset: dayIdx === -1 ? 0 : dayIdx,
-        startSlot: targetSlot || pendingAddToDay?.slot || DEFAULT_SECTION,
-        category: DEFAULT_CATEGORY,
-        dayIds: []
-      };
-
-      updateLocation(activeParent.id, {
-        subLocations: [...(activeParent.subLocations || []), newSub]
-      });
-      setPendingAddToDay(null);
-    } else {
-      await handleAddLocationOriginal(lat, lng, name, targetDayId, targetSlot);
+    } catch (error) {
+      trackError('location_search_submit_failed', error, { queryLength: searchQuery.length });
+      notifications.show({ color: 'red', title: 'Search failed', message: 'Could not complete place search.' });
+    } finally {
+      setIsSearching(false);
     }
   };
 
@@ -508,154 +326,149 @@ function AppContent() {
     return null;
   };
 
+  const plannerPaneProps: PlannerPaneProps = {
+    sidebarView, setSidebarView,
+    pendingAddToDay, setPendingAddToDay,
+    searchQuery, setSearchQuery, isSearching, handleSearch,
+    suggestionLoading,
+    reorderShortcutHint,
+    suggestions, handleAddLocationWrapped,
+    zoomLevel, setZoomLevel,
+    activeParent, onSelectLocation: handleSelectLocation, exitSubItinerary: handleExitSubItinerary,
+    activeDays, sidebarLocations,
+    handleSubReorder, handleSubRemove,
+    handleSubUpdate, setEditingRoute, handleSubAdd,
+    selectedDayId, setSelectedDayId,
+    isSlotBlocked, handleNestLocation,
+    openSubItinerary: handleEnterSubItinerary,
+    handleScrollToLocation,
+    setShowHistoryModal, setShowAIModal, setShowCloudModal,
+    handleExportMarkdown, handleExport, handleImport,
+  };
+
+  const mapPaneProps: MapPaneProps = {
+    days,
+    locations: mapLocations,
+    routes,
+    onEditRoute: (from, to) => setEditingRoute({ fromId: from, toId: to }),
+    hoveredLocationId,
+    selectedLocationId,
+    selectedDayId,
+    onHoverLocation: setHoveredLocationId,
+    onSelectLocation: handleScrollToLocation,
+    hideControls: opened,
+    isSubItinerary,
+    isPanelCollapsed: panelCollapsed,
+    allLocations: locations,
+    activeParent,
+  };
+
+  const detailPanelProps = {
+    location: selectedLocation,
+    parentLocation,
+    days,
+    allLocations: locations,
+    routes,
+    onUpdate: updateLocation,
+    onClose: () => handleSelectLocation(null),
+    onSelectLocation: handleSelectLocation,
+    onEditRoute: (from: string, to: string) => setEditingRoute({ fromId: from, toId: to }),
+    selectedDayId,
+    onSelectDay: setSelectedDayId,
+    onEnterSubItinerary: handleEnterSubItinerary,
+    onExitSubItinerary: handleExitSubItinerary,
+    isSubItineraryActive: activeParent?.id === selectedLocation?.id,
+  };
+
   return (
     <>
-      <Box h={60} w="100%" className="app-topbar">
-        <AppHeader
-          opened={opened}
-          toggle={toggle}
-          trips={trips}
-          activeTripId={activeTripId}
-          onSwitchTrip={handleSwitchTrip}
-          onCreateTrip={handleCreateTrip}
-          onRenameTrip={handleRenameActiveTrip}
-          onDeleteTrip={handleDeleteActiveTrip}
-          historyIndex={historyIndex}
-          historyLength={historyLength}
-          navigateHistory={navigateHistory}
-          onOpenHistory={openHistoryModal}
-          onOpenAI={openAIModal}
-          onOpenCloud={openCloudModal}
-          isAuthLoading={isAuthLoading}
-          isAuthenticated={Boolean(user)}
-          authEmail={user?.email || null}
-          onOpenAuth={openAuthModal}
-          onSignOut={handleSignOut}
-          onExportMarkdown={handleExportMarkdown}
-          onImport={handleImport}
-          onExport={handleExport}
-          importFileInputRef={importFileInputRef}
-        />
-      </Box>
-
-      {/* Floating Sidebar Content */}
-      <Box className="floating-sidebar-container" visibleFrom="sm" style={{ display: 'flex', flexDirection: 'column' }}>
-        <AppErrorBoundary title="Sidebar error" message="The sidebar crashed. You can retry or reload the app.">
-          <SidebarContent
-            sidebarView={sidebarView} setSidebarView={setSidebarView}
-            pendingAddToDay={pendingAddToDay} setPendingAddToDay={setPendingAddToDay}
-            searchQuery={searchQuery} setSearchQuery={setSearchQuery} isSearching={isSearching} handleSearch={handleSearch}
-            suggestionLoading={suggestionLoading}
-            reorderShortcutHint={reorderShortcutHint}
-            suggestions={suggestions} handleAddLocationWrapped={handleAddLocationWrapped}
-            zoomLevel={zoomLevel} setZoomLevel={setZoomLevel}
-            activeParent={activeParent} onSelectLocation={handleSelectLocation} exitSubItinerary={handleExitSubItinerary}
-            activeDays={activeDays} sidebarLocations={sidebarLocations}
-            handleSubReorder={handleSubReorder} handleSubRemove={handleSubRemove}
-            handleSubUpdate={handleSubUpdate} setEditingRoute={setEditingRoute} handleSubAdd={handleSubAdd}
-            selectedDayId={selectedDayId} setSelectedDayId={setSelectedDayId}
-            isSlotBlocked={isSlotBlocked} handleNestLocation={handleNestLocation}
-            openSubItinerary={handleEnterSubItinerary}
-            handleScrollToLocation={handleScrollToLocation}
-            setShowHistoryModal={setShowHistoryModal} setShowAIModal={setShowAIModal} setShowCloudModal={setShowCloudModal}
-            handleExportMarkdown={handleExportMarkdown} handleExport={handleExport} handleImport={handleImport}
+      <Box className="app-root-shell">
+        <Box h={60} w="100%" className="app-topbar">
+          <AppHeader
+            opened={opened}
+            toggle={toggle}
+            trips={trips}
+            activeTripId={activeTripId}
+            onSwitchTrip={executeSwitchTrip}
+            onCreateTrip={openCreateTripDialog}
+            onRenameTrip={openRenameTripDialog}
+            onDeleteTrip={openDeleteTripDialog}
+            historyIndex={historyIndex}
+            historyLength={historyLength}
+            navigateHistory={navigateHistory}
+            onOpenHistory={openHistoryModal}
+            onOpenAI={openAIModal}
+            onOpenCloud={openCloudModal}
+            isAuthLoading={isAuthLoading}
+            isAuthenticated={Boolean(user)}
+            authEmail={user?.email || null}
+            onOpenAuth={openAuthModal}
+            onSignOut={openSignOutDialog}
+            onExportMarkdown={handleExportMarkdown}
+            onImport={handleImport}
+            onExport={handleExport}
+            importFileInputRef={importFileInputRef}
           />
-        </AppErrorBoundary>
-      </Box>
+        </Box>
 
-      <Box className="app-workspace">
-        <AppErrorBoundary title="Map rendering error" message="The map view crashed. You can retry or reload the app.">
-          <MapDisplay
-            days={days} locations={mapLocations} routes={routes}
-            onEditRoute={(from, to) => setEditingRoute({ fromId: from, toId: to })}
-            hoveredLocationId={hoveredLocationId}
-            selectedLocationId={selectedLocationId}
-            selectedDayId={selectedDayId}
-            onHoverLocation={setHoveredLocationId}
-            onSelectLocation={handleScrollToLocation}
-            hideControls={opened}
-            isSubItinerary={isSubItinerary}
-            isPanelCollapsed={panelCollapsed}
-            allLocations={locations}
-            activeParent={activeParent}
-          />
-        </AppErrorBoundary>
+        <Box className="app-main-layout">
+          <Box className="app-pane app-pane-left" visibleFrom="sm">
+            <PlannerPane {...plannerPaneProps} />
+          </Box>
 
-        <MobileBottomSheet opened={opened}>
-          <AppErrorBoundary title="Sidebar error" message="The sidebar crashed. You can retry or reload the app.">
-            <SidebarContent
-              sidebarView={sidebarView} setSidebarView={setSidebarView}
-              pendingAddToDay={pendingAddToDay} setPendingAddToDay={setPendingAddToDay}
-              searchQuery={searchQuery} setSearchQuery={setSearchQuery} isSearching={isSearching} handleSearch={handleSearch}
-              suggestionLoading={suggestionLoading}
-              reorderShortcutHint={reorderShortcutHint}
-              suggestions={suggestions} handleAddLocationWrapped={handleAddLocationWrapped}
-              zoomLevel={zoomLevel} setZoomLevel={setZoomLevel}
-              activeParent={activeParent} onSelectLocation={handleSelectLocation} exitSubItinerary={handleExitSubItinerary}
-              activeDays={activeDays} sidebarLocations={sidebarLocations}
-              handleSubReorder={handleSubReorder} handleSubRemove={handleSubRemove}
-              handleSubUpdate={handleSubUpdate} setEditingRoute={setEditingRoute} handleSubAdd={handleSubAdd}
-              selectedDayId={selectedDayId} setSelectedDayId={setSelectedDayId}
-              isSlotBlocked={isSlotBlocked} handleNestLocation={handleNestLocation}
-              openSubItinerary={handleEnterSubItinerary}
-              handleScrollToLocation={handleScrollToLocation}
-              setShowHistoryModal={setShowHistoryModal} setShowAIModal={setShowAIModal} setShowCloudModal={setShowCloudModal}
-              handleExportMarkdown={handleExportMarkdown} handleExport={handleExport} handleImport={handleImport}
+          <Box className="app-pane app-pane-center">
+            <MapPane {...mapPaneProps} />
+            <DesktopInspectorPane
+              panelCollapsed={panelCollapsed}
+              onExpand={() => setPanelCollapsed(false)}
+              onCollapse={() => setPanelCollapsed(true)}
+              detailPanelProps={detailPanelProps}
             />
-          </AppErrorBoundary>
-        </MobileBottomSheet>
+          </Box>
+        </Box>
+      </Box>
 
-        {selectedLocation && (
-          <>
-            <Paper
-              shadow="xl"
-              className="location-detail-panel-root"
-              radius="lg"
-              style={{
-                transform: panelCollapsed ? 'translateX(120%)' : 'translateX(0)',
-                visibility: panelCollapsed ? 'hidden' : 'visible',
-              }}
-            >
-              <AppErrorBoundary title="Detail panel error" message="The detail panel crashed. You can retry or reload the app.">
-                <LocationDetailPanel
-                  location={selectedLocation}
-                  parentLocation={parentLocation}
-                  days={days}
-                  allLocations={locations}
-                  routes={routes}
-                  onUpdate={updateLocation}
-                  onClose={() => handleSelectLocation(null)}
-                  onSelectLocation={handleSelectLocation}
-                  onEditRoute={(from, to) => setEditingRoute({ fromId: from, toId: to })}
-                  selectedDayId={selectedDayId}
-                  onSelectDay={setSelectedDayId}
-                  onCollapse={() => setPanelCollapsed(true)}
-                  onEnterSubItinerary={handleEnterSubItinerary}
-                  onExitSubItinerary={handleExitSubItinerary}
-                  isSubItineraryActive={activeParent?.id === selectedLocation.id}
-                />
-              </AppErrorBoundary>
-            </Paper>
+      <MobilePlannerSheet opened={opened} {...plannerPaneProps} />
 
-            {panelCollapsed && (
-              <Box className="location-detail-expand-wrap">
-                <Tooltip label="Expand Details" position="left">
-                  <ActionIcon
-                    className="location-detail-expand-handle"
-                    variant="filled"
-                    color="brand"
-                    size="xl"
-                    radius="md"
-                    onClick={() => setPanelCollapsed(false)}
-                  >
-                    <ChevronLeft size={20} />
-                  </ActionIcon>
-                </Tooltip>
-              </Box>
-            )}
-          </>
-        )}
-      </Box> {/* This closing Box corresponds to the Map container Box. */}
+      <MobileInspectorPanel
+        detailPanelProps={detailPanelProps}
+        onDismiss={() => handleSelectLocation(null)}
+      />
+
+      <TripActionDialogs
+        createOpened={tripDialog === 'create'}
+        renameOpened={tripDialog === 'rename'}
+        deleteOpened={tripDialog === 'delete'}
+        signOutOpened={tripDialog === 'signout'}
+        activeTripName={activeTrip?.name || 'this trip'}
+        nameDraft={tripNameDraft}
+        onNameDraftChange={setTripNameDraft}
+        onCloseCreate={closeTripDialog}
+        onCloseRename={closeTripDialog}
+        onCloseDelete={closeTripDialog}
+        onCloseSignOut={closeTripDialog}
+        onConfirmCreate={() => {
+          if (executeCreateTrip(tripNameDraft)) {
+            closeTripDialog();
+          }
+        }}
+        onConfirmRename={() => {
+          if (executeRenameActiveTrip(tripNameDraft)) {
+            closeTripDialog();
+          }
+        }}
+        onConfirmDelete={() => {
+          if (executeDeleteActiveTrip()) {
+            closeTripDialog();
+          }
+        }}
+        onConfirmSignOut={async () => {
+          const signedOut = await executeSignOut();
+          if (signedOut) {
+            closeTripDialog();
+          }
+        }}
+      />
 
       <AppErrorBoundary title="Cloud sync error" message="Cloud sync crashed. You can retry or reload the app.">
         <CloudSyncModal show={showCloudModal} onClose={() => setShowCloudModal(false)} getData={getExportData} onLoadData={loadFromData} />

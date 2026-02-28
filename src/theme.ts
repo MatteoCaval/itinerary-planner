@@ -32,9 +32,9 @@ export const theme = createTheme({
   },
   defaultRadius: 'md',
   focusRing: 'auto',
-  fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+  fontFamily: '"DM Sans", "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif',
   headings: {
-    fontFamily: '"Outfit", "Space Grotesk", Inter, sans-serif',
+    fontFamily: '"Manrope", "DM Sans", sans-serif',
     fontWeight: '700',
     sizes: {
       h1: { fontSize: rem(36), lineHeight: '1.2' },

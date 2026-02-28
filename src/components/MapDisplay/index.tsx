@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useCallback, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents, ZoomControl } from 'react-leaflet';
-import { Paper, Group, Checkbox, Select, Button, Text, Box, Badge } from '@mantine/core';
+import { Paper, Group, Checkbox, Select, Button, Text, Box, Badge, Stack } from '@mantine/core';
 import { Location, Route, TRANSPORT_COLORS, TRANSPORT_LABELS, Day, TransportType } from '../../types';
 import { getSectionIndex } from '../../constants/daySection';
 import L from 'leaflet';
@@ -66,9 +66,12 @@ function SelectedLocationHandler({ selectedId, locations, isPanelCollapsed }: { 
         let offset = 0;
         if (window.innerWidth > 768) {
           const mapRect = map.getContainer().getBoundingClientRect();
-          const leftPanel = document.querySelector('.floating-sidebar-container') as HTMLElement | null;
+          const leftPanel = document.querySelector('.app-pane-left') as HTMLElement | null;
           const rightPanel = !isPanelCollapsed
-            ? document.querySelector('.location-detail-panel-root') as HTMLElement | null
+            ? (
+              document.querySelector('.location-detail-panel-root') ||
+              document.querySelector('.location-detail-panel-mobile')
+            ) as HTMLElement | null
             : null;
 
           const leftOcclusion = leftPanel
@@ -319,59 +322,66 @@ export default function MapDisplay({ days, locations, routes, onEditRoute, hover
         <MapClickHandler onSelect={onSelectLocation} isDrillDown={isSubItinerary} />
       </MapContainer>
       {!hideControls && (
-        <Paper
-          className="map-route-controls"
-          role="region"
-          aria-label="Map route controls"
-          radius="md"
-          p="sm"
-          withBorder
-          shadow="sm"
-          style={{
-            right: (selectedLocationId && !isPanelCollapsed) ? 'calc(var(--detail-panel-width, 460px) + 40px)' : 20,
-            transition: 'right 0.4s cubic-bezier(0.25, 0.8, 0.25, 1)',
-            maxWidth: showMapControls ? 'min(360px, calc(100vw - 40px))' : 'fit-content',
-          }}
-        >
-          <Group gap="xs" wrap="nowrap">
+        <Box className={`map-controls-anchor ${selectedLocationId && !isPanelCollapsed ? 'map-controls-anchor--with-inspector' : ''}`}>
+          {!showMapControls ? (
             <Button
-              variant={showMapControls ? 'light' : 'default'}
-              size="compact-xs"
+              className="map-controls-trigger"
+              variant="default"
+              size="compact-sm"
               color="neutral.7"
-              onClick={() => setShowMapControls(v => !v)}
+              onClick={() => setShowMapControls(true)}
             >
-              {showMapControls ? 'Hide map options' : 'Map options'}
+              Map options
             </Button>
-            {showMapControls && (
-              <Button
-                variant="subtle"
-                size="compact-xs"
-                color="neutral.6"
-                onClick={() => setShowRouteLegend(v => !v)}
-              >
-                {showRouteLegend ? 'Hide legend' : 'Legend'}
-              </Button>
-            )}
-          </Group>
+          ) : (
+            <Paper
+              className="map-controls-panel"
+              role="region"
+              aria-label="Map route controls"
+              radius="md"
+              p="sm"
+              withBorder
+              shadow="sm"
+            >
+              <Group gap="xs" wrap="nowrap" justify="space-between">
+                <Button
+                  variant="light"
+                  size="compact-xs"
+                  color="neutral.7"
+                  onClick={() => setShowMapControls(false)}
+                >
+                  Hide map options
+                </Button>
+                <Button
+                  variant="subtle"
+                  size="compact-xs"
+                  color="neutral.6"
+                  onClick={() => setShowRouteLegend(v => !v)}
+                >
+                  {showRouteLegend ? 'Hide legend' : 'Legend'}
+                </Button>
+              </Group>
 
-          {showMapControls && (
-            <Group gap="sm" wrap="wrap" mt="xs">
-              <Checkbox
-                size="xs"
-                label="Route arrows"
-                checked={showRouteArrows}
-                onChange={event => setShowRouteArrows(event.currentTarget.checked)}
-                color="brand"
-              />
-              <Checkbox
-                size="xs"
-                label="Marker grouping"
-                checked={enableMapGrouping}
-                onChange={event => setEnableMapGrouping(event.currentTarget.checked)}
-                color="brand"
-              />
+              <Stack gap={6} mt="xs">
+                <Checkbox
+                  size="xs"
+                  label="Route arrows"
+                  checked={showRouteArrows}
+                  onChange={event => setShowRouteArrows(event.currentTarget.checked)}
+                  color="brand"
+                />
+                <Checkbox
+                  size="xs"
+                  label="Marker grouping"
+                  checked={enableMapGrouping}
+                  onChange={event => setEnableMapGrouping(event.currentTarget.checked)}
+                  color="brand"
+                />
+              </Stack>
+
               <Select
                 size="xs"
+                mt="xs"
                 data={[
                   { value: 'local', label: 'Local Labels' },
                   { value: 'english', label: 'English Labels' }
@@ -379,46 +389,45 @@ export default function MapDisplay({ days, locations, routes, onEditRoute, hover
                 value={basemapMode}
                 onChange={val => setBasemapMode((val as BasemapMode) || 'local')}
                 allowDeselect={false}
-                w={140}
               />
-            </Group>
-          )}
 
-          {showMapControls && focusedDayIdx !== -1 && (
-            <Text size="xs" fw={700} c="brand.8" mt="xs">
-              Day {focusedDayIdx + 1} selected
-            </Text>
-          )}
-
-          {showMapControls && showRouteLegend && (
-            <Group gap="xs" mt="xs" wrap="wrap">
-              {transportLegendItems.length === 0 ? (
-                <Text size="xs" c="dimmed">No route segments yet</Text>
-              ) : (
-                transportLegendItems.map(type => (
-                  <Badge
-                    key={type}
-                    variant="outline"
-                    color="neutral.5"
-                    size="sm"
-                    styles={{
-                      root: { paddingLeft: 4, paddingRight: 8, borderColor: 'var(--mantine-color-neutral-3)', backgroundColor: 'var(--mantine-color-neutral-0)' }
-                    }}
-                    leftSection={
-                      <Box
-                        w={8}
-                        h={8}
-                        style={{ borderRadius: '50%', backgroundColor: TRANSPORT_COLORS[type], marginLeft: 4 }}
-                      />
-                    }
-                  >
-                    {TRANSPORT_LABELS[type].replace(/^[^\s]+\s/, '')}
-                  </Badge>
-                ))
+              {focusedDayIdx !== -1 && (
+                <Text size="xs" fw={700} c="brand.8" mt="xs">
+                  Day {focusedDayIdx + 1} selected
+                </Text>
               )}
-            </Group>
+
+              {showRouteLegend && (
+                <Group gap="xs" mt="xs" wrap="wrap">
+                  {transportLegendItems.length === 0 ? (
+                    <Text size="xs" c="dimmed">No route segments yet</Text>
+                  ) : (
+                    transportLegendItems.map(type => (
+                      <Badge
+                        key={type}
+                        variant="outline"
+                        color="neutral.5"
+                        size="sm"
+                        styles={{
+                          root: { paddingLeft: 4, paddingRight: 8, borderColor: 'var(--mantine-color-neutral-3)', backgroundColor: 'var(--mantine-color-neutral-0)' }
+                        }}
+                        leftSection={
+                          <Box
+                            w={8}
+                            h={8}
+                            style={{ borderRadius: '50%', backgroundColor: TRANSPORT_COLORS[type], marginLeft: 4 }}
+                          />
+                        }
+                      >
+                        {TRANSPORT_LABELS[type].replace(/^[^\s]+\s/, '')}
+                      </Badge>
+                    ))
+                  )}
+                </Group>
+              )}
+            </Paper>
           )}
-        </Paper>
+        </Box>
       )}
     </div>
   );
