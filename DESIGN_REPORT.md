@@ -213,11 +213,11 @@ Is it edit history? Previous AI generations? Version history? Past trips? Clarif
 | 🔴 High | Zoom slider — replace with density toggle, move to timeline body | Low | ✅ Done |
 | 🔴 High | Inspector section headers — all-caps → readable hierarchy | Low | ✅ Done |
 | 🔴 High | Remove floating accessibility shortcut hint | Trivial | ✅ Done |
-| 🟡 Medium | Inspector nav icons — add labels or persistent hints | Low | |
-| 🟡 Medium | Day header partial border-radius fix | Low | |
-| 🟡 Medium | Coordinates deprioritized in inspector | Low | |
-| 🟡 Medium | Sidebar footer buttons — label or remove | Trivial | |
-| 🟡 Medium | Sub-destination indicator on timeline cards | Low | |
+| 🟡 Medium | Inspector nav icons — add labels or persistent hints | Low | ✅ Done |
+| 🟡 Medium | Day header — left accent bar, no border-width jump on select | Low | ✅ Done |
+| 🟡 Medium | Coordinates deprioritized in inspector | Low | ✅ Done |
+| 🟡 Medium | Sidebar footer buttons — remove unlabeled export icons | Trivial | ✅ Done |
+| 🟡 Medium | Sub-destination count badge on timeline cards | Low | ✅ Done |
 | 🟢 Low | Left pane gradient — commit or drop | Trivial | |
 | 🟢 Low | Border radius consolidation (10 values → 5) | Medium | |
 | 🟢 Low | Inspector image gradient overlay fix | Low | |

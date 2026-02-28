@@ -1,6 +1,6 @@
 import React from 'react';
-import { Stack, Box, Paper, Group, Button, TextInput, ActionIcon, Tooltip, ScrollArea, Text, Modal, Skeleton } from '@mantine/core';
-import { List as ListIcon, Calendar as CalendarIcon, Wallet, Search, Trash2, FileText, Download, Upload, History, Sparkles, Cloud, Compass, Plus } from 'lucide-react';
+import { Stack, Box, Paper, Group, Button, TextInput, ActionIcon, ScrollArea, Text, Modal, Skeleton } from '@mantine/core';
+import { List as ListIcon, Calendar as CalendarIcon, Wallet, Search, Trash2, History, Sparkles, Cloud, Compass, Plus } from 'lucide-react';
 import { DateRangePicker } from './DateRangePicker';
 import { DaySidebar } from './DaySidebar';
 import { CalendarView } from './CalendarView';
@@ -21,7 +21,6 @@ interface SidebarContentProps {
   setSearchQuery: (val: string) => void;
   isSearching: boolean;
   suggestionLoading: boolean;
-  reorderShortcutHint: string;
   handleSearch: (e: React.FormEvent) => void;
   suggestions: PlaceSearchResult[];
   handleAddLocationWrapped: (lat: number, lng: number, name?: string) => Promise<void>;
@@ -46,15 +45,15 @@ interface SidebarContentProps {
   setShowHistoryModal: (val: boolean) => void;
   setShowAIModal: (val: boolean) => void;
   setShowCloudModal: (val: boolean) => void;
-  handleExportMarkdown: () => void;
-  handleExport: () => void;
-  handleImport: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  handleExportMarkdown?: () => void;
+  handleExport?: () => void;
+  handleImport?: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
 export function SidebarContent({
   sidebarView, setSidebarView,
   pendingAddToDay, setPendingAddToDay,
-  searchQuery, setSearchQuery, isSearching, suggestionLoading, reorderShortcutHint, handleSearch,
+  searchQuery, setSearchQuery, isSearching, suggestionLoading, handleSearch,
   suggestions, handleAddLocationWrapped,
   zoomLevel, setZoomLevel,
   activeParent, onSelectLocation, exitSubItinerary,
@@ -64,7 +63,6 @@ export function SidebarContent({
   openSubItinerary,
   handleScrollToLocation,
   setShowHistoryModal, setShowAIModal, setShowCloudModal,
-  handleExportMarkdown, handleExport, handleImport
 }: SidebarContentProps) {
   const {
     startDate, endDate, days, locations, routes,
@@ -318,29 +316,15 @@ export function SidebarContent({
           </Paper>
         )}
         <Group justify="space-between" mb="xs">
-          <Text size="xs" fw={700} tt="uppercase" c="dimmed">{locations.length} Stops</Text>
+          <Text size="xs" fw={500} c="dimmed">{locations.length} {locations.length === 1 ? 'stop' : 'stops'}</Text>
           <Button variant="subtle" color="red" size="xs" leftSection={<Trash2 size={14} />} onClick={() => setConfirmClearOpened(true)}>
-            Clear
+            Clear all
           </Button>
         </Group>
         <Group gap="xs">
           <Button variant="light" size="xs" flex={1} leftSection={<History size={14} />} onClick={() => setShowHistoryModal(true)}>{ACTION_LABELS.history}</Button>
           <Button variant="light" color="blue" size="xs" flex={1} leftSection={<Sparkles size={14} />} onClick={() => setShowAIModal(true)}>{ACTION_LABELS.aiPlanner}</Button>
           <Button variant="light" size="xs" flex={1} leftSection={<Cloud size={14} />} onClick={() => setShowCloudModal(true)}>{ACTION_LABELS.cloudSync}</Button>
-        </Group>
-        <Group gap="xs" mt="xs">
-          <Tooltip label={ACTION_LABELS.exportMarkdown}>
-            <ActionIcon variant="default" size="md" onClick={handleExportMarkdown}><FileText size={16} /></ActionIcon>
-          </Tooltip>
-          <Tooltip label={ACTION_LABELS.exportJson}>
-            <ActionIcon variant="default" size="md" onClick={handleExport}><Download size={16} /></ActionIcon>
-          </Tooltip>
-          <Tooltip label={ACTION_LABELS.importJson}>
-            <ActionIcon variant="default" size="md" component="label" style={{ cursor: 'pointer' }}>
-              <Upload size={16} />
-              <input type="file" accept=".json" onChange={handleImport} style={{ display: 'none' }} />
-            </ActionIcon>
-          </Tooltip>
         </Group>
       </Box>
 

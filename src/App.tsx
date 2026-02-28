@@ -89,12 +89,6 @@ function AppContent() {
   const [tripNameDraft, setTripNameDraft] = useState('');
   const importFileInputRef = React.useRef<HTMLInputElement | null>(null);
   const sampleDemoLoadedRef = React.useRef(false);
-  const reorderShortcutHint = useMemo(() => {
-    if (typeof navigator !== 'undefined' && /(Mac|iPhone|iPad|iPod)/i.test(navigator.platform)) {
-      return '⌘ + Shift + ↑/↓';
-    }
-    return 'Alt + Shift + ↑/↓';
-  }, []);
 
   const handleAddLocation = async (lat: number, lng: number, name?: string, targetDayId?: string, targetSlot?: DaySection) => {
     const resolvedName = name || await reverseGeocode(lat, lng);
@@ -331,7 +325,6 @@ function AppContent() {
     pendingAddToDay, setPendingAddToDay,
     searchQuery, setSearchQuery, isSearching, handleSearch,
     suggestionLoading,
-    reorderShortcutHint,
     suggestions, handleAddLocationWrapped,
     zoomLevel, setZoomLevel,
     activeParent, onSelectLocation: handleSelectLocation, exitSubItinerary: handleExitSubItinerary,

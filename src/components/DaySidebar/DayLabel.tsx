@@ -135,10 +135,14 @@ export function DayLabel({
         gridRow: `${startRow} / span 3`,
         zIndex: 2,
         borderTop: '1px solid var(--mantine-color-gray-3)',
-        borderRight: isSelected
-          ? '4px solid var(--mantine-color-blue-6)'
-          : '1px solid var(--mantine-color-gray-3)',
+        borderRight: '1px solid var(--mantine-color-gray-3)',
         borderBottom: '1px solid var(--mantine-color-gray-3)',
+        borderLeft: isSelected
+          ? '3px solid var(--mantine-color-blue-6)'
+          : '3px solid transparent',
+        boxShadow: isSelected
+          ? 'inset 0 0 0 1px rgba(37, 99, 235, 0.15)'
+          : undefined,
         backgroundColor: isSelected
           ? 'var(--mantine-color-blue-0)'
           : isEvenDay
@@ -149,7 +153,7 @@ export function DayLabel({
         justifyContent: 'center',
         textAlign: 'center',
         cursor: onSelect ? 'pointer' : 'default',
-        transition: 'all 0.2s ease',
+        transition: 'background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease',
         position: 'relative',
       }}
     >
