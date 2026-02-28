@@ -97,7 +97,6 @@ export const SortableItem = React.memo(function SortableItem({
   const { label: categoryLabel, color: categoryBadgeColor, Icon: CategoryIcon } = categoryMeta[category];
   const subLocationCount = location.subLocations?.length || 0;
   const isCompact = duration <= 1;
-  const isInteractiveFocus = isOver || isSelected;
 
   const hierarchyClass = isSubLocation
     ? 'sortable-item--sub'
@@ -114,7 +113,7 @@ export const SortableItem = React.memo(function SortableItem({
         shadow={isDragging || isResizing || isOver ? 'md' : 'sm'}
         withBorder
         p={isCompact ? 8 : 'sm'}
-        className={`sortable-item ${isCompact ? 'sortable-item--compact' : ''} ${hierarchyClass} ${categoryClass} ${isDragging ? 'dragging' : ''} ${isResizing ? 'resizing' : ''} ${isOver ? 'nesting-target' : ''}`}
+        className={`sortable-item ${isCompact ? 'sortable-item--compact' : ''} ${hierarchyClass} ${categoryClass} ${isDragging ? 'dragging' : ''} ${isResizing ? 'resizing' : ''} ${isOver ? 'nesting-target' : ''} ${isSelected ? 'selected' : ''}`}
         style={{
           ...style,
           borderColor: isOver ? 'var(--mantine-color-brand-5)' : (isSelected ? 'var(--app-accent)' : catColor),
@@ -124,7 +123,7 @@ export const SortableItem = React.memo(function SortableItem({
           borderLeftColor: catColor,
           outline: isOver ? '2px dashed var(--mantine-color-brand-5)' : undefined,
           outlineOffset: isOver ? -2 : undefined,
-          backgroundColor: isInteractiveFocus ? 'rgba(37, 99, 235, 0.06)' : 'var(--app-surface)',
+          backgroundColor: 'var(--app-surface)',
           overflow: 'hidden',
         }}
         onClick={() => onSelect?.(id)}

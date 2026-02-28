@@ -1,5 +1,5 @@
 import React from 'react';
-import { Group, Text, Box, Menu } from '@mantine/core';
+import { Group, Text, Box, Menu, Button } from '@mantine/core';
 import { Burger } from '@mantine/core';
 import { Map as MapIcon, Download, Upload, Cloud, FileText, MoreHorizontal, History, Undo, Redo, Sparkles, FolderKanban, Plus, Pencil, Trash2, Check, LogIn, LogOut, UserCircle2, ChevronDown } from 'lucide-react';
 import { ACTION_LABELS } from '../constants/actionLabels';
@@ -109,12 +109,12 @@ export function AppHeader({
           <Redo size={18} />
         </AppIconButton>
         <AppButton variant="default" size="xs" leftSection={<History size={16} />} onClick={onOpenHistory}>{ACTION_LABELS.history}</AppButton>
-        <AppButton variant="filled" color="brand" size="xs" leftSection={<Sparkles size={16} />} onClick={onOpenAI}>{ACTION_LABELS.aiPlanner}</AppButton>
-        <Menu shadow="md" width={220} position="bottom-end" withinPortal zIndex={4000}>
+        <AppButton variant="default" size="xs" leftSection={<Sparkles size={16} />} onClick={onOpenAI}>{ACTION_LABELS.aiPlanner}</AppButton>
+        <Menu shadow="md" width={220} position="bottom-start" withinPortal zIndex={4000}>
           <Menu.Target>
-            <AppButton variant="default" size="xs" leftSection={<Download size={16} />} rightSection={<ChevronDown size={12} />}>
+            <Button className="ui-app-button" variant="default" size="xs" leftSection={<Download size={16} />} rightSection={<ChevronDown size={12} />}>
               Export / Import
-            </AppButton>
+            </Button>
           </Menu.Target>
           <Menu.Dropdown>
             <Menu.Label>Export</Menu.Label>
