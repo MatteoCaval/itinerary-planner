@@ -114,8 +114,8 @@ export function SubDestinationsPanel({
 
   return (
     <Box mb="xl">
-      <Text size="xs" fw={700} tt="uppercase" c="dimmed" mb={4}>
-        Sub-Destinations
+      <Text size="sm" fw={600} c="var(--app-ink)" mb={6} style={{ paddingLeft: 10, borderLeft: '3px solid var(--mantine-color-brand-4)' }}>
+        Sub-destinations
       </Text>
       <Box mb="sm" style={{ position: 'relative' }}>
         <TextInput
@@ -373,8 +373,8 @@ export function SubDestinationsPanel({
             rendered.push(
               <Box key="day-group-unassigned" mt="md">
                 <Group justify="space-between" mb={4} px={4}>
-                  <Text size="xs" fw={700} c="gray.7">
-                    Unassigned
+                  <Text size="xs" fw={600} c="gray.6">
+                    Unplaced
                   </Text>
                 </Group>
                 <Divider mb="xs" color="gray.2" />

@@ -326,7 +326,7 @@ export function LocationDetailPanel({
             <Group align="start" gap="md">
               <Calendar size={18} className="text-primary mt-1" style={{ color: 'var(--mantine-color-brand-6)' }} />
               <Box>
-                <Text size="xs" fw={700} tt="uppercase" c="dimmed" style={{ letterSpacing: '0.05em' }}>Schedule Recap</Text>
+                <Text size="xs" fw={600} c="dimmed">Schedule recap</Text>
                 {typeof schedule === 'string' ? (
                   <Text size="sm" mt={2} fw={500}>{schedule}</Text>
                 ) : (
@@ -351,7 +351,7 @@ export function LocationDetailPanel({
             {(arrivalRoute || departureRoute) && (
               <>
                 <Divider my="sm" />
-                <Text size="xs" fw={700} tt="uppercase" c="dimmed" mb="xs">Travel Connections</Text>
+                <Text size="xs" fw={600} c="dimmed" mb="xs">Travel connections</Text>
                 {arrivalRoute && prevLoc && (
                   <Group gap="xs" mb="xs">
                     <ArrowLeft size={14} style={{ color: 'var(--mantine-color-blue-5)' }} />
@@ -382,7 +382,7 @@ export function LocationDetailPanel({
           <Box mb="xl">
             <Group grow gap="md">
               <Box>
-                <Text size="xs" fw={700} tt="uppercase" c="dimmed" mb={4}>Category</Text>
+                <Text size="xs" fw={600} c="dimmed" mb={4}>Category</Text>
                 <Group gap={4}>
                   {(['sightseeing', 'dining', 'hotel', 'transit', 'other'] as const).map(cat => (
                     <Tooltip key={cat} label={cat.charAt(0).toUpperCase() + cat.slice(1)}>
@@ -404,7 +404,7 @@ export function LocationDetailPanel({
                 </Group>
               </Box>
               <Box>
-                <Text size="xs" fw={700} tt="uppercase" c="dimmed" mb={4}>Cost</Text>
+                <Text size="xs" fw={600} c="dimmed" mb={4}>Cost</Text>
                 <NumberInput
                   size="xs"
                   placeholder="0.00"
@@ -416,7 +416,7 @@ export function LocationDetailPanel({
                 />
               </Box>
               <Box>
-                <Text size="xs" fw={700} tt="uppercase" c="dimmed" mb={4}>Target Time</Text>
+                <Text size="xs" fw={600} c="dimmed" mb={4}>Target time</Text>
                 <TextInput
                   size="xs"
                   placeholder="09:30"
@@ -426,7 +426,7 @@ export function LocationDetailPanel({
                 />
               </Box>
               <Box>
-                <Text size="xs" fw={700} tt="uppercase" c="dimmed" mb={4}>Duration (Slots)</Text>
+                <Text size="xs" fw={600} c="dimmed" mb={4}>Duration (slots)</Text>
                 <NumberInput
                   size="xs"
                   value={location.duration || 1}
@@ -448,7 +448,7 @@ export function LocationDetailPanel({
           </Box>
 
           <Box mb="xl">
-            <Text size="xs" fw={700} tt="uppercase" c="dimmed" mb={4}>Description & Notes</Text>
+            <Text size="sm" fw={600} c="var(--app-ink)" mb={6} style={{ paddingLeft: 10, borderLeft: '3px solid var(--mantine-color-brand-4)' }}>Description & notes</Text>
             <Textarea
               autosize
               minRows={4}
@@ -461,10 +461,7 @@ export function LocationDetailPanel({
 
           {accommodationGroups.length > 0 && (
             <Box mb="xl">
-              <Group gap={6} mb="xs">
-                <Bed size={14} />
-                <Text size="xs" fw={700} tt="uppercase" c="dimmed">Stay Overview</Text>
-              </Group>
+              <Text size="sm" fw={600} c="var(--app-ink)" mb="xs" style={{ paddingLeft: 10, borderLeft: '3px solid var(--mantine-color-brand-4)' }}>Stay overview</Text>
               <Stack gap="sm">
                 {accommodationGroups.map((group, i) => (
                   <Paper key={i} p="sm" withBorder bg={group.name === 'No accommodation set' ? 'neutral.0' : 'brand.0'} radius="md">
