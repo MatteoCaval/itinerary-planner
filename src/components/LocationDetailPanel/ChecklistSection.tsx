@@ -40,7 +40,7 @@ export const ChecklistSection = React.memo(function ChecklistSection({
       <Group justify="space-between" mb="xs">
         <Group gap={6}>
           <CheckSquare size={14} />
-          <Text size="xs" fw={700} tt="uppercase" c="dimmed">
+          <Text size="sm" fw={600} c="var(--app-ink)">
             Checklist
           </Text>
         </Group>

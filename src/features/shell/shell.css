@@ -372,7 +372,9 @@ body {
 }
 
 .unassigned-panel {
-  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%) !important;
+  background: linear-gradient(180deg, #f7fafd 0%, #f0f6fc 100%) !important;
+  border-top: 1px solid var(--app-border) !important;
+  box-shadow: 0 -4px 12px rgba(15, 25, 40, 0.04);
 }
 
 .map-controls-anchor {

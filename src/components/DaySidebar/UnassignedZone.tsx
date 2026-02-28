@@ -1,5 +1,6 @@
-import { Box, Group, Text } from '@mantine/core';
+import { Box, Group, Text, Stack } from '@mantine/core';
 import { useDroppable } from '@dnd-kit/core';
+import { MapPin } from 'lucide-react';
 import { Location } from '../../types';
 import { SortableItem } from '../SortableItem';
 import { UNASSIGNED_ZONE_ID } from '../../constants/daySection';
@@ -28,11 +29,12 @@ export function UnassignedZone({
     <Box
       ref={setNodeRef}
       style={{
-        minHeight: 100,
-        backgroundColor: isOver ? 'var(--mantine-color-blue-0)' : 'transparent',
-        transition: 'background-color 0.2s ease',
-        borderRadius: '8px',
-        border: '2px dashed var(--mantine-color-gray-3)',
+        minHeight: 80,
+        backgroundColor: isOver ? 'var(--mantine-color-brand-0)' : 'transparent',
+        borderColor: isOver ? 'var(--mantine-color-brand-4)' : 'var(--app-border)',
+        transition: 'background-color 0.2s ease, border-color 0.2s ease',
+        borderRadius: '10px',
+        border: '1.5px dashed var(--app-border)',
       }}
     >
       <Group gap="xs" p="xs" w="100%" wrap="wrap">
@@ -53,9 +55,12 @@ export function UnassignedZone({
           </Box>
         ))}
         {locations.length === 0 && (
-          <Text c="dimmed" size="xs" w="100%" ta="center">
-            Drop places here to unassign them
-          </Text>
+          <Stack align="center" gap={6} w="100%" py="sm">
+            <MapPin size={18} style={{ color: 'var(--app-border-strong)', opacity: 0.6 }} />
+            <Text c="dimmed" size="xs" ta="center">
+              Drag stops here to plan them later
+            </Text>
+          </Stack>
         )}
       </Group>
     </Box>

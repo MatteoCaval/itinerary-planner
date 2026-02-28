@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useRef, useEffect } from 'react';
-import { ActionIcon, Text, Group, Box, Paper, Tooltip, Collapse } from '@mantine/core';
-import { Plus, ChevronDown, ChevronUp } from 'lucide-react';
+import { ActionIcon, Text, Group, Box, Paper, Tooltip, Collapse, Badge } from '@mantine/core';
+import { Plus, ChevronDown, ChevronUp, MapPin } from 'lucide-react';
 import {
   DndContext,
   closestCenter,
@@ -444,33 +444,36 @@ export function DaySidebar({
         <Paper
           className="unassigned-panel"
           p="md"
-          bg="var(--mantine-color-neutral-0)"
-          style={{ position: 'sticky', bottom: 0, zIndex: 10, borderTop: '1px solid var(--mantine-color-neutral-2)' }}
+          style={{ position: 'sticky', bottom: 0, zIndex: 10, borderTop: '1px solid var(--app-border)' }}
         >
           <Group
             justify="space-between"
             mb={unassignedCollapsed ? 0 : 'xs'}
           >
             <Group
-              gap="xs"
+              gap={6}
               style={{ cursor: 'pointer', userSelect: 'none' }}
               onClick={() => setUnassignedCollapsed(!unassignedCollapsed)}
             >
-              {unassignedCollapsed ? (
-                <ChevronUp size={16} />
-              ) : (
-                <ChevronDown size={16} />
-              )}
-              <Text fw={700}>
-                Unassigned{' '}
-                {unassignedCollapsed && unassignedLocations.length > 0
-                  ? `(${unassignedLocations.length})`
-                  : ''}
+              <MapPin size={14} style={{ color: 'var(--mantine-color-brand-6)', flexShrink: 0 }} />
+              <Text fw={600} size="sm" c="var(--app-ink)">
+                Unplaced
               </Text>
+              {unassignedLocations.length > 0 && (
+                <Badge size="xs" variant="light" color="brand" radius="xl">
+                  {unassignedLocations.length}
+                </Badge>
+              )}
+              {unassignedCollapsed ? (
+                <ChevronDown size={14} style={{ color: 'var(--app-ink-muted)', marginLeft: 2 }} />
+              ) : (
+                <ChevronUp size={14} style={{ color: 'var(--app-ink-muted)', marginLeft: 2 }} />
+              )}
             </Group>
-            <Tooltip label="Add to Unassigned">
+            <Tooltip label="Add unplaced stop">
               <ActionIcon
                 variant="light"
+                color="brand"
                 size="sm"
                 radius="xl"
                 onClick={() => onAddToDay('unassigned')}

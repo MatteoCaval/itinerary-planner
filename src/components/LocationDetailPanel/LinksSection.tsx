@@ -36,8 +36,8 @@ export const LinksSection = React.memo(function LinksSection({
     <Box mb="xl">
       <Group gap={6} mb="xs">
         <LinkIcon size={12} />
-        <Text size="xs" fw={700} tt="uppercase" c="dimmed">
-          Helpful Links
+        <Text size="sm" fw={600} c="var(--app-ink)">
+          Helpful links
         </Text>
       </Group>
 

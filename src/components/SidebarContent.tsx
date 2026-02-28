@@ -1,5 +1,5 @@
 import React from 'react';
-import { Stack, Box, Paper, Group, Button, TextInput, ActionIcon, Slider, Tooltip, ScrollArea, Text, Modal, Skeleton } from '@mantine/core';
+import { Stack, Box, Paper, Group, Button, TextInput, ActionIcon, Tooltip, ScrollArea, Text, Modal, Skeleton } from '@mantine/core';
 import { List as ListIcon, Calendar as CalendarIcon, Wallet, Search, Trash2, FileText, Download, Upload, History, Sparkles, Cloud, Compass, Plus } from 'lucide-react';
 import { DateRangePicker } from './DateRangePicker';
 import { DaySidebar } from './DaySidebar';
@@ -222,26 +222,6 @@ export function SidebarContent({
           )}
         </Box>
 
-        {sidebarView === 'timeline' && (
-          <Stack gap={4} mt="xs">
-            <Group gap="xs" align="center">
-              <Text size="xs" fw={500} c="dimmed">Zoom:</Text>
-              <Slider
-                flex={1}
-                size="sm"
-                min={0.5}
-                max={2.5}
-                step={0.1}
-                value={zoomLevel}
-                onChange={setZoomLevel}
-                label={(val) => `${Math.round(val * 100)}%`}
-                mb={4}
-              />
-              <Text size="xs" c="dimmed" w={35}>{Math.round(zoomLevel * 100)}%</Text>
-            </Group>
-            <Text size="10px" c="dimmed">Accessibility: use {reorderShortcutHint} to reorder selected timeline stops.</Text>
-          </Stack>
-        )}
 
         {!hasDates && (
           <Paper mt="sm" withBorder p="sm" bg="blue.0" radius="md">
@@ -291,6 +271,14 @@ export function SidebarContent({
                 </Group>
               </Paper>
             )}
+            <Group px="md" py={6} justify="space-between" align="center" style={{ borderBottom: '1px solid var(--app-border)', flexShrink: 0, backgroundColor: 'var(--mantine-color-neutral-0)' }}>
+              <Text size="xs" c="dimmed" fw={500}>Row height</Text>
+              <Group gap={4}>
+                <Button size="compact-xs" variant={zoomLevel < 0.8 ? 'light' : 'subtle'} color={zoomLevel < 0.8 ? 'brand' : 'gray'} radius="sm" onClick={() => setZoomLevel(0.6)}>Compact</Button>
+                <Button size="compact-xs" variant={zoomLevel >= 0.8 && zoomLevel <= 1.3 ? 'light' : 'subtle'} color={zoomLevel >= 0.8 && zoomLevel <= 1.3 ? 'brand' : 'gray'} radius="sm" onClick={() => setZoomLevel(1.0)}>Default</Button>
+                <Button size="compact-xs" variant={zoomLevel > 1.3 ? 'light' : 'subtle'} color={zoomLevel > 1.3 ? 'brand' : 'gray'} radius="sm" onClick={() => setZoomLevel(1.8)}>Spacious</Button>
+              </Group>
+            </Group>
             <Box flex={1} style={{ overflow: 'hidden' }}>
               <DaySidebar
                 days={activeDays} locations={sidebarLocations} routes={routes}
