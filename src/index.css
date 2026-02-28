@@ -743,7 +743,7 @@ body,
   text-align: center;
   gap: 2px;
   padding: 16px;
-  background: radial-gradient(circle at top right, rgba(96, 165, 250, 0.3), rgba(30, 41, 59, 0.55));
+  background: linear-gradient(to top, rgba(8, 18, 36, 0.6) 0%, rgba(15, 30, 60, 0.3) 50%, rgba(30, 50, 90, 0.15) 100%);
 }
 
 .location-detail-panel-header {
