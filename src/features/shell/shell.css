@@ -154,10 +154,6 @@ body {
   background: #f1f7ff;
 }
 
-.app-header-actions .mantine-Button-root[data-variant='filled'] {
-  border-color: transparent;
-  box-shadow: 0 10px 16px rgba(31, 99, 210, 0.26);
-}
 
 .app-header-mobile-more {
   border: 1px solid var(--app-border);
