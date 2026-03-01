@@ -2,30 +2,35 @@ import { ActionIcon, Box, Paper, Tooltip } from '@mantine/core';
 import { PanelRightOpen } from 'lucide-react';
 import { AppErrorBoundary } from '../../components/AppErrorBoundary';
 import { LocationDetailPanel, LocationDetailPanelProps } from '../../components/LocationDetailPanel';
+import { InspectorMode } from '../../hooks/useAppModals';
 
 type DetailPanelSharedProps = Omit<LocationDetailPanelProps, 'onCollapse'>;
 
 interface DesktopInspectorPaneProps {
-  panelCollapsed: boolean;
-  onExpand: () => void;
-  onCollapse: () => void;
+  inspectorMode: InspectorMode;
+  onSetMode: (mode: InspectorMode) => void;
   detailPanelProps: DetailPanelSharedProps;
 }
 
 export function DesktopInspectorPane({
-  panelCollapsed,
-  onExpand,
-  onCollapse,
+  inspectorMode,
+  onSetMode,
   detailPanelProps,
 }: DesktopInspectorPaneProps) {
   const hasSelection = Boolean(detailPanelProps.location);
   if (!hasSelection) return null;
 
+  const isCollapsed = inspectorMode === 'collapsed';
+  const modeClass = isCollapsed ? 'is-collapsed' : 'is-expanded';
+
   return (
-    <Box className={`map-inspector-overlay ${panelCollapsed ? 'is-collapsed' : ''}`} visibleFrom="sm">
+    <Box className={`map-inspector-overlay ${modeClass}`} visibleFrom="sm">
       <Paper shadow="xl" className="location-detail-panel-root map-inspector-surface" radius="lg">
         <AppErrorBoundary title="Detail panel error" message="The detail panel crashed. You can retry or reload the app.">
-          <LocationDetailPanel {...detailPanelProps} onCollapse={onCollapse} />
+          <LocationDetailPanel
+            {...detailPanelProps}
+            onCollapse={() => onSetMode('collapsed')}
+          />
         </AppErrorBoundary>
       </Paper>
       <Box className="map-inspector-collapsed">
@@ -36,7 +41,7 @@ export function DesktopInspectorPane({
             color="brand"
             size="xl"
             radius="md"
-            onClick={onExpand}
+            onClick={() => onSetMode('expanded')}
             aria-label="Show details panel"
           >
             <PanelRightOpen size={18} />

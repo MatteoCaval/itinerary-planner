@@ -29,7 +29,8 @@ export interface LocationDetailPanelProps {
 
 export function LocationDetailPanel({
   location, parentLocation, days, allLocations, routes, onUpdate, onClose, onSelectLocation,
-  onEditRoute, selectedDayId, onSelectDay, onCollapse, onEnterSubItinerary, onExitSubItinerary, isSubItineraryActive = false
+  onEditRoute, selectedDayId, onSelectDay, onCollapse,
+  onEnterSubItinerary, onExitSubItinerary, isSubItineraryActive = false
 }: LocationDetailPanelProps) {
   const [imageLoading, setImageLoading] = useState(false);
 
@@ -242,11 +243,13 @@ export function LocationDetailPanel({
         <LoadingOverlay visible={imageLoading && !location.imageUrl} />
         <Box style={{ position: 'absolute', top: 12, right: 12, zIndex: 10 }}>
           <Group gap="xs">
-            <Tooltip label="Collapse Panel">
-              <ActionIcon variant="filled" color="blue" size="lg" radius="xl" onClick={onCollapse} style={{ opacity: 0.9 }}>
-                <ChevronRight size={20} />
-              </ActionIcon>
-            </Tooltip>
+            {onCollapse && (
+              <Tooltip label="Collapse panel">
+                <ActionIcon variant="filled" color="blue" size="lg" radius="xl" onClick={onCollapse} style={{ opacity: 0.9 }}>
+                  <ChevronRight size={20} />
+                </ActionIcon>
+              </Tooltip>
+            )}
             <Tooltip label="Close (Exit Context)">
               <ActionIcon variant="filled" color="gray" size="lg" radius="xl" onClick={onClose} style={{ opacity: 0.9 }}>
                 <X size={20} />

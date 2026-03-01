@@ -293,7 +293,6 @@ export function DaySidebar({
         <Box
           ref={scrollContainerRef}
           className="day-sidebar-grid"
-          bg="white"
           style={{
             flex: 1,
             overflow: 'auto',

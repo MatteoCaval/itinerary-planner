@@ -108,58 +108,70 @@ export function AppHeader({
         <AppIconButton variant="subtle" color="gray" onClick={() => navigateHistory(historyIndex + 1)} disabled={historyIndex >= historyLength - 1}>
           <Redo size={18} />
         </AppIconButton>
-        <AppButton variant="default" size="xs" leftSection={<History size={16} />} onClick={onOpenHistory}>{ACTION_LABELS.history}</AppButton>
-        <AppButton variant="default" size="xs" leftSection={<Sparkles size={16} />} onClick={onOpenAI}>{ACTION_LABELS.aiPlanner}</AppButton>
-        <Menu shadow="md" width={220} position="bottom-start" withinPortal zIndex={4000}>
+        <AppButton variant="default" size="xs" leftSection={<Sparkles size={16} />} onClick={onOpenAI}>
+          {ACTION_LABELS.aiPlanner}
+        </AppButton>
+        <Menu shadow="md" width={260} position="bottom-end" withinPortal zIndex={4000}>
           <Menu.Target>
-            <Button className="ui-app-button" variant="default" size="xs" leftSection={<Download size={16} />} rightSection={<ChevronDown size={12} />}>
-              Export / Import
+            <Button
+              className="ui-app-button app-header-tools-button"
+              variant="default"
+              size="xs"
+              leftSection={<MoreHorizontal size={16} />}
+              rightSection={<ChevronDown size={12} />}
+            >
+              Tools
             </Button>
           </Menu.Target>
           <Menu.Dropdown>
-            <Menu.Label>Export</Menu.Label>
-            <Menu.Item leftSection={<FileText size={14} />} onClick={onExportMarkdown}>{ACTION_LABELS.exportMarkdown}</Menu.Item>
-            <Menu.Item leftSection={<Download size={14} />} onClick={onExport}>{ACTION_LABELS.exportJson}</Menu.Item>
+            <Menu.Label>Workspace</Menu.Label>
+            <Menu.Item leftSection={<History size={14} />} onClick={onOpenHistory}>
+              {ACTION_LABELS.history}
+            </Menu.Item>
+            <Menu.Item leftSection={<Cloud size={14} />} onClick={onOpenCloud}>
+              {ACTION_LABELS.cloudSync}
+            </Menu.Item>
             <Menu.Divider />
-            <Menu.Label>Import</Menu.Label>
-            <Menu.Item leftSection={<Upload size={14} />} onClick={openImportPicker}>{ACTION_LABELS.importJson}</Menu.Item>
+            <Menu.Label>Data</Menu.Label>
+            <Menu.Item leftSection={<FileText size={14} />} onClick={onExportMarkdown}>
+              {ACTION_LABELS.exportMarkdown}
+            </Menu.Item>
+            <Menu.Item leftSection={<Download size={14} />} onClick={onExport}>
+              {ACTION_LABELS.exportJson}
+            </Menu.Item>
+            <Menu.Item leftSection={<Upload size={14} />} onClick={openImportPicker}>
+              {ACTION_LABELS.importJson}
+            </Menu.Item>
+            <Menu.Divider />
+            <Menu.Label>Account</Menu.Label>
+            {!ENABLE_ACCOUNT_AUTH ? (
+              <Menu.Item leftSection={<UserCircle2 size={14} />} disabled>
+                Account (Coming soon)
+              </Menu.Item>
+            ) : isAuthLoading ? (
+              <Menu.Item leftSection={<UserCircle2 size={14} />} disabled>
+                Account...
+              </Menu.Item>
+            ) : isAuthenticated ? (
+              <>
+                <Menu.Item leftSection={<UserCircle2 size={14} />} disabled>
+                  {authEmail || 'Account'}
+                </Menu.Item>
+                <Menu.Item leftSection={<LogOut size={14} />} color="red" onClick={onSignOut}>
+                  Sign out
+                </Menu.Item>
+              </>
+            ) : (
+              <Menu.Item leftSection={<LogIn size={14} />} onClick={onOpenAuth}>
+                Sign in
+              </Menu.Item>
+            )}
           </Menu.Dropdown>
         </Menu>
-        <AppButton variant="default" size="xs" leftSection={<Cloud size={16} />} onClick={onOpenCloud}>{ACTION_LABELS.cloudSync}</AppButton>
-        {!ENABLE_ACCOUNT_AUTH ? (
-          <AppButton variant="default" size="xs" leftSection={<UserCircle2 size={16} />} disabled>
-            Account (Coming soon)
-          </AppButton>
-        ) : isAuthLoading ? (
-          <AppButton variant="default" size="xs" leftSection={<UserCircle2 size={16} />} disabled>
-            Account...
-          </AppButton>
-        ) : isAuthenticated ? (
-          <Menu shadow="md" width={260} position="bottom-end" withinPortal zIndex={4000}>
-            <Menu.Target>
-              <AppButton variant="default" size="xs" leftSection={<UserCircle2 size={16} />}>
-                <Box visibleFrom="xl">{authEmail || 'Account'}</Box>
-                <Box hiddenFrom="xl">Account</Box>
-              </AppButton>
-            </Menu.Target>
-            <Menu.Dropdown>
-              <Menu.Label>Signed in</Menu.Label>
-              <Menu.Item disabled>{authEmail || 'Account'}</Menu.Item>
-              <Menu.Divider />
-              <Menu.Item color="red" leftSection={<LogOut size={16} />} onClick={onSignOut}>
-                Sign out
-              </Menu.Item>
-            </Menu.Dropdown>
-          </Menu>
-        ) : (
-          <AppButton variant="default" size="xs" leftSection={<LogIn size={16} />} onClick={onOpenAuth}>
-            Sign in
-          </AppButton>
-        )}
       </Group>
 
       <Box hiddenFrom="lg">
-        <Menu shadow="md" width={220} position="bottom-end" withinPortal zIndex={4000}>
+        <Menu shadow="md" width={240} position="bottom-end" withinPortal zIndex={4000}>
           <Menu.Target>
             <AppIconButton className="app-header-mobile-more" variant="light" size="lg">
               <MoreHorizontal size={20} />
@@ -168,11 +180,25 @@ export function AppHeader({
 
           <Menu.Dropdown>
             <Menu.Label>Actions</Menu.Label>
-            <Menu.Item leftSection={<History size={16} />} onClick={onOpenHistory}>{ACTION_LABELS.history}</Menu.Item>
-            <Menu.Item leftSection={<Sparkles size={16} />} onClick={onOpenAI} color="blue">{ACTION_LABELS.aiPlanner}</Menu.Item>
-            <Menu.Item leftSection={<Cloud size={16} />} onClick={onOpenCloud}>{ACTION_LABELS.cloudSync}</Menu.Item>
+            <Menu.Item leftSection={<Sparkles size={16} />} onClick={onOpenAI} color="blue">
+              {ACTION_LABELS.aiPlanner}
+            </Menu.Item>
+            <Menu.Item leftSection={<History size={16} />} onClick={onOpenHistory}>
+              {ACTION_LABELS.history}
+            </Menu.Item>
+            <Menu.Item leftSection={<Cloud size={16} />} onClick={onOpenCloud}>
+              {ACTION_LABELS.cloudSync}
+            </Menu.Item>
+            <Menu.Divider />
+            <Menu.Label>Data</Menu.Label>
             <Menu.Item leftSection={<FileText size={16} />} onClick={onExportMarkdown}>
               {ACTION_LABELS.exportMarkdown}
+            </Menu.Item>
+            <Menu.Item leftSection={<Upload size={16} />} onClick={openImportPicker}>
+              {ACTION_LABELS.importJson}
+            </Menu.Item>
+            <Menu.Item leftSection={<Download size={16} />} onClick={onExport}>
+              {ACTION_LABELS.exportJson}
             </Menu.Item>
             <Menu.Divider />
             <Menu.Label>Account</Menu.Label>
@@ -198,14 +224,6 @@ export function AppHeader({
                 Sign in (optional)
               </Menu.Item>
             )}
-            <Menu.Divider />
-            <Menu.Label>Data</Menu.Label>
-            <Menu.Item leftSection={<Upload size={16} />} onClick={openImportPicker}>
-              {ACTION_LABELS.importJson}
-            </Menu.Item>
-            <Menu.Item leftSection={<Download size={16} />} onClick={onExport}>
-              {ACTION_LABELS.exportJson}
-            </Menu.Item>
           </Menu.Dropdown>
         </Menu>
       </Box>

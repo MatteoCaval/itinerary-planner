@@ -43,7 +43,7 @@ export const RouteConnector = React.memo(function RouteConnector({
         pointerEvents: 'none',
         position: 'relative',
         display: 'flex',
-        justifyContent: 'flex-end',
+        justifyContent: 'center',
         alignItems: isHorizontal ? 'center' : 'flex-start',
         height: isHorizontal ? '100%' : 0,
       }}
