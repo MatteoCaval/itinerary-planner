@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Box } from '@mantine/core';
-import { useDisclosure } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
 import { v4 as uuidv4 } from 'uuid';
 import { RouteEditor } from './components/RouteEditor';
@@ -23,13 +22,14 @@ import { trackError, trackEvent } from './services/telemetry';
 import { DEFAULT_SECTION, DEFAULT_CATEGORY } from './constants/daySection';
 import { useAppModals } from './hooks/useAppModals';
 import { PlannerPane, PlannerPaneProps } from './features/planner/PlannerPane';
-import { MobilePlannerSheet } from './features/planner/MobilePlannerSheet';
 import { MapPane, MapPaneProps } from './features/map/MapPane';
-import { DesktopInspectorPane, MobileInspectorPanel } from './features/inspector/InspectorPane';
+import { DesktopInspectorPane } from './features/inspector/InspectorPane';
 import { useTripActions } from './features/controllers/useTripActions';
 import { useSelectionFlow } from './features/controllers/useSelectionFlow';
 import { useSubItineraryActions } from './features/controllers/useSubItineraryActions';
 import { TripActionDialogs } from './features/trips/TripActionDialogs';
+import { MobileBottomSheet } from './components/MobileBottomSheet';
+import { LocationDetailPanel } from './components/LocationDetailPanel';
 import './features/shell/shell.css';
 
 const SAMPLE_DEMO_QUERY_PARAM = 'demo';
@@ -59,14 +59,13 @@ function AppContent() {
   } = useItinerary();
   const { user, isLoading: isAuthLoading, signOutUser } = useAuth();
 
-  const [opened, { toggle, close }] = useDisclosure();
   const {
     showAIModal, setShowAIModal,
     showCloudModal, setShowCloudModal,
     showHistoryModal, setShowHistoryModal,
     editingRoute, setEditingRoute,
     editingDayAssignment, setEditingDayAssignment,
-    panelCollapsed, setPanelCollapsed,
+    inspectorMode, setInspectorMode,
     pendingAddToDay, setPendingAddToDay,
   } = useAppModals();
 
@@ -75,13 +74,58 @@ function AppContent() {
   const [drillDownParentId, setDrillDownParentId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
+  const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
+  const [mobileSheetView, setMobileSheetView] = useState<'planner' | 'details'>('planner');
   // useSidebarResize is cleanly removed since the sidebar is now absolute/floating
   const { suggestions, setSuggestions, loading: suggestionLoading } = usePlaceSearch({ query: searchQuery, minLength: 3, debounceMs: 500 });
+
+  const isMobileViewport = () => typeof window !== 'undefined' && window.innerWidth < 768;
+
+  const handleToggleMobileSheet = () => {
+    if (!isMobileViewport()) return;
+
+    if (!mobileSheetOpen) {
+      setMobileSheetView('planner');
+      setMobileSheetOpen(true);
+      return;
+    }
+
+    if (mobileSheetView === 'details') {
+      setMobileSheetView('planner');
+      return;
+    }
+
+    setMobileSheetOpen(false);
+  };
+
+  const handleShowMobilePlanner = () => {
+    if (!isMobileViewport()) return;
+    setMobileSheetView('planner');
+    setMobileSheetOpen(true);
+  };
+
+  const handleShowMobileDetails = () => {
+    if (!isMobileViewport()) return;
+    setMobileSheetView('details');
+    setMobileSheetOpen(true);
+  };
 
   // Clear selected day when location selection changes
   useEffect(() => {
     setSelectedDayId(null);
   }, [selectedLocationId]);
+
+  useEffect(() => {
+    if (!selectedLocationId) {
+      setInspectorMode('collapsed');
+      if (mobileSheetView === 'details') {
+        setMobileSheetView('planner');
+      }
+      return;
+    }
+
+    setInspectorMode(currentMode => (currentMode === 'collapsed' ? 'expanded' : currentMode));
+  }, [mobileSheetView, selectedLocationId, setInspectorMode]);
 
   const [zoomLevel, setZoomLevel] = useState(1.0);
   const [sidebarView, setSidebarView] = useState<'timeline' | 'calendar' | 'budget'>('timeline');
@@ -129,9 +173,10 @@ function AppContent() {
     setSearchQuery('');
     setSuggestions([]);
     setPendingAddToDay(null);
-    setPanelCollapsed(false);
+    setInspectorMode('collapsed');
     setTripDialog('none');
-    close();
+    setMobileSheetView('planner');
+    setMobileSheetOpen(false);
   };
 
   const {
@@ -264,8 +309,25 @@ function AppContent() {
     activeParent,
     setSelectedLocationId,
     setDrillDownParentId,
-    onCloseMobilePlanner: close,
+    onMobileLocationSelected: handleShowMobileDetails,
   });
+
+  const handleSelectLocationWithMobileSheet = (id: string | null) => {
+    if (!isMobileViewport()) {
+      setInspectorMode(id ? 'expanded' : 'collapsed');
+    }
+
+    handleSelectLocation(id);
+
+    if (id) {
+      handleShowMobileDetails();
+      return;
+    }
+
+    if (isMobileViewport()) {
+      setMobileSheetView('planner');
+    }
+  };
 
   const {
     handleSubReorder,
@@ -327,7 +389,7 @@ function AppContent() {
     suggestionLoading,
     suggestions, handleAddLocationWrapped,
     zoomLevel, setZoomLevel,
-    activeParent, onSelectLocation: handleSelectLocation, exitSubItinerary: handleExitSubItinerary,
+    activeParent, onSelectLocation: handleSelectLocationWithMobileSheet, exitSubItinerary: handleExitSubItinerary,
     activeDays, sidebarLocations,
     handleSubReorder, handleSubRemove,
     handleSubUpdate, setEditingRoute, handleSubAdd,
@@ -349,9 +411,9 @@ function AppContent() {
     selectedDayId,
     onHoverLocation: setHoveredLocationId,
     onSelectLocation: handleScrollToLocation,
-    hideControls: opened,
+    hideControls: mobileSheetOpen && isMobileViewport(),
     isSubItinerary,
-    isPanelCollapsed: panelCollapsed,
+    isPanelCollapsed: inspectorMode === 'collapsed',
     allLocations: locations,
     activeParent,
   };
@@ -363,8 +425,8 @@ function AppContent() {
     allLocations: locations,
     routes,
     onUpdate: updateLocation,
-    onClose: () => handleSelectLocation(null),
-    onSelectLocation: handleSelectLocation,
+    onClose: () => handleSelectLocationWithMobileSheet(null),
+    onSelectLocation: handleSelectLocationWithMobileSheet,
     onEditRoute: (from: string, to: string) => setEditingRoute({ fromId: from, toId: to }),
     selectedDayId,
     onSelectDay: setSelectedDayId,
@@ -373,13 +435,15 @@ function AppContent() {
     isSubItineraryActive: activeParent?.id === selectedLocation?.id,
   };
 
+  const isMobileSheetActive = mobileSheetOpen && isMobileViewport();
+
   return (
     <>
       <Box className="app-root-shell">
         <Box h={60} w="100%" className="app-topbar">
           <AppHeader
-            opened={opened}
-            toggle={toggle}
+            opened={isMobileSheetActive}
+            toggle={handleToggleMobileSheet}
             trips={trips}
             activeTripId={activeTripId}
             onSwitchTrip={executeSwitchTrip}
@@ -412,21 +476,39 @@ function AppContent() {
           <Box className="app-pane app-pane-center">
             <MapPane {...mapPaneProps} />
             <DesktopInspectorPane
-              panelCollapsed={panelCollapsed}
-              onExpand={() => setPanelCollapsed(false)}
-              onCollapse={() => setPanelCollapsed(true)}
+              inspectorMode={inspectorMode}
+              onSetMode={setInspectorMode}
               detailPanelProps={detailPanelProps}
             />
           </Box>
         </Box>
       </Box>
 
-      <MobilePlannerSheet opened={opened} {...plannerPaneProps} />
-
-      <MobileInspectorPanel
-        detailPanelProps={detailPanelProps}
-        onDismiss={() => handleSelectLocation(null)}
-      />
+      <MobileBottomSheet
+        opened={mobileSheetOpen}
+        title={mobileSheetView === 'details' ? (selectedLocation?.name || 'Details') : 'Itinerary'}
+        tabs={selectedLocation ? [
+          { key: 'planner', label: 'Plan' },
+          { key: 'details', label: 'Details' },
+        ] : undefined}
+        activeTab={mobileSheetView}
+        onTabChange={(nextTab) => setMobileSheetView(nextTab === 'details' ? 'details' : 'planner')}
+      >
+        {mobileSheetView === 'details' && selectedLocation ? (
+          <AppErrorBoundary title="Detail panel error" message="The detail panel crashed. You can retry or reload the app.">
+            <LocationDetailPanel
+              {...detailPanelProps}
+              onCollapse={handleShowMobilePlanner}
+              onClose={() => {
+                handleSelectLocation(null);
+                handleShowMobilePlanner();
+              }}
+            />
+          </AppErrorBoundary>
+        ) : (
+          <PlannerPane {...plannerPaneProps} />
+        )}
+      </MobileBottomSheet>
 
       <TripActionDialogs
         createOpened={tripDialog === 'create'}

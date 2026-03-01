@@ -1,13 +1,12 @@
 import React from 'react';
 import { Stack, Box, Paper, Group, Button, TextInput, ActionIcon, ScrollArea, Text, Modal, Skeleton } from '@mantine/core';
-import { List as ListIcon, Calendar as CalendarIcon, Wallet, Search, Trash2, History, Sparkles, Cloud, Compass, Plus } from 'lucide-react';
+import { List as ListIcon, Calendar as CalendarIcon, Wallet, Search, Trash2, Compass, Plus } from 'lucide-react';
 import { DateRangePicker } from './DateRangePicker';
 import { DaySidebar } from './DaySidebar';
 import { CalendarView } from './CalendarView';
 import { TripDashboard } from './TripDashboard';
 import { Location, DaySection } from '../types';
 import { PlaceSearchResult } from '../utils/geocoding';
-import { ACTION_LABELS } from '../constants/actionLabels';
 import { useItinerary } from '../context/ItineraryContext';
 
 type EditingRoute = { fromId: string; toId: string } | null;
@@ -62,7 +61,6 @@ export function SidebarContent({
   selectedDayId, setSelectedDayId, isSlotBlocked, handleNestLocation,
   openSubItinerary,
   handleScrollToLocation,
-  setShowHistoryModal, setShowAIModal, setShowCloudModal,
 }: SidebarContentProps) {
   const {
     startDate, endDate, days, locations, routes,
@@ -95,88 +93,12 @@ export function SidebarContent({
   };
 
   return (
-    <Stack className="sidebar-shell" style={{ height: '100%' }} gap={0} bg="var(--mantine-color-neutral-0)">
-      <Box className="sidebar-top-panel" p="lg" style={{ borderBottom: '1px solid var(--mantine-color-neutral-2)' }}>
-        {/* Collapsible Date Header */}
-        <Box mb="xs">
-          {!datePickerOpened ? (
-            <Paper
-              withBorder
-              p="sm"
-              bg="var(--mantine-color-neutral-0)"
-              shadow="sm"
-              style={{ cursor: 'pointer', transition: 'box-shadow 0.2s ease', borderColor: 'var(--mantine-color-neutral-2)' }}
-              onClick={() => setDatePickerOpened(true)}
-              className="date-picker-trigger hover-shadow"
-            >
-              <Group justify="space-between" wrap="nowrap">
-                <Group gap="xs">
-                  <CalendarIcon size={16} color="var(--mantine-color-brand-6)" />
-                  <Text size="sm" fw={600} c="var(--mantine-color-neutral-8)">{formatDateRange()}</Text>
-                </Group>
-                <Text size="xs" c="brand" fw={700} style={{ letterSpacing: '0.05em' }}>EDIT</Text>
-              </Group>
-            </Paper>
-          ) : (
-            <Stack gap="xs">
-              <DateRangePicker startDate={startDate} endDate={endDate} onDateRangeChange={(s, e) => {
-                updateDateRange(s, e);
-                // We don't auto-close to allow fine-tuning, but user can close it
-              }} />
-              <Button variant="subtle" size="compact-xs" color="gray" onClick={() => setDatePickerOpened(false)}>
-                Collapse Date Picker
-              </Button>
-            </Stack>
-          )}
-        </Box>
-
-        {/* View Toggle */}
-        <Group className="sidebar-view-toggle" grow mt="sm" mb="md">
-          <Button
-            variant={sidebarView === 'timeline' ? 'light' : 'subtle'}
-            onClick={() => setSidebarView('timeline')}
-            leftSection={<ListIcon size={16} />}
-            size="xs"
-          >
-            Timeline
-          </Button>
-          <Button
-            variant={sidebarView === 'calendar' ? 'light' : 'subtle'}
-            onClick={() => setSidebarView('calendar')}
-            leftSection={<CalendarIcon size={16} />}
-            size="xs"
-          >
-            Calendar
-          </Button>
-          <Button
-            variant={sidebarView === 'budget' ? 'light' : 'subtle'}
-            onClick={() => setSidebarView('budget')}
-            leftSection={<Wallet size={16} />}
-            size="xs"
-            color="blue"
-          >
-            Budget
-          </Button>
-        </Group>
-
-        {pendingAddToDay && (
-          <Paper withBorder p="sm" bg="var(--mantine-color-brand-0)" style={{ borderColor: 'var(--mantine-color-brand-2)' }} shadow="xs" mt="sm" mb="xs" radius="md">
-            <Group justify="space-between">
-              <Text size="sm">
-                {pendingAddToDay.dayId === 'unassigned'
-                  ? 'Adding to Unassigned'
-                  : `Adding to Day ${days.findIndex(d => d.id === pendingAddToDay.dayId) + 1}${pendingAddToDay.slot ? ` (${pendingAddToDay.slot})` : ''}`
-                }
-              </Text>
-              <Button variant="subtle" size="xs" color="red" onClick={() => setPendingAddToDay(null)}>Cancel</Button>
-            </Group>
-          </Paper>
-        )}
-
-        <Box mb="xs" style={{ position: 'relative' }}>
+    <Stack className="sidebar-shell" style={{ height: '100%' }} gap={0}>
+      <Box className="sidebar-top-panel" p="md" style={{ borderBottom: '1px solid var(--mantine-color-neutral-2)' }}>
+        <Box mb="sm" style={{ position: 'relative' }}>
           <form onSubmit={handleSearch}>
             <TextInput
-              placeholder={pendingAddToDay ? "Search place to add..." : "Search destination or stop..."}
+              placeholder={pendingAddToDay ? 'Search place to add...' : 'Search destination or stop...'}
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               size="md"
@@ -220,9 +142,79 @@ export function SidebarContent({
           )}
         </Box>
 
+        <Box mb="sm">
+          {!datePickerOpened ? (
+            <Paper
+              withBorder
+              p="sm"
+              shadow="sm"
+              style={{ cursor: 'pointer', transition: 'box-shadow 0.2s ease', borderColor: 'var(--mantine-color-neutral-2)' }}
+              onClick={() => setDatePickerOpened(true)}
+              className="date-picker-trigger hover-shadow"
+            >
+              <Group justify="space-between" wrap="nowrap">
+                <Group gap="xs">
+                  <CalendarIcon size={16} color="var(--mantine-color-brand-6)" />
+                  <Text size="sm" fw={600} c="var(--mantine-color-neutral-8)">{formatDateRange()}</Text>
+                </Group>
+                <Text size="xs" c="brand" fw={700} style={{ letterSpacing: '0.05em' }}>EDIT</Text>
+              </Group>
+            </Paper>
+          ) : (
+            <Stack gap="xs">
+              <DateRangePicker startDate={startDate} endDate={endDate} onDateRangeChange={(s, e) => {
+                updateDateRange(s, e);
+              }} />
+              <Button variant="subtle" size="compact-xs" color="gray" onClick={() => setDatePickerOpened(false)}>
+                Collapse Date Picker
+              </Button>
+            </Stack>
+          )}
+        </Box>
 
+        <Group className="sidebar-view-toggle" grow mb="sm">
+          <Button
+            variant={sidebarView === 'timeline' ? 'light' : 'subtle'}
+            onClick={() => setSidebarView('timeline')}
+            leftSection={<ListIcon size={16} />}
+            size="xs"
+          >
+            Timeline
+          </Button>
+          <Button
+            variant={sidebarView === 'calendar' ? 'light' : 'subtle'}
+            onClick={() => setSidebarView('calendar')}
+            leftSection={<CalendarIcon size={16} />}
+            size="xs"
+          >
+            Calendar
+          </Button>
+          <Button
+            variant={sidebarView === 'budget' ? 'light' : 'subtle'}
+            onClick={() => setSidebarView('budget')}
+            leftSection={<Wallet size={16} />}
+            size="xs"
+            color="blue"
+          >
+            Budget
+          </Button>
+        </Group>
+
+        {pendingAddToDay && (
+          <Paper withBorder p="sm" bg="var(--mantine-color-brand-0)" style={{ borderColor: 'var(--mantine-color-brand-2)' }} shadow="xs" mb="sm" radius="md">
+            <Group justify="space-between">
+              <Text size="sm">
+                {pendingAddToDay.dayId === 'unassigned'
+                  ? 'Adding to Unassigned'
+                  : `Adding to Day ${days.findIndex(d => d.id === pendingAddToDay.dayId) + 1}${pendingAddToDay.slot ? ` (${pendingAddToDay.slot})` : ''}`
+                }
+              </Text>
+              <Button variant="subtle" size="xs" color="red" onClick={() => setPendingAddToDay(null)}>Cancel</Button>
+            </Group>
+          </Paper>
+        )}
         {!hasDates && (
-          <Paper mt="sm" withBorder p="sm" bg="blue.0" radius="md">
+          <Paper withBorder p="sm" bg="blue.0" radius="md">
             <Stack gap={6}>
               <Group gap={6}>
                 <Compass size={14} color="var(--app-accent-contrast)" />
@@ -238,7 +230,7 @@ export function SidebarContent({
         )}
 
         {hasDates && !hasStops && (
-          <Paper mt="sm" withBorder p="sm" radius="md">
+          <Paper withBorder p="sm" radius="md">
             <Stack gap={6}>
               <Text size="xs" fw={700}>No stops yet</Text>
               <Text size="xs" c="dimmed">Search a destination above or add directly to Day 1.</Text>
@@ -269,7 +261,7 @@ export function SidebarContent({
                 </Group>
               </Paper>
             )}
-            <Group px="md" py={6} justify="space-between" align="center" style={{ borderBottom: '1px solid var(--app-border)', flexShrink: 0, backgroundColor: 'var(--mantine-color-neutral-0)' }}>
+            <Group px="md" py={6} justify="space-between" align="center" style={{ borderBottom: '1px solid var(--app-border)', flexShrink: 0 }}>
               <Text size="xs" c="dimmed" fw={500}>Row height</Text>
               <Group gap={4}>
                 <Button size="compact-xs" variant={zoomLevel < 0.8 ? 'light' : 'subtle'} color={zoomLevel < 0.8 ? 'brand' : 'gray'} radius="sm" onClick={() => setZoomLevel(0.6)}>Compact</Button>
@@ -307,7 +299,7 @@ export function SidebarContent({
         )}
       </Box>
 
-      <Box className="sidebar-footer" p="lg" style={{ borderTop: '1px solid var(--mantine-color-neutral-2)', backgroundColor: 'var(--mantine-color-neutral-0)' }}>
+      <Box className="sidebar-footer" p="lg" style={{ borderTop: '1px solid var(--mantine-color-neutral-2)' }}>
         {locations.length > 1 && routes.length === 0 && (
           <Paper withBorder p="sm" mb="md" bg="var(--app-warning-soft)" shadow="xs">
             <Text size="xs" c="dimmed">
@@ -321,11 +313,9 @@ export function SidebarContent({
             Clear all
           </Button>
         </Group>
-        <Group gap="xs">
-          <Button variant="light" size="xs" flex={1} leftSection={<History size={14} />} onClick={() => setShowHistoryModal(true)}>{ACTION_LABELS.history}</Button>
-          <Button variant="light" color="blue" size="xs" flex={1} leftSection={<Sparkles size={14} />} onClick={() => setShowAIModal(true)}>{ACTION_LABELS.aiPlanner}</Button>
-          <Button variant="light" size="xs" flex={1} leftSection={<Cloud size={14} />} onClick={() => setShowCloudModal(true)}>{ACTION_LABELS.cloudSync}</Button>
-        </Group>
+        <Text size="xs" c="dimmed">
+          Select a stop to inspect details, routes, and notes.
+        </Text>
       </Box>
 
       <Modal

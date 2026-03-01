@@ -7,7 +7,7 @@ interface UseSelectionFlowParams {
   activeParent: Location | null;
   setSelectedLocationId: (id: string | null) => void;
   setDrillDownParentId: (id: string | null) => void;
-  onCloseMobilePlanner: () => void;
+  onMobileLocationSelected: () => void;
 }
 
 export function useSelectionFlow({
@@ -15,7 +15,7 @@ export function useSelectionFlow({
   activeParent,
   setSelectedLocationId,
   setDrillDownParentId,
-  onCloseMobilePlanner,
+  onMobileLocationSelected,
 }: UseSelectionFlowParams) {
   const handleSelectLocation = useCallback((id: string | null) => {
     setSelectedLocationId(id);
@@ -63,12 +63,12 @@ export function useSelectionFlow({
     handleSelectLocation(id);
     if (!id) return;
 
-    onCloseMobilePlanner();
+    onMobileLocationSelected();
     window.setTimeout(() => {
       const element = document.getElementById(`item-${id}`);
       element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }, 100);
-  }, [handleSelectLocation, onCloseMobilePlanner]);
+  }, [handleSelectLocation, onMobileLocationSelected]);
 
   return {
     handleSelectLocation,

@@ -59,41 +59,37 @@ interface MapDisplayProps {
 function SelectedLocationHandler({ selectedId, locations, isPanelCollapsed }: { selectedId?: string | null, locations: Location[], isPanelCollapsed?: boolean }) {
   const map = useMap();
   useEffect(() => {
-    if (selectedId) {
-      const loc = locations.find(l => l.id === selectedId);
-      if (loc) {
-        const currentZoom = map.getZoom();
-        let offset = 0;
-        if (window.innerWidth > 768) {
-          const mapRect = map.getContainer().getBoundingClientRect();
-          const leftPanel = document.querySelector('.app-pane-left') as HTMLElement | null;
-          const rightPanel = !isPanelCollapsed
-            ? (
-              document.querySelector('.location-detail-panel-root') ||
-              document.querySelector('.location-detail-panel-mobile')
-            ) as HTMLElement | null
-            : null;
+    if (!selectedId) return;
 
-          const leftOcclusion = leftPanel
-            ? Math.max(
-              0,
-              Math.min(mapRect.right, leftPanel.getBoundingClientRect().right) - mapRect.left
-            )
-            : 0;
-          const rightOcclusion = rightPanel
-            ? Math.max(
-              0,
-              mapRect.right - Math.max(mapRect.left, rightPanel.getBoundingClientRect().left)
-            )
-            : 0;
-          offset = (rightOcclusion - leftOcclusion) / 2;
+    const frameId = window.requestAnimationFrame(() => {
+      const loc = locations.find(l => l.id === selectedId);
+      if (!loc) return;
+
+      const currentZoom = map.getZoom();
+      let offsetX = 0;
+
+      if (window.innerWidth > 768 && !isPanelCollapsed) {
+        const mapRect = map.getContainer().getBoundingClientRect();
+        const rightPanel = document.querySelector('.location-detail-panel-root') as HTMLElement | null;
+
+        if (rightPanel) {
+          const panelRect = rightPanel.getBoundingClientRect();
+          const rightOcclusion = Math.max(
+            0,
+            mapRect.right - Math.max(mapRect.left, panelRect.left),
+          );
+          offsetX = rightOcclusion / 2;
         }
-        const targetPoint = map.project([loc.lat, loc.lng], currentZoom);
-        const actualPoint = L.point(targetPoint.x + offset, targetPoint.y);
-        const targetLatLng = map.unproject(actualPoint, currentZoom);
-        map.flyTo(targetLatLng, currentZoom, { animate: true, duration: 0.8 });
       }
-    }
+
+      const targetPoint = map.project([loc.lat, loc.lng], currentZoom);
+      const targetLatLng = map.unproject(L.point(targetPoint.x + offsetX, targetPoint.y), currentZoom);
+
+      map.stop();
+      map.flyTo(targetLatLng, currentZoom, { animate: true, duration: 0.55 });
+    });
+
+    return () => window.cancelAnimationFrame(frameId);
   }, [selectedId, locations, map, isPanelCollapsed]);
   return null;
 }
