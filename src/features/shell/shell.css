@@ -51,11 +51,11 @@ body {
 .app-topbar {
   position: relative;
   z-index: 1200;
-  background: rgba(252, 254, 255, 0.9);
+  background: rgba(252, 254, 255, 0.78);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
-  border-bottom: 1px solid rgba(178, 194, 212, 0.5);
-  box-shadow: 0 6px 18px rgba(12, 24, 42, 0.04);
+  border-bottom: none;
+  box-shadow: none;
 }
 
 .app-main-layout {
@@ -63,8 +63,8 @@ body {
   height: 100%;
   display: grid;
   grid-template-columns: var(--app-left-pane-width) minmax(0, 1fr);
-  gap: var(--app-shell-gutter);
-  padding: 12px var(--app-shell-gutter) var(--app-shell-gutter);
+  gap: 0;
+  padding: 0;
 }
 
 .app-pane {
@@ -87,14 +87,16 @@ body {
   background: rgba(255, 255, 255, 0.72);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
+  border-right: 1px solid rgba(178, 194, 212, 0.45);
 }
 
 .app-pane-center {
   position: relative;
-  background: linear-gradient(180deg, #d7e3f0 0%, #c4d5e7 100%);
+  border: none;
+  border-radius: 0;
+  background: transparent;
   animation: pane-enter-right var(--app-motion-med) var(--app-easing) both;
-  /* Map is the hero card — stronger elevation */
-  box-shadow: var(--app-shadow-lg);
+  box-shadow: none;
 }
 
 .app-header-root {
@@ -225,7 +227,7 @@ body {
   height: 100% !important;
   border: none;
   box-shadow: none;
-  border-radius: var(--app-radius-lg);
+  border-radius: 0;
 }
 
 .leaflet-top {
@@ -233,7 +235,7 @@ body {
 }
 
 .app-pane-center .leaflet-container {
-  border-radius: var(--app-radius-lg);
+  border-radius: 0;
 }
 
 .sidebar-shell {
@@ -646,6 +648,11 @@ body {
 
   .app-pane-left {
     display: none;
+  }
+
+  .app-pane-center {
+    border-radius: 16px;
+    overflow: hidden;
   }
 
   .app-pane-center .map-container,
