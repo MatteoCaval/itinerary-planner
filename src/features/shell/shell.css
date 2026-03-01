@@ -80,14 +80,14 @@ body {
   display: flex;
   flex-direction: column;
   animation: pane-enter-left var(--app-motion-med) var(--app-easing) both;
-  /* Frosted surface — lighter than before but still a coherent zone */
+  /* Keep the planner anchored, but without the old heavy framed slab */
   border: none;
   border-radius: 0;
   box-shadow: none;
-  background: rgba(255, 255, 255, 0.72);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border-right: 1px solid rgba(178, 194, 212, 0.45);
+  background: rgba(250, 252, 255, 0.44);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-right: 1px solid rgba(178, 194, 212, 0.22);
 }
 
 .app-pane-center {
@@ -239,11 +239,16 @@ body {
 }
 
 .sidebar-shell {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.82) 0%, rgba(246, 250, 254, 0.9) 50%, rgba(238, 244, 251, 0.96) 100%);
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.28) 0%,
+    rgba(246, 250, 254, 0.38) 50%,
+    rgba(238, 244, 251, 0.48) 100%
+  );
 }
 
 .sidebar-top-panel {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.68), rgba(249, 252, 255, 0.9));
+  background: rgba(255, 255, 255, 0.32);
 }
 
 .sidebar-top-panel .date-picker-trigger {
@@ -269,7 +274,7 @@ body {
 }
 
 .sidebar-content-body {
-  background: linear-gradient(180deg, rgba(252, 253, 255, 0.78), rgba(245, 248, 252, 0.92));
+  background: rgba(250, 252, 255, 0.18);
 }
 
 .sidebar-search-suggestions {
@@ -288,7 +293,7 @@ body {
 }
 
 .sidebar-footer {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.8) 0%, rgba(249, 251, 255, 0.94) 100%);
+  background: rgba(255, 255, 255, 0.24);
 }
 
 .sidebar-footer .mantine-Button-root {
