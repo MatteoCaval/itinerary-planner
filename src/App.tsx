@@ -53,8 +53,33 @@ type DragState = {
   originX: number; originalStart: number; originalEnd: number;
 } | null;
 
+// ─── Legacy data model types (for storage compatibility) ──────────────────────
+type LegacyDaySection = 'morning' | 'afternoon' | 'evening';
+type LegacyTransportType = 'walk' | 'car' | 'bus' | 'train' | 'flight' | 'ferry' | 'other';
+type LegacyLocationCategory = 'sightseeing' | 'dining' | 'hotel' | 'transit' | 'other';
+type LegacyAccommodation = { name: string; lat?: number; lng?: number; cost?: number; notes?: string; link?: string };
+type LegacyDay = { id: string; date: string; label?: string; accommodation?: LegacyAccommodation };
+type LegacyRoute = { id: string; fromLocationId: string; toLocationId: string; transportType: LegacyTransportType; duration?: string; cost?: number; notes?: string };
+type LegacyLocation = {
+  id: string; name: string; lat: number; lng: number;
+  notes?: string; category?: LegacyLocationCategory;
+  checklist?: unknown[]; links?: unknown[];
+  cost?: number; targetTime?: string; imageUrl?: string;
+  dayIds: string[]; startDayId?: string; startSlot?: LegacyDaySection;
+  duration?: number; order: number;
+  subLocations?: LegacyLocation[]; dayOffset?: number;
+  _color?: string; _lodging?: string; _area?: string; _visitType?: string;
+};
+type LegacyStoredTrip = {
+  id: string; name: string; createdAt: number; updatedAt: number;
+  startDate: string; endDate: string;
+  days: LegacyDay[]; locations: LegacyLocation[]; routes: LegacyRoute[];
+  version: string;
+};
+type LegacyTripsStore = { activeTripId: string; trips: LegacyStoredTrip[] };
+
 // ─── Constants ────────────────────────────────────────────────────────────────
-const STORAGE_KEY = 'itinerary-hybrid-trips-v2';
+const LEGACY_STORAGE_KEY = 'itinerary-trips-v1';
 const DAY_PARTS: DayPart[] = ['morning', 'afternoon', 'evening'];
 const TRAVEL_MODES: TravelMode[] = ['train', 'flight', 'drive', 'ferry', 'bus', 'walk'];
 const TRANSPORT_LABELS: Record<TravelMode, string> = {
@@ -263,13 +288,224 @@ function createSampleTrip(): HybridTrip {
   };
 }
 
+// ─── Legacy ↔ Hybrid adapters ─────────────────────────────────────────────────
+function legacySlotToIndex(slot?: LegacyDaySection): number {
+  if (slot === 'afternoon') return 1;
+  if (slot === 'evening') return 2;
+  return 0;
+}
+
+function indexToLegacySlot(idx: number): LegacyDaySection {
+  const r = idx % 3;
+  if (r === 1) return 'afternoon';
+  if (r === 2) return 'evening';
+  return 'morning';
+}
+
+function legacyTransportToMode(t?: LegacyTransportType): TravelMode {
+  if (t === 'car') return 'drive';
+  if (t === 'other' || !t) return 'train';
+  return t as TravelMode;
+}
+
+function modeToLegacyTransport(m: TravelMode): LegacyTransportType {
+  if (m === 'drive') return 'car';
+  return m as LegacyTransportType;
+}
+
+function legacyCategoryToVisitType(cat?: LegacyLocationCategory, hint?: string): VisitType {
+  if (hint && (VISIT_TYPES as string[]).includes(hint)) return hint as VisitType;
+  if (cat === 'dining') return 'food';
+  if (cat === 'hotel') return 'hotel';
+  if (cat === 'sightseeing') return 'landmark';
+  if (cat === 'transit') return 'walk';
+  return 'area';
+}
+
+function visitTypeToLegacyCategory(type: VisitType): LegacyLocationCategory {
+  if (type === 'food') return 'dining';
+  if (type === 'hotel') return 'hotel';
+  if (type === 'landmark' || type === 'museum') return 'sightseeing';
+  if (type === 'walk') return 'transit';
+  return 'other';
+}
+
+function legacyTripToHybrid(leg: LegacyStoredTrip, colorOffset = 0): HybridTrip {
+  const startDate = leg.startDate ?? '2025-01-01';
+  const s = new Date(startDate);
+  const e = new Date(leg.endDate ?? startDate);
+  const totalDays = Math.max(1, Math.round((e.getTime() - s.getTime()) / 86400000) + 1);
+  const days = leg.days ?? [];
+  const routes = leg.routes ?? [];
+
+  const dayIdxById: Record<string, number> = {};
+  days.forEach((d, i) => { dayIdxById[d.id] = i; });
+
+  const stays: Stay[] = (leg.locations ?? []).map((loc, locIdx) => {
+    const startDayIdx = loc.startDayId ? (dayIdxById[loc.startDayId] ?? 0) : 0;
+    const startSlot = startDayIdx * 3 + legacySlotToIndex(loc.startSlot);
+    const duration = loc.duration ?? 3;
+    const endSlot = Math.min(startSlot + duration, totalDays * 3);
+
+    const nextLoc = leg.locations?.[locIdx + 1];
+    const routeToNext = nextLoc
+      ? routes.find((r) =>
+          (r.fromLocationId === loc.id && r.toLocationId === nextLoc.id) ||
+          (r.fromLocationId === nextLoc.id && r.toLocationId === loc.id),
+        )
+      : undefined;
+
+    const lodging = loc._lodging ?? days[startDayIdx]?.accommodation?.name ?? '';
+    const color = loc._color ?? STAY_COLORS[(colorOffset + locIdx) % STAY_COLORS.length];
+
+    const visits: VisitItem[] = (loc.subLocations ?? []).map((sub) => {
+      // Legacy uses sub.dayOffset (0-based relative to parent) + sub.startSlot directly
+      const dayOffset = sub.dayOffset ?? null;
+      const dayPart = sub.startSlot ? (sub.startSlot as DayPart) : null;
+      const isScheduled = dayOffset !== null && dayPart !== null;
+      return {
+        id: sub.id,
+        name: sub.name,
+        type: legacyCategoryToVisitType(sub.category, sub._visitType),
+        area: sub._area ?? sub.name,
+        lat: sub.lat,
+        lng: sub.lng,
+        durationHint: sub.duration != null ? `${sub.duration}h` : undefined,
+        dayOffset: isScheduled ? dayOffset : null,
+        dayPart: isScheduled ? dayPart : null,
+        order: sub.order ?? 0,
+        notes: sub.notes,
+      };
+    });
+
+    return {
+      id: loc.id, name: loc.name, color,
+      startSlot, endSlot,
+      centerLat: loc.lat, centerLng: loc.lng,
+      lodging,
+      travelModeToNext: legacyTransportToMode(routeToNext?.transportType),
+      travelDurationToNext: routeToNext?.duration,
+      travelNotesToNext: routeToNext?.notes,
+      visits,
+    };
+  });
+
+  return { id: leg.id, name: leg.name, startDate, totalDays, stays };
+}
+
+function hybridTripToLegacy(trip: HybridTrip): LegacyStoredTrip {
+  const startDate = trip.startDate;
+  const endDate = addDaysTo(new Date(startDate), trip.totalDays - 1).toISOString().split('T')[0];
+
+  const days: LegacyDay[] = Array.from({ length: trip.totalDays }, (_, i) => {
+    const date = addDaysTo(new Date(startDate), i).toISOString().split('T')[0];
+    const coveringStay = trip.stays.find((s) => {
+      const sStart = Math.floor(s.startSlot / 3);
+      const sEnd = Math.ceil(s.endSlot / 3);
+      return i >= sStart && i < sEnd;
+    });
+    return {
+      id: `day-${i}-${trip.id}`,
+      date,
+      accommodation: coveringStay?.lodging ? { name: coveringStay.lodging } : undefined,
+    };
+  });
+
+  const dayIdByIdx: Record<number, string> = {};
+  days.forEach((d, i) => { dayIdByIdx[i] = d.id; });
+
+  const routes: LegacyRoute[] = [];
+  const sortedStays = [...trip.stays].sort((a, b) => a.startSlot - b.startSlot);
+
+  const locations: LegacyLocation[] = sortedStays.map((stay, stayIdx) => {
+    const startDayIdx = Math.floor(stay.startSlot / 3);
+    const startDayId = dayIdByIdx[startDayIdx];
+    const duration = stay.endSlot - stay.startSlot;
+
+    const nextStay = sortedStays[stayIdx + 1];
+    if (nextStay) {
+      routes.push({
+        id: `route-${stay.id}-${nextStay.id}`,
+        fromLocationId: stay.id,
+        toLocationId: nextStay.id,
+        transportType: modeToLegacyTransport(stay.travelModeToNext),
+        duration: stay.travelDurationToNext,
+        notes: stay.travelNotesToNext,
+      });
+    }
+
+    const subLocations: LegacyLocation[] = stay.visits.map((v) => {
+      const absDayIdx = v.dayOffset !== null ? startDayIdx + v.dayOffset : startDayIdx;
+      const subDayId = v.dayOffset !== null ? (dayIdByIdx[absDayIdx] ?? startDayId) : undefined;
+      let durationNum: number | undefined;
+      if (v.durationHint) {
+        const m = v.durationHint.match(/(\d+(?:\.\d+)?)/);
+        if (m) durationNum = parseFloat(m[1]);
+      }
+      return {
+        id: v.id, name: v.name,
+        lat: v.lat, lng: v.lng,
+        notes: v.notes,
+        category: visitTypeToLegacyCategory(v.type),
+        dayIds: subDayId ? [subDayId] : [],
+        startDayId: subDayId,
+        startSlot: v.dayPart as LegacyDaySection | undefined,
+        // dayOffset is the canonical scheduling field in legacy sub-itineraries
+        dayOffset: v.dayOffset ?? undefined,
+        duration: durationNum,
+        order: v.order,
+        checklist: [], links: [],
+        _area: v.area,
+        _visitType: v.type,
+      };
+    });
+
+    return {
+      id: stay.id, name: stay.name,
+      lat: stay.centerLat, lng: stay.centerLng,
+      notes: '', category: 'hotel',
+      dayIds: [],
+      startDayId,
+      startSlot: indexToLegacySlot(stay.startSlot),
+      duration,
+      order: stayIdx,
+      subLocations,
+      checklist: [], links: [],
+      _color: stay.color,
+      _lodging: stay.lodging,
+    };
+  });
+
+  return {
+    id: trip.id, name: trip.name,
+    createdAt: Date.now(), updatedAt: Date.now(),
+    startDate, endDate,
+    days, locations, routes,
+    version: '2.0',
+  };
+}
+
 // ─── Persistence ──────────────────────────────────────────────────────────────
 function loadStore(): TripStore {
+  // 1. Try legacy format (primary storage)
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(LEGACY_STORAGE_KEY);
+    if (raw) {
+      const legacyStore: LegacyTripsStore = JSON.parse(raw);
+      if (legacyStore?.trips?.length) {
+        return {
+          activeTripId: legacyStore.activeTripId,
+          trips: legacyStore.trips.map((t, i) => legacyTripToHybrid(t, i * 8)),
+        };
+      }
+    }
+  } catch { /* ignore */ }
+  // 2. Fall back to previous hybrid key (users who already used new app)
+  try {
+    const raw = localStorage.getItem('itinerary-hybrid-trips-v2');
     if (raw) return JSON.parse(raw);
   } catch { /* ignore */ }
-  // Migrate from old single-trip key
+  // 3. Oldest single-trip key
   try {
     const old = localStorage.getItem('itinerary-hybrid-v3');
     if (old) {
@@ -282,7 +518,11 @@ function loadStore(): TripStore {
 }
 
 function saveStore(store: TripStore) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
+  const legacyStore: LegacyTripsStore = {
+    activeTripId: store.activeTripId,
+    trips: store.trips.map(hybridTripToLegacy),
+  };
+  localStorage.setItem(LEGACY_STORAGE_KEY, JSON.stringify(legacyStore));
 }
 
 // ─── History hook ─────────────────────────────────────────────────────────────
