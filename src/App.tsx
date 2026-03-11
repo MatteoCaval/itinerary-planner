@@ -513,6 +513,8 @@ function VisitFormModal({ initial, title, onClose, onSave, onDelete, onUnschedul
     initial?.lat != null ? { lat: initial.lat, lng: initial.lng! } : null,
   );
   const [showResults, setShowResults] = useState(false);
+  const [showExtras, setShowExtras] = useState(!!initial?.id); // show extras when editing
+  const isEditing = !!initial?.id;
 
   // Debounced Nominatim search (only fires when user is actively typing a name without geocode yet)
   useEffect(() => {
@@ -589,51 +591,69 @@ function VisitFormModal({ initial, title, onClose, onSave, onDelete, onUnschedul
             </div>
           )}
         </div>
+        {/* Type — compact pill row, always visible */}
         <div>
           <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 block">Type</label>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="flex flex-wrap gap-1.5">
             {VISIT_TYPES.map((t) => (
               <button
                 key={t}
                 onClick={() => setType(t)}
-                className={`py-2 px-3 rounded-lg border text-xs font-bold transition-all flex items-center gap-1.5 justify-center ${
+                className={`py-1.5 px-3 rounded-full border text-[10px] font-bold transition-all flex items-center gap-1 ${
                   type === t ? `${getVisitTypeColor(t)} border-current` : 'border-slate-200 text-slate-500 hover:border-slate-300'
                 }`}
               >
-                {getVisitTypeIcon(t, 'w-3.5 h-3.5')}
+                {getVisitTypeIcon(t, 'w-3 h-3')}
                 {typeConfig[t]}
               </button>
             ))}
           </div>
         </div>
-        <div>
-          <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 block">Area / Neighbourhood</label>
-          <input
-            className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-primary focus:border-primary outline-none"
-            placeholder="e.g. Shibuya, Tokyo"
-            value={area}
-            onChange={(e) => setArea(e.target.value)}
-          />
-        </div>
-        <div>
-          <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 block">Duration</label>
-          <input
-            className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-primary focus:border-primary outline-none"
-            placeholder="e.g. 2h, 90m, Half day"
-            value={duration}
-            onChange={(e) => setDuration(e.target.value)}
-          />
-        </div>
-        <div>
-          <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 block">Notes</label>
-          <textarea
-            className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-primary focus:border-primary outline-none resize-none"
-            rows={2}
-            placeholder="Booking info, tips..."
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-          />
-        </div>
+
+        {/* Extras — collapsed for new places, expanded when editing */}
+        {!isEditing && (
+          <button
+            onClick={() => setShowExtras((v) => !v)}
+            className="text-[10px] font-bold text-slate-400 hover:text-primary transition-colors flex items-center gap-1"
+          >
+            <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showExtras ? 'rotate-180' : ''}`} />
+            {showExtras ? 'Less details' : 'Add duration, area, notes…'}
+          </button>
+        )}
+
+        {showExtras && (
+          <>
+            <div>
+              <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 block">Area / Neighbourhood</label>
+              <input
+                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-primary focus:border-primary outline-none"
+                placeholder="e.g. Shibuya, Tokyo"
+                value={area}
+                onChange={(e) => setArea(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 block">Duration</label>
+              <input
+                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-primary focus:border-primary outline-none"
+                placeholder="e.g. 2h, 90m, Half day"
+                value={duration}
+                onChange={(e) => setDuration(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 block">Notes</label>
+              <textarea
+                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-primary focus:border-primary outline-none resize-none"
+                rows={2}
+                placeholder="Booking info, tips..."
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+              />
+            </div>
+          </>
+        )}
+
         {(onDelete || onUnschedule) && (
           <div className="flex gap-2 pt-1">
             {onUnschedule && (
@@ -885,19 +905,22 @@ function DraggableInventoryCard({ visit, onEdit }: { visit: VisitItem; onEdit: (
 function SortableVisitCard({ visit, isSelected, onSelect, onEdit }: {
   visit: VisitItem; isSelected: boolean; onSelect: () => void; onEdit: () => void;
 }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging, isOver } = useSortable({
     id: `visit-${visit.id}`, data: { type: 'visit', visit },
   });
   return (
     <div
       ref={setNodeRef}
-      style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 }}
-      className={`p-3.5 bg-white rounded-lg border transition-all group ${
-        isSelected
+      style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.3 : 1 }}
+      className={`relative p-3.5 bg-white rounded-lg border transition-all group ${
+        isOver
+          ? 'border-primary shadow-md ring-2 ring-primary/25 bg-primary/[0.02]'
+          : isSelected
           ? 'border-primary/40 shadow-[0_4px_12px_rgba(236,91,19,0.1)] ring-1 ring-primary/10'
           : 'border-slate-200 hover:border-slate-300 hover:shadow-sm'
       }`}
     >
+      {isOver && <div className="absolute -top-1 left-2 right-2 h-0.5 bg-primary rounded-full z-10" />}
       <div className="flex items-start justify-between mb-1.5">
         <div className="flex items-center gap-2 flex-wrap">
           <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-tighter border ${getVisitTypeColor(visit.type)}`}>
@@ -1465,23 +1488,33 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                               />
                             </div>
 
-                            {/* Transit chip */}
-                            {nextStay && (
-                              <button
-                                title={stay.travelNotesToNext ?? TRANSPORT_LABELS[stay.travelModeToNext]}
-                                onClick={() => setEditingRouteStayId(stay.id)}
-                                className="absolute top-1/2 -translate-y-1/2 z-20 flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 bg-white border rounded-full shadow-sm hover:scale-105 transition-all whitespace-nowrap"
-                                style={{
-                                  left: `calc(${(stay.endSlot / (numDays * 3)) * 100}% + 4px)`,
-                                  borderColor: TRANSPORT_COLORS[stay.travelModeToNext],
-                                  color: TRANSPORT_COLORS[stay.travelModeToNext],
-                                }}
-                              >
-                                <TransportIcon mode={stay.travelModeToNext} className="w-3 h-3" />
-                                <span>{TRANSPORT_LABELS[stay.travelModeToNext]}</span>
-                                {stay.travelDurationToNext && <span className="opacity-70">· {stay.travelDurationToNext}</span>}
-                              </button>
-                            )}
+                            {/* Transit chip — centered in gap between the two stays */}
+                            {nextStay && (() => {
+                              const gapStart = (stay.endSlot / (numDays * 3)) * 100;
+                              const gapEnd = (nextStay.startSlot / (numDays * 3)) * 100;
+                              const chipLeft = (gapStart + gapEnd) / 2;
+                              const hasGap = nextStay.startSlot > stay.endSlot;
+                              return (
+                                <button
+                                  title={stay.travelNotesToNext ?? TRANSPORT_LABELS[stay.travelModeToNext]}
+                                  onClick={() => setEditingRouteStayId(stay.id)}
+                                  className={`absolute top-1/2 -translate-y-1/2 -translate-x-1/2 z-30 flex items-center gap-1 text-[9px] font-bold px-2 py-1 bg-white border-2 rounded-full shadow-md hover:scale-105 transition-all whitespace-nowrap ${hasGap ? '' : 'opacity-80'}`}
+                                  style={{
+                                    left: `${chipLeft}%`,
+                                    borderColor: TRANSPORT_COLORS[stay.travelModeToNext],
+                                    color: TRANSPORT_COLORS[stay.travelModeToNext],
+                                  }}
+                                >
+                                  <TransportIcon mode={stay.travelModeToNext} className="w-3 h-3" />
+                                  {hasGap && (
+                                    <>
+                                      <span>{TRANSPORT_LABELS[stay.travelModeToNext]}</span>
+                                      {stay.travelDurationToNext && <span className="opacity-70">· {stay.travelDurationToNext}</span>}
+                                    </>
+                                  )}
+                                </button>
+                              );
+                            })()}
                           </React.Fragment>
                         );
                       })}
