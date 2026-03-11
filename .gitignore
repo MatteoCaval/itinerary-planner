@@ -19,6 +19,7 @@ dist-ssr/
 # Editor
 .vscode/
 .idea/
+.obsidian/
 
 # Testing/Coverage
 coverage/
