@@ -91,10 +91,6 @@ const TRAVEL_MODES: TravelMode[] = ['train', 'flight', 'drive', 'ferry', 'bus', 
 const TRANSPORT_LABELS: Record<TravelMode, string> = {
   train: 'Train', flight: 'Flight', drive: 'Drive', ferry: 'Ferry', bus: 'Bus', walk: 'Walk',
 };
-const TRANSPORT_COLORS: Record<TravelMode, string> = {
-  train: '#0f7a72', flight: '#ab3b61', drive: '#3567d6',
-  ferry: '#3d8ec9', bus: '#a66318', walk: '#60713a',
-};
 const STAY_COLORS = [
   '#2167d7', '#615cf6', '#2db6ab', '#d78035',
   '#20b5a8', '#3b6dd8', '#c45c99', '#4c9463',
@@ -1948,16 +1944,16 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
         <main className="flex-1 flex flex-col min-h-0 isolate">
 
           {/* ── Timeline ── */}
-          <section className="border-b border-border-neutral flex flex-col bg-white flex-shrink-0" style={{ height: 120 }}>
+          <section className="border-b border-border-neutral flex flex-col bg-white flex-shrink-0 z-40" style={{ height: 140 }}>
             <div className="flex items-center justify-between px-6 border-b border-border-neutral bg-slate-50/50 py-1.5">
               <div className="flex items-center gap-4">
                 <span className="text-[10px] font-extrabold uppercase tracking-[0.15em] text-slate-500">Timeline</span>
                 <div className="flex bg-white rounded-md border border-border-neutral p-0.5">
                   {([5, 10, 15, 30, 0] as const).filter((d) => d === 0 || d <= trip.totalDays).map((d) => (
                     <button key={d} onClick={() => { setZoomDays(d); localStorage.setItem('itinerary-timeline-zoom', String(d)); }}
-                      className={`px-2.5 py-1 text-[9px] font-bold rounded-sm transition-colors ${zoomDays === d ? 'bg-primary text-white shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}
+                      className={`px-3 py-1 text-[9px] font-bold rounded-sm transition-colors ${zoomDays === d ? 'bg-primary text-white shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}
                     >
-                      {d === 0 ? 'ALL' : `${d}D`}
+                      {d === 0 ? 'ALL' : `${d} DAYS`}
                     </button>
                   ))}
                 </div>
@@ -1973,22 +1969,22 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
             <div className="flex-1 relative overflow-x-auto overflow-y-hidden scroll-hide">
               <div data-timeline-track className="h-full flex flex-col" style={{ width: `${Math.max(100, (numDays / (zoomDays || numDays)) * 100)}%` }}>
                 {/* Day labels */}
-                <div className="flex border-b border-border-neutral bg-slate-50/30 flex-shrink-0" style={{ height: 32 }}>
+                <div className="flex border-b border-border-neutral divide-x divide-border-neutral bg-slate-50/30 flex-shrink-0" style={{ height: 28 }}>
                   {dayLabels.map((label, i) => (
                     <div key={i} className="flex-1 flex flex-col">
-                      <div className="flex-1 flex items-center justify-center text-[9px] font-bold text-slate-400 uppercase tracking-tighter border-b border-border-neutral/30">{label}</div>
-                      <div className="flex divide-x divide-border-neutral/20" style={{ height: 12 }}>
+                      <div className="flex-1 flex items-center justify-center text-[9px] font-bold text-slate-400 uppercase tracking-tighter border-b border-slate-100">{label}</div>
+                      <div className="flex h-3 divide-x divide-slate-100">
                         {['M', 'A', 'E'].map((p) => (
-                          <div key={p} className="flex-1 flex items-center justify-center text-[8px] font-bold text-slate-400">{p}</div>
+                          <div key={p} className="flex-1 flex items-center justify-center text-[7px] font-semibold text-slate-300">{p}</div>
                         ))}
                       </div>
                     </div>
                   ))}
                 </div>
                 {/* Stay blocks */}
-                <div className={`flex-1 relative ${numDays <= 15 ? 'timeline-grid' : 'timeline-grid-month'}`}>
-                  <div className="absolute inset-0 flex items-center px-2">
-                    <div className="relative w-full" style={{ height: 36 }}>
+                <div className={`flex-1 relative ${numDays <= 15 ? 'timeline-grid' : 'timeline-grid-month'} snap-grid`}>
+                  <div className="absolute inset-0 flex items-center px-[1%]">
+                    <div className="relative w-full" style={{ height: 42 }}>
                       {sortedStays.map((stay, index) => {
                         const isSelected = selectedStay?.id === stay.id;
                         const isOverlapping = overlaps.has(stay.id);
@@ -2003,12 +1999,18 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                               tabIndex={0}
                               aria-label={`${stay.name}, ${getStayNightCount(stay)} days${isOverlapping ? ', has scheduling conflict' : ''}`}
                               aria-selected={isSelected}
-                              className={`absolute h-8 rounded-md flex items-center select-none transition-shadow cursor-grab active:cursor-grabbing focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-slate-300 ${
-                                isSelected ? 'ring-2 ring-white ring-offset-1 shadow-lg z-10' : 'z-0'
+                              className={`absolute rounded-lg flex items-center select-none transition-all duration-150 cursor-grab active:cursor-grabbing group border focus-visible:ring-2 focus-visible:ring-offset-2 ${
+                                isSelected
+                                  ? 'z-10'
+                                  : 'z-0 hover:shadow-md'
                               } ${isOverlapping ? 'ring-2 ring-amber-400' : ''}`}
                               style={{
-                                left: `${left}%`, width: `${Math.max(width, 2)}%`,
-                                background: `linear-gradient(135deg, ${stay.color}, color-mix(in srgb, ${stay.color} 72%, #ffffff))`,
+                                left: `calc(${left}% + 3px)`, width: `calc(${Math.max(width, 2)}% - 6px)`, height: 42,
+                                background: isSelected
+                                  ? `linear-gradient(135deg, ${stay.color}, color-mix(in srgb, ${stay.color} 80%, #ffffff))`
+                                  : `color-mix(in srgb, ${stay.color} 8%, white)`,
+                                borderColor: isSelected ? stay.color : `color-mix(in srgb, ${stay.color} 35%, transparent)`,
+                                boxShadow: isSelected ? `0 0 0 2px white, 0 0 0 4px ${stay.color}, 0 4px 12px color-mix(in srgb, ${stay.color} 25%, transparent)` : undefined,
                               }}
                               onClick={() => setSelectedStayId(stay.id)}
                               onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedStayId(stay.id); } }}
@@ -2019,28 +2021,43 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                                 setDragState({ stayId: stay.id, mode: 'move', originX: e.clientX, originalStart: stay.startSlot, originalEnd: stay.endSlot });
                               }}
                             >
+                              {/* Colored left accent bar */}
+                              <div
+                                className="absolute left-0 top-1.5 bottom-1.5 w-1 rounded-full transition-opacity"
+                                style={{ background: stay.color, opacity: isSelected ? 0 : 1 }}
+                              />
                               {/* Left resize */}
                               <div
                                 data-handle="resize-start"
-                                className="absolute -left-1 top-0 bottom-0 w-4 cursor-ew-resize z-20 flex items-center justify-center group/handle"
+                                className="absolute -left-1 top-0 bottom-0 w-3 cursor-ew-resize z-20 flex items-center justify-center"
                                 onMouseDown={(e) => {
                                   e.stopPropagation();
                                   setSelectedStayId(stay.id);
                                   setDragState({ stayId: stay.id, mode: 'resize-start', originX: e.clientX, originalStart: stay.startSlot, originalEnd: stay.endSlot });
                                 }}
-                              >
-                                <div className="w-0.5 h-3 rounded-full bg-white/0 group-hover/handle:bg-white/60 transition-colors" />
-                              </div>
+                              />
                               {/* Content */}
-                              <div className="flex items-center gap-1.5 px-3 overflow-hidden flex-1 pointer-events-none">
-                                <Bed className="w-3.5 h-3.5 text-white/80 flex-shrink-0" />
-                                <span className="text-[11px] font-bold text-white truncate">{stay.name}</span>
-                                <span className="text-[10px] text-white/70 font-medium flex-shrink-0">{getStayNightCount(stay)}d</span>
+                              <div className="flex flex-col overflow-hidden flex-1 pointer-events-none pl-3.5 pr-2">
+                                <div className="flex items-center gap-1.5">
+                                  <Bed className="w-3 h-3 flex-shrink-0" style={{ color: isSelected ? 'rgba(255,255,255,0.85)' : stay.color }} />
+                                  <span
+                                    className="text-[10px] font-bold truncate"
+                                    style={{ color: isSelected ? 'white' : stay.color }}
+                                  >{stay.name}</span>
+                                </div>
+                                {stay.lodging && (
+                                  <span
+                                    className="text-[8px] font-semibold truncate mt-px"
+                                    style={{ color: isSelected ? 'rgba(255,255,255,0.6)' : `color-mix(in srgb, ${stay.color} 60%, #64748b)` }}
+                                  >{stay.lodging}</span>
+                                )}
                               </div>
                               {/* Edit button */}
                               <button
                                 aria-label={`Edit ${stay.name}`}
-                                className={`absolute right-5 top-1/2 -translate-y-1/2 z-20 p-1.5 rounded hover:bg-black/20 text-white/70 hover:text-white transition-opacity focus-visible:ring-2 focus-visible:ring-white ${isSelected ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+                                className={`absolute right-4 top-1/2 -translate-y-1/2 z-20 p-1 rounded transition-opacity focus-visible:ring-2 ${
+                                  isSelected ? 'opacity-100 text-white/70 hover:text-white hover:bg-white/15' : 'opacity-0 pointer-events-none'
+                                }`}
                                 onMouseDown={(e) => e.stopPropagation()}
                                 onClick={(e) => { e.stopPropagation(); setEditingStayId(stay.id); }}
                               >
@@ -2049,49 +2066,29 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                               {/* Right resize */}
                               <div
                                 data-handle="resize-end"
-                                className="absolute -right-1 top-0 bottom-0 w-4 cursor-ew-resize z-20 flex items-center justify-center group/handle"
+                                className="absolute -right-1 top-0 bottom-0 w-3 cursor-ew-resize z-20"
                                 onMouseDown={(e) => {
                                   e.stopPropagation();
                                   setSelectedStayId(stay.id);
                                   setDragState({ stayId: stay.id, mode: 'resize-end', originX: e.clientX, originalStart: stay.startSlot, originalEnd: stay.endSlot });
                                 }}
-                              >
-                                <div className="w-0.5 h-3 rounded-full bg-white/0 group-hover/handle:bg-white/60 transition-colors" />
-                              </div>
+                              />
                             </div>
 
                             {/* Transit chip — centered in gap between the two stays */}
                             {nextStay && (() => {
                               const gapStart = (stay.endSlot / (numDays * 3)) * 100;
                               const gapEnd = (nextStay.startSlot / (numDays * 3)) * 100;
-                              const gapWidth = gapEnd - gapStart;
                               const chipLeft = (gapStart + gapEnd) / 2;
-                              const hasGap = nextStay.startSlot > stay.endSlot;
                               return (
                                 <button
-                                  title={stay.travelNotesToNext ?? TRANSPORT_LABELS[stay.travelModeToNext]}
+                                  title={stay.travelNotesToNext ?? `${TRANSPORT_LABELS[stay.travelModeToNext]}${stay.travelDurationToNext ? ` · ${stay.travelDurationToNext}` : ''}`}
                                   aria-label={`Route: ${TRANSPORT_LABELS[stay.travelModeToNext]}${stay.travelDurationToNext ? `, ${stay.travelDurationToNext}` : ''}`}
                                   onClick={() => setEditingRouteStayId(stay.id)}
-                                  className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 z-30 flex items-center gap-1 font-bold bg-white border-2 rounded-full shadow-md hover:scale-105 transition-all focus-visible:ring-2 focus-visible:ring-primary/50 p-1 whitespace-nowrap"
-                                  style={{
-                                    left: `${chipLeft}%`,
-                                    borderColor: TRANSPORT_COLORS[stay.travelModeToNext],
-                                    color: TRANSPORT_COLORS[stay.travelModeToNext],
-                                  }}
-                                  ref={(el) => {
-                                    if (!el) return;
-                                    const parent = el.parentElement;
-                                    if (!parent) return;
-                                    const parentW = parent.offsetWidth;
-                                    const maxW = (gapWidth / 100) * parentW;
-                                    const label = el.querySelector<HTMLElement>('[data-transit-label]');
-                                    if (label) label.style.display = el.scrollWidth > maxW ? 'none' : '';
-                                  }}
+                                  className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 z-30 size-7 bg-white border border-slate-200 rounded-full flex items-center justify-center cursor-pointer hover:border-primary/40 hover:shadow-md transition-all shadow-sm"
+                                  style={{ left: `${chipLeft}%` }}
                                 >
-                                  <TransportIcon mode={stay.travelModeToNext} className="w-3 h-3 flex-shrink-0" />
-                                  {hasGap && stay.travelDurationToNext && (
-                                    <span data-transit-label className="text-[8px] pr-0.5 opacity-70">{stay.travelDurationToNext}</span>
-                                  )}
+                                  <TransportIcon mode={stay.travelModeToNext} className="w-3.5 h-3.5 text-slate-400" />
                                 </button>
                               );
                             })()}
