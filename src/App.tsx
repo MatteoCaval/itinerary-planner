@@ -33,11 +33,17 @@ type VisitItem = {
   notes?: string;
 };
 
+type NightAccommodation = {
+  name: string; lat?: number; lng?: number; cost?: number; notes?: string; link?: string;
+};
+
 type Stay = {
   id: string; name: string; color: string;
   startSlot: number; endSlot: number;
   centerLat: number; centerLng: number;
   lodging: string;
+  /** Per-night accommodation keyed by dayOffset (0-based within the stay). A night on dayOffset=0 means "sleeping between day 0 and day 1". */
+  nightAccommodations?: Record<number, NightAccommodation>;
   travelModeToNext: TravelMode; travelDurationToNext?: string; travelNotesToNext?: string;
   visits: VisitItem[];
 };
@@ -169,15 +175,53 @@ function deriveStayDays(trip: HybridTrip, stay: Stay) {
   const lastDay = Math.floor((stay.endSlot - 1) / 3);
   return Array.from({ length: lastDay - firstDay + 1 }, (_, i) => {
     const absoluteDay = firstDay + i;
+    const enabledParts = DAY_PARTS.filter((p) => {
+      const slot = absoluteDay * 3 + DAY_PARTS.indexOf(p);
+      return slot >= stay.startSlot && slot < stay.endSlot;
+    });
+    // A night is spent here if the evening slot is within the stay
+    const hasNight = enabledParts.includes('evening');
+    const nightAccom = hasNight ? (stay.nightAccommodations?.[i] ?? (stay.lodging ? { name: stay.lodging } : undefined)) : undefined;
     return {
       dayOffset: i, absoluteDay,
       date: addDaysTo(new Date(trip.startDate), absoluteDay),
-      enabledParts: DAY_PARTS.filter((p) => {
-        const slot = absoluteDay * 3 + DAY_PARTS.indexOf(p);
-        return slot >= stay.startSlot && slot < stay.endSlot;
-      }),
+      enabledParts,
+      hasNight,
+      nightAccommodation: nightAccom as NightAccommodation | undefined,
     };
   });
+}
+
+type AccommodationGroup = {
+  name: string;
+  startDayOffset: number;
+  nights: number;
+  accommodation: NightAccommodation;
+};
+
+/** Groups consecutive nights with the same accommodation into spans */
+function deriveAccommodationGroups(stayDays: ReturnType<typeof deriveStayDays>): AccommodationGroup[] {
+  const groups: AccommodationGroup[] = [];
+  let current: AccommodationGroup | null = null;
+  for (const day of stayDays) {
+    if (!day.hasNight || !day.nightAccommodation) {
+      if (current) { groups.push(current); current = null; }
+      continue;
+    }
+    if (current && current.name === day.nightAccommodation.name) {
+      current.nights++;
+    } else {
+      if (current) groups.push(current);
+      current = {
+        name: day.nightAccommodation.name,
+        startDayOffset: day.dayOffset,
+        nights: 1,
+        accommodation: day.nightAccommodation,
+      };
+    }
+  }
+  if (current) groups.push(current);
+  return groups;
 }
 
 function getVisitTypeColor(type: VisitType) {
@@ -359,6 +403,24 @@ function legacyTripToHybrid(leg: LegacyStoredTrip, colorOffset = 0): HybridTrip 
     const lodging = loc._lodging ?? days[startDayIdx]?.accommodation?.name ?? '';
     const color = loc._color ?? STAY_COLORS[(colorOffset + locIdx) % STAY_COLORS.length];
 
+    // Build per-night accommodation from legacy days.
+    // A "night" on dayOffset i means sleeping between day i and day i+1,
+    // so we check if the evening slot of that absolute day is within the stay.
+    const lastDay = Math.floor((endSlot - 1) / 3);
+    const nightAccommodations: Record<number, NightAccommodation> = {};
+    for (let absDay = startDayIdx; absDay <= lastDay; absDay++) {
+      const eveningSlot = absDay * 3 + 2; // evening = last slot of the day
+      if (eveningSlot >= startSlot && eveningSlot < endSlot) {
+        const legDay = days[absDay];
+        if (legDay?.accommodation?.name) {
+          const a = legDay.accommodation;
+          nightAccommodations[absDay - startDayIdx] = {
+            name: a.name, lat: a.lat, lng: a.lng, cost: a.cost, notes: a.notes, link: a.link,
+          };
+        }
+      }
+    }
+
     const visits: VisitItem[] = (loc.subLocations ?? []).map((sub) => {
       // Legacy uses sub.dayOffset (0-based relative to parent) + sub.startSlot directly
       const dayOffset = sub.dayOffset ?? null;
@@ -384,6 +446,7 @@ function legacyTripToHybrid(leg: LegacyStoredTrip, colorOffset = 0): HybridTrip 
       startSlot, endSlot,
       centerLat: loc.lat, centerLng: loc.lng,
       lodging,
+      nightAccommodations: Object.keys(nightAccommodations).length > 0 ? nightAccommodations : undefined,
       travelModeToNext: legacyTransportToMode(routeToNext?.transportType),
       travelDurationToNext: routeToNext?.duration,
       travelNotesToNext: routeToNext?.notes,
@@ -406,10 +469,21 @@ function hybridTripToLegacy(trip: HybridTrip): LegacyStoredTrip {
       const sEnd = Math.ceil(s.endSlot / 3);
       return i >= sStart && i < sEnd;
     });
+    // Prefer per-night accommodation if available, fall back to stay.lodging
+    let accommodation: LegacyAccommodation | undefined;
+    if (coveringStay) {
+      const dayOffset = i - Math.floor(coveringStay.startSlot / 3);
+      const nightAccom = coveringStay.nightAccommodations?.[dayOffset];
+      if (nightAccom) {
+        accommodation = { ...nightAccom };
+      } else if (coveringStay.lodging) {
+        accommodation = { name: coveringStay.lodging };
+      }
+    }
     return {
       id: `day-${i}-${trip.id}`,
       date,
-      accommodation: coveringStay?.lodging ? { name: coveringStay.lodging } : undefined,
+      accommodation,
     };
   });
 
@@ -583,6 +657,195 @@ function ModalBase({ title, onClose, children, width = 'max-w-md' }: {
         <div className="overflow-y-auto flex-1 px-5 py-4">{children}</div>
       </div>
     </div>
+  );
+}
+
+// ─── Accommodation editor modal ──────────────────────────────────────────────
+function AccommodationEditorModal({ initial, nightCount, existingNames, onClose, onSave, onRemove }: {
+  initial?: NightAccommodation;
+  nightCount: number;
+  existingNames: string[];
+  onClose: () => void;
+  onSave: (accom: NightAccommodation) => void;
+  onRemove?: () => void;
+}) {
+  const [name, setName] = useState(initial?.name ?? '');
+  const [notes, setNotes] = useState(initial?.notes ?? '');
+  const [cost, setCost] = useState(initial?.cost?.toString() ?? '');
+  const [lat, setLat] = useState<number | undefined>(initial?.lat);
+  const [lng, setLng] = useState<number | undefined>(initial?.lng);
+  const [searchResults, setSearchResults] = useState<PlaceSearchResult[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showResults, setShowResults] = useState(false);
+
+  // Filter existing names for autocomplete
+  const filteredNames = name.trim()
+    ? existingNames.filter((n) => n.toLowerCase().includes(name.toLowerCase()) && n !== name)
+    : existingNames;
+
+  // Debounced geocoding search
+  useEffect(() => {
+    if (!name.trim() || name.trim().length < 3 || lat) { setSearchResults([]); return; }
+    const controller = new AbortController();
+    const tid = window.setTimeout(async () => {
+      setIsSearching(true);
+      try {
+        const results = await searchPlace(name.trim(), { signal: controller.signal });
+        setSearchResults(results.slice(0, 5));
+        setShowResults(true);
+      } catch { /* ignore abort */ }
+      finally { if (!controller.signal.aborted) setIsSearching(false); }
+    }, 500);
+    return () => { clearTimeout(tid); controller.abort(); };
+  }, [name, lat]);
+
+  const pickResult = (r: PlaceSearchResult) => {
+    setName(r.display_name.split(',')[0].trim());
+    setLat(parseFloat(r.lat));
+    setLng(parseFloat(r.lon));
+    setSearchResults([]);
+    setShowResults(false);
+  };
+
+  const handleSave = () => {
+    if (!name.trim()) return;
+    onSave({
+      name: name.trim(),
+      notes: notes.trim() || undefined,
+      cost: cost ? parseFloat(cost) || undefined : undefined,
+      lat, lng,
+    });
+    onClose();
+  };
+
+  return (
+    <ModalBase title={initial?.name ? 'Edit Accommodation' : 'Set Accommodation'} onClose={onClose} width="max-w-sm">
+      <div className="space-y-4">
+        {/* Night count badge */}
+        <div className="flex items-center gap-2 bg-primary/5 border border-primary/20 rounded-lg px-3 py-2">
+          <Hotel className="w-4 h-4 text-primary" />
+          <span className="text-[11px] font-bold text-primary">
+            {nightCount} {nightCount === 1 ? 'night' : 'nights'}
+          </span>
+        </div>
+
+        {/* Name input with autocomplete */}
+        <div className="relative">
+          <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-1.5 block">
+            Hotel / Address
+          </label>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+            <input
+              className="w-full border border-slate-200 rounded-lg pl-9 pr-8 py-2 text-sm focus:ring-1 focus:ring-primary focus:border-primary outline-none font-semibold"
+              placeholder="Search hotel or address..."
+              value={name}
+              onChange={(e) => { setName(e.target.value); setLat(undefined); setLng(undefined); }}
+              onFocus={() => { if (searchResults.length > 0) setShowResults(true); }}
+              autoFocus
+            />
+            {isSearching && (
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+            )}
+            {lat && (
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-500" title={`Location: ${lat.toFixed(4)}, ${lng?.toFixed(4)}`}>
+                <Check className="w-3.5 h-3.5" />
+              </div>
+            )}
+          </div>
+
+          {/* Existing accommodation suggestions */}
+          {filteredNames.length > 0 && !showResults && !lat && name.trim().length > 0 && (
+            <div className="absolute z-50 left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-lg shadow-xl overflow-hidden">
+              {filteredNames.slice(0, 4).map((n) => (
+                <button
+                  key={n}
+                  onClick={() => { setName(n); }}
+                  className="w-full text-left px-3 py-2 hover:bg-primary/5 border-b last:border-b-0 border-slate-100 flex items-center gap-2 transition-colors"
+                >
+                  <Hotel className="w-3 h-3 text-slate-400" />
+                  <span className="text-xs font-semibold text-slate-700">{n}</span>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Geocoding results */}
+          {showResults && searchResults.length > 0 && (
+            <div className="absolute z-50 left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-lg shadow-xl overflow-hidden">
+              {searchResults.map((r) => {
+                const parts = r.display_name.split(',');
+                return (
+                  <button
+                    key={r.place_id}
+                    onClick={() => pickResult(r)}
+                    className="w-full text-left px-3 py-2.5 hover:bg-primary/5 border-b last:border-b-0 border-slate-100 flex items-start gap-2 transition-colors"
+                  >
+                    <MapPin className="w-3.5 h-3.5 text-slate-400 flex-shrink-0 mt-0.5" />
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold text-slate-800 truncate">{parts[0].trim()}</p>
+                      <p className="text-[10px] text-slate-500 truncate">{parts.slice(1, 4).join(',').trim()}</p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Notes */}
+        <div>
+          <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-1.5 block">Notes</label>
+          <input
+            className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-primary focus:border-primary outline-none"
+            placeholder="Address, confirmation #, etc."
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+          />
+        </div>
+
+        {/* Cost */}
+        <div>
+          <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-1.5 block">Nightly Cost</label>
+          <input
+            className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-primary focus:border-primary outline-none"
+            placeholder="0.00"
+            type="number"
+            min="0"
+            step="0.01"
+            value={cost}
+            onChange={(e) => setCost(e.target.value)}
+          />
+        </div>
+
+        {/* Actions */}
+        <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+          {onRemove ? (
+            <button
+              onClick={() => { onRemove(); onClose(); }}
+              className="text-[11px] font-bold text-red-500 hover:text-red-600 flex items-center gap-1.5 px-2 py-1.5 rounded-md hover:bg-red-50 transition-colors"
+            >
+              <Trash2 className="w-3.5 h-3.5" /> Remove
+            </button>
+          ) : <div />}
+          <div className="flex gap-2">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 text-[11px] font-bold text-slate-500 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={!name.trim()}
+              className="px-4 py-2 text-[11px] font-bold text-white bg-primary rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              Save
+            </button>
+          </div>
+        </div>
+      </div>
+    </ModalBase>
   );
 }
 
@@ -1360,6 +1623,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
   const [addingVisitToSlot, setAddingVisitToSlot] = useState<{ dayOffset: number; part: DayPart } | null>(null);
   const [editingVisit, setEditingVisit] = useState<VisitItem | null>(null);
   const [addingToInbox, setAddingToInbox] = useState(false);
+  const [editingAccommodation, setEditingAccommodation] = useState<{ group: AccommodationGroup } | { dayOffset: number } | null>(null);
   const [showTripSwitcher, setShowTripSwitcher] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [showTripEditor, setShowTripEditor] = useState(false);
@@ -1394,6 +1658,15 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
     [selectedStayId, sortedStays],
   );
   const stayDays = useMemo(() => selectedStay ? deriveStayDays(trip, selectedStay) : [], [selectedStay, trip]);
+  const accommodationGroups = useMemo(() => deriveAccommodationGroups(stayDays), [stayDays]);
+  const existingAccommodationNames = useMemo(() => {
+    const names = new Set<string>();
+    trip.stays.forEach((s) => {
+      if (s.lodging) names.add(s.lodging);
+      if (s.nightAccommodations) Object.values(s.nightAccommodations).forEach((a) => { if (a.name) names.add(a.name); });
+    });
+    return Array.from(names);
+  }, [trip.stays]);
   const searchTerm = searchQuery.trim().toLowerCase();
 
   const inboxVisits = useMemo(() => {
@@ -1876,6 +2149,55 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                       </h4>
                       <button className="text-slate-400 hover:text-slate-600"><MoreHorizontal className="w-5 h-5" /></button>
                     </div>
+                    {/* Accommodation bar — rendered on the first day of each accommodation group */}
+                    {(() => {
+                      const group = accommodationGroups.find((g) => g.startDayOffset === day.dayOffset);
+                      const isNightDay = day.hasNight;
+                      const hasAnyGroup = accommodationGroups.some((g) => day.dayOffset >= g.startDayOffset && day.dayOffset < g.startDayOffset + g.nights);
+                      // Reserve space on days covered by a group but not the start
+                      if (!group && hasAnyGroup) return <div className="h-12 flex-shrink-0 -mb-2" />;
+                      // Day with a night but no accommodation set — show "add" prompt
+                      if (!group && isNightDay) return (
+                        <div className="h-12 flex-shrink-0 -mb-2">
+                          <button
+                            onClick={() => setEditingAccommodation({ dayOffset: day.dayOffset })}
+                            className="h-full w-full border-2 border-dashed border-slate-200 rounded-lg flex items-center justify-center gap-2 text-slate-400 hover:text-primary hover:border-primary/40 hover:bg-primary/5 transition-all"
+                          >
+                            <Hotel className="w-4 h-4" />
+                            <span className="text-[10px] font-bold">Set Accommodation</span>
+                          </button>
+                        </div>
+                      );
+                      // No night on this day (e.g., checkout morning only) — no bar
+                      if (!group) return null;
+                      // Render the spanning bar for this group
+                      return (
+                        <div className="relative h-12 flex-shrink-0 -mb-2">
+                          <div className="absolute inset-y-0 left-0 z-10" style={{ width: `calc(${group.nights} * 288px + ${group.nights - 1} * 20px)` }}>
+                            <button
+                              onClick={() => setEditingAccommodation({ group })}
+                              className="h-full w-full bg-white border border-primary/30 rounded-lg shadow-sm flex items-center px-4 gap-3 hover:border-primary/50 hover:shadow-md transition-all cursor-pointer text-left"
+                            >
+                              <div className="size-8 rounded bg-primary/10 flex items-center justify-center text-primary flex-shrink-0">
+                                <Hotel className="w-4 h-4" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-[10px] font-extrabold text-primary uppercase tracking-tighter">
+                                    {group.nights > 1 ? 'Continuous Stay' : 'Overnight'}
+                                  </span>
+                                  <span className="text-[10px] font-medium text-slate-400 tracking-tight">
+                                    • {group.nights} {group.nights === 1 ? 'Night' : 'Nights'}
+                                  </span>
+                                </div>
+                                <p className="text-xs font-extrabold text-slate-800 truncate">{group.name}</p>
+                              </div>
+                              <Pencil className="w-3.5 h-3.5 text-slate-300 flex-shrink-0" />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })()}
                     <div className="space-y-3">
                       {DAY_PARTS.filter((p) => day.enabledParts.includes(p)).map((period) => (
                         <DroppablePeriodSlot
@@ -2080,6 +2402,55 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
             }}
           />
         )}
+
+        {/* Edit / Add accommodation */}
+        {editingAccommodation && selectedStay && (() => {
+          const isGroup = 'group' in editingAccommodation;
+          const group = isGroup ? editingAccommodation.group : undefined;
+          const dayOffset = isGroup ? editingAccommodation.group.startDayOffset : editingAccommodation.dayOffset;
+          const nightCount = group ? group.nights : 1;
+          const initial = group ? group.accommodation : undefined;
+
+          const handleSave = (accom: NightAccommodation) => {
+            setTrip((curr) => ({
+              ...curr,
+              stays: curr.stays.map((s) => {
+                if (s.id !== selectedStay.id) return s;
+                const updated = { ...s.nightAccommodations };
+                // Apply to all nights in the group (or just the single night)
+                for (let i = 0; i < nightCount; i++) {
+                  updated[dayOffset + i] = accom;
+                }
+                return { ...s, nightAccommodations: updated };
+              }),
+            }));
+          };
+
+          const handleRemove = group ? () => {
+            setTrip((curr) => ({
+              ...curr,
+              stays: curr.stays.map((s) => {
+                if (s.id !== selectedStay.id) return s;
+                const updated = { ...s.nightAccommodations };
+                for (let i = 0; i < nightCount; i++) {
+                  delete updated[dayOffset + i];
+                }
+                return { ...s, nightAccommodations: Object.keys(updated).length > 0 ? updated : undefined };
+              }),
+            }));
+          } : undefined;
+
+          return (
+            <AccommodationEditorModal
+              initial={initial}
+              nightCount={nightCount}
+              existingNames={existingAccommodationNames}
+              onClose={() => setEditingAccommodation(null)}
+              onSave={handleSave}
+              onRemove={handleRemove}
+            />
+          );
+        })()}
 
         {/* Add visit to inbox */}
         {addingToInbox && selectedStay && (
