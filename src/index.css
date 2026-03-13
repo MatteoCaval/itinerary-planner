@@ -39,3 +39,19 @@ html, body, #root {
 .leaflet-container img {
   max-width: none !important;
 }
+
+/* Global focus-visible ring for interactive elements */
+button:focus-visible,
+[role="button"]:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+a:focus-visible {
+  outline: 2px solid rgba(236, 91, 19, 0.5);
+  outline-offset: 2px;
+}
+
+/* Override for elements that set their own focus styles */
+.focus-visible\:ring-2:focus-visible {
+  outline: none;
+}

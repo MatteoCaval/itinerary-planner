@@ -9,8 +9,8 @@ import { CSS } from '@dnd-kit/utilities';
 import {
   ArrowLeftRight, Bed, Bus, Calendar, Car, Check,
   ChevronDown, Compass, Database, Download, Footprints,
-  GripVertical, History, Landmark, Locate, MapPin, Maximize2, Minimize2,
-  Moon, MoreHorizontal, Navigation, Pencil, Plane, Plus, Minus,
+  GripVertical, History, Landmark, MapPin, Maximize2, Minimize2,
+  Moon, MoreHorizontal, Navigation, Pencil, Plane, Plus,
   PlusCircle, Redo2, Search, Ship, SlidersHorizontal, Sparkles, Sunrise,
   Sun, Train, Trash2, Undo2, User, X, Layers, Hotel, UtensilsCrossed,
 } from 'lucide-react';
@@ -558,17 +558,25 @@ function useHistory(initial: HybridTrip) {
 function ModalBase({ title, onClose, children, width = 'max-w-md' }: {
   title: string; onClose: () => void; children: React.ReactNode; width?: string;
 }) {
+  const backdropRef = React.useRef(false);
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, [onClose]);
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-4" onMouseDown={onClose}>
-      <div className={`bg-white rounded-xl shadow-2xl w-full ${width} max-h-[90vh] flex flex-col`} onMouseDown={(e) => e.stopPropagation()}>
+    <div
+      className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-label={title}
+      onMouseDown={(e) => { if (e.target === e.currentTarget) backdropRef.current = true; }}
+      onMouseUp={(e) => { if (e.target === e.currentTarget && backdropRef.current) onClose(); backdropRef.current = false; }}
+    >
+      <div className={`bg-white rounded-xl shadow-2xl w-full ${width} max-h-[90vh] flex flex-col`}>
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 flex-shrink-0">
           <h3 className="font-extrabold text-slate-800 text-sm">{title}</h3>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition-colors">
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 p-2 rounded-lg hover:bg-slate-100 transition-colors focus-visible:ring-2 focus-visible:ring-primary/50">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -614,7 +622,8 @@ function RouteEditorModal({ stay, nextStay, onClose, onSave }: {
               <button
                 key={m}
                 onClick={() => setMode(m)}
-                className={`flex flex-col items-center gap-1.5 py-3 rounded-lg border-2 transition-all ${
+                aria-pressed={mode === m}
+                className={`flex flex-col items-center gap-1.5 py-3 rounded-lg border-2 transition-all focus-visible:ring-2 focus-visible:ring-primary/50 ${
                   mode === m
                     ? 'border-current shadow-sm scale-[1.02]'
                     : 'border-slate-200 hover:border-slate-300 text-slate-500'
@@ -676,6 +685,7 @@ function StayEditorModal({ stay, onClose, onSave, onDelete }: {
   const [name, setName] = useState(stay.name);
   const [lodging, setLodging] = useState(stay.lodging);
   const [color, setColor] = useState(stay.color);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   return (
     <ModalBase title="Edit Stay" onClose={onClose}>
@@ -705,33 +715,54 @@ function StayEditorModal({ stay, onClose, onSave, onDelete }: {
               <button
                 key={c}
                 onClick={() => setColor(c)}
-                className={`size-8 rounded-full border-2 transition-all ${color === c ? 'ring-2 ring-offset-2 ring-slate-400 scale-110' : 'border-white hover:scale-110'}`}
+                aria-label={`Color ${c}`}
+                aria-pressed={color === c}
+                className={`size-8 rounded-full border-2 transition-all focus-visible:ring-2 focus-visible:ring-primary/50 ${color === c ? 'ring-2 ring-offset-2 ring-slate-400 scale-110' : 'border-white hover:scale-110'}`}
                 style={{ background: c }}
               />
             ))}
-            <input
-              type="color"
-              value={color}
-              onChange={(e) => setColor(e.target.value)}
-              className="size-8 rounded-full border-2 border-slate-200 cursor-pointer"
-              title="Custom color"
-            />
+            <div className="flex flex-col items-center gap-0.5">
+              <input
+                type="color"
+                value={color}
+                onChange={(e) => setColor(e.target.value)}
+                className="size-8 rounded-full border-2 border-slate-200 cursor-pointer"
+                aria-label="Pick custom color"
+                title="Custom color"
+              />
+            </div>
           </div>
         </div>
-        <div className="flex gap-3 pt-2">
-          <button onClick={() => { onDelete(); onClose(); }} className="py-2.5 px-4 border border-red-200 text-red-500 rounded-lg text-sm font-bold hover:bg-red-50 transition-colors flex items-center gap-1.5">
-            <Trash2 className="w-3.5 h-3.5" /> Delete
-          </button>
-          <button onClick={onClose} className="flex-1 py-2.5 border border-slate-200 rounded-lg text-sm font-bold text-slate-600 hover:bg-slate-50 transition-colors">
-            Cancel
-          </button>
-          <button
-            onClick={() => { onSave({ name, lodging, color }); onClose(); }}
-            className="flex-1 py-2.5 bg-primary text-white rounded-lg text-sm font-bold hover:bg-primary/90 transition-colors"
-          >
-            Save
-          </button>
-        </div>
+        {confirmDelete ? (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+            <p className="text-xs font-semibold text-red-700 mb-2">
+              Delete "{stay.name}"? This removes all {stay.visits.length} scheduled {stay.visits.length === 1 ? 'place' : 'places'}.
+            </p>
+            <div className="flex gap-2">
+              <button onClick={() => setConfirmDelete(false)} className="flex-1 py-2 border border-slate-200 rounded-lg text-xs font-bold text-slate-600 hover:bg-white transition-colors">
+                Keep
+              </button>
+              <button onClick={() => { onDelete(); onClose(); }} className="flex-1 py-2 bg-red-500 text-white rounded-lg text-xs font-bold hover:bg-red-600 transition-colors">
+                Delete Stay
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex gap-3 pt-2">
+            <button onClick={() => setConfirmDelete(true)} className="py-2.5 px-4 border border-red-200 text-red-500 rounded-lg text-sm font-bold hover:bg-red-50 transition-colors flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-red-300">
+              <Trash2 className="w-3.5 h-3.5" /> Delete
+            </button>
+            <button onClick={onClose} className="flex-1 py-2.5 border border-slate-200 rounded-lg text-sm font-bold text-slate-600 hover:bg-slate-50 transition-colors focus-visible:ring-2 focus-visible:ring-primary/50">
+              Cancel
+            </button>
+            <button
+              onClick={() => { onSave({ name, lodging, color }); onClose(); }}
+              className="flex-1 py-2.5 bg-primary text-white rounded-lg text-sm font-bold hover:bg-primary/90 transition-colors focus-visible:ring-2 focus-visible:ring-primary/50"
+            >
+              Save
+            </button>
+          </div>
+        )}
       </div>
     </ModalBase>
   );
@@ -756,18 +787,25 @@ function VisitFormModal({ initial, title, onClose, onSave, onDelete, onUnschedul
   );
   const [showResults, setShowResults] = useState(false);
   const [showExtras, setShowExtras] = useState(!!initial?.id); // show extras when editing
+  const [searchError, setSearchError] = useState(false);
   const isEditing = !!initial?.id;
 
   // Debounced Nominatim search (only fires when user is actively typing a name without geocode yet)
   useEffect(() => {
-    if (!name.trim() || name.trim().length < 3 || pickedCoords) { setSearchResults([]); return; }
+    if (!name.trim() || name.trim().length < 3 || pickedCoords) { setSearchResults([]); setSearchError(false); return; }
     const controller = new AbortController();
     const tid = window.setTimeout(async () => {
       setIsSearching(true);
-      const results = await searchPlace(name.trim(), { signal: controller.signal });
-      setSearchResults(results.slice(0, 6));
-      setShowResults(true);
-      setIsSearching(false);
+      setSearchError(false);
+      try {
+        const results = await searchPlace(name.trim(), { signal: controller.signal });
+        setSearchResults(results.slice(0, 6));
+        setShowResults(true);
+      } catch (err) {
+        if (!controller.signal.aborted) setSearchError(true);
+      } finally {
+        if (!controller.signal.aborted) setIsSearching(false);
+      }
     }, 500);
     return () => { clearTimeout(tid); controller.abort(); };
   }, [name, pickedCoords]);
@@ -832,6 +870,9 @@ function VisitFormModal({ initial, title, onClose, onSave, onDelete, onUnschedul
               })}
             </div>
           )}
+          {searchError && (
+            <p className="text-[10px] text-red-500 font-medium mt-1">Search failed. You can still save with a manual name.</p>
+          )}
         </div>
         {/* Type — compact pill row, always visible */}
         <div>
@@ -841,7 +882,8 @@ function VisitFormModal({ initial, title, onClose, onSave, onDelete, onUnschedul
               <button
                 key={t}
                 onClick={() => setType(t)}
-                className={`py-1.5 px-3 rounded-full border text-[10px] font-bold transition-all flex items-center gap-1 ${
+                aria-pressed={type === t}
+                className={`py-1.5 px-3 rounded-full border text-[10px] font-bold transition-all flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-primary/50 ${
                   type === t ? `${getVisitTypeColor(t)} border-current` : 'border-slate-200 text-slate-500 hover:border-slate-300'
                 }`}
               >
@@ -1089,7 +1131,7 @@ function TripMap({ visits, selectedVisitId, onSelectVisit, expanded }: {
   const points = visits.map((v) => [v.lat, v.lng] as [number, number]);
   const center: [number, number] = points.length ? points[0] : [35.6762, 139.6503];
   return (
-    <MapContainer center={center} zoom={11} zoomControl={false} className="w-full h-full" style={{ background: '#f1f5f9' }}>
+    <MapContainer center={center} zoom={11} zoomControl={true} className="w-full h-full" style={{ background: '#f1f5f9' }}>
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
         url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
@@ -1124,21 +1166,21 @@ function DraggableInventoryCard({ visit, onEdit }: { visit: VisitItem; onEdit: (
       className="p-3 bg-white rounded-lg border border-slate-200 hover:border-slate-300 hover:shadow-md transition-all group"
     >
       <div className="flex justify-between items-start mb-1.5">
-        <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-tighter border ${getVisitTypeColor(visit.type)}`}>
+        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-tighter border ${getVisitTypeColor(visit.type)}`}>
           {getVisitLabel(visit.type)}
         </span>
         <div className="flex items-center gap-1">
-          <button onClick={onEdit} className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-600">
+          <button onClick={onEdit} className="opacity-60 group-hover:opacity-100 transition-opacity p-1.5 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-600 focus-visible:ring-2 focus-visible:ring-primary/50" aria-label={`Edit ${visit.name}`}>
             <Pencil className="w-3 h-3" />
           </button>
-          <div className="cursor-grab active:cursor-grabbing" {...listeners} {...attributes}>
-            <GripVertical className="w-4 h-4 text-slate-300 hover:text-slate-500" />
+          <div className="cursor-grab active:cursor-grabbing p-1" {...listeners} {...attributes} aria-label="Drag to schedule" role="button">
+            <GripVertical className="w-4 h-4 text-slate-400 hover:text-slate-500" />
           </div>
         </div>
       </div>
       <p className="text-xs font-bold text-slate-800">{visit.name}</p>
       <p className="text-[10px] text-slate-500 mt-1 font-medium">{visit.area}</p>
-      {visit.durationHint && <p className="text-[9px] text-slate-400 mt-0.5">{visit.durationHint}</p>}
+      {visit.durationHint && <p className="text-[10px] text-slate-400 mt-0.5">{visit.durationHint}</p>}
     </div>
   );
 }
@@ -1165,17 +1207,17 @@ function SortableVisitCard({ visit, isSelected, onSelect, onEdit }: {
       {isOver && <div className="absolute -top-1 left-2 right-2 h-0.5 bg-primary rounded-full z-10" />}
       <div className="flex items-start justify-between mb-1.5">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-tighter border ${getVisitTypeColor(visit.type)}`}>
+          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-tighter border ${getVisitTypeColor(visit.type)}`}>
             {getVisitLabel(visit.type)}
           </span>
-          {visit.durationHint && <span className="text-[9px] text-slate-400 font-medium">{visit.durationHint}</span>}
+          {visit.durationHint && <span className="text-[10px] text-slate-400 font-medium">{visit.durationHint}</span>}
         </div>
         <div className="flex items-center gap-1 flex-shrink-0 ml-1">
-          <button onClick={onEdit} className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-600">
+          <button onClick={onEdit} className="opacity-60 group-hover:opacity-100 transition-opacity p-1.5 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-600 focus-visible:ring-2 focus-visible:ring-primary/50" aria-label={`Edit ${visit.name}`}>
             <Pencil className="w-3 h-3" />
           </button>
-          <div className="cursor-grab active:cursor-grabbing" {...listeners} {...attributes} onClick={(e) => e.stopPropagation()}>
-            <GripVertical className="w-4 h-4 text-slate-200 hover:text-slate-400" />
+          <div className="cursor-grab active:cursor-grabbing p-1" {...listeners} {...attributes} onClick={(e) => e.stopPropagation()} aria-label="Drag to reorder" role="button">
+            <GripVertical className="w-4 h-4 text-slate-300 hover:text-slate-400" />
           </div>
         </div>
       </div>
@@ -1207,7 +1249,7 @@ function DroppablePeriodSlot({ dayOffset, period, visits, selectedVisitId, onSel
   const label = period === 'morning' ? 'Morning' : period === 'afternoon' ? 'Afternoon' : 'Evening';
 
   return (
-    <div ref={setNodeRef} className={`p-1.5 rounded-xl border transition-colors ${isOver ? 'bg-primary/5 border-primary/30' : 'bg-slate-200/40 border-slate-200/80'}`}>
+    <div ref={setNodeRef} aria-label={`${label} slot, day ${dayOffset + 1}`} className={`p-1.5 rounded-xl border transition-colors ${isOver ? 'bg-primary/5 border-primary/30' : 'bg-slate-200/40 border-slate-200/80'}`}>
       <div className="flex items-center gap-1.5 px-2 py-1.5 mb-1">
         <PeriodIcon className="w-3 h-3 text-slate-500" />
         <span className="text-[9px] font-extrabold uppercase tracking-widest text-slate-500">{label}</span>
@@ -1228,7 +1270,7 @@ function DroppablePeriodSlot({ dayOffset, period, visits, selectedVisitId, onSel
           className="w-full h-10 border-2 border-dashed border-slate-300 rounded-lg flex items-center justify-center gap-1.5 text-slate-400 hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all group"
         >
           <PlusCircle className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
-          <span className="text-[8px] font-bold uppercase tracking-tight">Drop or add</span>
+          <span className="text-[10px] font-bold uppercase tracking-tight">Drop or add</span>
         </button>
       </div>
     </div>
@@ -1625,7 +1667,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
           </div>
         </header>
 
-        <main className="flex-1 flex flex-col min-h-0">
+        <main className="flex-1 flex flex-col min-h-0 isolate">
 
           {/* ── Timeline ── */}
           <section className="border-b border-border-neutral flex flex-col bg-white flex-shrink-0" style={{ height: 120 }}>
@@ -1659,7 +1701,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                       <div className="flex-1 flex items-center justify-center text-[9px] font-bold text-slate-400 uppercase tracking-tighter border-b border-border-neutral/30">{label}</div>
                       <div className="flex divide-x divide-border-neutral/20" style={{ height: 12 }}>
                         {['M', 'A', 'E'].map((p) => (
-                          <div key={p} className="flex-1 flex items-center justify-center text-[6px] font-bold text-slate-300">{p}</div>
+                          <div key={p} className="flex-1 flex items-center justify-center text-[8px] font-bold text-slate-400">{p}</div>
                         ))}
                       </div>
                     </div>
@@ -1679,7 +1721,11 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                         return (
                           <React.Fragment key={stay.id}>
                             <div
-                              className={`absolute h-8 rounded-md flex items-center select-none transition-shadow cursor-grab active:cursor-grabbing ${
+                              role="button"
+                              tabIndex={0}
+                              aria-label={`${stay.name}, ${getStayNightCount(stay)} days${isOverlapping ? ', has scheduling conflict' : ''}`}
+                              aria-selected={isSelected}
+                              className={`absolute h-8 rounded-md flex items-center select-none transition-shadow cursor-grab active:cursor-grabbing focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-slate-300 ${
                                 isSelected ? 'ring-2 ring-white ring-offset-1 shadow-lg z-10' : 'z-0'
                               } ${isOverlapping ? 'ring-2 ring-amber-400' : ''}`}
                               style={{
@@ -1687,6 +1733,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                                 background: `linear-gradient(135deg, ${stay.color}, color-mix(in srgb, ${stay.color} 72%, #ffffff))`,
                               }}
                               onClick={() => setSelectedStayId(stay.id)}
+                              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedStayId(stay.id); } }}
                               onMouseDown={(e) => {
                                 // Only start move drag from the body (not resize handles)
                                 if ((e.target as HTMLElement).dataset.handle) return;
@@ -1697,22 +1744,25 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                               {/* Left resize */}
                               <div
                                 data-handle="resize-start"
-                                className="absolute left-0 top-0 bottom-0 w-2 cursor-ew-resize rounded-l-md hover:bg-black/20 z-20"
+                                className="absolute -left-1 top-0 bottom-0 w-4 cursor-ew-resize z-20 flex items-center justify-center group/handle"
                                 onMouseDown={(e) => {
                                   e.stopPropagation();
                                   setSelectedStayId(stay.id);
                                   setDragState({ stayId: stay.id, mode: 'resize-start', originX: e.clientX, originalStart: stay.startSlot, originalEnd: stay.endSlot });
                                 }}
-                              />
+                              >
+                                <div className="w-0.5 h-3 rounded-full bg-white/0 group-hover/handle:bg-white/60 transition-colors" />
+                              </div>
                               {/* Content */}
                               <div className="flex items-center gap-1.5 px-3 overflow-hidden flex-1 pointer-events-none">
                                 <Bed className="w-3.5 h-3.5 text-white/80 flex-shrink-0" />
                                 <span className="text-[11px] font-bold text-white truncate">{stay.name}</span>
-                                <span className="text-[9px] text-white/70 font-medium flex-shrink-0">{getStayNightCount(stay)}d</span>
+                                <span className="text-[10px] text-white/70 font-medium flex-shrink-0">{getStayNightCount(stay)}d</span>
                               </div>
                               {/* Edit button */}
                               <button
-                                className={`absolute right-5 top-1/2 -translate-y-1/2 z-20 p-1 rounded hover:bg-black/20 text-white/70 hover:text-white transition-opacity ${isSelected ? 'opacity-100' : 'opacity-0'}`}
+                                aria-label={`Edit ${stay.name}`}
+                                className={`absolute right-5 top-1/2 -translate-y-1/2 z-20 p-1.5 rounded hover:bg-black/20 text-white/70 hover:text-white transition-opacity focus-visible:ring-2 focus-visible:ring-white ${isSelected ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
                                 onMouseDown={(e) => e.stopPropagation()}
                                 onClick={(e) => { e.stopPropagation(); setEditingStayId(stay.id); }}
                               >
@@ -1721,13 +1771,15 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                               {/* Right resize */}
                               <div
                                 data-handle="resize-end"
-                                className="absolute right-0 top-0 bottom-0 w-2 cursor-ew-resize rounded-r-md hover:bg-black/20 z-20"
+                                className="absolute -right-1 top-0 bottom-0 w-4 cursor-ew-resize z-20 flex items-center justify-center group/handle"
                                 onMouseDown={(e) => {
                                   e.stopPropagation();
                                   setSelectedStayId(stay.id);
                                   setDragState({ stayId: stay.id, mode: 'resize-end', originX: e.clientX, originalStart: stay.startSlot, originalEnd: stay.endSlot });
                                 }}
-                              />
+                              >
+                                <div className="w-0.5 h-3 rounded-full bg-white/0 group-hover/handle:bg-white/60 transition-colors" />
+                              </div>
                             </div>
 
                             {/* Transit chip — centered in gap between the two stays */}
@@ -1739,8 +1791,9 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                               return (
                                 <button
                                   title={stay.travelNotesToNext ?? TRANSPORT_LABELS[stay.travelModeToNext]}
+                                  aria-label={`Route: ${TRANSPORT_LABELS[stay.travelModeToNext]}${stay.travelDurationToNext ? `, ${stay.travelDurationToNext}` : ''}`}
                                   onClick={() => setEditingRouteStayId(stay.id)}
-                                  className={`absolute top-1/2 -translate-y-1/2 -translate-x-1/2 z-30 flex items-center gap-1 text-[9px] font-bold px-2 py-1 bg-white border-2 rounded-full shadow-md hover:scale-105 transition-all whitespace-nowrap ${hasGap ? '' : 'opacity-80'}`}
+                                  className={`absolute top-1/2 -translate-y-1/2 -translate-x-1/2 z-30 flex items-center gap-1 text-[10px] font-bold bg-white border-2 rounded-full shadow-md hover:scale-105 transition-all whitespace-nowrap focus-visible:ring-2 focus-visible:ring-primary/50 ${hasGap ? 'px-2 py-1' : 'p-1'}`}
                                   style={{
                                     left: `${chipLeft}%`,
                                     borderColor: TRANSPORT_COLORS[stay.travelModeToNext],
@@ -1800,7 +1853,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
             </aside>
 
             {/* Day columns */}
-            <div className={`flex-1 overflow-x-auto flex p-5 gap-5 min-w-0 bg-slate-50/50 scroll-hide transition-all duration-300 ${mapExpanded ? 'w-0 overflow-hidden opacity-0 p-0' : ''}`}>
+            <div className={`flex-1 overflow-x-auto overflow-y-auto flex p-5 gap-5 min-w-0 bg-slate-50/50 scroll-hide transition-all duration-300 ${mapExpanded ? 'w-0 overflow-hidden opacity-0 p-0' : ''}`}>
               {stayDays.map((day) => {
                 const dayVisits = selectedStay
                   ? sortVisits(selectedStay.visits.filter(
@@ -1843,19 +1896,14 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
 
             {/* Map */}
             <aside className={`border-l border-border-neutral flex flex-col relative bg-slate-100 transition-all duration-500 ease-in-out ${mapExpanded ? 'flex-1' : 'w-[420px]'}`}>
-              <div className="absolute top-4 left-4 z-20 flex flex-col gap-2">
-                <div className="bg-white/90 backdrop-blur-md shadow-xl rounded-lg p-1 flex flex-col border border-white/80">
-                  <button className="p-2 hover:bg-slate-100 rounded text-slate-600 transition-colors"><Plus className="w-4 h-4" /></button>
-                  <div className="h-px bg-slate-200 mx-1.5" />
-                  <button className="p-2 hover:bg-slate-100 rounded text-slate-600 transition-colors"><Minus className="w-4 h-4" /></button>
-                </div>
-                <div className="bg-white/90 backdrop-blur-md shadow-xl rounded-lg p-1 border border-white/80 flex flex-col gap-1">
-                  <button className="p-2 hover:bg-slate-100 rounded text-slate-600 hover:text-primary transition-colors"><Locate className="w-4 h-4" /></button>
-                  <div className="h-px bg-slate-200 mx-1.5" />
-                  <button onClick={() => setMapExpanded(!mapExpanded)} className="p-2 hover:bg-slate-100 rounded text-slate-600 hover:text-primary transition-colors">
-                    {mapExpanded ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-                  </button>
-                </div>
+              <div className="absolute top-4 left-4 z-20">
+                <button
+                  onClick={() => setMapExpanded(!mapExpanded)}
+                  aria-label={mapExpanded ? 'Collapse map' : 'Expand map'}
+                  className="bg-white/90 backdrop-blur-md shadow-xl rounded-lg p-2 border border-white/80 text-slate-600 hover:text-primary hover:bg-white transition-colors focus-visible:ring-2 focus-visible:ring-primary/50"
+                >
+                  {mapExpanded ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+                </button>
               </div>
 
               <div className="flex-1 overflow-hidden relative">
@@ -1930,27 +1978,19 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
         </main>
 
         {/* ── Footer ── */}
-        <footer className="bg-slate-950 text-slate-500 px-6 py-1.5 text-[9px] font-bold flex justify-between items-center border-t border-slate-900 flex-shrink-0">
+        <footer className="bg-white text-slate-500 px-6 py-1.5 text-[10px] font-bold flex justify-between items-center border-t border-border-neutral flex-shrink-0">
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-2">
-              <div className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="uppercase tracking-widest opacity-80">Auto-save: Active</span>
+              <div className="size-1.5 rounded-full bg-emerald-500" />
+              <span className="uppercase tracking-widest text-slate-400">Saved</span>
             </div>
-            <div className="flex items-center gap-2">
-              <Database className="w-3 h-3 opacity-60" />
-              <span className="uppercase tracking-widest">{trip.name.toUpperCase().slice(0, 20)}</span>
+            <div className="flex items-center gap-2 text-slate-400">
+              <Database className="w-3 h-3" />
+              <span className="uppercase tracking-widest">{trip.name.slice(0, 24)}</span>
             </div>
           </div>
-          <div className="flex items-center gap-4 tracking-widest">
+          <div className="flex items-center gap-4 tracking-widest text-slate-400">
             <span>{trip.totalDays} DAYS · {sortedStays.length} STAYS</span>
-            <button
-              onClick={onSwitchToLegacy}
-              className="flex items-center gap-1 text-slate-400 hover:text-slate-200 transition-colors px-2 py-0.5 bg-slate-900 rounded hover:bg-slate-800"
-              title="Switch to classic layout"
-            >
-              <Layers className="w-3 h-3" />
-              <span>CLASSIC</span>
-            </button>
           </div>
         </footer>
 
