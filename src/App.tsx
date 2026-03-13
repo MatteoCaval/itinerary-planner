@@ -1828,7 +1828,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
           </section>
 
           {/* ── Main content ── */}
-          <section className="flex-1 flex min-h-0">
+          <section className="flex-1 flex min-h-0 relative overflow-hidden">
 
             {/* Inventory */}
             <aside className={`border-r border-border-neutral flex flex-col bg-white transition-all duration-300 ${mapExpanded ? 'w-0 overflow-hidden opacity-0' : 'w-64'}`}>
@@ -1860,7 +1860,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
             </aside>
 
             {/* Day columns */}
-            <div className={`flex-1 overflow-x-auto overflow-y-auto flex p-5 gap-5 min-w-0 bg-slate-50/50 scroll-hide transition-all duration-300 ${mapExpanded ? 'w-0 overflow-hidden opacity-0 p-0' : ''}`}>
+            <div className={`flex-1 overflow-x-auto overflow-y-auto flex p-5 gap-5 min-w-0 bg-slate-50/50 scroll-hide transition-all duration-300 ${mapExpanded ? 'w-0 overflow-hidden opacity-0 p-0' : 'pr-[520px]'}`}>
               {stayDays.map((day) => {
                 const dayVisits = selectedStay
                   ? sortVisits(selectedStay.visits.filter(
@@ -1901,13 +1901,18 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
               )}
             </div>
 
-            {/* Map */}
-            <aside className={`border-l border-border-neutral flex flex-col relative bg-slate-100 transition-all duration-500 ease-in-out ${mapExpanded ? 'flex-1' : 'w-[420px]'}`}>
-              <div className="absolute top-4 left-4 z-20">
+            {/* Map — Floating Panel */}
+            <aside className={`map-panel-container flex flex-col overflow-hidden z-30 ${mapExpanded ? 'absolute inset-0 w-full rounded-none bg-white' : 'absolute top-4 bottom-4 right-4 w-[500px] bg-white rounded-2xl shadow-[0_0_50px_-12px_rgba(0,0,0,0.25)] border border-slate-200/60'}`}>
+              {/* Map panel header */}
+              <div className="h-12 px-5 border-b border-slate-100 flex items-center justify-between bg-white/80 backdrop-blur-md flex-shrink-0">
+                <div className="flex items-center gap-2.5">
+                  <Layers className="w-4 h-4 text-primary" />
+                  <span className="text-xs font-extrabold text-slate-700 tracking-tight">Route Overview</span>
+                </div>
                 <button
                   onClick={() => setMapExpanded(!mapExpanded)}
                   aria-label={mapExpanded ? 'Collapse map' : 'Expand map'}
-                  className="bg-white/90 backdrop-blur-md shadow-xl rounded-lg p-2 border border-white/80 text-slate-600 hover:text-primary hover:bg-white transition-colors focus-visible:ring-2 focus-visible:ring-primary/50"
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-primary hover:bg-slate-50 transition-colors focus-visible:ring-2 focus-visible:ring-primary/50"
                 >
                   {mapExpanded ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
                 </button>
@@ -1918,7 +1923,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                   <TripMap visits={mapVisits} selectedVisitId={selectedVisitId}
                     onSelectVisit={(id) => setSelectedVisitId(id === selectedVisitId ? null : id)} expanded={mapExpanded} />
                 ) : (
-                  <div className="absolute inset-0 flex items-center justify-center bg-slate-100">
+                  <div className="absolute inset-0 flex items-center justify-center bg-slate-50">
                     <div className="text-center text-slate-400">
                       <MapPin className="w-10 h-10 mx-auto mb-2 opacity-20" />
                       <p className="text-xs font-medium">Schedule activities to see the map</p>
@@ -1963,9 +1968,10 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                 })()}
               </div>
 
-              <div className="px-5 py-3 bg-white border-t border-border-neutral flex items-center justify-between z-10 flex-shrink-0">
+              {/* Map panel footer */}
+              <div className="px-5 py-3 bg-white/80 backdrop-blur-md border-t border-slate-100 flex items-center justify-between flex-shrink-0">
                 <div className="flex items-center gap-2.5">
-                  <Navigation className="text-primary w-5 h-5" />
+                  <Navigation className="text-primary w-4 h-4" />
                   <div>
                     <span className="text-[10px] font-extrabold text-slate-800 uppercase tracking-tight block">
                       {selectedStay?.name ?? 'No stay selected'}
