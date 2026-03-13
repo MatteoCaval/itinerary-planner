@@ -1351,7 +1351,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
   const [dragState, setDragState] = useState<DragState>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [mapExpanded, setMapExpanded] = useState(false);
-  const [viewMode, setViewMode] = useState<'15days' | 'full'>('15days');
+  const [zoomDays, setZoomDays] = useState(15);
   const [searchQuery, setSearchQuery] = useState('');
 
   // Modals
@@ -1413,7 +1413,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
   useEffect(() => {
     if (!dragState) return;
     const track = document.querySelector('[data-timeline-track]') as HTMLElement | null;
-    const numDays = viewMode === '15days' ? 15 : trip.totalDays;
+    const numDays = zoomDays === 0 ? trip.totalDays : zoomDays;
     const slotWidth = (track?.clientWidth ?? numDays * 42) / (numDays * 3);
 
     const onMove = (e: MouseEvent) => {
@@ -1438,7 +1438,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
     window.addEventListener('mousemove', onMove);
     window.addEventListener('mouseup', onUp);
     return () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
-  }, [dragState, viewMode, trip.totalDays]);
+  }, [dragState, zoomDays, trip.totalDays]);
 
   // ── Mutators ──────────────────────────────────────────────────────────────
   const updateSelectedStay = (fn: (s: Stay) => Stay) => {
@@ -1538,7 +1538,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
   };
 
   // ── Render helpers ────────────────────────────────────────────────────────
-  const numDays = viewMode === '15days' ? 15 : trip.totalDays;
+  const numDays = zoomDays === 0 ? trip.totalDays : zoomDays;
   const dayLabels = Array.from({ length: numDays }, (_, i) =>
     fmt(addDaysTo(new Date(trip.startDate), i), { month: 'short', day: 'numeric' }),
   );
@@ -1675,11 +1675,11 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
               <div className="flex items-center gap-4">
                 <span className="text-[10px] font-extrabold uppercase tracking-[0.15em] text-slate-500">Timeline</span>
                 <div className="flex bg-white rounded-md border border-border-neutral p-0.5">
-                  {(['15days', 'full'] as const).map((v) => (
-                    <button key={v} onClick={() => setViewMode(v)}
-                      className={`px-3 py-1 text-[9px] font-bold rounded-sm transition-colors ${viewMode === v ? 'bg-primary text-white shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}
+                  {([5, 10, 15, 30, 0] as const).filter((d) => d === 0 || d < trip.totalDays).map((d) => (
+                    <button key={d} onClick={() => setZoomDays(d)}
+                      className={`px-2.5 py-1 text-[9px] font-bold rounded-sm transition-colors ${zoomDays === d ? 'bg-primary text-white shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}
                     >
-                      {v === '15days' ? '15 DAYS' : 'FULL TRIP'}
+                      {d === 0 ? 'ALL' : `${d}D`}
                     </button>
                   ))}
                 </div>
@@ -1693,7 +1693,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
             </div>
 
             <div className="flex-1 relative overflow-x-auto overflow-y-hidden scroll-hide">
-              <div data-timeline-track className="h-full flex flex-col" style={{ width: `${Math.max(100, (numDays / 15) * 100)}%` }}>
+              <div data-timeline-track className="h-full flex flex-col" style={{ width: `${Math.max(100, (numDays / (zoomDays || numDays)) * 100)}%` }}>
                 {/* Day labels */}
                 <div className="flex border-b border-border-neutral bg-slate-50/30 flex-shrink-0" style={{ height: 32 }}>
                   {dayLabels.map((label, i) => (
@@ -1708,7 +1708,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                   ))}
                 </div>
                 {/* Stay blocks */}
-                <div className={`flex-1 relative ${viewMode === '15days' ? 'timeline-grid' : 'timeline-grid-month'}`}>
+                <div className={`flex-1 relative ${numDays <= 15 ? 'timeline-grid' : 'timeline-grid-month'}`}>
                   <div className="absolute inset-0 flex items-center px-2">
                     <div className="relative w-full" style={{ height: 36 }}>
                       {sortedStays.map((stay, index) => {
