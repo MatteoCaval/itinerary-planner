@@ -334,7 +334,8 @@ function legacyTripToHybrid(leg: LegacyStoredTrip, colorOffset = 0): HybridTrip 
   const startDate = leg.startDate ?? '2025-01-01';
   const s = new Date(startDate);
   const e = new Date(leg.endDate ?? startDate);
-  const totalDays = Math.max(1, Math.round((e.getTime() - s.getTime()) / 86400000) + 1);
+  const rawDays = Math.round((e.getTime() - s.getTime()) / 86400000) + 1;
+  const totalDays = Number.isFinite(rawDays) && rawDays >= 1 ? rawDays : 1;
   const days = leg.days ?? [];
   const routes = leg.routes ?? [];
 
@@ -394,10 +395,11 @@ function legacyTripToHybrid(leg: LegacyStoredTrip, colorOffset = 0): HybridTrip 
 }
 
 function hybridTripToLegacy(trip: HybridTrip): LegacyStoredTrip {
-  const startDate = trip.startDate;
-  const endDate = addDaysTo(new Date(startDate), trip.totalDays - 1).toISOString().split('T')[0];
+  const startDate = trip.startDate || '2025-01-01';
+  const totalDays = Number.isFinite(trip.totalDays) && trip.totalDays >= 1 ? trip.totalDays : 1;
+  const endDate = addDaysTo(new Date(startDate), totalDays - 1).toISOString().split('T')[0];
 
-  const days: LegacyDay[] = Array.from({ length: trip.totalDays }, (_, i) => {
+  const days: LegacyDay[] = Array.from({ length: totalDays }, (_, i) => {
     const date = addDaysTo(new Date(startDate), i).toISOString().split('T')[0];
     const coveringStay = trip.stays.find((s) => {
       const sStart = Math.floor(s.startSlot / 3);
