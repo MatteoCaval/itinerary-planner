@@ -1786,6 +1786,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                             {nextStay && (() => {
                               const gapStart = (stay.endSlot / (numDays * 3)) * 100;
                               const gapEnd = (nextStay.startSlot / (numDays * 3)) * 100;
+                              const gapWidth = gapEnd - gapStart;
                               const chipLeft = (gapStart + gapEnd) / 2;
                               const hasGap = nextStay.startSlot > stay.endSlot;
                               return (
@@ -1793,19 +1794,25 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                                   title={stay.travelNotesToNext ?? TRANSPORT_LABELS[stay.travelModeToNext]}
                                   aria-label={`Route: ${TRANSPORT_LABELS[stay.travelModeToNext]}${stay.travelDurationToNext ? `, ${stay.travelDurationToNext}` : ''}`}
                                   onClick={() => setEditingRouteStayId(stay.id)}
-                                  className={`absolute top-1/2 -translate-y-1/2 -translate-x-1/2 z-30 flex items-center gap-1 text-[10px] font-bold bg-white border-2 rounded-full shadow-md hover:scale-105 transition-all whitespace-nowrap focus-visible:ring-2 focus-visible:ring-primary/50 ${hasGap ? 'px-2 py-1' : 'p-1'}`}
+                                  className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 z-30 flex items-center gap-1 font-bold bg-white border-2 rounded-full shadow-md hover:scale-105 transition-all focus-visible:ring-2 focus-visible:ring-primary/50 p-1 whitespace-nowrap"
                                   style={{
                                     left: `${chipLeft}%`,
                                     borderColor: TRANSPORT_COLORS[stay.travelModeToNext],
                                     color: TRANSPORT_COLORS[stay.travelModeToNext],
                                   }}
+                                  ref={(el) => {
+                                    if (!el) return;
+                                    const parent = el.parentElement;
+                                    if (!parent) return;
+                                    const parentW = parent.offsetWidth;
+                                    const maxW = (gapWidth / 100) * parentW;
+                                    const label = el.querySelector<HTMLElement>('[data-transit-label]');
+                                    if (label) label.style.display = el.scrollWidth > maxW ? 'none' : '';
+                                  }}
                                 >
-                                  <TransportIcon mode={stay.travelModeToNext} className="w-3 h-3" />
-                                  {hasGap && (
-                                    <>
-                                      <span>{TRANSPORT_LABELS[stay.travelModeToNext]}</span>
-                                      {stay.travelDurationToNext && <span className="opacity-70">· {stay.travelDurationToNext}</span>}
-                                    </>
+                                  <TransportIcon mode={stay.travelModeToNext} className="w-3 h-3 flex-shrink-0" />
+                                  {hasGap && stay.travelDurationToNext && (
+                                    <span data-transit-label className="text-[8px] pr-0.5 opacity-70">{stay.travelDurationToNext}</span>
                                   )}
                                 </button>
                               );
