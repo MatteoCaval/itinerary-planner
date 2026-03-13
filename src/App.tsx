@@ -2384,7 +2384,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                     >
                       <h4 className="font-extrabold text-sm tracking-tight group-hover:text-primary transition-colors">
                         Day {(day.dayOffset + 1).toString().padStart(2, '0')}
-                        <span className="text-slate-400 font-medium ml-1.5">{fmt(day.date, { month: 'short', day: 'numeric' })}</span>
+                        <span className="text-slate-400 font-medium ml-1.5">{fmt(day.date, { weekday: 'short', month: 'short', day: 'numeric' })}</span>
                       </h4>
                       <button className="text-slate-400 hover:text-slate-600" onClick={(e) => e.stopPropagation()}><MoreHorizontal className="w-5 h-5" /></button>
                     </div>
