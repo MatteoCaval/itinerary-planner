@@ -58,3 +58,104 @@ a:focus-visible {
 .focus-visible\:ring-2:focus-visible {
   outline: none;
 }
+
+/* ─── Map Marker Styles ─────────────────────────────────────────────────────── */
+
+.route-tooltip {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+.route-tooltip::before {
+  display: none !important;
+}
+.route-tooltip-content {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #475569;
+  white-space: nowrap;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.custom-marker-wrapper {
+  background: transparent !important;
+  border: none !important;
+}
+
+.map-marker-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  transition: transform 0.15s ease;
+}
+
+.marker-circle {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  border: 2px solid white;
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+
+.map-marker-container.hovered .marker-circle {
+  transform: scale(1.2);
+  box-shadow: 0 3px 8px rgba(13, 110, 253, 0.35);
+}
+
+.marker-number {
+  font-size: 9px;
+  font-weight: 800;
+  color: #475569;
+  background: white;
+  border-radius: 4px;
+  padding: 0 3px;
+  line-height: 14px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+  border: 1px solid #e2e8f0;
+}
+
+.cluster-marker-circle {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: white;
+  font-size: 14px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(236, 91, 19, 0.35);
+  border: 3px solid white;
+}
+
+.transport-midpoint-icon {
+  background: transparent !important;
+  border: none !important;
+}
+
+.midpoint-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s ease;
+}
+
+.midpoint-badge.hovered {
+  transform: scale(1.15);
+}
+
+.route-arrow-icon {
+  background: transparent !important;
+  border: none !important;
+}

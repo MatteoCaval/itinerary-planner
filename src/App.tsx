@@ -1,5 +1,4 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { MapContainer, TileLayer, CircleMarker, Polyline, Popup, useMap } from 'react-leaflet';
 import {
   DndContext, DragOverlay, useDraggable, useDroppable,
   type DragEndEvent, type DragStartEvent, PointerSensor, useSensor, useSensors,
@@ -16,6 +15,7 @@ import {
 } from 'lucide-react';
 import LegacyApp from './features/legacy/LegacyApp';
 import { searchPlace, type PlaceSearchResult } from './utils/geocoding';
+import TripMap from './components/TripMap';
 import 'leaflet/dist/leaflet.css';
 
 // ─── View switcher ────────────────────────────────────────────────────────────
@@ -137,6 +137,25 @@ function fmt(date: Date, opts: Intl.DateTimeFormatOptions) {
 
 function getStayNightCount(stay: Stay) {
   return Math.max(1, Math.ceil((stay.endSlot - stay.startSlot) / 3));
+}
+
+function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function getVisitTypeBg(type: VisitType) {
+  switch (type) {
+    case 'food':     return 'bg-emerald-400';
+    case 'landmark': return 'bg-primary';
+    case 'museum':   return 'bg-blue-400';
+    case 'walk':     return 'bg-teal-400';
+    case 'hotel':    return 'bg-slate-400';
+    default:         return 'bg-violet-400';
+  }
 }
 
 function getOverlapIds(stays: Stay[]) {
@@ -1376,46 +1395,7 @@ function HistoryPanel({ history, index, onNavigate, onClose }: {
 }
 
 // ─── Map ──────────────────────────────────────────────────────────────────────
-function FitMap({ points, expanded }: { points: [number, number][]; expanded: boolean }) {
-  const map = useMap();
-  useEffect(() => { window.setTimeout(() => map.invalidateSize(), 50); }, [expanded, map]);
-  useEffect(() => {
-    if (!points.length) return;
-    if (points.length === 1) { map.setView(points[0], 13, { animate: true }); return; }
-    map.fitBounds(points, { padding: [40, 40], animate: true });
-  }, [map, points]);
-  return null;
-}
-
-function TripMap({ visits, selectedVisitId, onSelectVisit, expanded }: {
-  visits: VisitItem[]; selectedVisitId: string | null;
-  onSelectVisit: (id: string) => void; expanded: boolean;
-}) {
-  const points = visits.map((v) => [v.lat, v.lng] as [number, number]);
-  const center: [number, number] = points.length ? points[0] : [35.6762, 139.6503];
-  return (
-    <MapContainer center={center} zoom={11} zoomControl={true} className="w-full h-full" style={{ background: '#f1f5f9' }}>
-      <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
-        url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
-      />
-      {points.length > 1 && (
-        <Polyline positions={points} pathOptions={{ color: '#ec5b13', weight: 2.5, dashArray: '8 5', opacity: 0.7 }} />
-      )}
-      {visits.map((v, i) => (
-        <CircleMarker
-          key={v.id} center={[v.lat, v.lng]}
-          radius={selectedVisitId === v.id ? 10 : i === 0 ? 8 : 6}
-          pathOptions={{ fillColor: '#ec5b13', fillOpacity: selectedVisitId === v.id ? 1 : 0.8, color: 'white', weight: selectedVisitId === v.id ? 3 : 2 }}
-          eventHandlers={{ click: () => onSelectVisit(v.id) }}
-        >
-          <Popup><div className="text-xs font-semibold">{v.name}</div><div className="text-[10px] text-slate-500">{v.area}</div></Popup>
-        </CircleMarker>
-      ))}
-      <FitMap points={points} expanded={expanded} />
-    </MapContainer>
-  );
-}
+// TripMap is now imported from ./components/TripMap
 
 // ─── Draggable inventory card ──────────────────────────────────────────────────
 function DraggableInventoryCard({ visit, onEdit }: { visit: VisitItem; onEdit: () => void }) {
@@ -1459,14 +1439,15 @@ function SortableVisitCard({ visit, isSelected, onSelect, onEdit }: {
     <div
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.3 : 1 }}
-      className={`relative p-3.5 bg-white rounded-lg border transition-all group ${
+      className={`relative pl-[18px] pr-3.5 py-3.5 bg-white rounded-lg border transition-all group ${
         isOver
           ? 'border-primary shadow-md ring-2 ring-primary/25 bg-primary/[0.02]'
           : isSelected
-          ? 'border-primary/40 shadow-[0_4px_12px_rgba(236,91,19,0.1)] ring-1 ring-primary/10'
+          ? 'border-primary/30 shadow-[0_4px_12px_rgba(236,91,19,0.1)] ring-1 ring-primary/10'
           : 'border-slate-200 hover:border-slate-300 hover:shadow-sm'
       }`}
     >
+      <div className={`absolute left-0 top-0 bottom-0 w-1 rounded-l-lg ${getVisitTypeBg(visit.type)}`} />
       {isOver && <div className="absolute -top-1 left-2 right-2 h-0.5 bg-primary rounded-full z-10" />}
       <div className="flex items-start justify-between mb-1.5">
         <div className="flex items-center gap-2 flex-wrap">
@@ -1614,6 +1595,8 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
   const [dragState, setDragState] = useState<DragState>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [mapExpanded, setMapExpanded] = useState(false);
+  const [mapMode, setMapMode] = useState<'overview' | 'detail'>('overview');
+  const [mapDayFilter, setMapDayFilter] = useState<number | null>(null);
   const [zoomDays, setZoomDays] = useState(15);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -1650,6 +1633,8 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
     return () => window.removeEventListener('keydown', handler);
   }, [hist, updateTrip]);
 
+  useEffect(() => { setMapDayFilter(null); setMapMode('overview'); }, [selectedStayId]);
+
   // ── Derived values ────────────────────────────────────────────────────────
   const sortedStays = useMemo(() => [...trip.stays].sort((a, b) => a.startSlot - b.startSlot), [trip.stays]);
   const overlaps = useMemo(() => getOverlapIds(sortedStays), [sortedStays]);
@@ -1658,6 +1643,19 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
     [selectedStayId, sortedStays],
   );
   const stayDays = useMemo(() => selectedStay ? deriveStayDays(trip, selectedStay) : [], [selectedStay, trip]);
+  const overviewStays = useMemo(() =>
+    sortedStays.map(s => ({
+      id: s.id, name: s.name, color: s.color,
+      centerLat: s.centerLat, centerLng: s.centerLng,
+      travelModeToNext: s.travelModeToNext,
+      travelDurationToNext: s.travelDurationToNext,
+    })),
+    [sortedStays]
+  );
+  const dayFilterOptions = useMemo(() =>
+    stayDays.map(d => ({ dayOffset: d.dayOffset, label: `Day ${d.dayOffset + 1}` })),
+    [stayDays]
+  );
   const accommodationGroups = useMemo(() => deriveAccommodationGroups(stayDays), [stayDays]);
   const existingAccommodationNames = useMemo(() => {
     const names = new Set<string>();
@@ -1679,8 +1677,12 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
 
   const mapVisits = useMemo(() => {
     if (!selectedStay) return [];
-    return sortVisits(selectedStay.visits.filter((v) => v.dayOffset !== null && v.dayPart !== null));
-  }, [selectedStay]);
+    let scheduled = selectedStay.visits.filter((v) => v.dayOffset !== null && v.dayPart !== null);
+    if (mapDayFilter !== null) {
+      scheduled = scheduled.filter((v) => v.dayOffset === mapDayFilter);
+    }
+    return sortVisits(scheduled);
+  }, [selectedStay, mapDayFilter]);
 
   // ── Timeline drag ─────────────────────────────────────────────────────────
   useEffect(() => {
@@ -2141,13 +2143,19 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                     ))
                   : [];
                 return (
-                  <div key={day.dayOffset} className="flex-none w-72 flex flex-col gap-4">
-                    <div className="flex items-center justify-between">
-                      <h4 className="font-extrabold text-sm tracking-tight">
+                  <div key={day.dayOffset} className={`flex-none w-72 flex flex-col gap-4 rounded-xl transition-colors ${mapMode === 'detail' && mapDayFilter === day.dayOffset ? 'ring-2 ring-primary/40 bg-primary/[0.03] p-2 -m-2' : ''}`}>
+                    <div
+                      className="flex items-center justify-between cursor-pointer group"
+                      onClick={() => {
+                        if (mapDayFilter === day.dayOffset) { setMapDayFilter(null); setMapMode('overview'); }
+                        else { setMapDayFilter(day.dayOffset); setMapMode('detail'); }
+                      }}
+                    >
+                      <h4 className="font-extrabold text-sm tracking-tight group-hover:text-primary transition-colors">
                         Day {(day.dayOffset + 1).toString().padStart(2, '0')}
                         <span className="text-slate-400 font-medium ml-1.5">{fmt(day.date, { month: 'short', day: 'numeric' })}</span>
                       </h4>
-                      <button className="text-slate-400 hover:text-slate-600"><MoreHorizontal className="w-5 h-5" /></button>
+                      <button className="text-slate-400 hover:text-slate-600" onClick={(e) => e.stopPropagation()}><MoreHorizontal className="w-5 h-5" /></button>
                     </div>
                     {/* Accommodation bar — rendered on the first day of each accommodation group */}
                     {(() => {
@@ -2192,13 +2200,19 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                                 </div>
                                 <p className="text-xs font-extrabold text-slate-800 truncate">{group.name}</p>
                               </div>
+                              {group.accommodation.notes && (
+                                <span className="text-[10px] font-medium text-slate-500 bg-slate-50 border border-slate-100 px-2.5 py-1 rounded-full flex items-center gap-1.5 flex-shrink-0 max-w-[180px] truncate">
+                                  <span className="material-icons text-slate-400 text-[12px]">#</span>
+                                  {group.accommodation.notes}
+                                </span>
+                              )}
                               <Pencil className="w-3.5 h-3.5 text-slate-300 flex-shrink-0" />
                             </button>
                           </div>
                         </div>
                       );
                     })()}
-                    <div className="space-y-3">
+                    <div className="space-y-4 pt-2">
                       {DAY_PARTS.filter((p) => day.enabledParts.includes(p)).map((period) => (
                         <DroppablePeriodSlot
                           key={period}
@@ -2228,22 +2242,48 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
               {/* Map panel header */}
               <div className="h-12 px-5 border-b border-slate-100 flex items-center justify-between bg-white/80 backdrop-blur-md flex-shrink-0">
                 <div className="flex items-center gap-2.5">
-                  <Layers className="w-4 h-4 text-primary" />
-                  <span className="text-xs font-extrabold text-slate-700 tracking-tight">Route Overview</span>
+                  <div className="size-6 bg-primary/10 rounded-md flex items-center justify-center">
+                    <MapPin className="w-3.5 h-3.5 text-primary" />
+                  </div>
+                  <span className="text-xs font-extrabold text-slate-700 tracking-tight">{mapMode === 'overview' ? 'Trip Overview' : 'Route Overview'}</span>
                 </div>
-                <button
-                  onClick={() => setMapExpanded(!mapExpanded)}
-                  aria-label={mapExpanded ? 'Collapse map' : 'Expand map'}
-                  className="p-1.5 rounded-lg text-slate-400 hover:text-primary hover:bg-slate-50 transition-colors focus-visible:ring-2 focus-visible:ring-primary/50"
-                >
-                  {mapExpanded ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-                </button>
+                <div className="flex items-center gap-1">
+                  <button
+                    aria-label={mapMode === 'overview' ? 'Show stay detail' : 'Show trip overview'}
+                    onClick={() => { setMapMode(m => m === 'overview' ? 'detail' : 'overview'); if (mapMode === 'detail') setMapDayFilter(null); }}
+                    className={`p-1.5 rounded-lg transition-colors focus-visible:ring-2 focus-visible:ring-primary/50 ${
+                      mapMode === 'overview'
+                        ? 'text-primary bg-primary/10'
+                        : 'text-slate-400 hover:text-primary hover:bg-slate-50'
+                    }`}
+                  >
+                    <Layers className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => setMapExpanded(!mapExpanded)}
+                    aria-label={mapExpanded ? 'Collapse map' : 'Expand map'}
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-primary hover:bg-slate-50 transition-colors focus-visible:ring-2 focus-visible:ring-primary/50"
+                  >
+                    {mapExpanded ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+                  </button>
+                </div>
               </div>
 
               <div className="flex-1 overflow-hidden relative">
-                {mapVisits.length > 0 ? (
-                  <TripMap visits={mapVisits} selectedVisitId={selectedVisitId}
-                    onSelectVisit={(id) => setSelectedVisitId(id === selectedVisitId ? null : id)} expanded={mapExpanded} />
+                {(mapMode === 'overview' || mapVisits.length > 0 || mapDayFilter !== null) ? (
+                  <TripMap
+                    visits={mapMode === 'detail' ? mapVisits : []}
+                    selectedVisitId={mapMode === 'detail' ? selectedVisitId : null}
+                    onSelectVisit={(id) => setSelectedVisitId(id)}
+                    expanded={mapExpanded}
+                    stay={mapMode === 'detail' ? selectedStay : null}
+                    mode={mapMode}
+                    overviewStays={overviewStays}
+                    onSelectStay={(stayId) => { setSelectedStayId(stayId); setMapMode('detail'); }}
+                    dayFilterOptions={dayFilterOptions}
+                    selectedDayOffset={mapDayFilter}
+                    onDayFilterChange={(d) => { setMapDayFilter(d); setMapMode(d !== null ? 'detail' : 'overview'); }}
+                  />
                 ) : (
                   <div className="absolute inset-0 flex items-center justify-center bg-slate-50">
                     <div className="text-center text-slate-400">
@@ -2264,16 +2304,28 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex justify-between items-start">
-                            <h5 className="text-sm font-extrabold text-slate-800 truncate">{visit.name}</h5>
+                            <div>
+                              {visit.dayOffset !== null && visit.dayPart && (
+                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wide mb-0.5">
+                                  {visit.dayPart === 'morning' ? 'Morning' : visit.dayPart === 'afternoon' ? 'Afternoon' : 'Evening'}, Day {(visit.dayOffset ?? 0) + 1}
+                                </p>
+                              )}
+                              <h5 className="text-sm font-extrabold text-slate-800 truncate">{visit.name}</h5>
+                            </div>
                             <button onClick={() => setSelectedVisitId(null)} className="text-slate-400 hover:text-slate-600 flex-shrink-0 ml-2">
                               <X className="w-4 h-4" />
                             </button>
                           </div>
                           <p className="text-[10px] font-bold text-slate-500 mt-0.5">{visit.area}</p>
-                          <div className="flex gap-2 mt-2">
+                          <div className="flex gap-2 mt-2 flex-wrap">
                             <span className={`text-[9px] font-bold px-2 py-0.5 rounded border ${getVisitTypeColor(visit.type)}`}>
                               {getVisitLabel(visit.type).toUpperCase()}
                             </span>
+                            {selectedStay && (
+                              <span className="text-[9px] font-bold text-slate-500 bg-slate-50 px-2 py-0.5 rounded border border-slate-100">
+                                {haversineKm(selectedStay.centerLat, selectedStay.centerLng, visit.lat, visit.lng).toFixed(1)} km from hotel
+                              </span>
+                            )}
                             {visit.durationHint && (
                               <span className="text-[9px] font-bold text-slate-500 bg-slate-50 px-2 py-0.5 rounded border border-slate-100">
                                 {visit.durationHint}
@@ -2292,20 +2344,53 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
 
               {/* Map panel footer */}
               <div className="px-5 py-3 bg-white/80 backdrop-blur-md border-t border-slate-100 flex items-center justify-between flex-shrink-0">
-                <div className="flex items-center gap-2.5">
-                  <Navigation className="text-primary w-4 h-4" />
+                <div className="flex items-center gap-3">
+                  <div className={`size-8 rounded-full flex items-center justify-center flex-shrink-0 ${mapMode === 'overview' ? 'bg-slate-600' : 'bg-primary'}`}>
+                    <Navigation className="text-white w-3.5 h-3.5" />
+                  </div>
                   <div>
-                    <span className="text-[10px] font-extrabold text-slate-800 uppercase tracking-tight block">
-                      {selectedStay?.name ?? 'No stay selected'}
+                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">
+                      {mapMode === 'overview' ? 'Trip Route' : 'Active Route'}
                     </span>
-                    <span className="text-[9px] font-bold text-slate-400 uppercase">
-                      {selectedStay ? `${getStayNightCount(selectedStay)} days · ${selectedStay.lodging}` : 'Click a stay'}
+                    <span className="text-xs font-extrabold text-slate-800">
+                      {mapMode === 'overview'
+                        ? `${sortedStays.length} destinations`
+                        : selectedStay
+                          ? mapDayFilter !== null
+                            ? `${selectedStay.name} · Day ${String(mapDayFilter + 1).padStart(2, '0')}`
+                            : `${selectedStay.name} · All Days`
+                          : 'No stay selected'}
                     </span>
                   </div>
                 </div>
                 <div className="text-right">
-                  <span className="text-xs font-black text-slate-800">{mapVisits.length} stops</span>
-                  <p className="text-[9px] font-bold text-slate-400">SCHEDULED</p>
+                  {mapMode === 'overview' ? (
+                    <>
+                      <span className="text-xs font-black text-slate-800">
+                        {(() => {
+                          let totalKm = 0;
+                          for (let i = 0; i < sortedStays.length - 1; i++) {
+                            totalKm += haversineKm(sortedStays[i].centerLat, sortedStays[i].centerLng, sortedStays[i + 1].centerLat, sortedStays[i + 1].centerLng);
+                          }
+                          return `${totalKm.toFixed(0)} km`;
+                        })()}
+                      </span>
+                      <p className="text-[9px] font-bold text-slate-400">{sortedStays.length} cities</p>
+                    </>
+                  ) : (
+                    <>
+                      <span className="text-xs font-black text-slate-800">
+                        {selectedStay ? (() => {
+                          let totalKm = 0;
+                          for (let i = 1; i < mapVisits.length; i++) {
+                            totalKm += haversineKm(mapVisits[i - 1].lat, mapVisits[i - 1].lng, mapVisits[i].lat, mapVisits[i].lng);
+                          }
+                          return `${totalKm.toFixed(1)} km`;
+                        })() : '—'}
+                      </span>
+                      <p className="text-[9px] font-bold text-slate-400">{mapVisits.length} stops</p>
+                    </>
+                  )}
                 </div>
               </div>
             </aside>
