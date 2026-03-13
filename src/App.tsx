@@ -1597,7 +1597,10 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
   const [mapExpanded, setMapExpanded] = useState(false);
   const [mapMode, setMapMode] = useState<'overview' | 'detail'>('overview');
   const [mapDayFilter, setMapDayFilter] = useState<number | null>(null);
-  const [zoomDays, setZoomDays] = useState(15);
+  const [zoomDays, setZoomDays] = useState(() => {
+    const saved = localStorage.getItem('itinerary-timeline-zoom');
+    return saved ? Number(saved) : 15;
+  });
   const [searchQuery, setSearchQuery] = useState('');
 
   // Modals
@@ -1950,8 +1953,8 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
               <div className="flex items-center gap-4">
                 <span className="text-[10px] font-extrabold uppercase tracking-[0.15em] text-slate-500">Timeline</span>
                 <div className="flex bg-white rounded-md border border-border-neutral p-0.5">
-                  {([5, 10, 15, 30, 0] as const).filter((d) => d === 0 || d < trip.totalDays).map((d) => (
-                    <button key={d} onClick={() => setZoomDays(d)}
+                  {([5, 10, 15, 30, 0] as const).filter((d) => d === 0 || d <= trip.totalDays).map((d) => (
+                    <button key={d} onClick={() => { setZoomDays(d); localStorage.setItem('itinerary-timeline-zoom', String(d)); }}
                       className={`px-2.5 py-1 text-[9px] font-bold rounded-sm transition-colors ${zoomDays === d ? 'bg-primary text-white shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}
                     >
                       {d === 0 ? 'ALL' : `${d}D`}
