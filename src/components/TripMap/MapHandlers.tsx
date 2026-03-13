@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useMap, useMapEvents } from 'react-leaflet';
 
 interface FitMapProps {
@@ -6,19 +6,36 @@ interface FitMapProps {
   expanded: boolean;
 }
 
+function fitPoints(map: ReturnType<typeof useMap>, pts: [number, number][], animate = true) {
+  if (!pts.length) return;
+  if (pts.length === 1) {
+    map.setView(pts[0], 13, { animate });
+  } else {
+    map.fitBounds(pts, { padding: [40, 40], animate });
+  }
+}
+
 export function FitMap({ points, expanded }: FitMapProps) {
   const map = useMap();
+  // Keep a ref so the expand effect always uses the latest points without being a dep
+  const pointsRef = useRef(points);
+  pointsRef.current = points;
+
+  // When the panel resizes (expand/collapse), wait for the CSS transition (300ms)
+  // then invalidate + re-fit so tiles fill the full area and the view is centered.
   useEffect(() => {
-    window.setTimeout(() => map.invalidateSize(), 50);
+    const timer = window.setTimeout(() => {
+      map.invalidateSize();
+      fitPoints(map, pointsRef.current);
+    }, 320);
+    return () => window.clearTimeout(timer);
   }, [expanded, map]);
+
+  // When the content changes (new stay, mode switch, day filter), re-center immediately.
   useEffect(() => {
-    if (!points.length) return;
-    if (points.length === 1) {
-      map.setView(points[0], 13, { animate: true });
-      return;
-    }
-    map.fitBounds(points, { padding: [40, 40], animate: true });
+    fitPoints(map, points);
   }, [map, points]);
+
   return null;
 }
 
