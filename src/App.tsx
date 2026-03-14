@@ -618,22 +618,24 @@ function saveStore(store: TripStore) {
 }
 
 // ─── History hook ─────────────────────────────────────────────────────────────
+type HistorySnapshot = { trip: HybridTrip; timestamp: number };
+
 function useHistory(initial: HybridTrip) {
-  const [snapshots, setSnapshots] = useState<HybridTrip[]>([initial]);
+  const [snapshots, setSnapshots] = useState<HistorySnapshot[]>([{ trip: initial, timestamp: Date.now() }]);
   const [idx, setIdx] = useState(0);
 
   const push = useCallback((next: HybridTrip) => {
-    setSnapshots((prev) => [...prev.slice(0, idx + 1), next].slice(-50));
+    setSnapshots((prev) => [...prev.slice(0, idx + 1), { trip: next, timestamp: Date.now() }].slice(-50));
     setIdx((i) => Math.min(i + 1, 49));
   }, [idx]);
 
   const undo = useCallback(() => {
-    if (idx > 0) { setIdx((i) => i - 1); return snapshots[idx - 1]; }
+    if (idx > 0) { setIdx((i) => i - 1); return snapshots[idx - 1].trip; }
     return null;
   }, [idx, snapshots]);
 
   const redo = useCallback(() => {
-    if (idx < snapshots.length - 1) { setIdx((i) => i + 1); return snapshots[idx + 1]; }
+    if (idx < snapshots.length - 1) { setIdx((i) => i + 1); return snapshots[idx + 1].trip; }
     return null;
   }, [idx, snapshots]);
 
@@ -1413,28 +1415,74 @@ function TripSwitcherPanel({ store, onSwitch, onNew, onClose }: {
 }
 
 // ─── History panel ────────────────────────────────────────────────────────────
+function formatRelativeTime(ts: number): string {
+  const diff = Date.now() - ts;
+  if (diff < 60_000) return 'just now';
+  if (diff < 3_600_000) return `${Math.floor(diff / 60_000)}m ago`;
+  if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)}h ago`;
+  return new Date(ts).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+
 function HistoryPanel({ history, index, onNavigate, onClose }: {
-  history: HybridTrip[]; index: number; onNavigate: (i: number) => void; onClose: () => void;
+  history: HistorySnapshot[]; index: number; onNavigate: (i: number) => void; onClose: () => void;
 }) {
   return (
     <ModalBase title="History" onClose={onClose}>
-      <div className="space-y-1 max-h-80 overflow-y-auto">
+      <div className="space-y-0.5 max-h-96 overflow-y-auto -mx-1 px-1">
         {[...history].reverse().map((snap, ri) => {
           const i = history.length - 1 - ri;
           const isCurrent = i === index;
+          const isFuture = i > index;
+          const prev = i > 0 ? history[i - 1] : null;
+          const staysDiff = prev ? snap.trip.stays.length - prev.trip.stays.length : null;
+          const placesDiff = prev
+            ? snap.trip.stays.reduce((s, st) => s + st.visits.length, 0) -
+              prev.trip.stays.reduce((s, st) => s + st.visits.length, 0)
+            : null;
           return (
             <button
               key={i}
               onClick={() => { onNavigate(i); onClose(); }}
-              className={`w-full text-left px-3 py-2.5 rounded-lg transition-all flex items-center justify-between ${
-                isCurrent ? 'bg-primary/5 border border-primary/20' : 'hover:bg-slate-50 border border-transparent'
+              className={`w-full text-left px-3 py-2.5 rounded-lg transition-all flex items-center justify-between gap-3 ${
+                isCurrent
+                  ? 'bg-primary/5 border border-primary/20'
+                  : isFuture
+                  ? 'opacity-40 hover:opacity-65 border border-dashed border-slate-200 hover:bg-slate-50'
+                  : 'hover:bg-slate-50 border border-transparent'
               }`}
             >
-              <div>
-                <p className={`text-xs font-bold ${isCurrent ? 'text-primary' : 'text-slate-700'}`}>{snap.name}</p>
-                <p className="text-[10px] text-slate-400">{snap.stays.length} stays · {snap.stays.reduce((s, st) => s + st.visits.length, 0)} places</p>
+              <div className="flex items-start gap-2.5 min-w-0">
+                <span className={`text-[10px] font-mono mt-0.5 shrink-0 ${isCurrent ? 'text-primary' : 'text-slate-300'}`}>
+                  #{i}
+                </span>
+                <div className="min-w-0">
+                  <p className={`text-xs font-semibold truncate ${isCurrent ? 'text-primary' : 'text-slate-700'}`}>
+                    {snap.trip.name}
+                  </p>
+                  <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                    <p className="text-[10px] text-slate-400">
+                      {snap.trip.stays.length} stays · {snap.trip.stays.reduce((s, st) => s + st.visits.length, 0)} places
+                    </p>
+                    {staysDiff !== null && staysDiff !== 0 && (
+                      <span className={`text-[9px] font-bold px-1.5 py-px rounded ${staysDiff > 0 ? 'text-emerald-600 bg-emerald-50' : 'text-red-500 bg-red-50'}`}>
+                        {staysDiff > 0 ? `+${staysDiff}` : staysDiff} stay{Math.abs(staysDiff) !== 1 ? 's' : ''}
+                      </span>
+                    )}
+                    {placesDiff !== null && placesDiff !== 0 && (
+                      <span className={`text-[9px] font-bold px-1.5 py-px rounded ${placesDiff > 0 ? 'text-emerald-600 bg-emerald-50' : 'text-red-500 bg-red-50'}`}>
+                        {placesDiff > 0 ? `+${placesDiff}` : placesDiff} place{Math.abs(placesDiff) !== 1 ? 's' : ''}
+                      </span>
+                    )}
+                  </div>
+                </div>
               </div>
-              {isCurrent && <span className="text-[9px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">CURRENT</span>}
+              <div className="flex items-center gap-2 shrink-0">
+                <span className="text-[9px] text-slate-300 tabular-nums">{formatRelativeTime(snap.timestamp)}</span>
+                {isCurrent && (
+                  <span className="text-[9px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">NOW</span>
+                )}
+                {isFuture && <Redo2 className="w-3 h-3 text-slate-300" />}
+              </div>
             </button>
           );
         })}
@@ -2907,7 +2955,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
             index={hist.historyIndex}
             onNavigate={(i) => {
               const snap = hist.history[i];
-              if (snap) updateTrip(() => snap);
+              if (snap) updateTrip(() => snap.trip);
             }}
             onClose={() => setShowHistory(false)}
           />
