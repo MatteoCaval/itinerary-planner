@@ -8,7 +8,6 @@ import { MapControlsPanel, useBasemapState } from './MapControlsPanel';
 import type { BasemapMode } from './MapControlsPanel';
 import StayOverviewLayer from './StayOverviewLayer';
 import type { OverviewStay } from './StayOverviewLayer';
-import DayFilterPills from './DayFilterPills';
 
 type VisitType = 'area' | 'landmark' | 'museum' | 'food' | 'walk' | 'hotel';
 
@@ -53,9 +52,7 @@ interface TripMapProps {
   mode: 'overview' | 'detail';
   overviewStays?: OverviewStay[];
   onSelectStay?: (stayId: string) => void;
-  dayFilterOptions?: { dayOffset: number; label: string }[];
   selectedDayOffset?: number | null;
-  onDayFilterChange?: (dayOffset: number | null) => void;
 }
 
 const BASEMAPS: Record<BasemapMode, { url: string; attribution: string }> = {
@@ -72,8 +69,7 @@ const BASEMAPS: Record<BasemapMode, { url: string; attribution: string }> = {
 
 export default function TripMap({
   visits, selectedVisitId, onSelectVisit, expanded, stay,
-  mode, overviewStays, onSelectStay,
-  dayFilterOptions, selectedDayOffset, onDayFilterChange,
+  mode, overviewStays, onSelectStay, selectedDayOffset,
 }: TripMapProps) {
   const [basemap, setBasemap] = useBasemapState();
   const [showArrows, setShowArrows] = useState(true);
@@ -178,14 +174,6 @@ export default function TripMap({
 
         <FitMap points={allPoints} expanded={expanded} />
       </MapContainer>
-
-      {dayFilterOptions && onDayFilterChange && (
-        <DayFilterPills
-          options={dayFilterOptions}
-          selectedDayOffset={selectedDayOffset ?? null}
-          onChange={onDayFilterChange}
-        />
-      )}
 
       <MapControlsPanel
         basemap={basemap}

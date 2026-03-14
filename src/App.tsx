@@ -18,6 +18,7 @@ import { searchPlace, type PlaceSearchResult } from './utils/geocoding';
 import { generateHybridItinerary, type AIHybridStay } from './aiService';
 import { generateMarkdown, downloadMarkdown } from './markdownExporter';
 import TripMap from './components/TripMap';
+import DayFilterPills from './components/TripMap/DayFilterPills';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import 'leaflet/dist/leaflet.css';
 
@@ -2788,14 +2789,28 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                 </div>
               )}
               {/* Map panel header */}
-              <div className="h-12 px-5 border-b border-slate-100 flex items-center justify-between bg-white/80 backdrop-blur-md flex-shrink-0">
-                <div className="flex items-center gap-2.5">
-                  <div className="size-6 bg-primary/10 rounded-md flex items-center justify-center">
-                    <MapPin className="w-3.5 h-3.5 text-primary" />
+              <div className="h-11 px-4 border-b border-slate-100 flex items-center gap-3 bg-white/80 backdrop-blur-md flex-shrink-0">
+                {/* Left: mode icon + title */}
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <div className="size-5 bg-primary/10 rounded flex items-center justify-center">
+                    <MapPin className="w-3 h-3 text-primary" />
                   </div>
-                  <span className="text-xs font-extrabold text-slate-700 tracking-tight">{mapMode === 'overview' ? 'Trip Overview' : 'Route Overview'}</span>
+                  <span className="text-[10px] font-extrabold text-slate-600 tracking-tight uppercase">
+                    {mapMode === 'overview' ? 'Overview' : 'Detail'}
+                  </span>
                 </div>
-                <div className="flex items-center gap-1">
+                {/* Middle: day filter pills — scrollable, only in detail mode */}
+                <div className="flex-1 overflow-x-auto scroll-hide min-w-0">
+                  {mapMode === 'detail' && dayFilterOptions.length >= 2 && (
+                    <DayFilterPills
+                      options={dayFilterOptions}
+                      selectedDayOffset={mapDayFilter}
+                      onChange={(d) => { setMapDayFilter(d); setMapMode(d !== null ? 'detail' : 'overview'); }}
+                    />
+                  )}
+                </div>
+                {/* Right: action buttons */}
+                <div className="flex items-center gap-0.5 flex-shrink-0">
                   <button
                     aria-label={mapMode === 'overview' ? 'Show stay detail' : 'Show trip overview'}
                     onClick={() => { setMapMode(m => m === 'overview' ? 'detail' : 'overview'); if (mapMode === 'detail') setMapDayFilter(null); }}
@@ -2828,9 +2843,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                     mode={mapMode}
                     overviewStays={overviewStays}
                     onSelectStay={(stayId) => { setSelectedStayId(stayId); setMapMode('detail'); }}
-                    dayFilterOptions={dayFilterOptions}
                     selectedDayOffset={mapDayFilter}
-                    onDayFilterChange={(d) => { setMapDayFilter(d); setMapMode(d !== null ? 'detail' : 'overview'); }}
                   />
                 ) : (
                   <div className="absolute inset-0 flex items-center justify-center bg-slate-50">

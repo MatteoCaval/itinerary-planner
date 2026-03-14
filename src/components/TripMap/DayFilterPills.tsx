@@ -8,28 +8,26 @@ export default function DayFilterPills({ options, selectedDayOffset, onChange }:
   if (options.length < 2) return null;
 
   const pillClass = (active: boolean) =>
-    `px-3 py-1 text-[11px] font-bold rounded-full border transition-colors whitespace-nowrap cursor-pointer ${
+    `px-2.5 py-0.5 text-[10px] font-bold rounded-full transition-colors whitespace-nowrap cursor-pointer flex-shrink-0 ${
       active
-        ? 'bg-primary text-white border-primary'
-        : 'bg-white/90 text-slate-600 border-slate-200 hover:border-slate-300'
+        ? 'bg-primary text-white'
+        : 'bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-700'
     }`;
 
   return (
-    <div className="absolute top-3 left-3 z-[1000] max-w-[60%] overflow-x-auto scroll-hide">
-      <div className="flex gap-1.5">
-        <button className={pillClass(selectedDayOffset === null)} onClick={() => onChange(null)}>
-          All
+    <div className="flex gap-1.5 overflow-x-auto scroll-hide items-center">
+      <button className={pillClass(selectedDayOffset === null)} onClick={() => onChange(null)}>
+        All
+      </button>
+      {options.map((o) => (
+        <button
+          key={o.dayOffset}
+          className={pillClass(selectedDayOffset === o.dayOffset)}
+          onClick={() => onChange(o.dayOffset)}
+        >
+          {o.label}
         </button>
-        {options.map((o) => (
-          <button
-            key={o.dayOffset}
-            className={pillClass(selectedDayOffset === o.dayOffset)}
-            onClick={() => onChange(o.dayOffset)}
-          >
-            {o.label}
-          </button>
-        ))}
-      </div>
+      ))}
     </div>
   );
 }
