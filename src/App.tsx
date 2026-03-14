@@ -1512,7 +1512,7 @@ function DraggableInventoryCard({ visit, onEdit }: { visit: VisitItem; onEdit: (
           {getVisitLabel(visit.type)}
         </span>
         <div className="flex items-center gap-1">
-          <button onClick={onEdit} className="opacity-60 group-hover:opacity-100 transition-opacity p-1.5 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-600 focus-visible:ring-2 focus-visible:ring-primary/50" aria-label={`Edit ${visit.name}`}>
+          <button onClick={onEdit} className="opacity-60 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 focus-visible:ring-2 focus-visible:ring-primary/50" aria-label={`Edit ${visit.name}`}>
             <Pencil className="w-3 h-3" />
           </button>
           <div className="cursor-grab active:cursor-grabbing p-1" {...listeners} {...attributes} aria-label="Drag to schedule" role="button">
@@ -1556,7 +1556,7 @@ function SortableVisitCard({ visit, isSelected, onSelect, onEdit }: {
           {visit.durationHint && <span className="text-[10px] text-slate-400 font-medium">{visit.durationHint}</span>}
         </div>
         <div className="flex items-center gap-1 flex-shrink-0 ml-1">
-          <button onClick={onEdit} className="opacity-60 group-hover:opacity-100 transition-opacity p-1.5 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-600 focus-visible:ring-2 focus-visible:ring-primary/50" aria-label={`Edit ${visit.name}`}>
+          <button onClick={onEdit} className="opacity-60 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 focus-visible:ring-2 focus-visible:ring-primary/50" aria-label={`Edit ${visit.name}`}>
             <Pencil className="w-3 h-3" />
           </button>
           <div className="cursor-grab active:cursor-grabbing p-1" {...listeners} {...attributes} onClick={(e) => e.stopPropagation()} aria-label="Drag to reorder" role="button">
@@ -2468,7 +2468,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
               </div>
               <button
                 onClick={() => setAddingStay(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-bold text-slate-700 border border-border-neutral rounded-md hover:bg-white shadow-sm transition-all active:scale-95"
+                className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-bold text-slate-700 border border-border-neutral rounded-lg hover:bg-white shadow-sm transition-all active:scale-95"
               >
                 <Plus className="w-4 h-4" /> Add Stay
               </button>
@@ -2651,7 +2651,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
               <div className="p-4 border-t border-border-neutral bg-slate-50/50 flex-shrink-0">
                 <button
                   onClick={() => setAddingToInbox(true)}
-                  className="w-full py-2 bg-white text-[11px] font-bold text-slate-600 border border-slate-200 rounded-md flex items-center justify-center gap-2 hover:border-primary/50 hover:text-primary transition-all"
+                  className="w-full py-2 bg-white text-[11px] font-bold text-slate-600 border border-slate-200 rounded-lg flex items-center justify-center gap-2 hover:border-primary/50 hover:text-primary transition-all"
                 >
                   <Plus className="w-4 h-4" /> Add New Place
                 </button>
@@ -2879,7 +2879,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                                 {visit.durationHint}
                               </span>
                             )}
-                            <button onClick={() => setEditingVisit(visit)} className="text-[9px] font-bold text-slate-500 bg-slate-50 px-2 py-0.5 rounded border border-slate-100 hover:border-primary/40 hover:text-primary flex items-center gap-1">
+                            <button onClick={() => setEditingVisit(visit)} className="text-[9px] font-bold text-slate-500 bg-slate-50 px-2 py-0.5 rounded-lg border border-slate-100 hover:border-primary/40 hover:text-primary flex items-center gap-1">
                               <Pencil className="w-2.5 h-2.5" /> Edit
                             </button>
                           </div>
