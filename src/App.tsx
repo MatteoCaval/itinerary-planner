@@ -1882,17 +1882,24 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
   const [dragState, setDragState] = useState<DragState>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [mapExpanded, setMapExpanded] = useState(false);
-  const [mapWidth, setMapWidth] = useState(500);
-  const mapResizingRef = useRef<{ startX: number; startWidth: number } | null>(null);
+  const [mapWidth, setMapWidth] = useState(() => {
+    const saved = localStorage.getItem('itinerary-map-width');
+    return saved ? Number(saved) : 500;
+  });
+  const mapResizingRef = useRef<{ startX: number; startWidth: number; currentWidth: number } | null>(null);
   const startMapResize = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
-    mapResizingRef.current = { startX: e.clientX, startWidth: mapWidth };
+    mapResizingRef.current = { startX: e.clientX, startWidth: mapWidth, currentWidth: mapWidth };
     const onMove = (ev: MouseEvent) => {
       if (!mapResizingRef.current) return;
-      const delta = mapResizingRef.current.startX - ev.clientX;
-      setMapWidth(Math.min(900, Math.max(280, mapResizingRef.current.startWidth + delta)));
+      const newWidth = Math.min(900, Math.max(280, mapResizingRef.current.startWidth + (mapResizingRef.current.startX - ev.clientX)));
+      mapResizingRef.current.currentWidth = newWidth;
+      setMapWidth(newWidth);
     };
     const onUp = () => {
+      if (mapResizingRef.current) {
+        localStorage.setItem('itinerary-map-width', String(mapResizingRef.current.currentWidth));
+      }
       mapResizingRef.current = null;
       window.removeEventListener('mousemove', onMove);
       window.removeEventListener('mouseup', onUp);
