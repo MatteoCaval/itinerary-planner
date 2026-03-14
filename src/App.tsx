@@ -9,7 +9,7 @@ import {
   ArrowLeftRight, Bed, Bus, Calendar, Car, Check,
   ChevronDown, Compass, Database, Download, Footprints,
   GripVertical, History, Landmark, LogIn, LogOut, MapPin, Maximize2, Minimize2,
-  Moon, MoreHorizontal, Navigation, Pencil, Plane, Plus,
+  Moon, Navigation, Pencil, Plane, Plus,
   PlusCircle, Redo2, Search, Ship, SlidersHorizontal, Sparkles, Sunrise,
   Sun, Train, Trash2, Undo2, Upload, User, X, Layers, Hotel, UtensilsCrossed,
 } from 'lucide-react';
@@ -2537,13 +2537,16 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                               {/* Left resize */}
                               <div
                                 data-handle="resize-start"
-                                className="absolute -left-1 top-0 bottom-0 w-3 cursor-ew-resize z-20 flex items-center justify-center"
+                                className="absolute -left-1.5 top-0 bottom-0 w-5 cursor-ew-resize z-20 flex items-center justify-center"
                                 onMouseDown={(e) => {
                                   e.stopPropagation();
                                   setSelectedStayId(stay.id);
                                   setDragState({ stayId: stay.id, mode: 'resize-start', originX: e.clientX, originalStart: stay.startSlot, originalEnd: stay.endSlot });
                                 }}
-                              />
+                              >
+                                <div className="w-0.5 h-4 rounded-full bg-current opacity-0 group-hover:opacity-30 transition-opacity pointer-events-none"
+                                  style={{ color: isSelected ? 'white' : stay.color }} />
+                              </div>
                               {/* Content */}
                               <div className="flex flex-col overflow-hidden flex-1 pointer-events-none pl-3.5 pr-2">
                                 <div className="flex items-center gap-1.5">
@@ -2552,6 +2555,9 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                                     className="text-[10px] font-bold truncate"
                                     style={{ color: isSelected ? 'white' : stay.color }}
                                   >{stay.name}</span>
+                                  {isOverlapping && (
+                                    <span className="flex-shrink-0 text-[8px] font-extrabold px-1 py-0.5 rounded bg-amber-400 text-white leading-none">!</span>
+                                  )}
                                 </div>
                                 {stay.lodging && (
                                   <span
@@ -2560,6 +2566,11 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                                   >{stay.lodging}</span>
                                 )}
                               </div>
+                              {/* Drag grip — visible on hover when not selected */}
+                              <GripVertical
+                                className="w-3 h-3 flex-shrink-0 mr-1 opacity-0 group-hover:opacity-40 transition-opacity pointer-events-none"
+                                style={{ color: isSelected ? 'white' : stay.color }}
+                              />
                               {/* Edit button */}
                               <button
                                 aria-label={`Edit ${stay.name}`}
@@ -2574,13 +2585,16 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                               {/* Right resize */}
                               <div
                                 data-handle="resize-end"
-                                className="absolute -right-1 top-0 bottom-0 w-3 cursor-ew-resize z-20"
+                                className="absolute -right-1.5 top-0 bottom-0 w-5 cursor-ew-resize z-20 flex items-center justify-center"
                                 onMouseDown={(e) => {
                                   e.stopPropagation();
                                   setSelectedStayId(stay.id);
                                   setDragState({ stayId: stay.id, mode: 'resize-end', originX: e.clientX, originalStart: stay.startSlot, originalEnd: stay.endSlot });
                                 }}
-                              />
+                              >
+                                <div className="w-0.5 h-4 rounded-full bg-current opacity-0 group-hover:opacity-30 transition-opacity pointer-events-none"
+                                  style={{ color: isSelected ? 'white' : stay.color }} />
+                              </div>
                             </div>
 
                             {/* Transit chip — centered in gap between the two stays */}
@@ -2620,7 +2634,9 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                   <h3 className="text-[10px] font-extrabold uppercase tracking-[0.1em] text-slate-400">Unplanned</h3>
                   {selectedStay && <p className="text-[9px] text-primary font-semibold mt-0.5 truncate">{selectedStay.name}</p>}
                 </div>
-                <span className="text-[9px] font-bold bg-slate-200/50 px-1.5 py-0.5 rounded text-slate-600">{inboxVisits.length}</span>
+                <span className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded ${inboxVisits.length > 0 ? 'bg-primary/10 text-primary' : 'bg-emerald-50 text-emerald-600'}`}>
+                  {inboxVisits.length > 0 ? inboxVisits.length : '✓'}
+                </span>
               </div>
               <div className="flex-1 overflow-y-auto p-4 space-y-3 scroll-hide">
                 {inboxVisits.map((v) => (
@@ -2663,7 +2679,6 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                         Day {(day.dayOffset + 1).toString().padStart(2, '0')}
                         <span className="text-slate-400 font-medium ml-1.5">{fmt(day.date, { weekday: 'short', month: 'short', day: 'numeric' })}</span>
                       </h4>
-                      <button className="text-slate-400 hover:text-slate-600" onClick={(e) => e.stopPropagation()}><MoreHorizontal className="w-5 h-5" /></button>
                     </div>
                     {/* Accommodation bar — rendered on the first day of each accommodation group */}
                     {(() => {
@@ -2737,10 +2752,22 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                 );
               })}
               {stayDays.length === 0 && (
-                <div className="flex-1 flex flex-col items-center justify-center text-slate-400">
-                  <Compass className="w-12 h-12 mb-3 opacity-20" />
-                  <p className="text-sm font-semibold">Select a stay from the timeline</p>
-                  <p className="text-xs mt-1 opacity-60">Click any stay block to plan its days</p>
+                <div className="flex-1 flex flex-col items-center justify-center gap-3">
+                  <div className="size-14 rounded-2xl bg-primary/8 flex items-center justify-center">
+                    <Compass className="w-7 h-7 text-primary/40" />
+                  </div>
+                  <div className="text-center">
+                    <p className="text-sm font-extrabold text-slate-600">Select a stay to plan</p>
+                    <p className="text-xs text-slate-400 mt-1">Click any block on the timeline above</p>
+                  </div>
+                  {sortedStays.length === 0 && (
+                    <button
+                      onClick={() => setAddingStay(true)}
+                      className="mt-1 flex items-center gap-1.5 px-4 py-2 bg-primary text-white text-xs font-bold rounded-lg hover:bg-primary/90 transition-colors"
+                    >
+                      <Plus className="w-3.5 h-3.5" /> Add your first stay
+                    </button>
+                  )}
                 </div>
               )}
             </div>
