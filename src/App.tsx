@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import LegacyApp from './features/legacy/LegacyApp';
 import { searchPlace, type PlaceSearchResult } from './utils/geocoding';
+import { generateHybridItinerary, type AIHybridStay } from './aiService';
 import TripMap from './components/TripMap';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import 'leaflet/dist/leaflet.css';
@@ -1619,41 +1620,227 @@ function DroppablePeriodSlot({ dayOffset, period, visits, selectedVisitId, onSel
 }
 
 // ─── AI Planner modal ─────────────────────────────────────────────────────────
-function AIPlannerModal({ onClose, onSwitchToClassic }: { onClose: () => void; onSwitchToClassic: () => void }) {
+function AIPlannerModal({
+  trip, settings, onSettingsChange, onClose, onApply,
+}: {
+  trip: HybridTrip;
+  settings: { apiKey: string; model: string };
+  onSettingsChange: (s: { apiKey: string; model: string }) => void;
+  onClose: () => void;
+  onApply: (stays: Stay[]) => void;
+}) {
+  const [tab, setTab] = useState<'generate' | 'settings'>('generate');
   const [prompt, setPrompt] = useState('');
+  const [mode, setMode] = useState<'scratch' | 'refine'>('scratch');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [explanation, setExplanation] = useState<string | null>(null);
+  const [pendingStays, setPendingStays] = useState<Stay[] | null>(null);
+
+  const handleGenerate = async () => {
+    if (!settings.apiKey.trim()) {
+      setError('Please add your Gemini API key in the Settings tab.');
+      setTab('settings');
+      return;
+    }
+    if (!prompt.trim()) return;
+    setLoading(true);
+    setError(null);
+    setExplanation(null);
+    setPendingStays(null);
+    try {
+      const result = await generateHybridItinerary(
+        prompt, { apiKey: settings.apiKey, model: settings.model },
+        trip.totalDays, mode,
+        mode === 'refine' ? trip.stays.map((s) => ({ name: s.name, startSlot: s.startSlot, endSlot: s.endSlot })) : undefined,
+      );
+      // Map AI output → app Stay type
+      const newStays: Stay[] = (result.stays as AIHybridStay[]).map((s, i) => ({
+        id: `ai-stay-${Date.now()}-${i}`,
+        name: s.name,
+        color: s.color,
+        startSlot: s.startSlot,
+        endSlot: s.endSlot,
+        centerLat: s.centerLat,
+        centerLng: s.centerLng,
+        lodging: s.lodging ?? '',
+        travelModeToNext: s.travelModeToNext ?? 'train',
+        travelDurationToNext: s.travelDurationToNext,
+        travelNotesToNext: s.travelNotesToNext,
+        visits: (s.visits ?? []).map((v, vi) => ({
+          id: `ai-visit-${Date.now()}-${i}-${vi}`,
+          name: v.name,
+          type: v.type ?? 'landmark',
+          area: v.area ?? '',
+          lat: v.lat,
+          lng: v.lng,
+          dayOffset: v.dayOffset ?? 0,
+          dayPart: v.dayPart ?? 'morning',
+          order: v.order ?? vi,
+          durationHint: v.durationHint,
+          notes: v.notes,
+        })),
+      }));
+      if (result.explanation) {
+        setExplanation(result.explanation);
+        setPendingStays(newStays);
+      } else {
+        onApply(newStays);
+        onClose();
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Something went wrong.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleApply = () => {
+    if (pendingStays) { onApply(pendingStays); onClose(); }
+  };
+
   return (
     <ModalBase title="AI Planner" onClose={onClose} width="max-w-lg">
-      <div className="space-y-4">
-        <p className="text-xs text-slate-600 leading-relaxed">
-          Describe your trip and let AI generate a detailed itinerary — activities, routing, timing, and more.
-        </p>
-        <div>
-          <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 block">What are you planning?</label>
-          <textarea
-            className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:ring-1 focus:ring-primary focus:border-primary outline-none resize-none"
-            rows={4}
-            placeholder="e.g. 2 weeks in Japan: Tokyo, Kyoto, Osaka. Mix of culture, food, and nature. Mid-budget, late May 2026."
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-            autoFocus
-          />
-        </div>
-        <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 text-xs text-amber-800">
-          <p className="font-bold mb-1">Full AI integration available in Classic Mode</p>
-          <p className="opacity-80">The Classic layout includes the complete AI planner with cloud sync, activity suggestions, and itinerary generation. Native AI for this view is coming soon.</p>
-        </div>
-        <div className="flex gap-3">
-          <button onClick={onClose} className="flex-1 py-2.5 border border-slate-200 rounded-lg text-sm font-bold text-slate-600 hover:bg-slate-50 transition-colors">
-            Cancel
-          </button>
+      {/* Tabs */}
+      <div className="flex border-b border-slate-100 -mx-6 px-6 mb-5 gap-4">
+        {(['generate', 'settings'] as const).map((t) => (
           <button
-            onClick={() => { onClose(); onSwitchToClassic(); }}
-            className="flex-1 py-2.5 bg-primary text-white rounded-lg text-sm font-bold hover:bg-primary/90 transition-colors flex items-center justify-center gap-2"
+            key={t}
+            onClick={() => setTab(t)}
+            className={`pb-2.5 text-[11px] font-extrabold uppercase tracking-widest border-b-2 transition-colors -mb-px ${
+              tab === t ? 'border-primary text-primary' : 'border-transparent text-slate-400 hover:text-slate-600'
+            }`}
           >
-            <Sparkles className="w-4 h-4" /> Open in Classic Mode
+            {t === 'generate' ? <><Sparkles className="w-3 h-3 inline -mt-0.5 mr-1" />Generate</> : <><SlidersHorizontal className="w-3 h-3 inline -mt-0.5 mr-1" />Settings</>}
           </button>
-        </div>
+        ))}
       </div>
+
+      {tab === 'generate' && (
+        <div className="space-y-4">
+          {/* Mode toggle */}
+          <div>
+            <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 mb-2 block">Mode</span>
+            <div className="flex gap-2">
+              {(['scratch', 'refine'] as const).map((m) => (
+                <button
+                  key={m}
+                  onClick={() => setMode(m)}
+                  className={`flex-1 py-2 rounded-lg text-xs font-bold border transition-all ${
+                    mode === m
+                      ? 'bg-primary text-white border-primary shadow-sm'
+                      : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
+                  }`}
+                >
+                  {m === 'scratch' ? 'From Scratch' : 'Refine Existing'}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Prompt */}
+          {!explanation ? (
+            <div>
+              <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 mb-2 block">
+                What should I plan? <span className="text-slate-300 normal-case font-medium">({trip.totalDays} days available)</span>
+              </label>
+              <textarea
+                className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:ring-1 focus:ring-primary focus:border-primary outline-none resize-none"
+                rows={4}
+                placeholder={`e.g. ${trip.totalDays} days in Japan — Tokyo, Kyoto, Osaka. Culture, food, and nature. Mid-budget, late May 2026.`}
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleGenerate(); }}
+                disabled={loading}
+                autoFocus
+              />
+              {loading && (
+                <div className="mt-3 space-y-2 animate-pulse">
+                  <div className="h-2.5 bg-slate-100 rounded-full w-3/4" />
+                  <div className="h-2.5 bg-slate-100 rounded-full w-1/2" />
+                  <div className="h-2.5 bg-slate-100 rounded-full w-5/6" />
+                  <p className="text-[10px] text-slate-400 font-medium pt-1">Generating your itinerary…</p>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-2">
+              <div className="flex items-center gap-2 mb-1">
+                <Sparkles className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+                <span className="text-[10px] font-extrabold uppercase tracking-widest text-primary">AI Plan Ready</span>
+              </div>
+              <p className="text-xs text-slate-700 leading-relaxed italic">{explanation}</p>
+              <p className="text-[10px] text-slate-400 pt-1">Review the summary above, then apply to your timeline.</p>
+            </div>
+          )}
+
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-xs text-red-700 flex gap-2 items-start">
+              <X className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+              <span>{error}</span>
+            </div>
+          )}
+
+          <div className="flex gap-3 pt-1">
+            <button onClick={onClose} disabled={loading} className="flex-1 py-2.5 border border-slate-200 rounded-lg text-sm font-bold text-slate-600 hover:bg-slate-50 transition-colors disabled:opacity-40">
+              Cancel
+            </button>
+            {explanation ? (
+              <button
+                onClick={handleApply}
+                className="flex-1 py-2.5 bg-primary text-white rounded-lg text-sm font-bold hover:bg-primary/90 transition-colors flex items-center justify-center gap-2"
+              >
+                <Check className="w-4 h-4" /> Apply to Timeline
+              </button>
+            ) : (
+              <button
+                onClick={handleGenerate}
+                disabled={loading || !prompt.trim()}
+                className="flex-1 py-2.5 bg-primary text-white rounded-lg text-sm font-bold hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {loading ? (
+                  <span className="flex items-center gap-2"><span className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" /> Generating…</span>
+                ) : (
+                  <><Sparkles className="w-4 h-4" /> Generate</>
+                )}
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {tab === 'settings' && (
+        <div className="space-y-4">
+          <div>
+            <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 mb-2 block">Gemini API Key</label>
+            <input
+              type="password"
+              className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:ring-1 focus:ring-primary focus:border-primary outline-none font-mono"
+              placeholder="AIza…"
+              value={settings.apiKey}
+              onChange={(e) => onSettingsChange({ ...settings, apiKey: e.target.value })}
+            />
+            <p className="text-[10px] text-slate-400 mt-1.5">
+              Stored locally in your browser.{' '}
+              <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-primary underline">Get a free key →</a>
+            </p>
+          </div>
+          <div>
+            <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 mb-2 block">Model</label>
+            <input
+              type="text"
+              className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:ring-1 focus:ring-primary focus:border-primary outline-none font-mono"
+              placeholder="gemini-2.0-flash"
+              value={settings.model}
+              onChange={(e) => onSettingsChange({ ...settings, model: e.target.value })}
+            />
+          </div>
+          <div className="bg-slate-50 border border-slate-100 rounded-lg px-4 py-3 text-[10px] text-slate-500 leading-relaxed">
+            Recommended: <span className="font-mono font-bold text-slate-700">gemini-2.0-flash</span> — fast and capable.<br />
+            For complex trips try <span className="font-mono font-bold text-slate-700">gemini-2.5-pro</span>.
+          </div>
+        </div>
+      )}
     </ModalBase>
   );
 }
@@ -1927,6 +2114,10 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
   const [showTripEditor, setShowTripEditor] = useState(false);
   const [addingStay, setAddingStay] = useState(false);
   const [showAIPlanner, setShowAIPlanner] = useState(false);
+  const [aiSettings, setAiSettings] = useState<{ apiKey: string; model: string }>(() => {
+    const saved = localStorage.getItem('chronos-ai-settings');
+    return saved ? JSON.parse(saved) : { apiKey: '', model: 'gemini-2.0-flash' };
+  });
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
@@ -2971,8 +3162,16 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
         {/* AI Planner */}
         {showAIPlanner && (
           <AIPlannerModal
+            trip={trip}
+            settings={aiSettings}
+            onSettingsChange={(s) => {
+              setAiSettings(s);
+              localStorage.setItem('chronos-ai-settings', JSON.stringify(s));
+            }}
             onClose={() => setShowAIPlanner(false)}
-            onSwitchToClassic={onSwitchToLegacy}
+            onApply={(newStays) => {
+              updateTrip((t) => ({ ...t, stays: newStays }));
+            }}
           />
         )}
       </div>

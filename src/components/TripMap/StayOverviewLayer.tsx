@@ -1,5 +1,11 @@
-import { Marker, Polyline, Tooltip } from 'react-leaflet';
-import { createStayMarkerIcon } from './markerFactories';
+import { useMemo } from 'react';
+import { Marker, Polyline } from 'react-leaflet';
+import L from 'leaflet';
+import { ChevronRight } from 'lucide-react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { createStayMarkerIcon, getPointAt, getAngleAt } from './markerFactories';
+import { useRouteGeometry } from '../../hooks/useRouteGeometry';
+import type { TransportType } from '../../types';
 
 type TravelMode = 'train' | 'flight' | 'drive' | 'ferry' | 'bus' | 'walk';
 
@@ -22,14 +28,22 @@ const TRAVEL_COLORS: Record<TravelMode, string> = {
   walk: '#60713a',
 };
 
-const TRAVEL_LABELS: Record<TravelMode, string> = {
-  train: 'Train',
-  flight: 'Flight',
-  drive: 'Drive',
-  ferry: 'Ferry',
-  bus: 'Bus',
-  walk: 'Walk',
+const TRAVEL_EMOJI: Record<TravelMode, string> = {
+  train: '🚆',
+  flight: '✈️',
+  drive: '🚗',
+  ferry: '⛴️',
+  bus: '🚌',
+  walk: '🚶',
 };
+
+// flight/ferry use straight lines — OSRM road routing doesn't apply
+const STRAIGHT_LINE_MODES = new Set<TravelMode>(['flight', 'ferry']);
+
+function toTransportType(mode: TravelMode): TransportType {
+  if (mode === 'drive') return 'car';
+  return mode as TransportType;
+}
 
 type StayOverviewLayerProps = {
   stays: OverviewStay[];
@@ -37,35 +51,82 @@ type StayOverviewLayerProps = {
 };
 
 export default function StayOverviewLayer({ stays, onSelectStay }: StayOverviewLayerProps) {
+  const segments = useMemo(() =>
+    stays.slice(0, -1)
+      .map((stay, i) => ({
+        key: `${stay.id}|${stays[i + 1].id}`,
+        from: { lat: stay.centerLat, lng: stay.centerLng },
+        to: { lat: stays[i + 1].centerLat, lng: stays[i + 1].centerLng },
+        transportType: toTransportType(stay.travelModeToNext),
+      }))
+      .filter((_, i) => !STRAIGHT_LINE_MODES.has(stays[i].travelModeToNext)),
+    [stays],
+  );
+
+  const routeShapes = useRouteGeometry(segments);
+
   return (
     <>
-      {/* Travel polylines between consecutive stays */}
-      {stays.map((stay, i) => {
-        if (i >= stays.length - 1) return null;
+      {stays.slice(0, -1).map((stay, i) => {
         const next = stays[i + 1];
         const color = TRAVEL_COLORS[stay.travelModeToNext] ?? '#94a3b8';
-        const positions: [number, number][] = [
+        const segKey = `${stay.id}|${next.id}`;
+        const straight: [number, number][] = [
           [stay.centerLat, stay.centerLng],
           [next.centerLat, next.centerLng],
         ];
-        const label = [TRAVEL_LABELS[stay.travelModeToNext], stay.travelDurationToNext].filter(Boolean).join(' · ');
+        const positions: [number, number][] =
+          STRAIGHT_LINE_MODES.has(stay.travelModeToNext)
+            ? straight
+            : (routeShapes[segKey] ?? straight);
+
+        const emoji = TRAVEL_EMOJI[stay.travelModeToNext];
+        const chipLabel = stay.travelDurationToNext
+          ? `${emoji} ${stay.travelDurationToNext}`
+          : emoji;
 
         return (
           <Polyline
-            key={`travel-${stay.id}-${next.id}`}
+            key={segKey}
             positions={positions}
-            pathOptions={{ color, weight: 4, opacity: 0.7, dashArray: '8 5' }}
+            pathOptions={{
+              color,
+              weight: 3,
+              opacity: 0.7,
+              dashArray: STRAIGHT_LINE_MODES.has(stay.travelModeToNext) ? '8 6' : undefined,
+            }}
           >
-            {label && (
-              <Tooltip permanent direction="center" className="travel-tooltip">
-                <span style={{ fontSize: 10, fontWeight: 700, color }}>{label}</span>
-              </Tooltip>
-            )}
+            <Marker
+              position={getPointAt(positions, 0.5)}
+              icon={L.divIcon({
+                className: 'transport-midpoint-icon',
+                html: `<div style="position:absolute;transform:translate(-50%,-50%);background:white;border:1.5px solid ${color};border-radius:20px;padding:2px 8px;font-size:10px;font-weight:700;color:${color};white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,0.12);">${chipLabel}</div>`,
+                iconSize: [0, 0],
+                iconAnchor: [0, 0],
+              })}
+              interactive={false}
+            />
+            {[0.25, 0.75].map((t) => {
+              const point = getPointAt(positions, t);
+              const angle = getAngleAt(positions, t);
+              return (
+                <Marker
+                  key={t}
+                  position={point}
+                  icon={L.divIcon({
+                    className: 'route-arrow-icon',
+                    html: `<div style="transform:rotate(${-angle}deg);color:${color};display:flex;align-items:center;justify-content:center;opacity:0.85;">${renderToStaticMarkup(<ChevronRight size={20} strokeWidth={5} />)}</div>`,
+                    iconSize: [24, 24],
+                    iconAnchor: [12, 12],
+                  })}
+                  interactive={false}
+                />
+              );
+            })}
           </Polyline>
         );
       })}
 
-      {/* Stay markers */}
       {stays.map((stay) => (
         <Marker
           key={stay.id}

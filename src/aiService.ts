@@ -230,3 +230,151 @@ export const generateAIItinerary = async (
       throw new Error("AI returned invalid JSON format.");
   }
 };
+
+// ─── Hybrid (CHRONOS) format ──────────────────────────────────────────────────
+
+export type AIHybridVisitType = 'area' | 'landmark' | 'museum' | 'food' | 'walk' | 'hotel';
+export type AIHybridDayPart = 'morning' | 'afternoon' | 'evening';
+export type AIHybridTravelMode = 'train' | 'flight' | 'drive' | 'ferry' | 'bus' | 'walk';
+
+export interface AIHybridVisit {
+  id: string;
+  name: string;
+  type: AIHybridVisitType;
+  area: string;
+  lat: number;
+  lng: number;
+  dayOffset: number | null;
+  dayPart: AIHybridDayPart | null;
+  order: number;
+  durationHint?: string;
+  notes?: string;
+}
+
+export interface AIHybridStay {
+  name: string;
+  color: string;
+  startSlot: number;
+  endSlot: number;
+  centerLat: number;
+  centerLng: number;
+  lodging: string;
+  travelModeToNext: AIHybridTravelMode;
+  travelDurationToNext?: string;
+  travelNotesToNext?: string;
+  visits: AIHybridVisit[];
+}
+
+export interface AIHybridResult {
+  explanation?: string;
+  stays: AIHybridStay[];
+}
+
+const STAY_COLORS = ['#2167d7', '#615cf6', '#2db6ab', '#d78035', '#20b5a8', '#3b6dd8', '#c45c99', '#4c9463'];
+
+export const generateHybridItinerary = async (
+  prompt: string,
+  settings: AISettings,
+  totalDays: number,
+  mode: 'scratch' | 'refine',
+  currentStays?: Array<{ name: string; startSlot: number; endSlot: number }>,
+): Promise<AIHybridResult> => {
+  const selectedModel = settings.model?.trim() || DEFAULT_AI_MODEL;
+  const totalSlots = totalDays * 3;
+
+  const systemPrompt = `You are a professional travel planner. Generate a trip itinerary for a Gantt-style timeline app.
+
+TIMELINE MODEL:
+- Trip has ${totalDays} days total (${totalSlots} slots).
+- Each day has 3 slots in order: morning, afternoon, evening.
+- Global slot index formula: slot = day_index * 3 + part (morning=0, afternoon=1, evening=2).
+  Example: day 0 morning = slot 0, day 0 evening = slot 2, day 1 morning = slot 3.
+- Stays must fit within 0..${totalSlots} and must NOT overlap.
+- A stay typically starts at day_N * 3 (morning) and ends at (day_N + nights) * 3.
+
+VISITS are activities within a stay:
+- dayOffset: 0-based day index within the stay (0 = first day of stay, 1 = second day, etc.)
+- dayPart: "morning" | "afternoon" | "evening"
+- Multiple visits can share the same dayOffset + dayPart (they stack in that slot).
+
+${mode === 'refine' && currentStays?.length ? `EXISTING STAYS (refine these or fill gaps):
+${JSON.stringify(currentStays, null, 2)}` : ''}
+
+Pick stay colors from this palette (cycle through): ${STAY_COLORS.join(', ')}
+
+Return ONLY valid JSON (no markdown, no prose):
+{
+  "explanation": "2-3 sentence summary of the plan",
+  "stays": [
+    {
+      "name": "City Name",
+      "color": "#2167d7",
+      "startSlot": 0,
+      "endSlot": 12,
+      "centerLat": 35.6762,
+      "centerLng": 139.6503,
+      "lodging": "Hotel name or empty string",
+      "travelModeToNext": "train",
+      "travelDurationToNext": "2h 30m",
+      "travelNotesToNext": "Optional notes",
+      "visits": [
+        {
+          "id": "v1",
+          "name": "Activity Name",
+          "type": "landmark",
+          "area": "Neighborhood",
+          "lat": 35.7148,
+          "lng": 139.7967,
+          "dayOffset": 0,
+          "dayPart": "morning",
+          "order": 0,
+          "durationHint": "2h",
+          "notes": "Brief description"
+        }
+      ]
+    }
+  ]
+}
+
+Valid types: area, landmark, museum, food, walk, hotel
+Valid travelModeToNext: train, flight, drive, ferry, bus, walk
+Valid dayPart: morning, afternoon, evening`;
+
+  let data: GeminiResponse;
+  try {
+    data = await fetchJson<GeminiResponse>(
+      `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${settings.apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: `${systemPrompt}\n\nMode: ${mode}\nUser Request: ${prompt}` }] }],
+        }),
+        retries: 1,
+        retryDelayMs: 500,
+        timeoutMs: 60000,
+      },
+    );
+  } catch (error) {
+    trackError('ai_hybrid_generate_failed', error, { mode, promptLength: prompt.length });
+    throw new Error(getGeminiErrorMessage(error, selectedModel));
+  }
+
+  if (!data.candidates || data.candidates.length === 0) {
+    throw new Error('AI returned no results.');
+  }
+
+  let content = data.candidates[0].content?.parts?.[0]?.text || '';
+  content = content.replace(/```json/g, '').replace(/```/g, '').trim();
+
+  try {
+    const parsed = JSON.parse(content);
+    return {
+      explanation: parsed.explanation,
+      stays: parsed.stays || [],
+    };
+  } catch (error) {
+    trackError('ai_hybrid_invalid_json', error, { responsePreview: content.slice(0, 300) });
+    throw new Error('AI returned invalid JSON format.');
+  }
+};

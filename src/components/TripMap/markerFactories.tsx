@@ -67,15 +67,15 @@ export const createStayMarkerIcon = (name: string, color: string) =>
   L.divIcon({
     className: 'custom-marker-wrapper',
     html: `<div style="display:flex;flex-direction:column;align-items:center;">
-      <div style="width:36px;height:36px;border-radius:50%;background:${color};border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;">
-        ${renderToStaticMarkup(<MapPin size={16} color="white" />)}
+      <div style="width:26px;height:26px;border-radius:50%;background:${color};border:2.5px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.25);display:flex;align-items:center;justify-content:center;">
+        ${renderToStaticMarkup(<MapPin size={12} color="white" />)}
       </div>
-      <div style="margin-top:4px;background:white;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:800;color:${color};white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,0.15);">
+      <div style="margin-top:3px;background:white;padding:1px 5px;border-radius:4px;font-size:9px;font-weight:800;color:${color};white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,0.12);">
         ${name}
       </div>
     </div>`,
-    iconSize: [80, 60],
-    iconAnchor: [40, 20],
+    iconSize: [60, 46],
+    iconAnchor: [30, 15],
   });
 
 export const createClusterIcon = (count: number) =>
