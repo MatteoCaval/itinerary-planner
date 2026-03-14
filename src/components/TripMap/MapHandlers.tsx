@@ -17,18 +17,30 @@ function fitPoints(map: ReturnType<typeof useMap>, pts: [number, number][], anim
 
 export function FitMap({ points, expanded }: FitMapProps) {
   const map = useMap();
-  // Keep a ref so the expand effect always uses the latest points without being a dep
+  // Keep a ref so resize callbacks always use the latest points
   const pointsRef = useRef(points);
   pointsRef.current = points;
 
-  // When the panel resizes (expand/collapse), wait for the CSS transition (300ms)
-  // then invalidate + re-fit so tiles fill the full area and the view is centered.
+  // Watch the container for ANY size change (expand/collapse AND drag-resize).
+  // Debounce slightly so we don't hammer fitBounds during a drag.
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      map.invalidateSize();
-      fitPoints(map, pointsRef.current);
-    }, 320);
-    return () => window.clearTimeout(timer);
+    const container = map.getContainer();
+    let rafId: number;
+    let debounceTimer: ReturnType<typeof setTimeout>;
+    const observer = new ResizeObserver(() => {
+      cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
+        map.invalidateSize();
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => fitPoints(map, pointsRef.current), 80);
+      });
+    });
+    observer.observe(container);
+    return () => {
+      observer.disconnect();
+      cancelAnimationFrame(rafId);
+      clearTimeout(debounceTimer);
+    };
   }, [expanded, map]);
 
   // When the content changes (new stay, mode switch, day filter), re-center immediately.

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   DndContext, DragOverlay, useDraggable, useDroppable,
   type DragEndEvent, type DragStartEvent, PointerSensor, useSensor, useSensors,
@@ -1834,6 +1834,24 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
   const [dragState, setDragState] = useState<DragState>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [mapExpanded, setMapExpanded] = useState(false);
+  const [mapWidth, setMapWidth] = useState(500);
+  const mapResizingRef = useRef<{ startX: number; startWidth: number } | null>(null);
+  const startMapResize = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    mapResizingRef.current = { startX: e.clientX, startWidth: mapWidth };
+    const onMove = (ev: MouseEvent) => {
+      if (!mapResizingRef.current) return;
+      const delta = mapResizingRef.current.startX - ev.clientX;
+      setMapWidth(Math.min(900, Math.max(280, mapResizingRef.current.startWidth + delta)));
+    };
+    const onUp = () => {
+      mapResizingRef.current = null;
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+  }, [mapWidth]);
   const [mapMode, setMapMode] = useState<'overview' | 'detail'>('overview');
   const [mapDayFilter, setMapDayFilter] = useState<number | null>(null);
   const [zoomDays, setZoomDays] = useState(() => {
@@ -2366,7 +2384,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
             </aside>
 
             {/* Day columns */}
-            <div className={`flex-1 overflow-x-auto overflow-y-auto flex p-5 gap-5 min-w-0 bg-slate-50/50 scroll-hide transition-all duration-300 ${mapExpanded ? 'w-0 overflow-hidden opacity-0 p-0' : 'pr-[520px]'}`}>
+            <div className={`flex-1 overflow-x-auto overflow-y-auto flex p-5 gap-5 min-w-0 bg-slate-50/50 scroll-hide transition-all duration-300 ${mapExpanded ? 'w-0 overflow-hidden opacity-0 p-0' : ''}`} style={mapExpanded ? undefined : { paddingRight: mapWidth + 20 }}>
               {stayDays.map((day) => {
                 const dayVisits = selectedStay
                   ? sortVisits(selectedStay.visits.filter(
@@ -2469,7 +2487,20 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
             </div>
 
             {/* Map — Floating Panel */}
-            <aside className={`map-panel-container flex flex-col overflow-hidden z-30 ${mapExpanded ? 'absolute inset-0 w-full rounded-none bg-white' : 'absolute top-4 bottom-4 right-4 w-[500px] bg-white rounded-2xl shadow-[0_0_50px_-12px_rgba(0,0,0,0.25)] border border-slate-200/60'}`}>
+            <aside
+              className={`map-panel-container flex flex-col overflow-hidden z-30 ${mapExpanded ? 'absolute inset-0 w-full rounded-none bg-white' : 'absolute top-4 bottom-4 right-4 bg-white rounded-2xl shadow-[0_0_50px_-12px_rgba(0,0,0,0.25)] border border-slate-200/60'}`}
+              style={mapExpanded ? undefined : { width: mapWidth }}
+            >
+              {/* Resize handle */}
+              {!mapExpanded && (
+                <div
+                  onMouseDown={startMapResize}
+                  className="absolute left-0 top-0 bottom-0 w-1.5 cursor-col-resize z-50 group"
+                  title="Drag to resize"
+                >
+                  <div className="absolute inset-y-0 left-0 w-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity bg-primary/40" style={{ left: 2 }} />
+                </div>
+              )}
               {/* Map panel header */}
               <div className="h-12 px-5 border-b border-slate-100 flex items-center justify-between bg-white/80 backdrop-blur-md flex-shrink-0">
                 <div className="flex items-center gap-2.5">
