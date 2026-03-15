@@ -1070,13 +1070,14 @@ function StayEditorModal({ stay, onClose, onSave, onDelete }: {
 }
 
 // ─── Add stay modal ───────────────────────────────────────────────────────────
-function AddStayModal({ onClose, onSave, stayColor }: {
+function AddStayModal({ onClose, onSave, stayColor, initialDays }: {
   onClose: () => void;
   stayColor: string;
+  initialDays?: number;
   onSave: (data: { name: string; days: number; lat?: number; lng?: number }) => void;
 }) {
   const [name, setName] = useState('');
-  const [days, setDays] = useState(3);
+  const [days, setDays] = useState(initialDays ?? 3);
   const [searchResults, setSearchResults] = useState<PlaceSearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [pickedCoords, setPickedCoords] = useState<{ lat: number; lng: number } | null>(null);
@@ -2551,6 +2552,10 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
   const [showHistory, setShowHistory] = useState(false);
   const [showTripEditor, setShowTripEditor] = useState(false);
   const [addingStay, setAddingStay] = useState(false);
+  const [timelineHoverDay, setTimelineHoverDay] = useState<number | null>(null);
+  const [timelineDragCreate, setTimelineDragCreate] = useState<{ startSlot: number; currentSlot: number } | null>(null);
+  const [pendingTimelineSlot, setPendingTimelineSlot] = useState<{ startSlot: number; days: number } | null>(null);
+  const timelineZoneRef = useRef<HTMLDivElement>(null);
   const [showAIPlanner, setShowAIPlanner] = useState(false);
   const [aiSettings, setAiSettings] = useState<{ apiKey: string; model: string }>(() => {
     const saved = localStorage.getItem('chronos-ai-settings');
@@ -2578,6 +2583,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
   }, [hist, updateTrip]);
 
   useEffect(() => { setMapDayFilter(null); setMapMode('overview'); }, [selectedStayId]);
+
 
   // ── Cloud sync: load on login ─────────────────────────────────────────────
   const { user } = useAuth();
@@ -2854,6 +2860,39 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
 
   // ── Render helpers ────────────────────────────────────────────────────────
   const numDays = zoomDays === 0 ? trip.totalDays : zoomDays;
+
+  // ── Timeline drag-to-create helpers ──────────────────────────────────────
+  const numSlots = numDays * 3;
+
+  const getSlotFromClientX = useCallback((clientX: number): number => {
+    const el = timelineZoneRef.current;
+    if (!el) return 0;
+    const rect = el.getBoundingClientRect();
+    const innerLeft = rect.left + rect.width * 0.01;
+    const innerWidth = rect.width * 0.98;
+    const ratio = Math.max(0, Math.min(1, (clientX - innerLeft) / innerWidth));
+    return Math.min(numSlots - 1, Math.floor(ratio * numSlots));
+  }, [numSlots]);
+
+  const isSlotRangeEmpty = useCallback((startSlot: number, endSlotExcl: number): boolean => {
+    return !sortedStays.some((s) => s.startSlot < endSlotExcl && s.endSlot > startSlot);
+  }, [sortedStays]);
+
+  useEffect(() => {
+    const handleMouseUp = () => {
+      if (!timelineDragCreate) return;
+      const { startSlot, currentSlot } = timelineDragCreate;
+      const minSlot = Math.min(startSlot, currentSlot);
+      const maxSlot = Math.max(startSlot, currentSlot);
+      if (isSlotRangeEmpty(minSlot, maxSlot + 1)) {
+        setPendingTimelineSlot({ startSlot: minSlot, days: Math.max(1, Math.ceil((maxSlot - minSlot + 1) / 3)) });
+        setAddingStay(true);
+      }
+      setTimelineDragCreate(null);
+    };
+    window.addEventListener('mouseup', handleMouseUp);
+    return () => window.removeEventListener('mouseup', handleMouseUp);
+  }, [timelineDragCreate, isSlotRangeEmpty]);
   const dayLabels = Array.from({ length: numDays }, (_, i) =>
     fmt(addDaysTo(new Date(trip.startDate), i), { month: 'short', day: 'numeric' }),
   );
@@ -3016,9 +3055,10 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
               </div>
               <button
                 onClick={() => setAddingStay(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-bold text-slate-700 border border-border-neutral rounded-lg hover:bg-white shadow-sm transition-all active:scale-95"
+                className="size-6 flex items-center justify-center rounded-md bg-primary text-white hover:bg-primary/90 transition-colors"
+                aria-label="Add stay"
               >
-                <Plus className="w-4 h-4" /> Add Stay
+                <Plus className="w-3.5 h-3.5" />
               </button>
             </div>
 
@@ -3038,7 +3078,31 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                   ))}
                 </div>
                 {/* Stay blocks */}
-                <div className={`flex-1 relative ${numDays <= 15 ? 'timeline-grid' : 'timeline-grid-month'} snap-grid`}>
+                <div
+                  ref={timelineZoneRef}
+                  className={`flex-1 relative ${numDays <= 15 ? 'timeline-grid' : 'timeline-grid-month'} snap-grid`}
+                  style={{ cursor: (timelineHoverDay !== null || timelineDragCreate) ? 'crosshair' : undefined }}
+                  onMouseMove={(e) => {
+                    if (dragState) return;
+                    const slot = getSlotFromClientX(e.clientX);
+                    if (timelineDragCreate) {
+                      setTimelineDragCreate((prev) => prev ? { ...prev, currentSlot: slot } : null);
+                    } else if (isSlotRangeEmpty(slot, slot + 1)) {
+                      setTimelineHoverDay(slot);
+                    } else {
+                      setTimelineHoverDay(null);
+                    }
+                  }}
+                  onMouseDown={(e) => {
+                    if (dragState) return;
+                    const slot = getSlotFromClientX(e.clientX);
+                    if (!isSlotRangeEmpty(slot, slot + 1)) return;
+                    e.preventDefault();
+                    setTimelineDragCreate({ startSlot: slot, currentSlot: slot });
+                    setTimelineHoverDay(null);
+                  }}
+                  onMouseLeave={() => setTimelineHoverDay(null)}
+                >
                   <div className="absolute inset-0 flex items-center px-[1%]">
                     {sortedStays.length === 0 ? (
                       <button
@@ -3050,6 +3114,35 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                       </button>
                     ) : (
                     <div className="relative w-full" style={{ height: 42 }}>
+                      {/* Drag-to-create: hover highlight */}
+                      {timelineHoverDay !== null && !timelineDragCreate && (
+                        <div
+                          className="absolute top-0.5 bottom-0.5 rounded-md pointer-events-none bg-primary/10 border border-dashed border-primary/40 flex items-center justify-center z-20"
+                          style={{ left: `${(timelineHoverDay / numSlots) * 100}%`, width: `${(1 / numSlots) * 100}%` }}
+                        >
+                          <Plus className="w-3 h-3 text-primary/50" />
+                        </div>
+                      )}
+                      {/* Drag-to-create: drag range highlight */}
+                      {timelineDragCreate && (() => {
+                        const minSlot = Math.min(timelineDragCreate.startSlot, timelineDragCreate.currentSlot);
+                        const maxSlot = Math.max(timelineDragCreate.startSlot, timelineDragCreate.currentSlot);
+                        const span = maxSlot - minSlot + 1;
+                        const empty = isSlotRangeEmpty(minSlot, maxSlot + 1);
+                        const days = Math.max(1, Math.ceil(span / 3));
+                        return (
+                          <div
+                            className={`absolute top-0.5 bottom-0.5 rounded-md pointer-events-none border z-20 flex items-center justify-center ${
+                              empty ? 'bg-primary/15 border-primary/60' : 'bg-red-100/60 border-red-400/60'
+                            }`}
+                            style={{ left: `${(minSlot / numSlots) * 100}%`, width: `${(span / numSlots) * 100}%` }}
+                          >
+                            <span className={`text-[9px] font-bold ${empty ? 'text-primary/70' : 'text-red-500/70'}`}>
+                              {empty ? `${days} day${days > 1 ? 's' : ''}` : 'conflict'}
+                            </span>
+                          </div>
+                        );
+                      })()}
                       {sortedStays.map((stay, index) => {
                         const isSelected = selectedStay?.id === stay.id;
                         const isOverlapping = overlaps.has(stay.id);
@@ -3615,21 +3708,23 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
         {/* Add stay */}
         {addingStay && (
           <AddStayModal
-            onClose={() => setAddingStay(false)}
+            onClose={() => { setAddingStay(false); setPendingTimelineSlot(null); }}
             stayColor={STAY_COLORS[trip.stays.length % STAY_COLORS.length]}
+            initialDays={pendingTimelineSlot?.days}
             onSave={({ name, days, lat, lng }) => {
-              const last = sortedStays[sortedStays.length - 1];
-              const start = last ? last.endSlot : 0;
+              const startSlot = pendingTimelineSlot?.startSlot
+                ?? (sortedStays.length > 0 ? sortedStays[sortedStays.length - 1].endSlot : 0);
               const newStay: Stay = {
                 id: `stay-${Date.now()}`, name,
                 color: STAY_COLORS[trip.stays.length % STAY_COLORS.length],
-                startSlot: start, endSlot: Math.min(start + days * 3, trip.totalDays * 3),
+                startSlot, endSlot: Math.min(startSlot + days * 3, trip.totalDays * 3),
                 centerLat: lat ?? jitter(35.6762, 5), centerLng: lng ?? jitter(139.6503, 5),
                 lodging: '', travelModeToNext: 'train', visits: [],
               };
               setTrip((t) => ({ ...t, stays: [...t.stays, newStay] }));
               setSelectedStayId(newStay.id);
               setAddingStay(false);
+              setPendingTimelineSlot(null);
             }}
           />
         )}
