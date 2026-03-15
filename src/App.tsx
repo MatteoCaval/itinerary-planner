@@ -3167,7 +3167,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                                   : 'z-0 hover:shadow-md'
                               } ${isOverlapping ? 'ring-2 ring-amber-400' : ''}`}
                               style={{
-                                left: `calc(${left}% + 3px)`, width: `calc(${Math.max(width, 2)}% - 6px)`, height: 42,
+                                left: `calc(${left}% + 6px)`, width: `calc(${Math.max(width, 2)}% - 12px)`, height: 42,
                                 background: isSelected
                                   ? `linear-gradient(135deg, ${stay.color}, color-mix(in srgb, ${stay.color} 80%, #ffffff))`
                                   : `color-mix(in srgb, ${stay.color} 8%, white)`,
