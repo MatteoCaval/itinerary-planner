@@ -2958,13 +2958,13 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                 <span>Demo</span>
                 <button
                   onClick={handleMakeMine}
-                  className="px-2 py-0.5 bg-primary text-white rounded text-[10px] font-bold hover:bg-primary/90 transition-colors"
+                  className="px-2 py-0.5 bg-primary text-white rounded-md text-[10px] font-bold hover:bg-primary/90 transition-colors"
                 >
                   Make it mine
                 </button>
                 <button
                   onClick={handleGoHome}
-                  className="px-2 py-0.5 rounded text-[10px] font-semibold hover:bg-slate-200 transition-colors"
+                  className="px-2 py-0.5 rounded-md text-[10px] font-semibold hover:bg-slate-200 transition-colors"
                 >
                   Start fresh
                 </button>
@@ -3043,10 +3043,10 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
             <div className="flex items-center justify-between px-6 border-b border-border-neutral bg-slate-50/50 py-1.5">
               <div className="flex items-center gap-4">
                 <span className="text-[10px] font-extrabold uppercase tracking-[0.15em] text-slate-500">Timeline</span>
-                <div className="flex bg-white rounded-md border border-border-neutral p-0.5">
+                <div className="flex bg-white rounded-lg border border-border-neutral p-0.5">
                   {([5, 10, 15, 30, 0] as const).filter((d) => d === 0 || d <= trip.totalDays).map((d) => (
                     <button key={d} onClick={() => { setZoomDays(d); localStorage.setItem('itinerary-timeline-zoom', String(d)); }}
-                      className={`px-3 py-1 text-[9px] font-bold rounded-sm transition-colors ${zoomDays === d ? 'bg-primary text-white shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}
+                      className={`px-3 py-1 text-[9px] font-bold rounded-md transition-colors ${zoomDays === d ? 'bg-primary text-white shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}
                     >
                       {d === 0 ? 'ALL' : `${d} DAYS`}
                     </button>
@@ -3055,7 +3055,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
               </div>
               <button
                 onClick={() => setAddingStay(true)}
-                className="size-6 flex items-center justify-center rounded-md bg-primary text-white hover:bg-primary/90 transition-colors"
+                className="size-6 flex items-center justify-center rounded-lg bg-primary text-white hover:bg-primary/90 transition-colors"
                 aria-label="Add stay"
               >
                 <Plus className="w-3.5 h-3.5" />
@@ -3212,7 +3212,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                                     style={{ color: isSelected ? 'white' : stay.color }}
                                   >{stay.name}</span>
                                   {isOverlapping && (
-                                    <span className="flex-shrink-0 text-[8px] font-extrabold px-1 py-0.5 rounded bg-amber-400 text-white leading-none">!</span>
+                                    <span className="flex-shrink-0 text-[8px] font-extrabold px-1 py-0.5 rounded-md bg-amber-400 text-white leading-none">!</span>
                                   )}
                                 </div>
                                 {stay.lodging && (
@@ -3301,7 +3301,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                   </span>
                   <button
                     onClick={() => setAddingToInbox(true)}
-                    className="size-6 flex items-center justify-center rounded-md bg-primary text-white hover:bg-primary/90 transition-colors"
+                    className="size-6 flex items-center justify-center rounded-lg bg-primary text-white hover:bg-primary/90 transition-colors"
                     aria-label="Add new place"
                   >
                     <Plus className="w-3.5 h-3.5" />
@@ -3393,7 +3393,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                               onClick={() => setEditingAccommodation({ group })}
                               className="h-full w-full bg-white border border-primary/30 rounded-lg shadow-sm flex items-center px-4 gap-3 hover:border-primary/50 hover:shadow-md transition-all cursor-pointer text-left"
                             >
-                              <div className="size-8 rounded bg-primary/10 flex items-center justify-center text-primary flex-shrink-0">
+                              <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary flex-shrink-0">
                                 <Hotel className="w-4 h-4" />
                               </div>
                               <div className="flex-1 min-w-0">
@@ -3475,7 +3475,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
               <div className="h-11 px-4 border-b border-slate-100 flex items-center gap-3 bg-white/80 backdrop-blur-md flex-shrink-0">
                 {/* Left: mode icon + title */}
                 <div className="flex items-center gap-2 flex-shrink-0">
-                  <div className="size-5 bg-primary/10 rounded flex items-center justify-center">
+                  <div className="size-5 bg-primary/10 rounded-md flex items-center justify-center">
                     <MapPin className="w-3 h-3 text-primary" />
                   </div>
                   <span className="text-[10px] font-extrabold text-slate-600 tracking-tight uppercase">
@@ -3562,16 +3562,16 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                             </button>
                           </div>
                           <div className="flex gap-2 mt-2 flex-wrap">
-                            <span className={`text-[9px] font-bold px-2 py-0.5 rounded border ${getVisitTypeColor(visit.type)}`}>
+                            <span className={`text-[9px] font-bold px-2 py-0.5 rounded-md border ${getVisitTypeColor(visit.type)}`}>
                               {getVisitLabel(visit.type).toUpperCase()}
                             </span>
                             {selectedStay && (
-                              <span className="text-[9px] font-bold text-slate-500 bg-slate-50 px-2 py-0.5 rounded border border-slate-100">
+                              <span className="text-[9px] font-bold text-slate-500 bg-slate-50 px-2 py-0.5 rounded-md border border-slate-100">
                                 {haversineKm(selectedStay.centerLat, selectedStay.centerLng, visit.lat, visit.lng).toFixed(1)} km from hotel
                               </span>
                             )}
                             {visit.durationHint && (
-                              <span className="text-[9px] font-bold text-slate-500 bg-slate-50 px-2 py-0.5 rounded border border-slate-100">
+                              <span className="text-[9px] font-bold text-slate-500 bg-slate-50 px-2 py-0.5 rounded-md border border-slate-100">
                                 {visit.durationHint}
                               </span>
                             )}

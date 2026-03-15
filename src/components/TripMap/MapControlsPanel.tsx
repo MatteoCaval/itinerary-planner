@@ -61,7 +61,7 @@ export function MapControlsPanel({
         <span className="text-[10px] font-extrabold text-slate-500 uppercase tracking-widest">Map Options</span>
         <button
           onClick={() => setOpen(false)}
-          className="size-5 flex items-center justify-center rounded text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+          className="size-5 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
           aria-label="Close map options"
         >
           <X className="w-3 h-3" />
