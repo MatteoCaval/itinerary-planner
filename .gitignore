@@ -39,3 +39,4 @@ vite.config.ts.timestamp-*
 
 # Docker
 docker-compose.override.yml
+.claude/
