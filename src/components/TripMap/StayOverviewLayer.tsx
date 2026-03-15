@@ -1,7 +1,9 @@
 import { useMemo } from 'react';
 import { Marker, Polyline, Tooltip } from 'react-leaflet';
 import L from 'leaflet';
-import { createStayMarkerIcon, getPointAt } from './markerFactories';
+import { ChevronRight } from 'lucide-react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { createStayMarkerIcon, getPointAt, getAngleAt } from './markerFactories';
 import { useRouteGeometry } from '../../hooks/useRouteGeometry';
 import type { TransportType } from '../../types';
 
@@ -102,6 +104,23 @@ export default function StayOverviewLayer({ stays, onSelectStay, expanded = fals
                 <div className="route-tooltip-content">{emoji} {stay.travelDurationToNext}</div>
               </Tooltip>
             )}
+            {[0.25, 0.75].map((t) => {
+              const point = getPointAt(positions, t);
+              const angle = getAngleAt(positions, t);
+              return (
+                <Marker
+                  key={t}
+                  position={point}
+                  icon={L.divIcon({
+                    className: 'route-arrow-icon',
+                    html: `<div style="transform:rotate(${-angle}deg);color:${color};display:flex;align-items:center;justify-content:center;opacity:0.85;">${renderToStaticMarkup(<ChevronRight size={20} strokeWidth={5} />)}</div>`,
+                    iconSize: [24, 24],
+                    iconAnchor: [12, 12],
+                  })}
+                  interactive={false}
+                />
+              );
+            })}
             {showRouteIcons && (
               <Marker
                 position={getPointAt(positions, 0.5)}
