@@ -21,6 +21,7 @@ import { generateMarkdown, downloadMarkdown } from './markdownExporter';
 import TripMap from './components/TripMap';
 import DayFilterPills from './components/TripMap/DayFilterPills';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { saveUserTripStore, loadUserTripStore } from './firebase';
 import 'leaflet/dist/leaflet.css';
 
 // ─── View switcher ────────────────────────────────────────────────────────────
@@ -2162,6 +2163,68 @@ function AuthModalSimple({ onClose }: { onClose: () => void }) {
   );
 }
 
+// ─── Merge dialog ─────────────────────────────────────────────────────────────
+function MergeDialog({ localCount, cloudCount, onMerge, onKeepLocal, onUseCloud, onDismiss }: {
+  localCount: number;
+  cloudCount: number;
+  onMerge: () => void;
+  onKeepLocal: () => void;
+  onUseCloud: () => void;
+  onDismiss: () => void;
+}) {
+  return createPortal(
+    <div className="fixed inset-0 bg-black/30 z-[200] flex items-end sm:items-center justify-center p-4 sm:p-6">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-5">
+        <div className="flex items-start gap-3 mb-4">
+          <div className="size-9 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+            <Database className="w-4 h-4 text-primary" />
+          </div>
+          <div>
+            <h3 className="font-extrabold text-slate-800 text-sm">Trips found in your account</h3>
+            <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+              You have <strong className="text-slate-700">{localCount} local</strong> and{' '}
+              <strong className="text-slate-700">{cloudCount} cloud</strong> trips.
+              What would you like to do?
+            </p>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <button
+            onClick={onMerge}
+            className="w-full flex items-center justify-between px-4 py-2.5 bg-primary text-white rounded-lg text-xs font-bold hover:bg-primary/90 transition-colors"
+          >
+            <span>Merge everything</span>
+            <span className="opacity-70 font-normal">{localCount + cloudCount} trips total</span>
+          </button>
+          <button
+            onClick={onKeepLocal}
+            className="w-full flex items-center justify-between px-4 py-2.5 border border-slate-200 text-slate-700 rounded-lg text-xs font-semibold hover:bg-slate-50 transition-colors"
+          >
+            <span>Keep local only</span>
+            <span className="text-slate-400 font-normal">overwrite cloud</span>
+          </button>
+          <button
+            onClick={onUseCloud}
+            className="w-full flex items-center justify-between px-4 py-2.5 border border-slate-200 text-slate-700 rounded-lg text-xs font-semibold hover:bg-slate-50 transition-colors"
+          >
+            <span>Use cloud only</span>
+            <span className="text-slate-400 font-normal">discard local</span>
+          </button>
+        </div>
+
+        <button
+          onClick={onDismiss}
+          className="mt-3 w-full text-center text-[11px] text-slate-400 hover:text-slate-600 transition-colors py-1"
+        >
+          Decide later
+        </button>
+      </div>
+    </div>,
+    document.body,
+  );
+}
+
 // ─── Welcome screen ───────────────────────────────────────────────────────────
 function WelcomeScreen({ onCreateTrip, onLoadDemo }: { onCreateTrip: () => void; onLoadDemo: () => void }) {
   const { user, signInWithGoogle } = useAuth();
@@ -2277,6 +2340,8 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
   // ── Store (multi-trip) ───────────────────────────────────────────────────
   const [store, setStore] = useState<TripStore>(() => loadStore());
   const [isDemoMode, setIsDemoMode] = useState(false);
+  const [pendingMerge, setPendingMerge] = useState<{ cloudTrips: HybridTrip[]; cloudActiveTripId: string } | null>(null);
+  const syncedUidRef = useRef<string | null>(null);
 
   const trip = useMemo(
     () => store.trips.find((t) => t.id === store.activeTripId) ?? store.trips[0] ?? EMPTY_TRIP,
@@ -2379,6 +2444,59 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
   }, [hist, updateTrip]);
 
   useEffect(() => { setMapDayFilter(null); setMapMode('overview'); }, [selectedStayId]);
+
+  // ── Cloud sync: load on login ─────────────────────────────────────────────
+  const { user } = useAuth();
+  useEffect(() => {
+    if (!user) return;
+    if (syncedUidRef.current === user.uid) return; // already handled this session
+    syncedUidRef.current = user.uid;
+
+    (async () => {
+      const result = await loadUserTripStore(user.uid);
+      if (!result.success) return;
+
+      if (!result.exists) {
+        // First sign-in — upload local trips to cloud silently
+        if (store.trips.length > 0) saveUserTripStore(user.uid, store);
+        return;
+      }
+
+      const cloudStore = result.data as TripStore;
+      const cloudTrips: HybridTrip[] = cloudStore?.trips ?? [];
+      const localIds = new Set(store.trips.map((t) => t.id));
+      const cloudOnlyTrips = cloudTrips.filter((t) => !localIds.has(t.id));
+
+      if (cloudOnlyTrips.length === 0) {
+        // No new cloud trips — push local state up
+        if (store.trips.length > 0) saveUserTripStore(user.uid, store);
+        return;
+      }
+
+      if (store.trips.length === 0) {
+        // No local trips — simply pull cloud
+        const next: TripStore = {
+          trips: cloudTrips,
+          activeTripId: cloudStore.activeTripId ?? cloudTrips[0]?.id ?? '',
+        };
+        setStore(next);
+        saveStore(next);
+        return;
+      }
+
+      // Both sides have unique trips — ask the user
+      setPendingMerge({ cloudTrips: cloudOnlyTrips, cloudActiveTripId: cloudStore.activeTripId ?? '' });
+    })();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.uid]);
+
+  // ── Cloud sync: auto-save on store change ─────────────────────────────────
+  useEffect(() => {
+    if (!user || isDemoMode) return;
+    if (pendingMerge) return; // don't overwrite cloud while merge is pending
+    const timer = setTimeout(() => saveUserTripStore(user.uid, store), 2000);
+    return () => clearTimeout(timer);
+  }, [store, user, isDemoMode, pendingMerge]);
 
   // ── Derived values ────────────────────────────────────────────────────────
   const sortedStays = useMemo(() => [...trip.stays].sort((a, b) => a.startSlot - b.startSlot), [trip.stays]);
@@ -2571,6 +2689,28 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
     localStorage.removeItem(LEGACY_STORAGE_KEY);
     setIsDemoMode(false);
     setSelectedStayId('');
+  };
+
+  const handleMergeDecision = (decision: 'merge' | 'keep-local' | 'use-cloud') => {
+    if (!pendingMerge || !user) { setPendingMerge(null); return; }
+    const { cloudTrips, cloudActiveTripId } = pendingMerge;
+
+    let next: TripStore;
+    if (decision === 'merge') {
+      const merged = [...store.trips, ...cloudTrips];
+      next = { trips: merged, activeTripId: store.activeTripId || (merged[0]?.id ?? '') };
+    } else if (decision === 'keep-local') {
+      next = store;
+    } else {
+      // use-cloud: replace local with cloud trips + any local-only trips we discard
+      next = { trips: cloudTrips, activeTripId: cloudActiveTripId || (cloudTrips[0]?.id ?? '') };
+      setSelectedStayId('');
+    }
+
+    setStore(next);
+    saveStore(next);
+    saveUserTripStore(user.uid, next);
+    setPendingMerge(null);
   };
 
   const handleSwitchTrip = (id: string) => {
@@ -3542,6 +3682,18 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
             onApply={(newStays) => {
               updateTrip((t) => ({ ...t, stays: newStays }));
             }}
+          />
+        )}
+
+        {/* Cloud merge dialog */}
+        {pendingMerge && (
+          <MergeDialog
+            localCount={store.trips.length}
+            cloudCount={pendingMerge.cloudTrips.length}
+            onMerge={() => handleMergeDecision('merge')}
+            onKeepLocal={() => handleMergeDecision('keep-local')}
+            onUseCloud={() => handleMergeDecision('use-cloud')}
+            onDismiss={() => setPendingMerge(null)}
           />
         )}
       </div>
