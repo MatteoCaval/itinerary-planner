@@ -73,7 +73,7 @@ export default function TripMap({
   mode, overviewStays, onSelectStay, selectedDayOffset, highlightedStayId,
 }: TripMapProps) {
   const [basemap, setBasemap] = useBasemapState();
-  const [showArrows, setShowArrows] = useState(true);
+  const [showArrows, setShowArrows] = useState(false);
   const [enableClustering, setEnableClustering] = useState(false);
 
   const activeBasemap = BASEMAPS[basemap];
