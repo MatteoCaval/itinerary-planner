@@ -1831,9 +1831,8 @@ function AIPlannerModal({
             <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 mb-2 block">Model</label>
             <div className="flex flex-wrap gap-1.5 mb-2">
               {[
-                { id: 'gemini-2.5-flash', label: '2.5 Flash', badge: 'recommended' },
+                { id: 'gemini-3.1-flash-lite-preview', label: '3.1 Lite', badge: 'recommended' },
                 { id: 'gemini-3-flash-preview', label: '3 Flash' },
-                { id: 'gemini-3.1-flash-lite-preview', label: '3.1 Lite' },
                 { id: 'gemini-3.1-pro-preview', label: '3.1 Pro' },
               ].map(({ id, label, badge }) => (
                 <button
