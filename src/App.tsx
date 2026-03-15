@@ -100,6 +100,18 @@ const STAY_COLORS = [
   '#2167d7', '#615cf6', '#2db6ab', '#d78035',
   '#20b5a8', '#3b6dd8', '#c45c99', '#4c9463',
 ];
+
+function getTomorrow() {
+  const d = new Date(); d.setDate(d.getDate() + 1); return d.toISOString().split('T')[0];
+}
+
+const EMPTY_TRIP: HybridTrip = {
+  id: '_empty',
+  name: 'New Trip',
+  startDate: getTomorrow(),
+  totalDays: 7,
+  stays: [],
+};
 const VISIT_TYPES: VisitType[] = ['landmark', 'area', 'food', 'museum', 'walk', 'hotel'];
 
 // ─── Transport icon ───────────────────────────────────────────────────────────
@@ -609,8 +621,7 @@ function loadStore(): TripStore {
       return { trips: [trip], activeTripId: trip.id };
     }
   } catch { /* ignore */ }
-  const sample = createSampleTrip();
-  return { trips: [sample], activeTripId: sample.id };
+  return { trips: [], activeTripId: '' };
 }
 
 function saveStore(store: TripStore) {
@@ -1866,10 +1877,11 @@ function AIPlannerModal({
 }
 
 // ─── Profile dropdown menu ────────────────────────────────────────────────────
-function ProfileMenu({ trip, onImport, onSwitchToLegacy }: {
+function ProfileMenu({ trip, onImport, onSwitchToLegacy, onGoHome }: {
   trip: HybridTrip;
   onImport: (data: HybridTrip) => void;
   onSwitchToLegacy: () => void;
+  onGoHome: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const [showAuth, setShowAuth] = useState(false);
@@ -1971,6 +1983,10 @@ function ProfileMenu({ trip, onImport, onSwitchToLegacy }: {
             <button onClick={() => { onSwitchToLegacy(); setOpen(false); }} className={menuItem}>
               <Layers className="w-3.5 h-3.5 text-slate-400" />
               Switch to Classic View
+            </button>
+            <button onClick={() => { onGoHome(); setOpen(false); }} className="w-full flex items-center gap-2.5 px-3 py-2 text-[11px] font-semibold text-slate-500 hover:bg-slate-50 hover:text-slate-700 transition-colors">
+              <Compass className="w-3.5 h-3.5 text-slate-400" />
+              Back to start
             </button>
           </div>
           <div className="border-t border-slate-100 py-1">
@@ -2146,13 +2162,124 @@ function AuthModalSimple({ onClose }: { onClose: () => void }) {
   );
 }
 
+// ─── Welcome screen ───────────────────────────────────────────────────────────
+function WelcomeScreen({ onCreateTrip, onLoadDemo }: { onCreateTrip: () => void; onLoadDemo: () => void }) {
+  const { user, signInWithGoogle } = useAuth();
+
+  const stayPreviews = [
+    { left: '4%', width: '28%', color: '#2167d7', label: 'Tokyo' },
+    { left: '35%', width: '20%', color: '#615cf6', label: 'Kyoto' },
+    { left: '58%', width: '32%', color: '#d78035', label: 'Osaka' },
+  ];
+
+  return (
+    <div className="min-h-screen bg-slate-50 flex flex-col">
+      {/* Header */}
+      <header className="flex h-14 items-center justify-between border-b border-slate-100 px-6 bg-white/80 backdrop-blur-sm flex-shrink-0">
+        <div className="flex items-center gap-2.5 text-primary">
+          <div className="size-7 rounded-lg bg-primary/10 flex items-center justify-center">
+            <Compass className="w-4 h-4 text-primary" />
+          </div>
+          <span className="text-sm font-extrabold tracking-tight">Itinerary</span>
+        </div>
+        {!user && (
+          <button
+            onClick={signInWithGoogle}
+            className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-primary transition-colors"
+          >
+            <LogIn className="w-3.5 h-3.5" />
+            Sign in
+          </button>
+        )}
+      </header>
+
+      {/* Hero */}
+      <main className="flex-1 flex items-center justify-center px-6 py-16">
+        <div className="max-w-md w-full">
+
+          {/* Decorative timeline preview */}
+          <div className="mb-10 relative h-16 w-full select-none">
+            {/* Track line */}
+            <div className="absolute inset-y-0 left-0 right-0 flex items-center pointer-events-none">
+              <div className="h-px w-full bg-slate-200" />
+            </div>
+            {/* Stay blocks */}
+            {stayPreviews.map((s, i) => (
+              <div
+                key={i}
+                className="absolute h-10 rounded-lg flex items-center px-3 gap-2"
+                style={{
+                  left: s.left, width: s.width, top: '50%', transform: 'translateY(-50%)',
+                  background: `color-mix(in srgb, ${s.color} 10%, white)`,
+                  border: `1.5px solid color-mix(in srgb, ${s.color} 28%, transparent)`,
+                }}
+              >
+                <div className="w-1 h-5 rounded-full flex-shrink-0" style={{ background: s.color }} />
+                <span className="text-[10px] font-bold truncate" style={{ color: s.color }}>{s.label}</span>
+              </div>
+            ))}
+            {/* Transit chips */}
+            {[{ left: '33%', icon: '🚆' }, { left: '56%', icon: '✈️' }].map((chip) => (
+              <div
+                key={chip.left}
+                className="absolute flex items-center justify-center"
+                style={{ left: chip.left, top: '50%', transform: 'translate(-50%, -50%)' }}
+              >
+                <div className="bg-white border border-slate-200 rounded-full px-2 py-0.5 text-[9px] shadow-sm z-10">
+                  {chip.icon}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <h1 className="text-[2.6rem] font-black text-slate-900 tracking-tight leading-none mb-3">
+            Plan your next<br />
+            <span className="text-primary">adventure.</span>
+          </h1>
+          <p className="text-slate-500 text-sm leading-relaxed mb-8 max-w-sm">
+            A visual day-by-day planner with a timeline, interactive map,
+            and AI-powered suggestions.
+          </p>
+
+          <div className="flex items-center gap-3">
+            <button
+              onClick={onCreateTrip}
+              className="flex items-center gap-2 px-5 py-2.5 text-sm font-bold text-white bg-primary hover:bg-primary/90 rounded-lg transition-all shadow-sm shadow-primary/20 active:scale-95"
+            >
+              <Plus className="w-4 h-4" />
+              Plan a trip
+            </button>
+            <button
+              onClick={onLoadDemo}
+              className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-slate-600 border border-slate-200 bg-white rounded-lg hover:shadow-sm hover:border-slate-300 transition-all"
+            >
+              See a demo
+            </button>
+          </div>
+
+          {!user && (
+            <p className="mt-6 text-[11px] text-slate-400">
+              Trips are saved locally.{' '}
+              <button onClick={signInWithGoogle} className="text-primary font-semibold hover:underline">
+                Sign in
+              </button>{' '}
+              to sync across devices.
+            </p>
+          )}
+        </div>
+      </main>
+    </div>
+  );
+}
+
 // ─── CHRONOS App ──────────────────────────────────────────────────────────────
 function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
   // ── Store (multi-trip) ───────────────────────────────────────────────────
   const [store, setStore] = useState<TripStore>(() => loadStore());
+  const [isDemoMode, setIsDemoMode] = useState(false);
 
   const trip = useMemo(
-    () => store.trips.find((t) => t.id === store.activeTripId) ?? store.trips[0],
+    () => store.trips.find((t) => t.id === store.activeTripId) ?? store.trips[0] ?? EMPTY_TRIP,
     [store],
   );
 
@@ -2416,12 +2543,33 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
 
   // ── Trip management ───────────────────────────────────────────────────────
   const handleNewTrip = () => {
-    const sample = { ...createSampleTrip(), id: `trip-${Date.now()}`, name: 'New Trip', stays: [] };
+    const tomorrow = addDaysTo(new Date(), 1).toISOString().split('T')[0];
+    const sample = { ...createSampleTrip(), id: `trip-${Date.now()}`, name: 'New Trip', stays: [], startDate: tomorrow };
     setStore((s) => {
       const next = { trips: [...s.trips, sample], activeTripId: sample.id };
       saveStore(next);
       return next;
     });
+    setSelectedStayId('');
+  };
+
+  const handleLoadDemo = () => {
+    const sample = createSampleTrip();
+    const next = { trips: [sample], activeTripId: sample.id };
+    setStore(next); // intentionally NOT saved to localStorage
+    setIsDemoMode(true);
+    setSelectedStayId(sample.stays[0]?.id ?? '');
+  };
+
+  const handleMakeMine = () => {
+    saveStore(store);
+    setIsDemoMode(false);
+  };
+
+  const handleGoHome = () => {
+    setStore({ trips: [], activeTripId: '' });
+    localStorage.removeItem(LEGACY_STORAGE_KEY);
+    setIsDemoMode(false);
     setSelectedStayId('');
   };
 
@@ -2445,6 +2593,16 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
 
   const activeInboxVisit = activeId?.startsWith('inbox-') ? inboxVisits.find((v) => `inbox-${v.id}` === activeId) : null;
   const activeScheduledVisit = activeId?.startsWith('visit-') && selectedStay ? selectedStay.visits.find((v) => `visit-${v.id}` === activeId) : null;
+
+  // ── Welcome screen for first-time users ──────────────────────────────────
+  if (store.trips.length === 0) {
+    return (
+      <WelcomeScreen
+        onCreateTrip={() => { handleNewTrip(); setShowTripEditor(true); }}
+        onLoadDemo={handleLoadDemo}
+      />
+    );
+  }
 
   // ── JSX ───────────────────────────────────────────────────────────────────
   return (
@@ -2482,6 +2640,23 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
           </div>
 
           <div className="flex items-center gap-1.5 flex-shrink-0">
+            {isDemoMode && (
+              <div className="hidden sm:flex items-center gap-1.5 bg-slate-100 border border-slate-200 rounded-lg pl-2.5 pr-1 py-1 text-[10px] font-bold text-slate-500 mr-1">
+                <span>Demo</span>
+                <button
+                  onClick={handleMakeMine}
+                  className="px-2 py-0.5 bg-primary text-white rounded text-[10px] font-bold hover:bg-primary/90 transition-colors"
+                >
+                  Make it mine
+                </button>
+                <button
+                  onClick={handleGoHome}
+                  className="px-2 py-0.5 rounded text-[10px] font-semibold hover:bg-slate-200 transition-colors"
+                >
+                  Start fresh
+                </button>
+              </div>
+            )}
             {overlaps.size > 0 && (
               <div className="hidden sm:flex items-center gap-1.5 text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1 text-[10px] font-bold mr-1">
                 {overlaps.size} conflict{overlaps.size > 1 ? 's' : ''}
@@ -2544,7 +2719,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
               <span className="hidden sm:block">AI</span>
             </button>
             {/* Profile menu */}
-            <ProfileMenu trip={trip} onImport={(data) => setTrip(() => data)} onSwitchToLegacy={onSwitchToLegacy} />
+            <ProfileMenu trip={trip} onImport={(data) => setTrip(() => data)} onSwitchToLegacy={onSwitchToLegacy} onGoHome={handleGoHome} />
           </div>
         </header>
 
@@ -2591,6 +2766,15 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                 {/* Stay blocks */}
                 <div className={`flex-1 relative ${numDays <= 15 ? 'timeline-grid' : 'timeline-grid-month'} snap-grid`}>
                   <div className="absolute inset-0 flex items-center px-[1%]">
+                    {sortedStays.length === 0 ? (
+                      <button
+                        onClick={() => setAddingStay(true)}
+                        className="w-full h-10 flex items-center justify-center gap-2 border-2 border-dashed border-slate-200 rounded-lg text-slate-400 hover:text-primary hover:border-primary/40 hover:bg-primary/5 transition-all"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span className="text-[11px] font-bold">Add your first destination</span>
+                      </button>
+                    ) : (
                     <div className="relative w-full" style={{ height: 42 }}>
                       {sortedStays.map((stay, index) => {
                         const isSelected = selectedStay?.id === stay.id;
@@ -2723,6 +2907,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                         );
                       })}
                     </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -2765,6 +2950,28 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
 
             {/* Day columns */}
             <div className={`flex-1 overflow-x-auto overflow-y-auto flex p-5 gap-5 min-w-0 bg-slate-50/50 scroll-hide transition-all duration-300 ${mapExpanded ? 'w-0 overflow-hidden opacity-0 p-0' : ''}`} style={mapExpanded ? undefined : { paddingRight: mapWidth + 20 }}>
+              {sortedStays.length === 0 && (
+                <div className="flex-1 flex items-center justify-center">
+                  <div className="text-center space-y-3">
+                    <div className="size-12 rounded-xl bg-slate-100 flex items-center justify-center mx-auto">
+                      <MapPin className="w-5 h-5 text-slate-400" />
+                    </div>
+                    <div>
+                      <p className="font-bold text-slate-600 text-sm">No destinations yet</p>
+                      <p className="text-slate-400 text-xs mt-1 leading-relaxed">
+                        Add a stay in the timeline above<br />to start planning your days.
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => setAddingStay(true)}
+                      className="flex items-center gap-2 px-4 py-2 text-xs font-bold text-primary border border-primary/20 rounded-lg hover:bg-primary/5 transition-colors mx-auto"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      Add first stay
+                    </button>
+                  </div>
+                </div>
+              )}
               {stayDays.map((day) => {
                 const dayVisits = selectedStay
                   ? sortVisits(selectedStay.visits.filter(
@@ -3283,14 +3490,19 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
             trip={trip}
             onClose={() => setShowTripEditor(false)}
             onSave={(updates) => setTrip((t) => ({ ...t, ...updates }))}
-            onDelete={store.trips.length > 1 ? () => {
-              setStore((s) => {
-                const remaining = s.trips.filter((t) => t.id !== trip.id);
-                const next = { trips: remaining, activeTripId: remaining[0].id };
-                saveStore(next); return next;
-              });
-              setSelectedStayId('');
-            } : undefined}
+            onDelete={() => {
+              if (store.trips.length > 1) {
+                setStore((s) => {
+                  const remaining = s.trips.filter((t) => t.id !== trip.id);
+                  const next = { trips: remaining, activeTripId: remaining[0].id };
+                  saveStore(next); return next;
+                });
+                setSelectedStayId('');
+              } else {
+                handleGoHome();
+              }
+              setShowTripEditor(false);
+            }}
           />
         )}
 
