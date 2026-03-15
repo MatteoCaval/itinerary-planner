@@ -10,8 +10,8 @@ import {
   AlertCircle, ArrowLeftRight, Bed, Bus, Calendar, Car, Check,
   ChevronDown, Compass, Database, Download, Footprints,
   GripVertical, History, Landmark, Lock, LogIn, LogOut, Mail, MapPin, Maximize2, Minimize2,
-  Moon, Navigation, Pencil, Plane, Plus,
-  PlusCircle, Redo2, Search, Ship, SlidersHorizontal, Sparkles, Sunrise,
+  Moon, Navigation, Palette, Pencil, Plane, Plus,
+  PlusCircle, Redo2, Search, Ship, ShoppingBag, SlidersHorizontal, Sparkles, Sunrise,
   Sun, Train, Trash2, Undo2, Upload, User, X, Layers, Hotel, UtensilsCrossed,
 } from 'lucide-react';
 import LegacyApp from './features/legacy/LegacyApp';
@@ -30,7 +30,7 @@ const APP_VIEW_KEY = 'itinerary-app-view-v1';
 // ─── Types ────────────────────────────────────────────────────────────────────
 type DayPart = 'morning' | 'afternoon' | 'evening';
 type TravelMode = 'train' | 'flight' | 'drive' | 'ferry' | 'bus' | 'walk';
-type VisitType = 'area' | 'landmark' | 'museum' | 'food' | 'walk' | 'hotel';
+type VisitType = 'landmark' | 'museum' | 'food' | 'walk' | 'shopping' | 'area' | 'hotel'; // area/hotel kept for legacy compat
 
 type VisitItem = {
   id: string; name: string; type: VisitType; area: string;
@@ -113,7 +113,7 @@ const EMPTY_TRIP: HybridTrip = {
   totalDays: 7,
   stays: [],
 };
-const VISIT_TYPES: VisitType[] = ['landmark', 'area', 'food', 'museum', 'walk', 'hotel'];
+const VISIT_TYPES: VisitType[] = ['landmark', 'museum', 'food', 'walk', 'shopping'];
 
 // ─── Transport icon ───────────────────────────────────────────────────────────
 function TransportIcon({ mode, className = 'w-3.5 h-3.5' }: { mode: TravelMode; className?: string }) {
@@ -163,12 +163,12 @@ function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): nu
 
 function getVisitTypeBg(type: VisitType) {
   switch (type) {
-    case 'food':     return 'bg-emerald-400';
     case 'landmark': return 'bg-primary';
     case 'museum':   return 'bg-blue-400';
+    case 'food':     return 'bg-emerald-400';
     case 'walk':     return 'bg-teal-400';
-    case 'hotel':    return 'bg-slate-400';
-    default:         return 'bg-violet-400';
+    case 'shopping': return 'bg-violet-400';
+    default:         return 'bg-slate-400';
   }
 }
 
@@ -259,31 +259,34 @@ function deriveAccommodationGroups(stayDays: ReturnType<typeof deriveStayDays>):
 
 function getVisitTypeColor(type: VisitType) {
   switch (type) {
-    case 'food':     return 'text-emerald-600 bg-emerald-50 border-emerald-200';
     case 'landmark': return 'text-primary bg-primary/10 border-primary/20';
     case 'museum':   return 'text-blue-600 bg-blue-50 border-blue-200';
+    case 'food':     return 'text-emerald-600 bg-emerald-50 border-emerald-200';
     case 'walk':     return 'text-teal-600 bg-teal-50 border-teal-200';
-    case 'hotel':    return 'text-slate-600 bg-slate-50 border-slate-200';
-    default:         return 'text-violet-600 bg-violet-50 border-violet-200';
+    case 'shopping': return 'text-violet-600 bg-violet-50 border-violet-200';
+    default:         return 'text-slate-500 bg-slate-50 border-slate-200';
   }
 }
 
 function getVisitLabel(type: VisitType) {
   switch (type) {
-    case 'food': return 'Food'; case 'landmark': return 'Iconic';
-    case 'museum': return 'Culture'; case 'walk': return 'Scenic';
-    case 'hotel': return 'Stay'; default: return 'Lively';
+    case 'landmark': return 'Sight';
+    case 'museum':   return 'Culture';
+    case 'food':     return 'Food';
+    case 'walk':     return 'Nature';
+    case 'shopping': return 'Shopping';
+    default:         return 'Place';
   }
 }
 
 function getVisitTypeIcon(type: VisitType, cls = 'w-4 h-4') {
   switch (type) {
-    case 'food':    return <UtensilsCrossed className={cls} />;
-    case 'hotel':   return <Hotel className={cls} />;
-    case 'walk':    return <MapPin className={cls} />;
-    case 'landmark':
-    case 'museum':  return <Landmark className={cls} />;
-    default:        return <Compass className={cls} />;
+    case 'landmark': return <Landmark className={cls} />;
+    case 'museum':   return <Palette className={cls} />;
+    case 'food':     return <UtensilsCrossed className={cls} />;
+    case 'walk':     return <Footprints className={cls} />;
+    case 'shopping': return <ShoppingBag className={cls} />;
+    default:         return <MapPin className={cls} />;
   }
 }
 
@@ -302,15 +305,15 @@ function createSampleTrip(): HybridTrip {
         travelDurationToNext: '150 mins',
         travelNotesToNext: 'Hokuriku Shinkansen Kagayaki from Tokyo to Kanazawa.',
         visits: [
-          createVisit('tokyo-1', 'Shinjuku & Omoide Yokocho', 'area', 'Shinjuku', 35.6923, 139.7024, 0, 'evening', 0),
+          createVisit('tokyo-1', 'Shinjuku & Omoide Yokocho', 'landmark', 'Shinjuku', 35.6923, 139.7024, 0, 'evening', 0),
           createVisit('tokyo-2', 'Sushi dinner at Sukiyabashi Jiro', 'food', 'Ginza', 35.6716, 139.7657, 0, 'evening', 1, '90m'),
           createVisit('tokyo-3', 'Meiji Jingu & Harajuku', 'landmark', 'Harajuku', 35.6764, 139.6993, 1, 'morning', 0, '2h'),
-          createVisit('tokyo-4', 'Shibuya Crossing & Hachiko', 'area', 'Shibuya', 35.6585, 139.7013, 1, 'afternoon', 0, '2h'),
+          createVisit('tokyo-4', 'Shibuya Crossing & Hachiko', 'landmark', 'Shibuya', 35.6585, 139.7013, 1, 'afternoon', 0, '2h'),
           createVisit('tokyo-5', 'Tokyo Tower', 'landmark', 'Minato', 35.6584, 139.7455, 2, 'morning', 0, '1h'),
           createVisit('tokyo-6', 'Senso-ji & Sumida River', 'landmark', 'Asakusa', 35.7148, 139.7967, 2, 'afternoon', 0, '2h'),
-          createVisit('tokyo-7', 'Akihabara Electric Town', 'area', 'Akihabara', 35.6984, 139.7711, 2, 'evening', 0, '2h'),
+          createVisit('tokyo-7', 'Akihabara Electric Town', 'shopping', 'Akihabara', 35.6984, 139.7711, 2, 'evening', 0, '2h'),
           createVisit('tokyo-8', 'Tsukiji Outer Market', 'food', 'Tsukiji', 35.6655, 139.7707, 3, 'morning', 0, '90m'),
-          createVisit('tokyo-9', 'Ginza department stores', 'area', 'Ginza', 35.671, 139.765, null, null, 0, 'Flexible'),
+          createVisit('tokyo-9', 'Ginza department stores', 'shopping', 'Ginza', 35.671, 139.765, null, null, 0, 'Flexible'),
           createVisit('tokyo-10', 'Imperial Palace gardens', 'walk', 'Chiyoda', 35.6852, 139.7528, null, null, 1, '1h'),
           createVisit('tokyo-11', 'teamLab Planets', 'museum', 'Toyosu', 35.6449, 139.7904, null, null, 2, '2h'),
         ],
@@ -322,12 +325,12 @@ function createSampleTrip(): HybridTrip {
         travelDurationToNext: '75 mins',
         travelNotesToNext: 'Advance-booked Nohi Bus toward Shirakawa-go.',
         visits: [
-          createVisit('kanazawa-1', 'Higashi Chaya District', 'area', 'Higashi Chaya', 36.5724, 136.6665, 0, 'evening', 0, '2h'),
+          createVisit('kanazawa-1', 'Higashi Chaya District', 'landmark', 'Higashi Chaya', 36.5724, 136.6665, 0, 'evening', 0, '2h'),
           createVisit('kanazawa-2', 'Kenrokuen Garden & Castle', 'walk', 'Kenrokuen', 36.5621, 136.6627, 1, 'morning', 0, '2-3h'),
           createVisit('kanazawa-3', '21st Century Museum of Contemporary Art', 'museum', 'Hirosaka', 36.5609, 136.6582, 1, 'evening', 0, '2h'),
           createVisit('kanazawa-4', 'Omicho Market dinner', 'food', 'Omicho', 36.5718, 136.6567, 1, 'afternoon', 0, '90m'),
           createVisit('kanazawa-5', 'Kaga Onsen (Yamanaka)', 'walk', 'Yamanaka Onsen', 36.2464, 136.3758, 2, 'morning', 0, 'Half day'),
-          createVisit('kanazawa-6', 'Nagamachi Samurai District', 'area', 'Nagamachi', 36.5596, 136.6514, null, null, 0, '90m'),
+          createVisit('kanazawa-6', 'Nagamachi Samurai District', 'landmark', 'Nagamachi', 36.5596, 136.6514, null, null, 0, '90m'),
         ],
       },
       {
@@ -337,7 +340,7 @@ function createSampleTrip(): HybridTrip {
         travelDurationToNext: '30 mins',
         travelNotesToNext: 'JR Special Rapid Service from Kyoto to Osaka.',
         visits: [
-          createVisit('kyoto-1', 'Gion & Pontocho Alley', 'area', 'Gion', 35.0037, 135.775, 0, 'evening', 0, '2h'),
+          createVisit('kyoto-1', 'Gion & Pontocho Alley', 'landmark', 'Gion', 35.0037, 135.775, 0, 'evening', 0, '2h'),
           createVisit('kyoto-2', 'Arashiyama Bamboo Grove & Tenryu-ji', 'walk', 'Arashiyama', 35.0158, 135.672, 1, 'morning', 0, '2h'),
           createVisit('kyoto-3', 'Kinkaku-ji & Ryoan-ji', 'landmark', 'Kita', 35.0394, 135.7292, 1, 'afternoon', 0, '2h'),
           createVisit('kyoto-4', 'Kiyomizu-dera & Sannenzaka', 'landmark', 'Higashiyama', 34.9949, 135.785, 1, 'evening', 0, '2h'),
@@ -357,7 +360,7 @@ function createSampleTrip(): HybridTrip {
           createVisit('osaka-1', 'Osaka Castle Park', 'landmark', 'Chuo', 34.6873, 135.5262, 0, 'morning', 0, '2h'),
           createVisit('osaka-2', 'Dotonbori Neon & Food Tour', 'food', 'Namba', 34.6687, 135.5013, 0, 'evening', 0, '2h'),
           createVisit('osaka-3', 'Kuromon Market', 'food', 'Nippombashi', 34.6654, 135.5064, 1, 'morning', 0, '90m'),
-          createVisit('osaka-4', 'Shinsekai & Abeno Harukas', 'area', 'Tennoji', 34.6525, 135.5063, 1, 'afternoon', 0, '2h'),
+          createVisit('osaka-4', 'Shinsekai & Abeno Harukas', 'landmark', 'Tennoji', 34.6525, 135.5063, 1, 'afternoon', 0, '2h'),
           createVisit('osaka-5', 'teamLab Botanical Garden', 'museum', 'Nagai', 34.6129, 135.5227, null, null, 0, '2h'),
         ],
       },
@@ -392,16 +395,16 @@ function modeToLegacyTransport(m: TravelMode): LegacyTransportType {
 
 function legacyCategoryToVisitType(cat?: LegacyLocationCategory, hint?: string): VisitType {
   if (hint && (VISIT_TYPES as string[]).includes(hint)) return hint as VisitType;
+  if (hint === 'area' || hint === 'hotel') return 'landmark'; // migrate legacy types
   if (cat === 'dining') return 'food';
-  if (cat === 'hotel') return 'hotel';
+  if (cat === 'hotel') return 'landmark';
   if (cat === 'sightseeing') return 'landmark';
   if (cat === 'transit') return 'walk';
-  return 'area';
+  return 'landmark';
 }
 
 function visitTypeToLegacyCategory(type: VisitType): LegacyLocationCategory {
   if (type === 'food') return 'dining';
-  if (type === 'hotel') return 'hotel';
   if (type === 'landmark' || type === 'museum') return 'sightseeing';
   if (type === 'walk') return 'transit';
   return 'other';
@@ -1066,16 +1069,164 @@ function StayEditorModal({ stay, onClose, onSave, onDelete }: {
   );
 }
 
+// ─── Add stay modal ───────────────────────────────────────────────────────────
+function AddStayModal({ onClose, onSave, stayColor }: {
+  onClose: () => void;
+  stayColor: string;
+  onSave: (data: { name: string; days: number; lat?: number; lng?: number }) => void;
+}) {
+  const [name, setName] = useState('');
+  const [days, setDays] = useState(3);
+  const [searchResults, setSearchResults] = useState<PlaceSearchResult[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [pickedCoords, setPickedCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [showResults, setShowResults] = useState(false);
+  const [searchError, setSearchError] = useState(false);
+
+  useEffect(() => {
+    if (!name.trim() || name.trim().length < 3 || pickedCoords) { setSearchResults([]); setSearchError(false); return; }
+    const controller = new AbortController();
+    const tid = window.setTimeout(async () => {
+      setIsSearching(true); setSearchError(false);
+      try {
+        const results = await searchPlace(name.trim(), { signal: controller.signal });
+        setSearchResults(results.slice(0, 6)); setShowResults(true);
+      } catch (err) {
+        if (!controller.signal.aborted) setSearchError(true);
+      } finally {
+        if (!controller.signal.aborted) setIsSearching(false);
+      }
+    }, 500);
+    return () => { clearTimeout(tid); controller.abort(); };
+  }, [name, pickedCoords]);
+
+  const pickResult = (r: PlaceSearchResult) => {
+    setName(r.display_name.split(',')[0].trim());
+    setPickedCoords({ lat: parseFloat(r.lat), lng: parseFloat(r.lon) });
+    setSearchResults([]); setShowResults(false);
+  };
+
+  const canSave = name.trim().length > 0;
+
+  return (
+    <ModalBase title="Add Destination" onClose={onClose}>
+      <div className="space-y-5">
+
+        {/* Destination search */}
+        <div className="relative">
+          <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 block">
+            City or destination
+          </label>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+            <input
+              className="w-full border border-slate-200 rounded-lg pl-9 pr-9 py-2.5 text-sm focus:ring-1 focus:ring-primary focus:border-primary outline-none font-semibold placeholder:font-normal"
+              placeholder="e.g. Tokyo, Kyoto, Paris…"
+              value={name}
+              onChange={(e) => { setName(e.target.value); setPickedCoords(null); }}
+              onFocus={() => searchResults.length > 0 && setShowResults(true)}
+              autoFocus
+            />
+            {isSearching && (
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+            )}
+            {pickedCoords && !isSearching && (
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-500">
+                <Check className="w-3.5 h-3.5" />
+              </div>
+            )}
+          </div>
+          {showResults && searchResults.length > 0 && (
+            <div className="absolute z-50 left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-lg shadow-xl overflow-hidden">
+              {searchResults.map((r) => {
+                const parts = r.display_name.split(',');
+                return (
+                  <button key={r.place_id} onClick={() => pickResult(r)}
+                    className="w-full text-left px-3 py-2.5 hover:bg-primary/5 border-b last:border-b-0 border-slate-100 flex items-start gap-2 transition-colors"
+                  >
+                    <MapPin className="w-3.5 h-3.5 text-slate-400 flex-shrink-0 mt-0.5" />
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold text-slate-800 truncate">{parts[0].trim()}</p>
+                      <p className="text-[10px] text-slate-500 truncate">{parts.slice(1, 4).join(',').trim()}</p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+          {searchError && (
+            <p className="text-[10px] text-red-500 font-medium mt-1">Search failed — you can still save with a manual name.</p>
+          )}
+        </div>
+
+        {/* Days stepper */}
+        <div>
+          <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 block">
+            Duration
+          </label>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center border border-slate-200 rounded-lg overflow-hidden bg-white">
+              <button
+                onClick={() => setDays((d) => Math.max(1, d - 1))}
+                className="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-50 text-xl font-light transition-colors"
+              >
+                −
+              </button>
+              <span className="w-10 text-center font-extrabold text-sm text-slate-800 tabular-nums">{days}</span>
+              <button
+                onClick={() => setDays((d) => Math.min(90, d + 1))}
+                className="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-50 text-xl font-light transition-colors"
+              >
+                +
+              </button>
+            </div>
+            <span className="text-sm text-slate-500">{days === 1 ? 'day' : 'days'}</span>
+          </div>
+        </div>
+
+        {/* Preview */}
+        <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-slate-100 bg-slate-50/60">
+          <div className="w-2 h-8 rounded-full flex-shrink-0" style={{ background: stayColor }} />
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-extrabold text-slate-800 truncate">{name || 'New destination'}</p>
+            <p className="text-[10px] text-slate-400 font-medium mt-0.5">{days} {days === 1 ? 'day' : 'days'} on the timeline</p>
+          </div>
+          {pickedCoords && (
+            <span className="text-[9px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-full flex-shrink-0">
+              Located
+            </span>
+          )}
+        </div>
+
+        {/* Actions */}
+        <div className="flex gap-2.5 pt-1">
+          <button onClick={onClose}
+            className="flex-1 py-2 text-xs font-bold text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={() => canSave && onSave({ name: name.trim(), days, lat: pickedCoords?.lat, lng: pickedCoords?.lng })}
+            disabled={!canSave}
+            className="flex-1 py-2 text-xs font-bold text-white bg-primary rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-40"
+          >
+            Add to Timeline
+          </button>
+        </div>
+      </div>
+    </ModalBase>
+  );
+}
+
 // ─── Visit editor modal ───────────────────────────────────────────────────────
 function VisitFormModal({ initial, title, onClose, onSave, onDelete, onUnschedule }: {
   initial?: Partial<VisitItem>; title: string; onClose: () => void;
-  onSave: (data: { name: string; type: VisitType; area: string; durationHint: string; notes: string; lat?: number; lng?: number }) => void;
+  onSave: (data: { name: string; type: VisitType; durationHint: string; notes: string; lat?: number; lng?: number }) => void;
   onDelete?: () => void;
   onUnschedule?: () => void;
 }) {
   const [name, setName] = useState(initial?.name ?? '');
-  const [type, setType] = useState<VisitType>(initial?.type ?? 'area');
-  const [area, setArea] = useState(initial?.area ?? '');
+  const [type, setType] = useState<VisitType>(initial?.type && VISIT_TYPES.includes(initial.type) ? initial.type : 'landmark');
   const [duration, setDuration] = useState(initial?.durationHint ?? '');
   const [notes, setNotes] = useState(initial?.notes ?? '');
   const [searchResults, setSearchResults] = useState<PlaceSearchResult[]>([]);
@@ -1084,7 +1235,6 @@ function VisitFormModal({ initial, title, onClose, onSave, onDelete, onUnschedul
     initial?.lat != null ? { lat: initial.lat, lng: initial.lng! } : null,
   );
   const [showResults, setShowResults] = useState(false);
-  const [showExtras, setShowExtras] = useState(!!initial?.id); // show extras when editing
   const [searchError, setSearchError] = useState(false);
   const isEditing = !!initial?.id;
 
@@ -1111,29 +1261,25 @@ function VisitFormModal({ initial, title, onClose, onSave, onDelete, onUnschedul
   const pickResult = (r: PlaceSearchResult) => {
     const parts = r.display_name.split(',');
     setName(parts[0].trim());
-    setArea(parts.slice(1, 3).map((s) => s.trim()).filter(Boolean).join(', '));
     setPickedCoords({ lat: parseFloat(r.lat), lng: parseFloat(r.lon) });
     setSearchResults([]);
     setShowResults(false);
   };
 
-  const typeConfig: Record<VisitType, string> = {
-    area: 'Lively', landmark: 'Iconic', food: 'Food',
-    museum: 'Culture', walk: 'Scenic', hotel: 'Stay',
-  };
-
   return (
     <ModalBase title={title} onClose={onClose}>
       <div className="space-y-4">
+
+        {/* Place search */}
         <div className="relative">
           <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 block">
-            Search or enter a place name
+            Place name
           </label>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
             <input
-              className="w-full border border-slate-200 rounded-lg pl-9 pr-3 py-2 text-sm focus:ring-1 focus:ring-primary focus:border-primary outline-none font-semibold"
-              placeholder="e.g. Senso-ji Temple, Tokyo"
+              className="w-full border border-slate-200 rounded-lg pl-9 pr-9 py-2.5 text-sm focus:ring-1 focus:ring-primary focus:border-primary outline-none font-semibold placeholder:font-normal"
+              placeholder="e.g. Senso-ji Temple, Nishiki Market…"
               value={name}
               onChange={(e) => { setName(e.target.value); setPickedCoords(null); }}
               onFocus={() => searchResults.length > 0 && setShowResults(true)}
@@ -1142,8 +1288,8 @@ function VisitFormModal({ initial, title, onClose, onSave, onDelete, onUnschedul
             {isSearching && (
               <div className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
             )}
-            {pickedCoords && (
-              <div className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-500" title="Location geocoded">
+            {pickedCoords && !isSearching && (
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-500">
                 <Check className="w-3.5 h-3.5" />
               </div>
             )}
@@ -1153,9 +1299,7 @@ function VisitFormModal({ initial, title, onClose, onSave, onDelete, onUnschedul
               {searchResults.map((r) => {
                 const parts = r.display_name.split(',');
                 return (
-                  <button
-                    key={r.place_id}
-                    onClick={() => pickResult(r)}
+                  <button key={r.place_id} onClick={() => pickResult(r)}
                     className="w-full text-left px-3 py-2.5 hover:bg-primary/5 border-b last:border-b-0 border-slate-100 flex items-start gap-2 transition-colors"
                   >
                     <MapPin className="w-3.5 h-3.5 text-slate-400 flex-shrink-0 mt-0.5" />
@@ -1169,102 +1313,98 @@ function VisitFormModal({ initial, title, onClose, onSave, onDelete, onUnschedul
             </div>
           )}
           {searchError && (
-            <p className="text-[10px] text-red-500 font-medium mt-1">Search failed. You can still save with a manual name.</p>
+            <p className="text-[10px] text-red-500 font-medium mt-1">Search failed — you can still save with a manual name.</p>
           )}
         </div>
-        {/* Type — compact pill row, always visible */}
+
+        {/* Type grid */}
         <div>
-          <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 block">Type</label>
-          <div className="flex flex-wrap gap-1.5">
-            {VISIT_TYPES.map((t) => (
-              <button
-                key={t}
-                onClick={() => setType(t)}
-                aria-pressed={type === t}
-                className={`py-1.5 px-3 rounded-full border text-[10px] font-bold transition-all flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-primary/50 ${
-                  type === t ? `${getVisitTypeColor(t)} border-current` : 'border-slate-200 text-slate-500 hover:border-slate-300'
-                }`}
-              >
-                {getVisitTypeIcon(t, 'w-3 h-3')}
-                {typeConfig[t]}
-              </button>
-            ))}
+          <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 block">Category</label>
+          <div className="grid grid-cols-5 gap-1.5">
+            {VISIT_TYPES.map((t) => {
+              const selected = type === t;
+              return (
+                <button
+                  key={t}
+                  onClick={() => setType(t)}
+                  aria-pressed={selected}
+                  className={`flex flex-col items-center gap-1.5 py-2.5 px-1 rounded-xl border text-[9px] font-bold transition-all focus-visible:ring-2 focus-visible:ring-primary/50 ${
+                    selected
+                      ? `${getVisitTypeColor(t)} border-current shadow-sm`
+                      : 'border-slate-200 text-slate-400 hover:border-slate-300 hover:text-slate-600 hover:bg-slate-50'
+                  }`}
+                >
+                  {getVisitTypeIcon(t, 'w-3.5 h-3.5')}
+                  <span className="leading-none">{getVisitLabel(t)}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
 
-        {/* Extras — collapsed for new places, expanded when editing */}
-        {!isEditing && (
-          <button
-            onClick={() => setShowExtras((v) => !v)}
-            className="text-[10px] font-bold text-slate-400 hover:text-primary transition-colors flex items-center gap-1"
-          >
-            <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showExtras ? 'rotate-180' : ''}`} />
-            {showExtras ? 'Less details' : 'Add duration, area, notes…'}
-          </button>
-        )}
+        {/* Duration */}
+        <div>
+          <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-1.5 block">
+            Duration
+          </label>
+          <input
+            className="w-full border border-slate-200 rounded-lg px-3 py-2 text-xs focus:ring-1 focus:ring-primary focus:border-primary outline-none"
+            placeholder="e.g. 2h, 90m, half day"
+            value={duration}
+            onChange={(e) => setDuration(e.target.value)}
+          />
+        </div>
 
-        {showExtras && (
-          <>
-            <div>
-              <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 block">Area / Neighbourhood</label>
-              <input
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-primary focus:border-primary outline-none"
-                placeholder="e.g. Shibuya, Tokyo"
-                value={area}
-                onChange={(e) => setArea(e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 block">Duration</label>
-              <input
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-primary focus:border-primary outline-none"
-                placeholder="e.g. 2h, 90m, Half day"
-                value={duration}
-                onChange={(e) => setDuration(e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 block">Notes</label>
-              <textarea
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-primary focus:border-primary outline-none resize-none"
-                rows={2}
-                placeholder="Booking info, tips..."
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-              />
-            </div>
-          </>
-        )}
+        {/* Notes */}
+        <div>
+          <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-1.5 block">Notes</label>
+          <textarea
+            className="w-full border border-slate-200 rounded-lg px-3 py-2 text-xs focus:ring-1 focus:ring-primary focus:border-primary outline-none resize-none"
+            rows={2}
+            placeholder="Booking info, tips, opening hours…"
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+          />
+        </div>
 
+        {/* Delete / unschedule */}
         {(onDelete || onUnschedule) && (
-          <div className="flex gap-2 pt-1">
+          <div className="flex gap-2">
             {onUnschedule && (
-              <button onClick={() => { onUnschedule(); onClose(); }} className="flex-1 py-2 border border-slate-200 rounded-lg text-xs font-bold text-slate-500 hover:bg-slate-50 transition-colors flex items-center justify-center gap-1.5">
+              <button onClick={() => { onUnschedule(); onClose(); }}
+                className="flex-1 py-1.5 border border-slate-200 rounded-lg text-[11px] font-bold text-slate-500 hover:bg-slate-50 transition-colors flex items-center justify-center gap-1.5"
+              >
                 <X className="w-3 h-3" /> Move to Unplanned
               </button>
             )}
             {onDelete && (
-              <button onClick={() => { onDelete(); onClose(); }} className="flex-1 py-2 border border-red-200 text-red-500 rounded-lg text-xs font-bold hover:bg-red-50 transition-colors flex items-center justify-center gap-1.5">
+              <button onClick={() => { onDelete(); onClose(); }}
+                className="flex-1 py-1.5 border border-red-200 text-red-500 rounded-lg text-[11px] font-bold hover:bg-red-50 transition-colors flex items-center justify-center gap-1.5"
+              >
                 <Trash2 className="w-3 h-3" /> Delete
               </button>
             )}
           </div>
         )}
-        <div className="flex gap-3 pt-1">
-          <button onClick={onClose} className="flex-1 py-2.5 border border-slate-200 rounded-lg text-sm font-bold text-slate-600 hover:bg-slate-50 transition-colors">
+
+        {/* Save / cancel */}
+        <div className="flex gap-2.5 pt-1">
+          <button onClick={onClose}
+            className="flex-1 py-2.5 border border-slate-200 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-50 transition-colors"
+          >
             Cancel
           </button>
           <button
             disabled={!name.trim()}
             onClick={() => {
               if (name.trim()) {
-                onSave({ name: name.trim(), type, area, durationHint: duration, notes, lat: pickedCoords?.lat, lng: pickedCoords?.lng });
+                onSave({ name: name.trim(), type, durationHint: duration, notes, lat: pickedCoords?.lat, lng: pickedCoords?.lng });
                 onClose();
               }
             }}
-            className="flex-1 py-2.5 bg-primary text-white rounded-lg text-sm font-bold hover:bg-primary/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className="flex-1 py-2.5 bg-primary text-white rounded-lg text-xs font-bold hover:bg-primary/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            Save
+            {isEditing ? 'Save changes' : 'Add place'}
           </button>
         </div>
       </div>
@@ -1536,7 +1676,6 @@ function DraggableInventoryCard({ visit, onEdit }: { visit: VisitItem; onEdit: (
         </div>
       </div>
       <p className="text-xs font-bold text-slate-800">{visit.name}</p>
-      <p className="text-[10px] text-slate-500 mt-1 font-medium">{visit.area}</p>
       {visit.durationHint && <p className="text-[10px] text-slate-400 mt-0.5">{visit.durationHint}</p>}
     </div>
   );
@@ -1582,11 +1721,6 @@ function SortableVisitCard({ visit, isSelected, onSelect, onEdit }: {
       <p onClick={onSelect} className="text-xs font-bold leading-tight text-slate-800 cursor-pointer hover:text-primary transition-colors">
         {visit.name}
       </p>
-      {visit.area && (
-        <p className="text-[10px] text-slate-500 mt-1.5 flex items-center gap-1 font-medium">
-          <MapPin className="w-2.5 h-2.5 text-slate-400" /> {visit.area}
-        </p>
-      )}
       {visit.notes && (
         <p className="text-[10px] text-slate-400 mt-1 italic leading-snug">{visit.notes}</p>
       )}
@@ -2534,7 +2668,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
     if (!selectedStay) return [];
     return selectedStay.visits
       .filter((v) => v.dayOffset === null || v.dayPart === null)
-      .filter((v) => !searchTerm || v.name.toLowerCase().includes(searchTerm) || v.area.toLowerCase().includes(searchTerm))
+      .filter((v) => !searchTerm || v.name.toLowerCase().includes(searchTerm))
       .sort((a, b) => a.order - b.order);
   }, [selectedStay, searchTerm]);
 
@@ -3064,9 +3198,18 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                   <h3 className="text-[10px] font-extrabold uppercase tracking-[0.1em] text-slate-400">Unplanned</h3>
                   {selectedStay && <p className="text-[9px] text-primary font-semibold mt-0.5 truncate">{selectedStay.name}</p>}
                 </div>
-                <span className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded ${inboxVisits.length > 0 ? 'bg-primary/10 text-primary' : 'bg-emerald-50 text-emerald-600'}`}>
-                  {inboxVisits.length > 0 ? inboxVisits.length : '✓'}
-                </span>
+                <div className="flex items-center gap-1.5">
+                  <span className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded ${inboxVisits.length > 0 ? 'bg-primary/10 text-primary' : 'bg-emerald-50 text-emerald-600'}`}>
+                    {inboxVisits.length > 0 ? inboxVisits.length : '✓'}
+                  </span>
+                  <button
+                    onClick={() => setAddingToInbox(true)}
+                    className="size-6 flex items-center justify-center rounded-md bg-primary text-white hover:bg-primary/90 transition-colors"
+                    aria-label="Add new place"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
               <div className="flex-1 overflow-y-auto p-4 space-y-3 scroll-hide">
                 {inboxVisits.map((v) => (
@@ -3077,14 +3220,6 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                     {selectedStay ? 'All places scheduled! Add more below.' : 'Click a stay to see its unplanned places'}
                   </p>
                 )}
-              </div>
-              <div className="p-4 border-t border-border-neutral bg-slate-50/50 flex-shrink-0">
-                <button
-                  onClick={() => setAddingToInbox(true)}
-                  className="w-full py-2 bg-white text-[11px] font-bold text-slate-600 border border-slate-200 rounded-lg flex items-center justify-center gap-2 hover:border-primary/50 hover:text-primary transition-all"
-                >
-                  <Plus className="w-4 h-4" /> Add New Place
-                </button>
               </div>
             </aside>
 
@@ -3115,7 +3250,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
               {stayDays.map((day) => {
                 const dayVisits = selectedStay
                   ? sortVisits(selectedStay.visits.filter(
-                      (v) => v.dayOffset === day.dayOffset && (!searchTerm || v.name.toLowerCase().includes(searchTerm) || v.area.toLowerCase().includes(searchTerm)),
+                      (v) => v.dayOffset === day.dayOffset && (!searchTerm || v.name.toLowerCase().includes(searchTerm)),
                     ))
                   : [];
                 return (
@@ -3329,7 +3464,6 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                               <X className="w-4 h-4" />
                             </button>
                           </div>
-                          <p className="text-[10px] font-bold text-slate-500 mt-0.5">{visit.area}</p>
                           <div className="flex gap-2 mt-2 flex-wrap">
                             <span className={`text-[9px] font-bold px-2 py-0.5 rounded border ${getVisitTypeColor(visit.type)}`}>
                               {getVisitLabel(visit.type).toUpperCase()}
@@ -3434,7 +3568,6 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
             return (
               <div className="p-3 bg-white rounded-lg border border-primary shadow-xl opacity-90 w-56 pointer-events-none">
                 <p className="text-xs font-bold text-slate-800">{v.name}</p>
-                <p className="text-[10px] text-slate-500 mt-0.5">{v.area}</p>
               </div>
             );
           })()}
@@ -3481,22 +3614,22 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
 
         {/* Add stay */}
         {addingStay && (
-          <VisitFormModal
-            title="New Stay"
-            initial={{ name: '', type: 'area', area: '' }}
+          <AddStayModal
             onClose={() => setAddingStay(false)}
-            onSave={({ name }) => {
+            stayColor={STAY_COLORS[trip.stays.length % STAY_COLORS.length]}
+            onSave={({ name, days, lat, lng }) => {
               const last = sortedStays[sortedStays.length - 1];
-              const start = Math.min((last?.endSlot ?? -1) + 1, trip.totalDays * 3 - 3);
+              const start = last ? last.endSlot : 0;
               const newStay: Stay = {
                 id: `stay-${Date.now()}`, name,
                 color: STAY_COLORS[trip.stays.length % STAY_COLORS.length],
-                startSlot: start, endSlot: Math.min(start + 9, trip.totalDays * 3),
-                centerLat: jitter(35.6762, 5), centerLng: jitter(139.6503, 5),
-                lodging: 'Set lodging', travelModeToNext: 'train', visits: [],
+                startSlot: start, endSlot: Math.min(start + days * 3, trip.totalDays * 3),
+                centerLat: lat ?? jitter(35.6762, 5), centerLng: lng ?? jitter(139.6503, 5),
+                lodging: '', travelModeToNext: 'train', visits: [],
               };
               setTrip((t) => ({ ...t, stays: [...t.stays, newStay] }));
               setSelectedStayId(newStay.id);
+              setAddingStay(false);
             }}
           />
         )}
@@ -3555,11 +3688,11 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
           <VisitFormModal
             title={`Add Place to ${selectedStay.name}`}
             onClose={() => setAddingToInbox(false)}
-            onSave={({ name, type, area, durationHint, lat, lng }) => {
+            onSave={({ name, type, durationHint, lat, lng }) => {
               updateSelectedStay((stay) => ({
                 ...stay,
                 visits: [...stay.visits, createVisit(
-                  `visit-${Date.now()}`, name, type, area,
+                  `visit-${Date.now()}`, name, type, '',
                   lat ?? jitter(stay.centerLat, 0.08), lng ?? jitter(stay.centerLng, 0.08),
                   null, null,
                   stay.visits.filter((v) => v.dayOffset === null || v.dayPart === null).length,
@@ -3575,7 +3708,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
           <VisitFormModal
             title={`Add to Day ${addingVisitToSlot.dayOffset + 1} · ${addingVisitToSlot.part}`}
             onClose={() => setAddingVisitToSlot(null)}
-            onSave={({ name, type, area, durationHint, notes, lat, lng }) => {
+            onSave={({ name, type, durationHint, notes, lat, lng }) => {
               const { dayOffset, part } = addingVisitToSlot;
               const bucketSize = selectedStay.visits.filter(
                 (v) => v.dayOffset === dayOffset && v.dayPart === part,
@@ -3584,7 +3717,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                 ...stay,
                 visits: [...stay.visits, {
                   ...createVisit(
-                    `visit-${Date.now()}`, name, type, area,
+                    `visit-${Date.now()}`, name, type, '',
                     lat ?? jitter(stay.centerLat, 0.05), lng ?? jitter(stay.centerLng, 0.05),
                     dayOffset, part, bucketSize, durationHint || undefined,
                   ),
@@ -3601,11 +3734,11 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
             title="Edit Place"
             initial={editingVisit}
             onClose={() => setEditingVisit(null)}
-            onSave={({ name, type, area, durationHint, notes }) => {
+            onSave={({ name, type, durationHint, notes }) => {
               updateSelectedStay((stay) => ({
                 ...stay,
                 visits: stay.visits.map((v) =>
-                  v.id === editingVisit.id ? { ...v, name, type, area, durationHint: durationHint || undefined, notes } : v
+                  v.id === editingVisit.id ? { ...v, name, type, durationHint: durationHint || undefined, notes } : v
                 ),
               }));
             }}

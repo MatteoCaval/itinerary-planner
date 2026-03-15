@@ -2,6 +2,10 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Keeping docs up to date
+
+After adding or changing any feature, update `docs/PRD.md` — specifically the **Features** section, the **Feature Status** table, and **Known Limitations** if relevant. The PRD is the canonical source of truth for what the app does.
+
 ## Commands
 
 ```bash

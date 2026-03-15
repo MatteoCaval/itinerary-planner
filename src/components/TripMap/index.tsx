@@ -9,7 +9,7 @@ import type { BasemapMode } from './MapControlsPanel';
 import StayOverviewLayer from './StayOverviewLayer';
 import type { OverviewStay } from './StayOverviewLayer';
 
-type VisitType = 'area' | 'landmark' | 'museum' | 'food' | 'walk' | 'hotel';
+type VisitType = 'area' | 'landmark' | 'museum' | 'food' | 'walk' | 'hotel' | 'shopping';
 
 type VisitItem = {
   id: string;

@@ -1,9 +1,9 @@
 import L from 'leaflet';
-import { UtensilsCrossed, Landmark, MapPin, Hotel, Compass } from 'lucide-react';
+import { UtensilsCrossed, Landmark, MapPin, Hotel, Compass, ShoppingBag } from 'lucide-react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import type { LucideIcon } from 'lucide-react';
 
-export type VisitType = 'area' | 'landmark' | 'museum' | 'food' | 'walk' | 'hotel';
+export type VisitType = 'area' | 'landmark' | 'museum' | 'food' | 'walk' | 'hotel' | 'shopping';
 export type LatLngTuple = [number, number];
 
 const VISIT_TYPE_COLORS: Record<VisitType, string> = {
@@ -13,6 +13,7 @@ const VISIT_TYPE_COLORS: Record<VisitType, string> = {
   walk: '#0d9488',
   hotel: '#475569',
   area: '#7c3aed',
+  shopping: '#db2777',
 };
 
 const VISIT_TYPE_ICONS: Record<VisitType, LucideIcon> = {
@@ -22,6 +23,7 @@ const VISIT_TYPE_ICONS: Record<VisitType, LucideIcon> = {
   walk: MapPin,
   hotel: Hotel,
   area: Compass,
+  shopping: ShoppingBag,
 };
 
 export const getVisitTypeColor = (type: VisitType): string =>
