@@ -73,7 +73,8 @@ export default function TripMap({
   mode, overviewStays, onSelectStay, selectedDayOffset, highlightedStayId,
 }: TripMapProps) {
   const [basemap, setBasemap] = useBasemapState();
-  const [showArrows, setShowArrows] = useState(false);
+  const [showArrows, setShowArrows] = useState(true);
+  const [showRouteIcons, setShowRouteIcons] = useState(false);
   const [enableClustering, setEnableClustering] = useState(false);
 
   const activeBasemap = BASEMAPS[basemap];
@@ -140,6 +141,7 @@ export default function TripMap({
             onSelectStay={onSelectStay ?? (() => {})}
             expanded={expanded}
             highlightedStayId={highlightedStayId}
+            showRouteIcons={showRouteIcons}
           />
         ) : (
           <>
@@ -183,6 +185,8 @@ export default function TripMap({
         onBasemapChange={setBasemap}
         showArrows={showArrows}
         onShowArrowsChange={setShowArrows}
+        showRouteIcons={showRouteIcons}
+        onShowRouteIconsChange={setShowRouteIcons}
         enableClustering={enableClustering}
         onEnableClusteringChange={setEnableClustering}
       />

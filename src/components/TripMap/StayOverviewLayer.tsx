@@ -48,9 +48,10 @@ type StayOverviewLayerProps = {
   onSelectStay: (stayId: string) => void;
   expanded?: boolean;
   highlightedStayId?: string | null;
+  showRouteIcons?: boolean;
 };
 
-export default function StayOverviewLayer({ stays, onSelectStay, expanded = false, highlightedStayId }: StayOverviewLayerProps) {
+export default function StayOverviewLayer({ stays, onSelectStay, expanded = false, highlightedStayId, showRouteIcons = false }: StayOverviewLayerProps) {
   const segments = useMemo(() =>
     stays.slice(0, -1)
       .map((stay, i) => ({
@@ -101,16 +102,18 @@ export default function StayOverviewLayer({ stays, onSelectStay, expanded = fals
                 <div className="route-tooltip-content">{emoji} {stay.travelDurationToNext}</div>
               </Tooltip>
             )}
-            <Marker
-              position={getPointAt(positions, 0.5)}
-              icon={L.divIcon({
-                className: 'transport-midpoint-icon',
-                html: `<div style="position:absolute;transform:translate(-50%,-50%);background:white;border:1.5px solid ${color};border-radius:20px;padding:2px 8px;font-size:10px;font-weight:700;color:${color};white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,0.12);">${chipLabel}</div>`,
-                iconSize: [0, 0],
-                iconAnchor: [0, 0],
-              })}
-              interactive={false}
-            />
+            {showRouteIcons && (
+              <Marker
+                position={getPointAt(positions, 0.5)}
+                icon={L.divIcon({
+                  className: 'transport-midpoint-icon',
+                  html: `<div style="position:absolute;transform:translate(-50%,-50%);background:white;border:1.5px solid ${color};border-radius:20px;padding:2px 8px;font-size:10px;font-weight:700;color:${color};white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,0.12);">${chipLabel}</div>`,
+                  iconSize: [0, 0],
+                  iconAnchor: [0, 0],
+                })}
+                interactive={false}
+              />
+            )}
           </Polyline>
         );
       })}

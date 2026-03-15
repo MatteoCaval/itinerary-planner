@@ -10,6 +10,8 @@ interface MapControlsPanelProps {
   onBasemapChange: (mode: BasemapMode) => void;
   showArrows: boolean;
   onShowArrowsChange: (value: boolean) => void;
+  showRouteIcons: boolean;
+  onShowRouteIconsChange: (value: boolean) => void;
   enableClustering: boolean;
   onEnableClusteringChange: (value: boolean) => void;
 }
@@ -34,6 +36,8 @@ export function MapControlsPanel({
   onBasemapChange,
   showArrows,
   onShowArrowsChange,
+  showRouteIcons,
+  onShowRouteIconsChange,
   enableClustering,
   onEnableClusteringChange,
 }: MapControlsPanelProps) {
@@ -101,6 +105,15 @@ export function MapControlsPanel({
             className="size-3.5 rounded border-slate-300 text-primary accent-[var(--color-primary)]"
           />
           <span className="text-[11px] font-semibold text-slate-600 group-hover:text-slate-800 transition-colors">Route arrows</span>
+        </label>
+        <label className="flex items-center gap-2 cursor-pointer group">
+          <input
+            type="checkbox"
+            checked={showRouteIcons}
+            onChange={(e) => onShowRouteIconsChange(e.target.checked)}
+            className="size-3.5 rounded border-slate-300 text-primary accent-[var(--color-primary)]"
+          />
+          <span className="text-[11px] font-semibold text-slate-600 group-hover:text-slate-800 transition-colors">Route icons</span>
         </label>
         <label className="flex items-center gap-2 cursor-pointer group">
           <input
