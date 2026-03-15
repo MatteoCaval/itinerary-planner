@@ -1,9 +1,7 @@
 import { useMemo } from 'react';
-import { Marker, Polyline } from 'react-leaflet';
+import { Marker, Polyline, Tooltip } from 'react-leaflet';
 import L from 'leaflet';
-import { ChevronRight } from 'lucide-react';
-import { renderToStaticMarkup } from 'react-dom/server';
-import { createStayMarkerIcon, getPointAt, getAngleAt } from './markerFactories';
+import { createStayMarkerIcon, getPointAt } from './markerFactories';
 import { useRouteGeometry } from '../../hooks/useRouteGeometry';
 import type { TransportType } from '../../types';
 
@@ -48,9 +46,11 @@ function toTransportType(mode: TravelMode): TransportType {
 type StayOverviewLayerProps = {
   stays: OverviewStay[];
   onSelectStay: (stayId: string) => void;
+  expanded?: boolean;
+  highlightedStayId?: string | null;
 };
 
-export default function StayOverviewLayer({ stays, onSelectStay }: StayOverviewLayerProps) {
+export default function StayOverviewLayer({ stays, onSelectStay, expanded = false, highlightedStayId }: StayOverviewLayerProps) {
   const segments = useMemo(() =>
     stays.slice(0, -1)
       .map((stay, i) => ({
@@ -81,7 +81,7 @@ export default function StayOverviewLayer({ stays, onSelectStay }: StayOverviewL
             : (routeShapes[segKey] ?? straight);
 
         const emoji = TRAVEL_EMOJI[stay.travelModeToNext];
-        const chipLabel = stay.travelDurationToNext
+        const chipLabel = expanded && stay.travelDurationToNext
           ? `${emoji} ${stay.travelDurationToNext}`
           : emoji;
 
@@ -96,6 +96,11 @@ export default function StayOverviewLayer({ stays, onSelectStay }: StayOverviewL
               dashArray: STRAIGHT_LINE_MODES.has(stay.travelModeToNext) ? '8 6' : undefined,
             }}
           >
+            {stay.travelDurationToNext && (
+              <Tooltip sticky className="route-tooltip">
+                <div className="route-tooltip-content">{emoji} {stay.travelDurationToNext}</div>
+              </Tooltip>
+            )}
             <Marker
               position={getPointAt(positions, 0.5)}
               icon={L.divIcon({
@@ -106,23 +111,6 @@ export default function StayOverviewLayer({ stays, onSelectStay }: StayOverviewL
               })}
               interactive={false}
             />
-            {[0.25, 0.75].map((t) => {
-              const point = getPointAt(positions, t);
-              const angle = getAngleAt(positions, t);
-              return (
-                <Marker
-                  key={t}
-                  position={point}
-                  icon={L.divIcon({
-                    className: 'route-arrow-icon',
-                    html: `<div style="transform:rotate(${-angle}deg);color:${color};display:flex;align-items:center;justify-content:center;opacity:0.85;">${renderToStaticMarkup(<ChevronRight size={20} strokeWidth={5} />)}</div>`,
-                    iconSize: [24, 24],
-                    iconAnchor: [12, 12],
-                  })}
-                  interactive={false}
-                />
-              );
-            })}
           </Polyline>
         );
       })}
@@ -131,7 +119,7 @@ export default function StayOverviewLayer({ stays, onSelectStay }: StayOverviewL
         <Marker
           key={stay.id}
           position={[stay.centerLat, stay.centerLng]}
-          icon={createStayMarkerIcon(stay.name, stay.color)}
+          icon={createStayMarkerIcon(stay.name, stay.color, highlightedStayId === stay.id)}
           eventHandlers={{ click: () => onSelectStay(stay.id) }}
         />
       ))}

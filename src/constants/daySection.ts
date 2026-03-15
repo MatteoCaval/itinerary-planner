@@ -9,6 +9,6 @@ export const getSectionIndex = (section?: DaySection): number => {
 
 export const DEFAULT_SECTION: DaySection = 'morning';
 export const DEFAULT_CATEGORY = 'sightseeing' as const;
-export const DEFAULT_AI_MODEL = 'gemini-3-flash-preview';
+export const DEFAULT_AI_MODEL = 'gemini-2.5-flash';
 export const UNASSIGNED_ZONE_ID = 'unassigned-zone';
 export const SLOT_PREFIX = 'slot-';

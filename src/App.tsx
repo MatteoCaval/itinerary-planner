@@ -1829,17 +1829,34 @@ function AIPlannerModal({
           </div>
           <div>
             <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 mb-2 block">Model</label>
+            <div className="flex flex-wrap gap-1.5 mb-2">
+              {[
+                { id: 'gemini-2.5-flash', label: '2.5 Flash', badge: 'recommended' },
+                { id: 'gemini-3-flash-preview', label: '3 Flash' },
+                { id: 'gemini-3.1-flash-lite-preview', label: '3.1 Lite' },
+                { id: 'gemini-3.1-pro-preview', label: '3.1 Pro' },
+              ].map(({ id, label, badge }) => (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => onSettingsChange({ ...settings, model: id })}
+                  className={`px-2.5 py-1 text-[10px] font-bold rounded-lg border transition-all ${
+                    settings.model === id
+                      ? 'bg-primary text-white border-primary'
+                      : 'bg-white text-slate-600 border-slate-200 hover:border-primary/50 hover:text-primary'
+                  }`}
+                >
+                  {label}{badge && settings.model !== id ? <span className="ml-1 text-slate-400 font-medium">★</span> : ''}
+                </button>
+              ))}
+            </div>
             <input
               type="text"
-              className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:ring-1 focus:ring-primary focus:border-primary outline-none font-mono"
-              placeholder="gemini-2.0-flash"
+              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-primary focus:border-primary outline-none font-mono"
+              placeholder="or type a custom model ID"
               value={settings.model}
               onChange={(e) => onSettingsChange({ ...settings, model: e.target.value })}
             />
-          </div>
-          <div className="bg-slate-50 border border-slate-100 rounded-lg px-4 py-3 text-[10px] text-slate-500 leading-relaxed">
-            Recommended: <span className="font-mono font-bold text-slate-700">gemini-2.0-flash</span> — fast and capable.<br />
-            For complex trips try <span className="font-mono font-bold text-slate-700">gemini-2.5-pro</span>.
           </div>
         </div>
       )}
@@ -2079,6 +2096,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
 
   // ── UI state ──────────────────────────────────────────────────────────────
   const [selectedStayId, setSelectedStayId] = useState<string>(trip.stays[0]?.id ?? '');
+  const [hoveredStayId, setHoveredStayId] = useState<string | null>(null);
   const [selectedVisitId, setSelectedVisitId] = useState<string | null>(null);
   const [dragState, setDragState] = useState<DragState>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -2522,6 +2540,8 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                                 boxShadow: isSelected ? `0 0 0 2px white, 0 0 0 4px ${stay.color}, 0 4px 12px color-mix(in srgb, ${stay.color} 25%, transparent)` : undefined,
                               }}
                               onClick={() => setSelectedStayId(stay.id)}
+                              onMouseEnter={() => setHoveredStayId(stay.id)}
+                              onMouseLeave={() => setHoveredStayId(null)}
                               onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedStayId(stay.id); } }}
                               onMouseDown={(e) => {
                                 // Only start move drag from the body (not resize handles)
@@ -2605,13 +2625,17 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                               const chipLeft = (gapStart + gapEnd) / 2;
                               return (
                                 <button
-                                  title={stay.travelNotesToNext ?? `${TRANSPORT_LABELS[stay.travelModeToNext]}${stay.travelDurationToNext ? ` · ${stay.travelDurationToNext}` : ''}`}
                                   aria-label={`Route: ${TRANSPORT_LABELS[stay.travelModeToNext]}${stay.travelDurationToNext ? `, ${stay.travelDurationToNext}` : ''}`}
                                   onClick={() => setEditingRouteStayId(stay.id)}
-                                  className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 z-30 size-7 bg-white border border-slate-200 rounded-full flex items-center justify-center cursor-pointer hover:border-primary/40 hover:shadow-md transition-all shadow-sm"
+                                  className="group/chip absolute top-1/2 -translate-y-1/2 -translate-x-1/2 z-30 size-7 bg-white border border-slate-200 rounded-full flex items-center justify-center cursor-pointer hover:border-primary/40 hover:shadow-md transition-all shadow-sm"
                                   style={{ left: `${chipLeft}%` }}
                                 >
                                   <TransportIcon mode={stay.travelModeToNext} className="w-3.5 h-3.5 text-slate-400" />
+                                  {stay.travelDurationToNext && (
+                                    <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-slate-800 text-white text-[10px] font-bold rounded-md whitespace-nowrap opacity-0 group-hover/chip:opacity-100 transition-opacity shadow-lg">
+                                      {stay.travelDurationToNext}
+                                    </div>
+                                  )}
                                 </button>
                               );
                             })()}
@@ -2844,6 +2868,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                     overviewStays={overviewStays}
                     onSelectStay={(stayId) => { setSelectedStayId(stayId); setMapMode('detail'); }}
                     selectedDayOffset={mapDayFilter}
+                    highlightedStayId={mapMode === 'overview' ? hoveredStayId : null}
                   />
                 ) : (
                   <div className="absolute inset-0 flex items-center justify-center bg-slate-50">

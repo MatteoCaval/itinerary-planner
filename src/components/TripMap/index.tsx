@@ -53,6 +53,7 @@ interface TripMapProps {
   overviewStays?: OverviewStay[];
   onSelectStay?: (stayId: string) => void;
   selectedDayOffset?: number | null;
+  highlightedStayId?: string | null;
 }
 
 const BASEMAPS: Record<BasemapMode, { url: string; attribution: string }> = {
@@ -69,7 +70,7 @@ const BASEMAPS: Record<BasemapMode, { url: string; attribution: string }> = {
 
 export default function TripMap({
   visits, selectedVisitId, onSelectVisit, expanded, stay,
-  mode, overviewStays, onSelectStay, selectedDayOffset,
+  mode, overviewStays, onSelectStay, selectedDayOffset, highlightedStayId,
 }: TripMapProps) {
   const [basemap, setBasemap] = useBasemapState();
   const [showArrows, setShowArrows] = useState(true);
@@ -137,6 +138,8 @@ export default function TripMap({
           <StayOverviewLayer
             stays={overviewStays ?? []}
             onSelectStay={onSelectStay ?? (() => {})}
+            expanded={expanded}
+            highlightedStayId={highlightedStayId}
           />
         ) : (
           <>

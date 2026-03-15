@@ -63,11 +63,11 @@ export const createAccommodationIcon = () =>
     iconAnchor: [15, 15],
   });
 
-export const createStayMarkerIcon = (name: string, color: string) =>
+export const createStayMarkerIcon = (name: string, color: string, highlighted = false) =>
   L.divIcon({
     className: 'custom-marker-wrapper',
-    html: `<div style="display:flex;flex-direction:column;align-items:center;">
-      <div style="width:26px;height:26px;border-radius:50%;background:${color};border:2.5px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.25);display:flex;align-items:center;justify-content:center;">
+    html: `<div style="display:flex;flex-direction:column;align-items:center;transform:${highlighted ? 'scale(1.25)' : 'scale(1)'};transition:transform 0.15s ease;">
+      <div style="width:26px;height:26px;border-radius:50%;background:${color};border:${highlighted ? '3px solid white' : '2.5px solid white'};box-shadow:${highlighted ? `0 0 0 2px ${color}, 0 4px 12px rgba(0,0,0,0.3)` : '0 2px 6px rgba(0,0,0,0.25)'};display:flex;align-items:center;justify-content:center;">
         ${renderToStaticMarkup(<MapPin size={12} color="white" />)}
       </div>
       <div style="margin-top:3px;background:white;padding:1px 5px;border-radius:4px;font-size:9px;font-weight:800;color:${color};white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,0.12);">
