@@ -3080,8 +3080,12 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                 {/* Stay blocks */}
                 <div
                   ref={timelineZoneRef}
-                  className={`flex-1 relative ${numDays <= 15 ? 'timeline-grid' : 'timeline-grid-month'} snap-grid`}
-                  style={{ cursor: (timelineHoverDay !== null || timelineDragCreate) ? 'crosshair' : undefined }}
+                  className="flex-1 relative"
+                  style={{
+                    backgroundImage: 'linear-gradient(to right, rgba(0,0,0,0.06) 1px, transparent 1px), linear-gradient(to right, rgba(0,0,0,0.02) 1px, transparent 1px)',
+                    backgroundSize: `calc(100% / ${numDays}) 100%, calc(100% / ${numDays * 3}) 100%`,
+                    cursor: (timelineHoverDay !== null || timelineDragCreate) ? 'crosshair' : undefined,
+                  }}
                   onMouseMove={(e) => {
                     if (dragState) return;
                     const slot = getSlotFromClientX(e.clientX);
@@ -3103,7 +3107,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                   }}
                   onMouseLeave={() => setTimelineHoverDay(null)}
                 >
-                  <div className="absolute inset-0 flex items-center px-[1%]">
+                  <div className="absolute inset-0 flex items-center">
                     {sortedStays.length === 0 ? (
                       <button
                         onClick={() => setAddingStay(true)}
