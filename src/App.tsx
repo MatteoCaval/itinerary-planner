@@ -716,7 +716,7 @@ function ModalBase({ title, onClose, children, width = 'max-w-md' }: {
       onMouseDown={(e) => { if (e.target === e.currentTarget) backdropRef.current = true; }}
       onMouseUp={(e) => { if (e.target === e.currentTarget && backdropRef.current) onClose(); backdropRef.current = false; }}
     >
-      <div ref={modalRef} className={`bg-white rounded-xl shadow-2xl w-full ${width} max-h-[90vh] flex flex-col`}>
+      <div ref={modalRef} className={`bg-white rounded-xl shadow-2xl w-full ${width} max-h-[90dvh] flex flex-col`}>
         <div className="flex items-center justify-between px-4 py-2.5 border-b border-slate-200 flex-shrink-0">
           <h3 className="font-extrabold text-slate-800 text-xs tracking-wide">{title}</h3>
           <button onClick={onClose} aria-label="Close dialog" className="text-slate-400 hover:text-slate-600 p-2.5 -mr-1 rounded-lg hover:bg-slate-100 transition-colors focus-visible:ring-2 focus-visible:ring-primary/50">
@@ -1722,17 +1722,17 @@ function DraggableInventoryCard({ visit, onEdit }: { visit: VisitItem; onEdit: (
     <div
       ref={setNodeRef}
       style={{ transform: CSS.Translate.toString(transform), opacity: isDragging ? 0.4 : 1 }}
-      className="p-3 bg-white rounded-lg border border-slate-200 hover:border-slate-300 hover:shadow-md transition-all group"
+      className="p-3 bg-white rounded-lg border border-slate-200 hover:border-slate-300 hover:shadow-md transition-all group select-none"
     >
       <div className="flex justify-between items-start mb-1.5">
         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-tighter border ${getVisitTypeColor(visit.type)}`}>
           {getVisitLabel(visit.type)}
         </span>
         <div className="flex items-center gap-1">
-          <button onClick={onEdit} className="opacity-60 group-hover:opacity-100 transition-opacity p-2 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 focus-visible:ring-2 focus-visible:ring-primary/50" aria-label={`Edit ${visit.name}`}>
-            <Pencil className="w-3 h-3" />
+          <button onClick={onEdit} className="opacity-60 group-hover:opacity-100 transition-opacity p-2.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 focus-visible:ring-2 focus-visible:ring-primary/50" aria-label={`Edit ${visit.name}`}>
+            <Pencil className="w-3.5 h-3.5" />
           </button>
-          <div className="cursor-grab active:cursor-grabbing p-1" {...listeners} {...attributes} aria-label="Drag to schedule" role="button">
+          <div className="cursor-grab active:cursor-grabbing p-2.5 touch-none" {...listeners} {...attributes} aria-label="Drag to schedule" role="button">
             <GripVertical className="w-4 h-4 text-slate-400 hover:text-slate-500" />
           </div>
         </div>
@@ -1763,7 +1763,7 @@ function SortableVisitCard({ visit, isSelected, onSelect, onEdit }: {
     <div
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.3 : 1 }}
-      className={`relative pl-[18px] pr-3.5 py-3.5 bg-white rounded-lg border transition-all group ${
+      className={`relative pl-[18px] pr-3.5 py-3.5 bg-white rounded-lg border transition-all group select-none ${
         isOver
           ? 'border-primary shadow-md ring-2 ring-primary/25 bg-primary/[0.02]'
           : isSelected
@@ -1781,10 +1781,10 @@ function SortableVisitCard({ visit, isSelected, onSelect, onEdit }: {
           {visit.durationHint && <span className="text-[10px] text-slate-400 font-medium">{visit.durationHint}</span>}
         </div>
         <div className="flex items-center gap-1 flex-shrink-0 ml-1">
-          <button onClick={onEdit} className="opacity-60 group-hover:opacity-100 transition-opacity p-2 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 focus-visible:ring-2 focus-visible:ring-primary/50" aria-label={`Edit ${visit.name}`}>
-            <Pencil className="w-3 h-3" />
+          <button onClick={onEdit} className="opacity-60 group-hover:opacity-100 transition-opacity p-2.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 focus-visible:ring-2 focus-visible:ring-primary/50" aria-label={`Edit ${visit.name}`}>
+            <Pencil className="w-3.5 h-3.5" />
           </button>
-          <div className="cursor-grab active:cursor-grabbing p-1" {...listeners} {...attributes} onClick={(e) => e.stopPropagation()} aria-label="Drag to reorder" role="button">
+          <div className="cursor-grab active:cursor-grabbing p-2.5 touch-none" {...listeners} {...attributes} onClick={(e) => e.stopPropagation()} aria-label="Drag to reorder" role="button">
             <GripVertical className="w-4 h-4 text-slate-300 hover:text-slate-400" />
           </div>
         </div>
@@ -2690,6 +2690,8 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
   const [pendingTimelineSlot, setPendingTimelineSlot] = useState<{ startSlot: number; days: number } | null>(null);
   const timelineZoneRef = useRef<HTMLDivElement>(null);
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+  const mobileSearchRef = useRef<HTMLInputElement>(null);
   const [showAIPlanner, setShowAIPlanner] = useState(false);
   const [aiSettings, setAiSettings] = useState<{ apiKey: string; model: string }>(() => {
     const saved = localStorage.getItem('chronos-ai-settings');
@@ -2698,7 +2700,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 12 } }),
   );
 
   // Keyboard shortcuts (Ctrl+Z / Ctrl+Y)
@@ -3078,11 +3080,35 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
   // ── JSX ───────────────────────────────────────────────────────────────────
   return (
     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-      <div className="flex h-screen w-full flex-col overflow-hidden bg-background-light text-slate-900 font-sans">
+      <div className="flex h-dvh w-full flex-col overflow-hidden bg-background-light text-slate-900 font-sans">
 
         {/* ── Header ── */}
-        <header className="flex h-11 items-center justify-between border-b border-border-neutral px-4 bg-white/80 backdrop-blur-md z-50 flex-shrink-0 gap-4">
-          <div className="flex items-center gap-5 min-w-0">
+        <header className="relative flex h-11 items-center justify-between border-b border-border-neutral px-4 bg-white/80 backdrop-blur-md z-50 flex-shrink-0 gap-2">
+
+          {/* ── Mobile search overlay ── */}
+          {mobileSearchOpen && (
+            <div className="md:hidden absolute inset-0 bg-white/95 backdrop-blur-md z-10 flex items-center px-3 gap-2 animate-search-reveal">
+              <Search className="w-4 h-4 text-primary flex-shrink-0" />
+              <input
+                ref={mobileSearchRef}
+                autoFocus
+                className="flex-1 text-sm bg-transparent outline-none text-slate-800 placeholder:text-slate-400 min-w-0"
+                placeholder="Search places..."
+                aria-label="Search places"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              <button
+                onClick={() => { setMobileSearchOpen(false); setSearchQuery(''); }}
+                className="p-2 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100 transition-colors flex-shrink-0"
+                aria-label="Close search"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+
+          <div className="flex items-center gap-3 min-w-0">
             <div className="flex items-center gap-2.5 text-primary flex-shrink-0">
               <div className="size-7 rounded-lg bg-primary/10 flex items-center justify-center">
                 <Compass className="w-4 h-4 text-primary" />
@@ -3095,7 +3121,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
               onClick={() => setShowTripSwitcher(true)}
               className="flex items-center gap-2 min-w-0 hover:bg-slate-50 rounded-lg px-2.5 py-1.5 -ml-1 transition-colors group"
             >
-              <span className="text-xs font-bold text-slate-800 truncate">{trip.name}</span>
+              <span className="text-xs font-bold text-slate-800 truncate max-w-[120px] sm:max-w-none">{trip.name}</span>
               <ChevronDown className="w-3.5 h-3.5 text-slate-400 flex-shrink-0 group-hover:text-slate-600 transition-colors" />
             </button>
             {/* Date range */}
@@ -3110,36 +3136,46 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
             </button>
           </div>
 
-          <div className="flex items-center gap-1.5 flex-shrink-0">
+          <div className="flex items-center gap-1 flex-shrink-0">
             {isDemoMode && (
-              <div className="hidden sm:flex items-center gap-1.5 bg-slate-100 border border-slate-200 rounded-lg pl-2.5 pr-1 py-1 text-[10px] font-bold text-slate-500 mr-1">
-                <span>Demo</span>
+              <div className="flex items-center gap-1.5 bg-slate-100 border border-slate-200 rounded-lg pl-2.5 pr-1 py-1 text-[10px] font-bold text-slate-500 mr-1">
+                <span className="hidden sm:inline">Demo</span>
                 <button
                   onClick={handleMakeMine}
                   aria-label="Save demo trip to your trips"
-                  className="px-2 py-0.5 bg-primary text-white rounded-md text-[10px] font-bold hover:bg-primary/90 transition-colors"
+                  className="px-2 py-0.5 bg-primary text-white rounded-md text-[10px] font-bold hover:bg-primary/90 transition-colors whitespace-nowrap"
                 >
-                  Make it mine
+                  <span className="hidden sm:inline">Make it mine</span>
+                  <span className="sm:hidden">Save</span>
                 </button>
                 <button
                   onClick={handleGoHome}
                   aria-label="Discard demo and start fresh"
-                  className="px-2 py-0.5 rounded-md text-[10px] font-semibold hover:bg-slate-200 transition-colors"
+                  className="hidden sm:block px-2 py-0.5 rounded-md text-[10px] font-semibold hover:bg-slate-200 transition-colors"
                 >
                   Start fresh
                 </button>
               </div>
             )}
             {overlaps.size > 0 && (
-              <div className="hidden sm:flex items-center gap-1.5 text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1 text-[10px] font-bold mr-1">
+              <div className="flex items-center gap-1.5 text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1 text-[10px] font-bold">
                 <AlertCircle className="w-3 h-3 flex-shrink-0" />
-                {overlaps.size} conflict{overlaps.size > 1 ? 's' : ''}
+                <span className="hidden sm:inline">{overlaps.size} conflict{overlaps.size > 1 ? 's' : ''}</span>
               </div>
             )}
-            <div className="relative flex items-center group">
+
+            {/* Search — icon on mobile, input on desktop */}
+            <button
+              onClick={() => setMobileSearchOpen(true)}
+              className="md:hidden p-2 text-slate-400 hover:text-primary hover:bg-slate-50 rounded-lg transition-colors"
+              aria-label="Search"
+            >
+              <Search className="w-4 h-4" />
+            </button>
+            <div className="hidden md:flex relative items-center group">
               <Search className="absolute left-2.5 text-slate-400 w-3.5 h-3.5 group-focus-within:text-primary transition-colors" />
               <input
-                className="bg-slate-50 border border-slate-200 rounded-lg pl-8 pr-3 py-1.5 text-xs w-28 sm:w-48 focus:ring-1 focus:ring-primary focus:border-primary transition-all outline-none"
+                className="bg-slate-50 border border-slate-200 rounded-lg pl-8 pr-3 py-1.5 text-xs w-48 focus:ring-1 focus:ring-primary focus:border-primary transition-all outline-none"
                 placeholder="Search places, flights..."
                 aria-label="Search places"
                 value={searchQuery}
@@ -3160,7 +3196,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                 onClick={() => { const p = hist.undo(); if (p) updateTrip(() => p); }}
                 disabled={!hist.canUndo}
                 title="Undo (Ctrl+Z)"
-                className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors disabled:opacity-40"
+                className="hidden sm:block p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors disabled:opacity-40"
               >
                 <Undo2 className="w-4 h-4" />
               </button>
@@ -3168,7 +3204,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                 onClick={() => { const n = hist.redo(); if (n) updateTrip(() => n); }}
                 disabled={!hist.canRedo}
                 title="Redo (Ctrl+Y)"
-                className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors disabled:opacity-40"
+                className="hidden sm:block p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors disabled:opacity-40"
               >
                 <Redo2 className="w-4 h-4" />
               </button>
@@ -3182,7 +3218,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
               </button>
             </div>
 
-            <div className="h-5 w-px bg-slate-200 mx-1" />
+            <div className="hidden sm:block h-5 w-px bg-slate-200 mx-1" />
 
             {/* AI Planner */}
             <button
@@ -3486,9 +3522,9 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
               {/* Stay photo banner */}
               {selectedStay?.imageUrl && (
                 <div className="relative h-20 overflow-hidden flex-shrink-0">
-                  <img src={selectedStay.imageUrl} alt={selectedStay.name} className="w-full h-full object-cover" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-900/65 via-slate-900/20 to-transparent" />
-                  <p className="absolute bottom-2 left-3 text-white text-xs font-bold drop-shadow truncate pr-3">{selectedStay.name}</p>
+                  <img src={selectedStay.imageUrl} alt={selectedStay.name} className="w-full h-full object-cover opacity-60" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-white/80 via-white/20 to-transparent" />
+                  <p className="absolute bottom-2 left-3 text-slate-600 text-[10px] font-bold drop-shadow-sm truncate pr-3">{selectedStay.name}</p>
                 </div>
               )}
               <div className="px-4 py-3 border-b border-border-neutral flex justify-between items-center bg-slate-50/50 flex-shrink-0">
@@ -3524,7 +3560,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
             </aside>
 
             {/* Day columns */}
-            <div data-day-columns className={`flex-1 overflow-x-auto overflow-y-auto flex p-5 gap-5 min-w-0 bg-slate-50/50 scroll-hide transition-all duration-300 max-md:snap-x max-md:snap-mandatory ${mapExpanded ? 'w-0 overflow-hidden opacity-0 p-0' : ''}`} style={mapExpanded ? undefined : { paddingRight: mapWidth + 20 }}>
+            <div data-day-columns className={`flex-1 overflow-x-auto overflow-y-auto flex p-5 gap-5 min-w-0 bg-slate-50/50 scroll-hide transition-all duration-300 max-md:snap-x max-md:snap-mandatory max-md:scroll-pl-5 ${mapExpanded ? 'w-0 overflow-hidden opacity-0 p-0' : ''}`} style={mapExpanded ? undefined : { paddingRight: mapWidth + 20 }}>
               {sortedStays.length === 0 && (
                 <div className="flex-1 flex items-center justify-center">
                   <div className="text-center space-y-3">
@@ -3645,7 +3681,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                   </div>
                   <div className="text-center">
                     <p className="text-sm font-extrabold text-slate-600">Select a stay to plan</p>
-                    <p className="text-xs text-slate-400 mt-1">Click any block on the timeline above</p>
+                    <p className="text-xs text-slate-400 mt-1"><span className="md:hidden">Tap</span><span className="hidden md:inline">Click</span> any block on the timeline above</p>
                   </div>
                   {sortedStays.length === 0 && (
                     <button
@@ -3897,7 +3933,8 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
         {!mobileDrawerOpen && (
           <button
             onClick={() => setMobileDrawerOpen(true)}
-            className="md:hidden fixed bottom-5 right-5 z-50 size-14 rounded-full bg-primary text-white shadow-lg shadow-primary/30 flex items-center justify-center hover:bg-primary/90 active:scale-95 transition-all"
+            className="md:hidden fixed right-5 z-50 size-14 rounded-full bg-primary text-white shadow-lg shadow-primary/30 flex items-center justify-center hover:bg-primary/90 active:scale-95 transition-all"
+            style={{ bottom: 'calc(1.25rem + env(safe-area-inset-bottom, 0px))' }}
             aria-label="Open unplanned items"
           >
             <Layers className="w-6 h-6" />
@@ -3914,11 +3951,27 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
           <div className="md:hidden fixed inset-0 z-50 flex flex-col justify-end" onClick={() => setMobileDrawerOpen(false)}>
             <div className="absolute inset-0 bg-black/40" />
             <div
-              className="relative bg-white rounded-t-2xl max-h-[70vh] flex flex-col animate-slide-up"
+              className="relative bg-white rounded-t-2xl max-h-[70dvh] flex flex-col animate-slide-up"
               onClick={(e) => e.stopPropagation()}
             >
-              {/* Drag handle */}
-              <div className="flex justify-center py-2">
+              {/* Drag handle — tapping it also closes the drawer */}
+              <div
+                className="flex justify-center py-3 cursor-pointer"
+                onClick={() => setMobileDrawerOpen(false)}
+                onTouchStart={(e) => {
+                  const startY = e.touches[0].clientY;
+                  const onTouchMove = (ev: TouchEvent) => {
+                    if (ev.touches[0].clientY - startY > 60) {
+                      setMobileDrawerOpen(false);
+                      document.removeEventListener('touchmove', onTouchMove);
+                    }
+                  };
+                  document.addEventListener('touchmove', onTouchMove, { passive: true });
+                  document.addEventListener('touchend', () => document.removeEventListener('touchmove', onTouchMove), { once: true });
+                }}
+                aria-label="Close drawer"
+                role="button"
+              >
                 <div className="w-10 h-1 rounded-full bg-slate-300" />
               </div>
               {/* Header */}
@@ -3947,7 +4000,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                 </div>
               </div>
               {/* Items */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-3 scroll-hide">
+              <div className="flex-1 overflow-y-auto p-4 pb-safe space-y-3 scroll-hide">
                 {inboxVisits.map((v) => (
                   <DraggableInventoryCard key={v.id} visit={v} onEdit={() => setEditingVisit(v)} />
                 ))}

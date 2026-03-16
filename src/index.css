@@ -103,6 +103,23 @@
   .animate-slide-up {
     animation: slide-up 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
   }
+
+  /* ── Mobile search overlay fade-in ── */
+  @keyframes search-reveal {
+    from { opacity: 0; transform: translateX(8px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+  .animate-search-reveal {
+    animation: search-reveal 0.15s ease-out both;
+  }
+
+  /* ── Safe area utilities ── */
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .mb-safe-5 {
+    margin-bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px));
+  }
 }
 
 html, body, #root {
@@ -115,6 +132,13 @@ html, body, #root {
 /* Reduce 300ms tap delay on touch devices */
 button, a, [role="button"] {
   touch-action: manipulation;
+}
+
+/* Suppress iOS long-press callout and text selection on draggable cards.
+   -webkit-touch-callout prevents the "Copy / Look Up / Share" popup that
+   steals the gesture before dnd-kit's TouchSensor can activate. */
+.select-none {
+  -webkit-touch-callout: none;
 }
 
 /* Respect prefers-reduced-motion */
