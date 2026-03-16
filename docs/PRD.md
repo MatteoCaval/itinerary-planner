@@ -94,7 +94,7 @@ VisitItem       { id, name, type: VisitType, area, lat, lng,
 | JSON import | ✅ | Zod validation |
 | Undo/redo + history browser | ✅ | 50-step, keyboard shortcuts |
 | Multi-trip + welcome screen | ✅ | Demo mode |
-| Mobile layout | ⚠️ | Sidebar hidden on small screens; search bar responsive; touch timeline drag supported |
+| Mobile layout | ✅ | Adaptive layout: map hidden <768px, sidebar → bottom drawer FAB, snap-scroll day columns (85vw), footer hidden, touch DnD (long-press), responsive header |
 | Passcode sharing | ⚠️ | Firebase functions exist; not exposed in UI |
 | Cost/budget dashboard | ❌ | `cost` field exists, no aggregate display |
 | Markdown import | ❌ | |

@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom';
 import {
   DndContext, DragOverlay, useDraggable, useDroppable,
-  type DragEndEvent, type DragStartEvent, PointerSensor, useSensor, useSensors,
+  type DragEndEvent, type DragStartEvent, PointerSensor, TouchSensor, useSensor, useSensors,
 } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -2655,13 +2655,17 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
   const [timelineDragCreate, setTimelineDragCreate] = useState<{ startSlot: number; currentSlot: number } | null>(null);
   const [pendingTimelineSlot, setPendingTimelineSlot] = useState<{ startSlot: number; days: number } | null>(null);
   const timelineZoneRef = useRef<HTMLDivElement>(null);
+  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [showAIPlanner, setShowAIPlanner] = useState(false);
   const [aiSettings, setAiSettings] = useState<{ apiKey: string; model: string }>(() => {
     const saved = localStorage.getItem('chronos-ai-settings');
     return saved ? JSON.parse(saved) : { apiKey: '', model: 'gemini-2.0-flash' };
   });
 
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } }),
+  );
 
   // Keyboard shortcuts (Ctrl+Z / Ctrl+Y)
   useEffect(() => {
@@ -3088,7 +3092,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
             <div className="relative flex items-center group">
               <Search className="absolute left-2.5 text-slate-400 w-3.5 h-3.5 group-focus-within:text-primary transition-colors" />
               <input
-                className="bg-slate-50 border border-slate-200 rounded-lg pl-8 pr-3 py-1.5 text-xs w-32 sm:w-48 focus:ring-1 focus:ring-primary focus:border-primary transition-all outline-none"
+                className="bg-slate-50 border border-slate-200 rounded-lg pl-8 pr-3 py-1.5 text-xs w-28 sm:w-48 focus:ring-1 focus:ring-primary focus:border-primary transition-all outline-none"
                 placeholder="Search places, flights..."
                 aria-label="Search places"
                 value={searchQuery}
@@ -3125,7 +3129,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                 onClick={() => setShowHistory(true)}
                 disabled={!hist.canUndo && !hist.canRedo}
                 title="View history"
-                className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors disabled:opacity-40"
+                className="hidden sm:block p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors disabled:opacity-40"
               >
                 <History className="w-4 h-4" />
               </button>
@@ -3154,10 +3158,10 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
             <div className="flex items-center justify-between px-6 border-b border-border-neutral bg-slate-50/50 py-1.5">
               <div className="flex items-center gap-4">
                 <span className="text-[10px] font-extrabold uppercase tracking-[0.15em] text-slate-500">Timeline</span>
-                <div className="flex bg-white rounded-lg border border-border-neutral p-0.5">
+                <div className="flex bg-white rounded-lg border border-border-neutral p-0.5 overflow-x-auto scroll-hide">
                   {([5, 10, 15, 30, 0] as const).filter((d) => d === 0 || d <= trip.totalDays).map((d) => (
                     <button key={d} onClick={() => { setZoomDays(d); localStorage.setItem('itinerary-timeline-zoom', String(d)); }}
-                      className={`px-3 py-1.5 text-[9px] font-bold rounded-md transition-colors ${zoomDays === d ? 'bg-primary text-white shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}
+                      className={`px-3 py-1.5 text-[9px] font-bold rounded-md transition-colors whitespace-nowrap ${zoomDays === d ? 'bg-primary text-white shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}
                     >
                       {d === 0 ? 'ALL' : `${d} DAYS`}
                     </button>
@@ -3459,7 +3463,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
             </aside>
 
             {/* Day columns */}
-            <div className={`flex-1 overflow-x-auto overflow-y-auto flex p-5 gap-5 min-w-0 bg-slate-50/50 scroll-hide transition-all duration-300 ${mapExpanded ? 'w-0 overflow-hidden opacity-0 p-0' : ''}`} style={mapExpanded ? undefined : { paddingRight: mapWidth + 20 }}>
+            <div data-day-columns className={`flex-1 overflow-x-auto overflow-y-auto flex p-5 gap-5 min-w-0 bg-slate-50/50 scroll-hide transition-all duration-300 max-md:snap-x max-md:snap-mandatory ${mapExpanded ? 'w-0 overflow-hidden opacity-0 p-0' : ''}`} style={mapExpanded ? undefined : { paddingRight: mapWidth + 20 }}>
               {sortedStays.length === 0 && (
                 <div className="flex-1 flex items-center justify-center">
                   <div className="text-center space-y-3">
@@ -3489,7 +3493,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                     ))
                   : [];
                 return (
-                  <div key={day.dayOffset} className={`flex-none w-72 flex flex-col gap-4 rounded-xl transition-colors ${mapMode === 'detail' && mapDayFilter === day.dayOffset ? 'ring-2 ring-primary/40 bg-primary/[0.03] p-2 -m-2' : ''}`}>
+                  <div key={day.dayOffset} className={`flex-none w-72 max-md:w-[85vw] max-md:snap-start flex flex-col gap-4 rounded-xl transition-colors ${mapMode === 'detail' && mapDayFilter === day.dayOffset ? 'ring-2 ring-primary/40 bg-primary/[0.03] p-2 -m-2' : ''}`}>
                     <div
                       className="flex items-center justify-between cursor-pointer group"
                       onClick={() => {
@@ -3526,7 +3530,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                       // Render the spanning bar for this group
                       return (
                         <div className="relative h-12 flex-shrink-0 -mb-2">
-                          <div className="absolute inset-y-0 left-0 z-10" style={{ width: `calc(${group.nights} * 288px + ${group.nights - 1} * 20px)` }}>
+                          <div className="absolute inset-y-0 left-0 z-10" style={{ width: `calc(${group.nights} * var(--day-col-width) + ${group.nights - 1} * var(--day-col-gap))` }}>
                             <button
                               onClick={() => setEditingAccommodation({ group })}
                               className="h-full w-full bg-white border border-primary/30 rounded-lg shadow-sm flex items-center px-4 gap-3 hover:border-primary/50 hover:shadow-md transition-all cursor-pointer text-left"
@@ -3598,7 +3602,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
             {mapCollapsed && !mapExpanded && (
               <button
                 onClick={() => { setMapCollapsed(false); triggerMapAnim('map-anim-reveal'); }}
-                className="absolute right-0 top-1/2 -translate-y-1/2 z-30 flex items-center gap-1 px-1.5 py-3 bg-white border border-r-0 border-slate-200 rounded-l-xl shadow-lg hover:bg-slate-50 transition-colors"
+                className="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 z-30 items-center gap-1 px-1.5 py-3 bg-white border border-r-0 border-slate-200 rounded-l-xl shadow-lg hover:bg-slate-50 transition-colors"
                 aria-label="Show map"
               >
                 <PanelRightOpen className="w-4 h-4 text-slate-500" />
@@ -3608,7 +3612,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
             {/* Map — Floating Panel */}
             <aside
               ref={mapPanelRef}
-              className={`map-panel-container flex flex-col overflow-hidden z-30 bg-white ${mapAnimClass} ${
+              className={`map-panel-container hidden md:flex flex-col overflow-hidden z-30 bg-white ${mapAnimClass} ${
                 mapCollapsed && !mapExpanded
                   ? 'absolute pointer-events-none'
                   : mapExpanded
@@ -3828,8 +3832,76 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
           </section>
         </main>
 
+        {/* ── Mobile FAB for unplanned items ── */}
+        {!mobileDrawerOpen && (
+          <button
+            onClick={() => setMobileDrawerOpen(true)}
+            className="md:hidden fixed bottom-5 right-5 z-50 size-14 rounded-full bg-primary text-white shadow-lg shadow-primary/30 flex items-center justify-center hover:bg-primary/90 active:scale-95 transition-all"
+            aria-label="Open unplanned items"
+          >
+            <Layers className="w-6 h-6" />
+            {inboxVisits.length > 0 && (
+              <span className="absolute -top-1 -right-1 size-5 rounded-full bg-white text-primary text-[10px] font-extrabold flex items-center justify-center shadow-sm border border-primary/20">
+                {inboxVisits.length}
+              </span>
+            )}
+          </button>
+        )}
+
+        {/* ── Mobile bottom drawer ── */}
+        {mobileDrawerOpen && (
+          <div className="md:hidden fixed inset-0 z-50 flex flex-col justify-end" onClick={() => setMobileDrawerOpen(false)}>
+            <div className="absolute inset-0 bg-black/40" />
+            <div
+              className="relative bg-white rounded-t-2xl max-h-[70vh] flex flex-col animate-slide-up"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Drag handle */}
+              <div className="flex justify-center py-2">
+                <div className="w-10 h-1 rounded-full bg-slate-300" />
+              </div>
+              {/* Header */}
+              <div className="px-4 pb-3 flex justify-between items-center border-b border-border-neutral">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-extrabold text-slate-800">Unplanned</h3>
+                  <span className={`text-[10px] font-extrabold px-1.5 py-0.5 rounded ${inboxVisits.length > 0 ? 'bg-primary/10 text-primary' : 'bg-emerald-50 text-emerald-600'}`}>
+                    {inboxVisits.length > 0 ? inboxVisits.length : <Check className="w-3 h-3" />}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setAddingToInbox(true)}
+                    className="size-8 flex items-center justify-center rounded-lg bg-primary text-white hover:bg-primary/90 transition-colors"
+                    aria-label="Add new place"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={() => setMobileDrawerOpen(false)}
+                    className="size-8 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 transition-colors"
+                    aria-label="Close drawer"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+              {/* Items */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-3 scroll-hide">
+                {inboxVisits.map((v) => (
+                  <DraggableInventoryCard key={v.id} visit={v} onEdit={() => setEditingVisit(v)} />
+                ))}
+                {inboxVisits.length === 0 && (
+                  <p className="text-[11px] text-slate-400 text-center py-8 leading-relaxed">
+                    {selectedStay ? 'All places scheduled!' : 'Select a stay to see unplanned places.'}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* ── Footer ── */}
-        <footer className="bg-white text-slate-500 px-6 py-1.5 text-[10px] font-bold flex justify-between items-center border-t border-border-neutral flex-shrink-0">
+        <footer className="hidden md:flex bg-white text-slate-500 px-6 py-1.5 text-[10px] font-bold justify-between items-center border-t border-border-neutral flex-shrink-0">
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-2">
               <div className="size-1.5 rounded-full bg-emerald-500" />

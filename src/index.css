@@ -1,4 +1,17 @@
 @import "tailwindcss";
+
+:root {
+  --day-col-width: 288px;
+  --day-col-gap: 20px;
+}
+@media (max-width: 767px) {
+  :root {
+    --day-col-width: 85vw;
+  }
+  [data-day-columns] {
+    padding-right: 20px !important;
+  }
+}
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
 @theme {
@@ -80,6 +93,15 @@
   @keyframes map-reveal {
     from { transform: translateX(40px); opacity: 0; }
     to   { transform: translateX(0);    opacity: 1; }
+  }
+
+  /* ── Mobile bottom drawer slide-up ── */
+  @keyframes slide-up {
+    from { transform: translateY(100%); }
+    to   { transform: translateY(0); }
+  }
+  .animate-slide-up {
+    animation: slide-up 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
   }
 }
 
