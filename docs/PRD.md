@@ -94,7 +94,7 @@ VisitItem       { id, name, type: VisitType, area, lat, lng,
 | JSON import | ✅ | Zod validation |
 | Undo/redo + history browser | ✅ | 50-step, keyboard shortcuts |
 | Multi-trip + welcome screen | ✅ | Demo mode |
-| Mobile layout | ⚠️ | Renders but not optimized |
+| Mobile layout | ⚠️ | Sidebar hidden on small screens; search bar responsive; touch timeline drag supported |
 | Passcode sharing | ⚠️ | Firebase functions exist; not exposed in UI |
 | Cost/budget dashboard | ❌ | `cost` field exists, no aggregate display |
 | Markdown import | ❌ | |
@@ -113,3 +113,4 @@ VisitItem       { id, name, type: VisitType, area, lat, lng,
 - **No sync indicator** — no "saving…" / "saved" / "offline" status visible.
 - **History is in-memory** — page reload resets the undo stack.
 - **`src/App.tsx` is a monolith** (~2500 lines, intentional for now).
+- **Dark mode not implemented** — light mode only for now.

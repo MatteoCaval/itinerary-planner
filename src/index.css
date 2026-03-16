@@ -31,6 +31,9 @@
     scrollbar-width: none;
   }
   .map-panel-container {
+    will-change: auto;
+  }
+  .map-panel-container[class*="map-anim-"] {
     will-change: transform, opacity;
   }
 
@@ -48,7 +51,7 @@
     animation: map-restore 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
   }
   .map-panel-container.map-anim-collapse {
-    animation: map-collapse 0.35s cubic-bezier(0.4, 0, 1, 1) both;
+    animation: map-collapse 0.3s cubic-bezier(0.4, 0, 0.7, 0.2) both;
   }
   .map-panel-container.map-anim-reveal {
     animation: map-reveal 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
@@ -85,6 +88,23 @@ html, body, #root {
   margin: 0;
   padding: 0;
   overflow: hidden;
+}
+
+/* Reduce 300ms tap delay on touch devices */
+button, a, [role="button"] {
+  touch-action: manipulation;
+}
+
+/* Respect prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .map-panel-container[class*="map-anim-"] {
+    animation: none !important;
+  }
 }
 
 /* Leaflet map fix for Tailwind preflight */

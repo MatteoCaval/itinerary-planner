@@ -13,7 +13,7 @@ import {
   Moon, Navigation, Palette, Pencil, Plane, Plus,
   PlusCircle, Redo2, Search, Ship, ShoppingBag, SlidersHorizontal, Sparkles, Sunrise,
   Sun, Train, Trash2, Undo2, Upload, User, X, Layers, Hotel, UtensilsCrossed,
-  PanelRightOpen, PanelRightClose, Shrink, Expand,
+  PanelRightOpen, PanelRightClose, Shrink, Expand, Eye, EyeOff,
 } from 'lucide-react';
 import LegacyApp from './features/legacy/LegacyApp';
 import { searchPlace, type PlaceSearchResult } from './utils/geocoding';
@@ -671,10 +671,40 @@ function ModalBase({ title, onClose, children, width = 'max-w-md' }: {
   title: string; onClose: () => void; children: React.ReactNode; width?: string;
 }) {
   const backdropRef = React.useRef(false);
+  const modalRef = React.useRef<HTMLDivElement>(null);
+  const triggerRef = React.useRef<Element | null>(null);
+
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    // Remember the element that opened the modal so we can restore focus
+    triggerRef.current = document.activeElement;
+
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') { onClose(); return; }
+      // Focus trap: cycle Tab within the modal
+      if (e.key === 'Tab' && modalRef.current) {
+        const focusable = modalRef.current.querySelectorAll<HTMLElement>(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+        );
+        if (focusable.length === 0) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+      }
+    };
     window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
+
+    // Auto-focus first focusable element inside modal
+    requestAnimationFrame(() => {
+      const first = modalRef.current?.querySelector<HTMLElement>('input, button, textarea, select, [tabindex]');
+      first?.focus();
+    });
+
+    return () => {
+      window.removeEventListener('keydown', handler);
+      // Restore focus to the element that triggered the modal
+      if (triggerRef.current instanceof HTMLElement) triggerRef.current.focus();
+    };
   }, [onClose]);
   return createPortal(
     <div
@@ -685,10 +715,10 @@ function ModalBase({ title, onClose, children, width = 'max-w-md' }: {
       onMouseDown={(e) => { if (e.target === e.currentTarget) backdropRef.current = true; }}
       onMouseUp={(e) => { if (e.target === e.currentTarget && backdropRef.current) onClose(); backdropRef.current = false; }}
     >
-      <div className={`bg-white rounded-xl shadow-2xl w-full ${width} max-h-[90vh] flex flex-col`}>
+      <div ref={modalRef} className={`bg-white rounded-xl shadow-2xl w-full ${width} max-h-[90vh] flex flex-col`}>
         <div className="flex items-center justify-between px-4 py-2.5 border-b border-slate-200 flex-shrink-0">
           <h3 className="font-extrabold text-slate-800 text-xs tracking-wide">{title}</h3>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition-colors focus-visible:ring-2 focus-visible:ring-primary/50">
+          <button onClick={onClose} aria-label="Close dialog" className="text-slate-400 hover:text-slate-600 p-2.5 -mr-1 rounded-lg hover:bg-slate-100 transition-colors focus-visible:ring-2 focus-visible:ring-primary/50">
             <X className="w-3.5 h-3.5" />
           </button>
         </div>
@@ -771,12 +801,12 @@ function AccommodationEditorModal({ initial, nightCount, existingNames, onClose,
         {/* Name input with autocomplete */}
         <div className="relative">
           <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-1.5 block">
-            Hotel / Address
+            Hotel / Address <span className="text-red-400">*</span>
           </label>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
             <input
-              className="w-full border border-slate-200 rounded-lg pl-9 pr-8 py-1.5 text-xs focus:ring-1 focus:ring-primary focus:border-primary outline-none font-semibold"
+              className="w-full border border-slate-200 rounded-lg pl-9 pr-8 py-2 text-xs focus:ring-1 focus:ring-primary focus:border-primary outline-none font-semibold"
               placeholder="Search hotel or address..."
               value={name}
               onChange={(e) => { setName(e.target.value); setLat(undefined); setLng(undefined); }}
@@ -836,7 +866,7 @@ function AccommodationEditorModal({ initial, nightCount, existingNames, onClose,
         <div>
           <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-1.5 block">Notes</label>
           <input
-            className="w-full border border-slate-200 rounded-lg px-3 py-1.5 text-xs focus:ring-1 focus:ring-primary focus:border-primary outline-none"
+            className="w-full border border-slate-200 rounded-lg px-3 py-2 text-xs focus:ring-1 focus:ring-primary focus:border-primary outline-none"
             placeholder="Address, confirmation #, etc."
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
@@ -847,7 +877,7 @@ function AccommodationEditorModal({ initial, nightCount, existingNames, onClose,
         <div>
           <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-1.5 block">Nightly Cost</label>
           <input
-            className="w-full border border-slate-200 rounded-lg px-3 py-1.5 text-xs focus:ring-1 focus:ring-primary focus:border-primary outline-none"
+            className="w-full border border-slate-200 rounded-lg px-3 py-2 text-xs focus:ring-1 focus:ring-primary focus:border-primary outline-none"
             placeholder="0.00"
             type="number"
             min="0"
@@ -943,7 +973,7 @@ function RouteEditorModal({ stay, nextStay, onClose, onSave }: {
         <div>
           <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 block">Duration</label>
           <input
-            className="w-full border border-slate-200 rounded-lg px-3 py-1.5 text-xs focus:ring-1 focus:ring-primary focus:border-primary outline-none"
+            className="w-full border border-slate-200 rounded-lg px-3 py-2 text-xs focus:ring-1 focus:ring-primary focus:border-primary outline-none"
             placeholder="e.g. 2h 30m"
             value={duration}
             onChange={(e) => setDuration(e.target.value)}
@@ -954,7 +984,7 @@ function RouteEditorModal({ stay, nextStay, onClose, onSave }: {
         <div>
           <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 block">Notes</label>
           <textarea
-            className="w-full border border-slate-200 rounded-lg px-3 py-1.5 text-xs focus:ring-1 focus:ring-primary focus:border-primary outline-none resize-none"
+            className="w-full border border-slate-200 rounded-lg px-3 py-2 text-xs focus:ring-1 focus:ring-primary focus:border-primary outline-none resize-none"
             rows={3}
             placeholder="Booking reference, platform, tips..."
             value={notes}
@@ -995,7 +1025,7 @@ function StayEditorModal({ stay, onClose, onSave, onDelete }: {
         <div>
           <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 block">Destination Name</label>
           <input
-            className="w-full border border-slate-200 rounded-lg px-3 py-1.5 text-xs focus:ring-1 focus:ring-primary focus:border-primary outline-none font-semibold"
+            className="w-full border border-slate-200 rounded-lg px-3 py-2 text-xs focus:ring-1 focus:ring-primary focus:border-primary outline-none font-semibold"
             value={name}
             onChange={(e) => setName(e.target.value)}
             autoFocus
@@ -1004,7 +1034,7 @@ function StayEditorModal({ stay, onClose, onSave, onDelete }: {
         <div>
           <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 block">Lodging</label>
           <input
-            className="w-full border border-slate-200 rounded-lg px-3 py-1.5 text-xs focus:ring-1 focus:ring-primary focus:border-primary outline-none"
+            className="w-full border border-slate-200 rounded-lg px-3 py-2 text-xs focus:ring-1 focus:ring-primary focus:border-primary outline-none"
             value={lodging}
             onChange={(e) => setLodging(e.target.value)}
             placeholder="Hotel name or area"
@@ -1019,7 +1049,7 @@ function StayEditorModal({ stay, onClose, onSave, onDelete }: {
                 onClick={() => setColor(c)}
                 aria-label={`Color ${c}`}
                 aria-pressed={color === c}
-                className={`size-8 rounded-full border-2 transition-all focus-visible:ring-2 focus-visible:ring-primary/50 ${color === c ? 'ring-2 ring-offset-2 ring-slate-400 scale-110' : 'border-white hover:scale-110'}`}
+                className={`size-9 rounded-full border-2 transition-all focus-visible:ring-2 focus-visible:ring-primary/50 ${color === c ? 'ring-2 ring-offset-2 ring-slate-400 scale-110' : 'border-white hover:scale-110'}`}
                 style={{ background: c }}
               />
             ))}
@@ -1028,7 +1058,7 @@ function StayEditorModal({ stay, onClose, onSave, onDelete }: {
                 type="color"
                 value={color}
                 onChange={(e) => setColor(e.target.value)}
-                className="size-8 rounded-full border-2 border-slate-200 cursor-pointer"
+                className="size-9 rounded-full border-2 border-slate-200 cursor-pointer"
                 aria-label="Pick custom color"
                 title="Custom color"
               />
@@ -1170,14 +1200,14 @@ function AddStayModal({ onClose, onSave, stayColor, initialDays }: {
             <div className="flex items-center border border-slate-200 rounded-lg overflow-hidden bg-white">
               <button
                 onClick={() => setDays((d) => Math.max(1, d - 1))}
-                className="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-50 text-xl font-light transition-colors"
+                className="w-11 h-11 flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-50 text-xl font-light transition-colors"
               >
                 −
               </button>
               <span className="w-10 text-center font-extrabold text-sm text-slate-800 tabular-nums">{days}</span>
               <button
                 onClick={() => setDays((d) => Math.min(90, d + 1))}
-                className="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-50 text-xl font-light transition-colors"
+                className="w-11 h-11 flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-50 text-xl font-light transition-colors"
               >
                 +
               </button>
@@ -1239,6 +1269,7 @@ function VisitFormModal({ initial, title, onClose, onSave, onDelete, onUnschedul
   const [showResults, setShowResults] = useState(false);
   const [searchError, setSearchError] = useState(false);
   const isEditing = !!initial?.id;
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   // Debounced Nominatim search (only fires when user is actively typing a name without geocode yet)
   useEffect(() => {
@@ -1370,7 +1401,7 @@ function VisitFormModal({ initial, title, onClose, onSave, onDelete, onUnschedul
         </div>
 
         {/* Delete / unschedule */}
-        {(onDelete || onUnschedule) && (
+        {(onDelete || onUnschedule) && !confirmDelete && (
           <div className="flex gap-2">
             {onUnschedule && (
               <button onClick={() => { onUnschedule(); onClose(); }}
@@ -1380,12 +1411,25 @@ function VisitFormModal({ initial, title, onClose, onSave, onDelete, onUnschedul
               </button>
             )}
             {onDelete && (
-              <button onClick={() => { onDelete(); onClose(); }}
+              <button onClick={() => setConfirmDelete(true)}
                 className="flex-1 py-1.5 border border-red-200 text-red-500 rounded-lg text-xs font-bold hover:bg-red-50 transition-colors flex items-center justify-center gap-1.5"
               >
                 <Trash2 className="w-3 h-3" /> Delete
               </button>
             )}
+          </div>
+        )}
+        {confirmDelete && onDelete && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+            <p className="text-xs font-semibold text-red-700 mb-2">Delete &ldquo;{name || initial?.name}&rdquo;?</p>
+            <div className="flex gap-2">
+              <button onClick={() => setConfirmDelete(false)} className="flex-1 py-1.5 border border-slate-200 rounded-lg text-xs font-bold text-slate-600 hover:bg-white transition-colors">
+                Keep
+              </button>
+              <button onClick={() => { onDelete(); onClose(); }} className="flex-1 py-1.5 bg-red-500 text-white rounded-lg text-xs font-bold hover:bg-red-600 transition-colors">
+                Delete
+              </button>
+            </div>
           </div>
         )}
 
@@ -1424,6 +1468,7 @@ function TripEditorModal({ trip, onClose, onSave, onDelete }: {
   const [startDate, setStartDate] = useState(trip.startDate);
   const [totalDays, setTotalDays] = useState(trip.totalDays);
   const [dateMode, setDateMode] = useState<'duration' | 'endDate'>('duration');
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   const endDateStr = startDate
     ? addDaysTo(new Date(startDate), totalDays - 1).toISOString().split('T')[0]
@@ -1435,7 +1480,7 @@ function TripEditorModal({ trip, onClose, onSave, onDelete }: {
     if (diff >= 1) setTotalDays(diff);
   };
 
-  const inputClass = 'w-full border border-slate-200 rounded-lg px-3 py-1.5 text-xs focus:ring-1 focus:ring-primary focus:border-primary outline-none';
+  const inputClass = 'w-full border border-slate-200 rounded-lg px-3 py-2 text-xs focus:ring-1 focus:ring-primary focus:border-primary outline-none';
 
   return (
     <ModalBase title="Edit Trip" onClose={onClose}>
@@ -1514,22 +1559,36 @@ function TripEditorModal({ trip, onClose, onSave, onDelete }: {
           </div>
         )}
 
-        <div className="flex gap-3 pt-2">
-          {onDelete && (
-            <button onClick={() => { onDelete(); onClose(); }} className="py-2 px-3 border border-red-200 text-red-500 rounded-lg text-xs font-bold hover:bg-red-50 transition-colors flex items-center gap-1.5">
-              <Trash2 className="w-3 h-3" /> Delete
+        {confirmDelete && onDelete ? (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+            <p className="text-xs font-semibold text-red-700 mb-2">Delete &ldquo;{trip.name}&rdquo;? This cannot be undone.</p>
+            <div className="flex gap-2">
+              <button onClick={() => setConfirmDelete(false)} className="flex-1 py-2 border border-slate-200 rounded-lg text-xs font-bold text-slate-600 hover:bg-white transition-colors">
+                Keep
+              </button>
+              <button onClick={() => { onDelete(); onClose(); }} className="flex-1 py-2 bg-red-500 text-white rounded-lg text-xs font-bold hover:bg-red-600 transition-colors">
+                Delete Trip
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex gap-3 pt-2">
+            {onDelete && (
+              <button onClick={() => setConfirmDelete(true)} className="py-2 px-3 border border-red-200 text-red-500 rounded-lg text-xs font-bold hover:bg-red-50 transition-colors flex items-center gap-1.5">
+                <Trash2 className="w-3 h-3" /> Delete
+              </button>
+            )}
+            <button onClick={onClose} className="flex-1 py-2 border border-slate-200 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-50 transition-colors">
+              Cancel
             </button>
-          )}
-          <button onClick={onClose} className="flex-1 py-2 border border-slate-200 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-50 transition-colors">
-            Cancel
-          </button>
-          <button
-            onClick={() => { onSave({ name, startDate, totalDays }); onClose(); }}
-            className="flex-1 py-2 bg-primary text-white rounded-lg text-xs font-bold hover:bg-primary/90 transition-colors"
-          >
-            Save
-          </button>
-        </div>
+            <button
+              onClick={() => { onSave({ name, startDate, totalDays }); onClose(); }}
+              className="flex-1 py-2 bg-primary text-white rounded-lg text-xs font-bold hover:bg-primary/90 transition-colors"
+            >
+              Save
+            </button>
+          </div>
+        )}
       </div>
     </ModalBase>
   );
@@ -1669,7 +1728,7 @@ function DraggableInventoryCard({ visit, onEdit }: { visit: VisitItem; onEdit: (
           {getVisitLabel(visit.type)}
         </span>
         <div className="flex items-center gap-1">
-          <button onClick={onEdit} className="opacity-60 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 focus-visible:ring-2 focus-visible:ring-primary/50" aria-label={`Edit ${visit.name}`}>
+          <button onClick={onEdit} className="opacity-60 group-hover:opacity-100 transition-opacity p-2 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 focus-visible:ring-2 focus-visible:ring-primary/50" aria-label={`Edit ${visit.name}`}>
             <Pencil className="w-3 h-3" />
           </button>
           <div className="cursor-grab active:cursor-grabbing p-1" {...listeners} {...attributes} aria-label="Drag to schedule" role="button">
@@ -1712,7 +1771,7 @@ function SortableVisitCard({ visit, isSelected, onSelect, onEdit }: {
           {visit.durationHint && <span className="text-[10px] text-slate-400 font-medium">{visit.durationHint}</span>}
         </div>
         <div className="flex items-center gap-1 flex-shrink-0 ml-1">
-          <button onClick={onEdit} className="opacity-60 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 focus-visible:ring-2 focus-visible:ring-primary/50" aria-label={`Edit ${visit.name}`}>
+          <button onClick={onEdit} className="opacity-60 group-hover:opacity-100 transition-opacity p-2 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 focus-visible:ring-2 focus-visible:ring-primary/50" aria-label={`Edit ${visit.name}`}>
             <Pencil className="w-3 h-3" />
           </button>
           <div className="cursor-grab active:cursor-grabbing p-1" {...listeners} {...attributes} onClick={(e) => e.stopPropagation()} aria-label="Drag to reorder" role="button">
@@ -2099,7 +2158,7 @@ function ProfileMenu({ trip, onImport, onSwitchToLegacy, onGoHome }: {
                   {user ? user.email : 'Guest User'}
                 </p>
                 <div className="flex items-center gap-1.5 mt-0.5">
-                  <div className={`size-1.5 rounded-full ${user ? 'bg-emerald-400' : 'bg-slate-300'}`} />
+                  {user ? <Check className="w-3 h-3 text-emerald-500 flex-shrink-0" /> : <Lock className="w-3 h-3 text-slate-300 flex-shrink-0" />}
                   <p className={`text-[10px] font-semibold ${user ? 'text-emerald-600' : 'text-slate-400'}`}>
                     {user ? 'Synced to cloud' : 'Local storage only'}
                   </p>
@@ -2180,6 +2239,7 @@ function AuthModalSimple({ onClose }: { onClose: () => void }) {
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -2203,11 +2263,10 @@ function AuthModalSimple({ onClose }: { onClose: () => void }) {
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4"
-      style={{ background: 'rgba(100,80,70,0.25)', backdropFilter: 'blur(8px)' }}
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
       onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="relative w-full max-w-sm bg-white rounded-2xl overflow-hidden"
+      <div className="relative w-full max-w-sm bg-white rounded-xl overflow-hidden"
         style={{ boxShadow: '0 24px 60px -8px rgba(0,0,0,0.18), 0 0 0 1px rgba(0,0,0,0.06)' }}
       >
         {/* Top accent bar */}
@@ -2230,10 +2289,10 @@ function AuthModalSimple({ onClose }: { onClose: () => void }) {
                 {mode === 'signin' ? 'Sign in to sync your trips' : 'Create your free account'}
               </p>
             </div>
-            <button onClick={onClose}
-              className="size-7 flex items-center justify-center rounded-lg text-slate-300 hover:text-slate-500 hover:bg-slate-100 transition-all -mt-1 -mr-2"
+            <button onClick={onClose} aria-label="Close dialog"
+              className="size-9 flex items-center justify-center rounded-lg text-slate-300 hover:text-slate-500 hover:bg-slate-100 transition-all -mt-1 -mr-2"
             >
-              <X className="w-3.5 h-3.5" />
+              <X className="w-4 h-4" />
             </button>
           </div>
 
@@ -2263,10 +2322,18 @@ function AuthModalSimple({ onClose }: { onClose: () => void }) {
             <div className="relative">
               <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-300 pointer-events-none" />
               <input
-                type="password" placeholder="Password" value={password}
+                type={showPassword ? 'text' : 'password'} placeholder="Password" value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl outline-none transition-all focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/10 placeholder:text-slate-300 font-medium text-slate-800"
+                className="w-full pl-10 pr-10 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl outline-none transition-all focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/10 placeholder:text-slate-300 font-medium text-slate-800"
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-300 hover:text-slate-500 transition-colors"
+              >
+                {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+              </button>
             </div>
 
             {error && (
@@ -2440,14 +2507,14 @@ function WelcomeScreen({ onCreateTrip, onLoadDemo }: { onCreateTrip: () => void;
               </div>
             ))}
             {/* Transit chips */}
-            {[{ left: '33%', icon: '🚆' }, { left: '56%', icon: '✈️' }].map((chip) => (
+            {[{ left: '33%', mode: 'train' as const }, { left: '56%', mode: 'flight' as const }].map((chip) => (
               <div
                 key={chip.left}
                 className="absolute flex items-center justify-center"
                 style={{ left: chip.left, top: '50%', transform: 'translate(-50%, -50%)' }}
               >
-                <div className="bg-white border border-slate-200 rounded-full px-2 py-0.5 text-[9px] shadow-sm z-10">
-                  {chip.icon}
+                <div className="bg-white border border-slate-200 rounded-full p-1.5 shadow-sm z-10">
+                  <TransportIcon mode={chip.mode} className="w-3 h-3 text-slate-400" />
                 </div>
               </div>
             ))}
@@ -2726,8 +2793,8 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
     const numDays = zoomDays === 0 ? trip.totalDays : zoomDays;
     const slotWidth = (track?.clientWidth ?? numDays * 42) / (numDays * 3);
 
-    const onMove = (e: MouseEvent) => {
-      const delta = Math.round((e.clientX - dragState.originX) / slotWidth);
+    const applyDelta = (clientX: number) => {
+      const delta = Math.round((clientX - dragState.originX) / slotWidth);
       setTrip((curr) => ({
         ...curr,
         stays: curr.stays.map((s) => {
@@ -2744,10 +2811,19 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
         }),
       }));
     };
+    const onMove = (e: MouseEvent) => applyDelta(e.clientX);
+    const onTouchMove = (e: TouchEvent) => { e.preventDefault(); applyDelta(e.touches[0].clientX); };
     const onUp = () => setDragState(null);
     window.addEventListener('mousemove', onMove);
     window.addEventListener('mouseup', onUp);
-    return () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
+    window.addEventListener('touchmove', onTouchMove, { passive: false });
+    window.addEventListener('touchend', onUp);
+    return () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+      window.removeEventListener('touchmove', onTouchMove);
+      window.removeEventListener('touchend', onUp);
+    };
   }, [dragState, zoomDays, trip.totalDays]);
 
   // ── Mutators ──────────────────────────────────────────────────────────────
@@ -2989,12 +3065,14 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                 <span>Demo</span>
                 <button
                   onClick={handleMakeMine}
+                  aria-label="Save demo trip to your trips"
                   className="px-2 py-0.5 bg-primary text-white rounded-md text-[10px] font-bold hover:bg-primary/90 transition-colors"
                 >
                   Make it mine
                 </button>
                 <button
                   onClick={handleGoHome}
+                  aria-label="Discard demo and start fresh"
                   className="px-2 py-0.5 rounded-md text-[10px] font-semibold hover:bg-slate-200 transition-colors"
                 >
                   Start fresh
@@ -3003,25 +3081,27 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
             )}
             {overlaps.size > 0 && (
               <div className="hidden sm:flex items-center gap-1.5 text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1 text-[10px] font-bold mr-1">
+                <AlertCircle className="w-3 h-3 flex-shrink-0" />
                 {overlaps.size} conflict{overlaps.size > 1 ? 's' : ''}
               </div>
             )}
             <div className="relative flex items-center group">
               <Search className="absolute left-2.5 text-slate-400 w-3.5 h-3.5 group-focus-within:text-primary transition-colors" />
               <input
-                className="bg-slate-50 border border-slate-200 rounded-lg pl-8 pr-3 py-1.5 text-xs w-48 focus:ring-1 focus:ring-primary focus:border-primary transition-all outline-none"
+                className="bg-slate-50 border border-slate-200 rounded-lg pl-8 pr-3 py-1.5 text-xs w-32 sm:w-48 focus:ring-1 focus:ring-primary focus:border-primary transition-all outline-none"
                 placeholder="Search places, flights..."
+                aria-label="Search places"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
               {searchQuery && (
-                <button onClick={() => setSearchQuery('')} className="absolute right-2.5 text-slate-400 hover:text-slate-600">
+                <button onClick={() => setSearchQuery('')} className="absolute right-2.5 text-slate-400 hover:text-slate-600" aria-label="Clear search">
                   <X className="w-3 h-3" />
                 </button>
               )}
             </div>
 
-            <div className="h-5 w-px bg-slate-150 mx-1" />
+            <div className="h-5 w-px bg-slate-200 mx-1" />
 
             {/* Undo/Redo cluster */}
             <div className="flex items-center">
@@ -3029,7 +3109,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                 onClick={() => { const p = hist.undo(); if (p) updateTrip(() => p); }}
                 disabled={!hist.canUndo}
                 title="Undo (Ctrl+Z)"
-                className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors disabled:opacity-25"
+                className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors disabled:opacity-40"
               >
                 <Undo2 className="w-4 h-4" />
               </button>
@@ -3037,7 +3117,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                 onClick={() => { const n = hist.redo(); if (n) updateTrip(() => n); }}
                 disabled={!hist.canRedo}
                 title="Redo (Ctrl+Y)"
-                className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors disabled:opacity-25"
+                className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors disabled:opacity-40"
               >
                 <Redo2 className="w-4 h-4" />
               </button>
@@ -3045,13 +3125,13 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                 onClick={() => setShowHistory(true)}
                 disabled={!hist.canUndo && !hist.canRedo}
                 title="View history"
-                className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors disabled:opacity-25"
+                className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors disabled:opacity-40"
               >
                 <History className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="h-5 w-px bg-slate-150 mx-1" />
+            <div className="h-5 w-px bg-slate-200 mx-1" />
 
             {/* AI Planner */}
             <button
@@ -3077,7 +3157,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                 <div className="flex bg-white rounded-lg border border-border-neutral p-0.5">
                   {([5, 10, 15, 30, 0] as const).filter((d) => d === 0 || d <= trip.totalDays).map((d) => (
                     <button key={d} onClick={() => { setZoomDays(d); localStorage.setItem('itinerary-timeline-zoom', String(d)); }}
-                      className={`px-3 py-1 text-[9px] font-bold rounded-md transition-colors ${zoomDays === d ? 'bg-primary text-white shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}
+                      className={`px-3 py-1.5 text-[9px] font-bold rounded-md transition-colors ${zoomDays === d ? 'bg-primary text-white shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}
                     >
                       {d === 0 ? 'ALL' : `${d} DAYS`}
                     </button>
@@ -3086,7 +3166,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
               </div>
               <button
                 onClick={() => setAddingStay(true)}
-                className="size-6 flex items-center justify-center rounded-lg bg-primary text-white hover:bg-primary/90 transition-colors"
+                className="size-8 flex items-center justify-center rounded-lg bg-primary text-white hover:bg-primary/90 transition-colors"
                 aria-label="Add stay"
               >
                 <Plus className="w-3.5 h-3.5" />
@@ -3102,7 +3182,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                       <div className="flex-1 flex items-center justify-center text-[9px] font-bold text-slate-400 uppercase tracking-tighter border-b border-slate-100">{label}</div>
                       <div className="flex h-3 divide-x divide-slate-100">
                         {['M', 'A', 'E'].map((p) => (
-                          <div key={p} className="flex-1 flex items-center justify-center text-[7px] font-semibold text-slate-300">{p}</div>
+                          <div key={p} className="flex-1 flex items-center justify-center text-[9px] font-semibold text-slate-300">{p}</div>
                         ))}
                       </div>
                     </div>
@@ -3137,6 +3217,31 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                     setTimelineHoverDay(null);
                   }}
                   onMouseLeave={() => setTimelineHoverDay(null)}
+                  onTouchStart={(e) => {
+                    if (dragState) return;
+                    const touch = e.touches[0];
+                    const slot = getSlotFromClientX(touch.clientX);
+                    if (!isSlotRangeEmpty(slot, slot + 1)) return;
+                    setTimelineDragCreate({ startSlot: slot, currentSlot: slot });
+                    setTimelineHoverDay(null);
+                  }}
+                  onTouchMove={(e) => {
+                    if (!timelineDragCreate) return;
+                    const touch = e.touches[0];
+                    const slot = getSlotFromClientX(touch.clientX);
+                    setTimelineDragCreate((prev) => prev ? { ...prev, currentSlot: slot } : null);
+                  }}
+                  onTouchEnd={() => {
+                    if (!timelineDragCreate) return;
+                    const { startSlot, currentSlot } = timelineDragCreate;
+                    const minSlot = Math.min(startSlot, currentSlot);
+                    const maxSlot = Math.max(startSlot, currentSlot);
+                    if (isSlotRangeEmpty(minSlot, maxSlot + 1)) {
+                      setPendingTimelineSlot({ startSlot: minSlot, days: Math.max(1, Math.ceil((maxSlot - minSlot + 1) / 3)) });
+                      setAddingStay(true);
+                    }
+                    setTimelineDragCreate(null);
+                  }}
                 >
                   <div className="absolute inset-0 flex items-center">
                     {sortedStays.length === 0 ? (
@@ -3243,12 +3348,12 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                                     style={{ color: isSelected ? 'white' : stay.color }}
                                   >{stay.name}</span>
                                   {isOverlapping && (
-                                    <span className="flex-shrink-0 text-[8px] font-extrabold px-1 py-0.5 rounded-md bg-amber-400 text-white leading-none">!</span>
+                                    <span className="flex-shrink-0 text-[9px] font-extrabold px-1 py-0.5 rounded-md bg-amber-400 text-white leading-none">!</span>
                                   )}
                                 </div>
                                 {stay.lodging && (
                                   <span
-                                    className="text-[8px] font-semibold truncate mt-px"
+                                    className="text-[9px] font-semibold truncate mt-px"
                                     style={{ color: isSelected ? 'rgba(255,255,255,0.6)' : `color-mix(in srgb, ${stay.color} 60%, #64748b)` }}
                                   >{stay.lodging}</span>
                                 )}
@@ -3293,7 +3398,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                                 <button
                                   aria-label={`Route: ${TRANSPORT_LABELS[stay.travelModeToNext]}${stay.travelDurationToNext ? `, ${stay.travelDurationToNext}` : ''}`}
                                   onClick={() => setEditingRouteStayId(stay.id)}
-                                  className="group/chip absolute top-1/2 -translate-y-1/2 -translate-x-1/2 z-30 size-7 bg-white border border-slate-200 rounded-full flex items-center justify-center cursor-pointer hover:border-primary/40 hover:shadow-md transition-all shadow-sm"
+                                  className="group/chip absolute top-1/2 -translate-y-1/2 -translate-x-1/2 z-30 size-8 bg-white border border-slate-200 rounded-full flex items-center justify-center cursor-pointer hover:border-primary/40 hover:shadow-md transition-all shadow-sm"
                                   style={{ left: `${chipLeft}%` }}
                                 >
                                   <TransportIcon mode={stay.travelModeToNext} className="w-3.5 h-3.5 text-slate-400" />
@@ -3320,19 +3425,19 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
           <section className="flex-1 flex min-h-0 relative overflow-hidden">
 
             {/* Inventory */}
-            <aside className={`border-r border-border-neutral flex flex-col bg-white transition-all duration-300 ${mapExpanded ? 'w-0 overflow-hidden opacity-0' : 'w-64'}`}>
+            <aside className={`border-r border-border-neutral flex flex-col bg-white transition-all duration-300 ${mapExpanded ? 'w-0 overflow-hidden opacity-0' : 'w-64 hidden md:flex'}`}>
               <div className="px-4 py-3 border-b border-border-neutral flex justify-between items-center bg-slate-50/50 flex-shrink-0">
                 <div>
                   <h3 className="text-[10px] font-extrabold uppercase tracking-[0.1em] text-slate-400">Unplanned</h3>
                   {selectedStay && <p className="text-[9px] text-primary font-semibold mt-0.5 truncate">{selectedStay.name}</p>}
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <span className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded ${inboxVisits.length > 0 ? 'bg-primary/10 text-primary' : 'bg-emerald-50 text-emerald-600'}`}>
-                    {inboxVisits.length > 0 ? inboxVisits.length : '✓'}
+                  <span className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded flex items-center justify-center ${inboxVisits.length > 0 ? 'bg-primary/10 text-primary' : 'bg-emerald-50 text-emerald-600'}`}>
+                    {inboxVisits.length > 0 ? inboxVisits.length : <Check className="w-3 h-3" />}
                   </span>
                   <button
                     onClick={() => setAddingToInbox(true)}
-                    className="size-6 flex items-center justify-center rounded-lg bg-primary text-white hover:bg-primary/90 transition-colors"
+                    className="size-8 flex items-center justify-center rounded-lg bg-primary text-white hover:bg-primary/90 transition-colors"
                     aria-label="Add new place"
                   >
                     <Plus className="w-3.5 h-3.5" />
@@ -3345,7 +3450,9 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                 ))}
                 {inboxVisits.length === 0 && (
                   <p className="text-[10px] text-slate-400 text-center py-6 leading-relaxed">
-                    {selectedStay ? 'All places scheduled! Add more below.' : 'Click a stay to see its unplanned places'}
+                    {searchTerm
+                      ? 'No matching places found.'
+                      : selectedStay ? 'All places scheduled! Add more below.' : 'Click a stay to see its unplanned places'}
                   </p>
                 )}
               </div>
@@ -3687,7 +3794,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                     </span>
                   </div>
                 </div>
-                <div className="text-right">
+                <div className="text-right tabular-nums">
                   {mapMode === 'overview' ? (
                     <>
                       <span className="text-xs font-black text-slate-800">
