@@ -23,6 +23,7 @@ import TripMap from './components/TripMap';
 import DayFilterPills from './components/TripMap/DayFilterPills';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { saveUserTripStore, loadUserTripStore } from './firebase';
+import { searchPhoto } from './unsplash';
 import 'leaflet/dist/leaflet.css';
 
 // ─── View switcher ────────────────────────────────────────────────────────────
@@ -37,7 +38,7 @@ type VisitItem = {
   id: string; name: string; type: VisitType; area: string;
   lat: number; lng: number; durationHint?: string;
   dayOffset: number | null; dayPart: DayPart | null; order: number;
-  notes?: string;
+  notes?: string; imageUrl?: string;
 };
 
 type NightAccommodation = {
@@ -48,7 +49,7 @@ type Stay = {
   id: string; name: string; color: string;
   startSlot: number; endSlot: number;
   centerLat: number; centerLng: number;
-  lodging: string;
+  lodging: string; imageUrl?: string;
   /** Per-night accommodation keyed by dayOffset (0-based within the stay). A night on dayOffset=0 means "sleeping between day 0 and day 1". */
   nightAccommodations?: Record<number, NightAccommodation>;
   travelModeToNext: TravelMode; travelDurationToNext?: string; travelNotesToNext?: string;
@@ -1736,8 +1737,17 @@ function DraggableInventoryCard({ visit, onEdit }: { visit: VisitItem; onEdit: (
           </div>
         </div>
       </div>
-      <p className="text-xs font-bold text-slate-800">{visit.name}</p>
-      {visit.durationHint && <p className="text-[10px] text-slate-400 mt-0.5">{visit.durationHint}</p>}
+      <div className="flex items-start gap-2">
+        <div className="flex-1 min-w-0">
+          <p className="text-xs font-bold text-slate-800">{visit.name}</p>
+          {visit.durationHint && <p className="text-[10px] text-slate-400 mt-0.5">{visit.durationHint}</p>}
+        </div>
+        {visit.imageUrl && (
+          <div className="size-9 rounded-md overflow-hidden flex-shrink-0 border border-slate-100 shadow-sm">
+            <img src={visit.imageUrl} alt="" className="w-full h-full object-cover" loading="lazy" />
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -1779,12 +1789,21 @@ function SortableVisitCard({ visit, isSelected, onSelect, onEdit }: {
           </div>
         </div>
       </div>
-      <p onClick={onSelect} className="text-xs font-bold leading-tight text-slate-800 cursor-pointer hover:text-primary transition-colors">
-        {visit.name}
-      </p>
-      {visit.notes && (
-        <p className="text-[10px] text-slate-400 mt-1 italic leading-snug">{visit.notes}</p>
-      )}
+      <div className="flex items-start gap-2">
+        <div className="flex-1 min-w-0">
+          <p onClick={onSelect} className="text-xs font-bold leading-tight text-slate-800 cursor-pointer hover:text-primary transition-colors">
+            {visit.name}
+          </p>
+          {visit.notes && (
+            <p className="text-[10px] text-slate-400 mt-1 italic leading-snug">{visit.notes}</p>
+          )}
+        </div>
+        {visit.imageUrl && (
+          <div className="size-9 rounded-md overflow-hidden flex-shrink-0 border border-slate-100 shadow-sm">
+            <img src={visit.imageUrl} alt="" className="w-full h-full object-cover" loading="lazy" />
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -2582,6 +2601,21 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
     });
   }, [trip.id]);
 
+  // ── Auto-fetch Unsplash photos ────────────────────────────────────────────
+  const updateTripRef = useRef(updateTrip);
+  useEffect(() => { updateTripRef.current = updateTrip; }, [updateTrip]);
+
+  useEffect(() => {
+    if (!import.meta.env.VITE_UNSPLASH_ACCESS_KEY) return;
+    const staysNeedingImages = trip.stays.filter((s) => !s.imageUrl);
+    if (staysNeedingImages.length === 0) return;
+    staysNeedingImages.forEach(async (stay) => {
+      const url = await searchPhoto(`${stay.name} city travel`);
+      if (url) updateTripRef.current((t) => ({ ...t, stays: t.stays.map((s) => s.id === stay.id ? { ...s, imageUrl: url } : s) }));
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [trip.stays.map((s) => `${s.id}:${s.imageUrl ?? ''}`).join('|')]);
+
   // Sync with history
   const hist = useHistory(trip);
 
@@ -2829,6 +2863,19 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
       window.removeEventListener('touchend', onUp);
     };
   }, [dragState, zoomDays, trip.totalDays]);
+
+  // ── Auto-fetch visit photos for selected stay ─────────────────────────────
+  useEffect(() => {
+    if (!import.meta.env.VITE_UNSPLASH_ACCESS_KEY || !selectedStay) return;
+    const visitsNeedingImages = selectedStay.visits.filter((v) => !v.imageUrl);
+    if (visitsNeedingImages.length === 0) return;
+    const stayId = selectedStay.id;
+    visitsNeedingImages.forEach(async (visit) => {
+      const url = await searchPhoto(visit.name);
+      if (url) updateTripRef.current((t) => ({ ...t, stays: t.stays.map((s) => s.id === stayId ? { ...s, visits: s.visits.map((v) => v.id === visit.id ? { ...v, imageUrl: url } : v) } : s) }));
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedStay?.id, selectedStay?.visits.map((v) => `${v.id}:${v.imageUrl ?? ''}`).join('|')]);
 
   // ── Mutators ──────────────────────────────────────────────────────────────
   const updateSelectedStay = (fn: (s: Stay) => Stay) => {
@@ -3325,6 +3372,12 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                                 setDragState({ stayId: stay.id, mode: 'move', originX: e.clientX, originalStart: stay.startSlot, originalEnd: stay.endSlot });
                               }}
                             >
+                              {/* Photo background */}
+                              {stay.imageUrl && (
+                                <div className="absolute inset-0 rounded-lg overflow-hidden pointer-events-none">
+                                  <img src={stay.imageUrl} alt="" className="w-full h-full object-cover" style={{ opacity: isSelected ? 0.18 : 0.12 }} />
+                                </div>
+                              )}
                               {/* Colored left accent bar */}
                               <div
                                 className="absolute left-0 top-1.5 bottom-1.5 w-1 rounded-full transition-opacity"
@@ -3430,10 +3483,18 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
 
             {/* Inventory */}
             <aside className={`border-r border-border-neutral flex flex-col bg-white transition-all duration-300 ${mapExpanded ? 'w-0 overflow-hidden opacity-0' : 'w-64 hidden md:flex'}`}>
+              {/* Stay photo banner */}
+              {selectedStay?.imageUrl && (
+                <div className="relative h-20 overflow-hidden flex-shrink-0">
+                  <img src={selectedStay.imageUrl} alt={selectedStay.name} className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-900/65 via-slate-900/20 to-transparent" />
+                  <p className="absolute bottom-2 left-3 text-white text-xs font-bold drop-shadow truncate pr-3">{selectedStay.name}</p>
+                </div>
+              )}
               <div className="px-4 py-3 border-b border-border-neutral flex justify-between items-center bg-slate-50/50 flex-shrink-0">
                 <div>
                   <h3 className="text-[10px] font-extrabold uppercase tracking-[0.1em] text-slate-400">Unplanned</h3>
-                  {selectedStay && <p className="text-[9px] text-primary font-semibold mt-0.5 truncate">{selectedStay.name}</p>}
+                  {selectedStay && !selectedStay.imageUrl && <p className="text-[9px] text-primary font-semibold mt-0.5 truncate">{selectedStay.name}</p>}
                 </div>
                 <div className="flex items-center gap-1.5">
                   <span className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded flex items-center justify-center ${inboxVisits.length > 0 ? 'bg-primary/10 text-primary' : 'bg-emerald-50 text-emerald-600'}`}>

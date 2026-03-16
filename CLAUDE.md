@@ -85,7 +85,7 @@ src/theme.ts
 ## Key Conventions
 
 - **Tailwind v4** via `@tailwindcss/vite` plugin — no `tailwind.config.js`. CSS variables and theme tokens go in `src/index.css`.
-- **Design tokens:** Primary orange `#ec5b13`, font Inter. Reference design at `/Users/mcava/dev/ai-studio-redesign/src/App.tsx`.
+- **Design tokens:** Primary orange `#ec5b13`, font Inter.
 - **Formatting:** 2-space indent, single quotes, semicolons, trailing commas, 100-char line width (Prettier-enforced).
 - **Naming:** PascalCase components, `use` prefix hooks, camelCase utilities.
 - **`src/types.ts`** is for the legacy/context-based app. The CHRONOS `App.tsx` declares its own inline types.
