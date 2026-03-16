@@ -31,7 +31,52 @@
     scrollbar-width: none;
   }
   .map-panel-container {
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    will-change: transform, opacity;
+  }
+
+  /* ── Map panel FLIP-style animations ── */
+  .map-panel-container.map-anim-expand {
+    animation: map-expand 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .map-panel-container.map-anim-shrink {
+    animation: map-shrink 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .map-panel-container.map-anim-mini {
+    animation: map-to-mini 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .map-panel-container.map-anim-restore {
+    animation: map-restore 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .map-panel-container.map-anim-collapse {
+    animation: map-collapse 0.35s cubic-bezier(0.4, 0, 1, 1) both;
+  }
+  .map-panel-container.map-anim-reveal {
+    animation: map-reveal 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  @keyframes map-expand {
+    from { transform: scale(0.92); opacity: 0.6; border-radius: 16px; }
+    to   { transform: scale(1);    opacity: 1;   border-radius: 0; }
+  }
+  @keyframes map-shrink {
+    from { transform: scale(1.04); opacity: 0.6; border-radius: 0; }
+    to   { transform: scale(1);    opacity: 1;   border-radius: 16px; }
+  }
+  @keyframes map-to-mini {
+    from { transform: scale(1.15) translateX(-8%) translateY(-8%); opacity: 0.5; }
+    to   { transform: scale(1) translateX(0) translateY(0);        opacity: 1; }
+  }
+  @keyframes map-restore {
+    from { transform: scale(0.85) translateX(8%) translateY(8%); opacity: 0.5; }
+    to   { transform: scale(1) translateX(0) translateY(0);      opacity: 1; }
+  }
+  @keyframes map-collapse {
+    from { transform: translateX(0); opacity: 1; }
+    to   { transform: translateX(40px); opacity: 0; }
+  }
+  @keyframes map-reveal {
+    from { transform: translateX(40px); opacity: 0; }
+    to   { transform: translateX(0);    opacity: 1; }
   }
 }
 

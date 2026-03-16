@@ -13,6 +13,7 @@ import {
   Moon, Navigation, Palette, Pencil, Plane, Plus,
   PlusCircle, Redo2, Search, Ship, ShoppingBag, SlidersHorizontal, Sparkles, Sunrise,
   Sun, Train, Trash2, Undo2, Upload, User, X, Layers, Hotel, UtensilsCrossed,
+  PanelRightOpen, PanelRightClose, Shrink, Expand,
 } from 'lucide-react';
 import LegacyApp from './features/legacy/LegacyApp';
 import { searchPlace, type PlaceSearchResult } from './utils/geocoding';
@@ -2530,11 +2531,20 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
   const [dragState, setDragState] = useState<DragState>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [mapExpanded, setMapExpanded] = useState(false);
+  const [mapCollapsed, setMapCollapsed] = useState(false);
+  const [mapMini, setMapMini] = useState(false);
+  const [mapAnimClass, setMapAnimClass] = useState('');
+  const triggerMapAnim = useCallback((cls: string) => {
+    setMapAnimClass(cls);
+    const timer = setTimeout(() => setMapAnimClass(''), 500);
+    return () => clearTimeout(timer);
+  }, []);
   const [mapWidth, setMapWidth] = useState(() => {
     const saved = localStorage.getItem('itinerary-map-width');
     return saved ? Number(saved) : 500;
   });
   const mapResizingRef = useRef<{ startX: number; startWidth: number; currentWidth: number } | null>(null);
+  const mapPanelRef = useRef<HTMLElement>(null);
   const startMapResize = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     mapResizingRef.current = { startX: e.clientX, startWidth: mapWidth, currentWidth: mapWidth };
@@ -3477,13 +3487,39 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
               )}
             </div>
 
+            {/* Map — Collapsed tab */}
+            {mapCollapsed && !mapExpanded && (
+              <button
+                onClick={() => { setMapCollapsed(false); triggerMapAnim('map-anim-reveal'); }}
+                className="absolute right-0 top-1/2 -translate-y-1/2 z-30 flex items-center gap-1 px-1.5 py-3 bg-white border border-r-0 border-slate-200 rounded-l-xl shadow-lg hover:bg-slate-50 transition-colors"
+                aria-label="Show map"
+              >
+                <PanelRightOpen className="w-4 h-4 text-slate-500" />
+              </button>
+            )}
+
             {/* Map — Floating Panel */}
             <aside
-              className={`map-panel-container flex flex-col overflow-hidden z-30 ${mapExpanded ? 'absolute inset-0 w-full rounded-none bg-white' : 'absolute top-4 bottom-4 right-4 bg-white rounded-2xl shadow-[0_0_50px_-12px_rgba(0,0,0,0.25)] border border-slate-200/60'}`}
-              style={mapExpanded ? undefined : { width: mapWidth }}
+              ref={mapPanelRef}
+              className={`map-panel-container flex flex-col overflow-hidden z-30 bg-white ${mapAnimClass} ${
+                mapCollapsed && !mapExpanded
+                  ? 'absolute pointer-events-none'
+                  : mapExpanded
+                    ? 'absolute rounded-none'
+                    : 'absolute rounded-2xl shadow-[0_0_50px_-12px_rgba(0,0,0,0.25)] border border-slate-200/60'
+              }`}
+              style={
+                mapCollapsed && !mapExpanded
+                  ? { top: 16, bottom: 16, right: -mapWidth, width: mapWidth, opacity: 0 }
+                  : mapExpanded
+                    ? { top: 0, bottom: 0, right: 0, left: 0 }
+                    : mapMini
+                      ? { bottom: 16, right: 16, width: 'clamp(320px, 28vw, 480px)', height: 'clamp(240px, 25vh, 360px)' }
+                      : { top: 16, bottom: 16, right: 16, width: mapWidth }
+              }
             >
-              {/* Resize handle */}
-              {!mapExpanded && (
+              {/* Resize handle — left edge */}
+              {!mapExpanded && !mapCollapsed && !mapMini && (
                 <div
                   onMouseDown={startMapResize}
                   className="absolute left-0 top-0 bottom-0 w-1.5 cursor-col-resize z-50 group"
@@ -3493,19 +3529,21 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                 </div>
               )}
               {/* Map panel header */}
-              <div className="h-11 px-4 border-b border-slate-100 flex items-center gap-3 bg-white/80 backdrop-blur-md flex-shrink-0">
+              <div className={`${mapMini ? 'h-9 px-2.5' : 'h-11 px-4'} border-b border-slate-100 flex items-center gap-3 bg-white/80 backdrop-blur-md flex-shrink-0`}>
                 {/* Left: mode icon + title */}
                 <div className="flex items-center gap-2 flex-shrink-0">
                   <div className="size-5 bg-primary/10 rounded-md flex items-center justify-center">
                     <MapPin className="w-3 h-3 text-primary" />
                   </div>
-                  <span className="text-[10px] font-extrabold text-slate-600 tracking-tight uppercase">
-                    {mapMode === 'overview' ? 'Overview' : 'Detail'}
-                  </span>
+                  {!mapMini && (
+                    <span className="text-[10px] font-extrabold text-slate-600 tracking-tight uppercase">
+                      {mapMode === 'overview' ? 'Overview' : 'Detail'}
+                    </span>
+                  )}
                 </div>
                 {/* Middle: day filter pills — scrollable, only in detail mode */}
                 <div className="flex-1 overflow-x-auto scroll-hide min-w-0">
-                  {mapMode === 'detail' && dayFilterOptions.length >= 2 && (
+                  {!mapMini && mapMode === 'detail' && dayFilterOptions.length >= 2 && (
                     <DayFilterPills
                       options={dayFilterOptions}
                       selectedDayOffset={mapDayFilter}
@@ -3515,24 +3553,45 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                 </div>
                 {/* Right: action buttons */}
                 <div className="flex items-center gap-0.5 flex-shrink-0">
+                  {!mapMini && (
+                    <button
+                      aria-label={mapMode === 'overview' ? 'Show stay detail' : 'Show trip overview'}
+                      onClick={() => { setMapMode(m => m === 'overview' ? 'detail' : 'overview'); if (mapMode === 'detail') setMapDayFilter(null); }}
+                      className={`p-1.5 rounded-lg transition-colors focus-visible:ring-2 focus-visible:ring-primary/50 ${
+                        mapMode === 'overview'
+                          ? 'text-primary bg-primary/10'
+                          : 'text-slate-400 hover:text-primary hover:bg-slate-50'
+                      }`}
+                    >
+                      <Layers className="w-4 h-4" />
+                    </button>
+                  )}
+                  {/* Mini / restore toggle */}
+                  {!mapExpanded && (
+                    <button
+                      onClick={() => { triggerMapAnim(mapMini ? 'map-anim-restore' : 'map-anim-mini'); setMapMini(m => !m); }}
+                      aria-label={mapMini ? 'Restore map' : 'Shrink map'}
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-primary hover:bg-slate-50 transition-colors focus-visible:ring-2 focus-visible:ring-primary/50"
+                    >
+                      {mapMini ? <Expand className="w-4 h-4" /> : <Shrink className="w-4 h-4" />}
+                    </button>
+                  )}
                   <button
-                    aria-label={mapMode === 'overview' ? 'Show stay detail' : 'Show trip overview'}
-                    onClick={() => { setMapMode(m => m === 'overview' ? 'detail' : 'overview'); if (mapMode === 'detail') setMapDayFilter(null); }}
-                    className={`p-1.5 rounded-lg transition-colors focus-visible:ring-2 focus-visible:ring-primary/50 ${
-                      mapMode === 'overview'
-                        ? 'text-primary bg-primary/10'
-                        : 'text-slate-400 hover:text-primary hover:bg-slate-50'
-                    }`}
-                  >
-                    <Layers className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => setMapExpanded(!mapExpanded)}
-                    aria-label={mapExpanded ? 'Collapse map' : 'Expand map'}
+                    onClick={() => { triggerMapAnim(mapExpanded ? 'map-anim-shrink' : 'map-anim-expand'); setMapExpanded(!mapExpanded); if (mapMini) setMapMini(false); }}
+                    aria-label={mapExpanded ? 'Exit fullscreen' : 'Fullscreen map'}
                     className="p-1.5 rounded-lg text-slate-400 hover:text-primary hover:bg-slate-50 transition-colors focus-visible:ring-2 focus-visible:ring-primary/50"
                   >
                     {mapExpanded ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
                   </button>
+                  {!mapExpanded && !mapMini && (
+                    <button
+                      onClick={() => { triggerMapAnim('map-anim-collapse'); setTimeout(() => setMapCollapsed(true), 350); }}
+                      aria-label="Hide map"
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-primary hover:bg-slate-50 transition-colors focus-visible:ring-2 focus-visible:ring-primary/50"
+                    >
+                      <PanelRightClose className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
               </div>
 
