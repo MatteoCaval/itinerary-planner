@@ -23,8 +23,21 @@ City-level destinations. Create via geocoded search (Nominatim) + day-count step
 ### Activities (Visits)
 Each stay has a kanban board: one column per day, three buckets (morning/afternoon/evening). Cards show name, type badge, area, notes. Draggable between slots and to/from the **unplanned inbox** (left sidebar). Types: `landmark` · `museum` · `food` · `walk` · `shopping` (`area` / `hotel` kept for legacy data only).
 
+Each visit supports:
+- **Checklist** — to-do items with done/undone toggle. Progress badge shown on card.
+- **Links** — external URLs with optional label. Link count badge shown on card.
+
 ### Accommodations
-Per-night hotel records (`NightAccommodation`) separate from the stay's default lodging. Geocoded, with cost/notes/link fields. Consecutive nights at the same hotel are collapsed into a grouped chip in the day column header.
+Per-night hotel records (`NightAccommodation`) separate from the stay's default lodging. Geocoded, with cost/notes/link fields. Consecutive nights at the same hotel are collapsed into a grouped chip in the day column header. Night range is editable (select which nights within the stay the accommodation applies to). Removal correctly clears the `lodging` fallback field.
+
+### Stay Overview Panel
+Clicking a stay in the timeline opens its **Overview** tab in the left sidebar (desktop) or bottom drawer (mobile):
+- **Hero image** — destination photo (Unsplash) with color dot + name + date range overlay
+- **Stats grid** — days / nights / places count
+- **Sleeping** — accommodation group summary
+- **Notes** — freeform textarea, auto-saved on blur
+- **Links** — external URLs with optional labels
+- **To-Do** — collapsible checklist for the whole stay (e.g. "Book Shinkansen pass")
 
 ### Map
 Two modes:
@@ -61,6 +74,9 @@ Stay            { id, name, color, startSlot, endSlot,
                   centerLat, centerLng, lodging,
                   nightAccommodations?: Record<dayOffset, NightAccommodation>,
                   travelModeToNext, travelDurationToNext?, travelNotesToNext?,
+                  notes?: string,
+                  links?: VisitLink[],
+                  checklist?: ChecklistItem[],
                   visits: VisitItem[] }
 
 NightAccommodation  { name, lat?, lng?, cost?, notes?, link? }
@@ -68,7 +84,12 @@ NightAccommodation  { name, lat?, lng?, cost?, notes?, link? }
 VisitItem       { id, name, type: VisitType, area, lat, lng,
                   dayOffset: number|null,   // null = unscheduled inbox
                   dayPart: DayPart|null,
-                  order, durationHint?, notes? }
+                  order, durationHint?, notes?,
+                  checklist?: ChecklistItem[],
+                  links?: VisitLink[] }
+
+ChecklistItem   { id, text, done: boolean }
+VisitLink       { url, label?: string }
 ```
 
 **Slot arithmetic:** 1 day = 3 slots. `startSlot = dayIndex * 3`. Stay night count = `ceil((endSlot - startSlot) / 3)`.
@@ -84,10 +105,13 @@ VisitItem       { id, name, type: VisitType, area, lat, lng,
 | Gantt timeline | ✅ | Drag, resize, zoom, overlap detection |
 | Stay CRUD | ✅ | Geocoding, color, route chips |
 | Activity kanban + inbox | ✅ | DnD, search, type grid |
-| Accommodation per-night | ✅ | Geocoding, cost, grouping |
+| Accommodation per-night | ✅ | Geocoding, cost, grouping, night-range editing |
+| Stay overview panel | ✅ | Hero, stats, notes, links, accommodation summary, to-do |
+| Visit checklist + links | ✅ | Per-visit to-do items and external links |
+| Stay notes + links + todo | ✅ | Freeform notes, external links, collapsible checklist |
 | Map — overview | ✅ | Stay markers + route lines |
 | Map — detail | ✅ | Visit/accommodation markers, clustering, arrows |
-| Map resize + day filter | ✅ | |
+| Map resize + day filter | ✅ | Collapsed/expanded/mini state persisted across refresh |
 | AI planner (Gemini) | ✅ | From scratch + refine |
 | Firebase Auth + cloud sync | ✅ | Email + Google OAuth, merge dialog |
 | JSON + Markdown export | ✅ | |
