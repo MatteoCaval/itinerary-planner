@@ -13,7 +13,7 @@ import {
   Moon, Navigation, Palette, Pencil, Plane, Plus,
   PlusCircle, Redo2, Search, Ship, ShoppingBag, SlidersHorizontal, Sparkles, Sunrise,
   Sun, Train, Trash2, Undo2, Upload, User, X, Layers, Hotel, UtensilsCrossed,
-  PanelRightOpen, PanelRightClose, Shrink, Expand, Eye, EyeOff,
+  PanelRightOpen, PanelRightClose, Shrink, Expand, Eye, EyeOff, ExternalLink, Link2,
 } from 'lucide-react';
 import LegacyApp from './features/legacy/LegacyApp';
 import { searchPlace, type PlaceSearchResult } from './utils/geocoding';
@@ -34,11 +34,16 @@ type DayPart = 'morning' | 'afternoon' | 'evening';
 type TravelMode = 'train' | 'flight' | 'drive' | 'ferry' | 'bus' | 'walk';
 type VisitType = 'landmark' | 'museum' | 'food' | 'walk' | 'shopping' | 'area' | 'hotel'; // area/hotel kept for legacy compat
 
+type ChecklistItem = { id: string; text: string; done: boolean };
+type VisitLink = { url: string; label?: string };
+
 type VisitItem = {
   id: string; name: string; type: VisitType; area: string;
   lat: number; lng: number; durationHint?: string;
   dayOffset: number | null; dayPart: DayPart | null; order: number;
   notes?: string; imageUrl?: string;
+  checklist?: ChecklistItem[];
+  links?: VisitLink[];
 };
 
 type NightAccommodation = {
@@ -54,6 +59,9 @@ type Stay = {
   nightAccommodations?: Record<number, NightAccommodation>;
   travelModeToNext: TravelMode; travelDurationToNext?: string; travelNotesToNext?: string;
   visits: VisitItem[];
+  checklist?: ChecklistItem[];
+  notes?: string;
+  links?: VisitLink[];
 };
 
 type HybridTrip = {
@@ -905,11 +913,11 @@ function AccommodationEditorModal({ initial, allNights, initialNights, existingN
             <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-1.5 block">
               Nights covered
             </label>
-            <div className="space-y-0.5 border border-slate-200 rounded-lg overflow-hidden">
+            <div className="border border-slate-200 rounded-lg overflow-hidden">
               {allNights.map(({ dayOffset, date }) => (
                 <label
                   key={dayOffset}
-                  className="flex items-center gap-2.5 px-3 py-2 hover:bg-slate-50 cursor-pointer border-b last:border-b-0 border-slate-100"
+                  className="flex items-center gap-2.5 px-3 py-2.5 hover:bg-slate-50 cursor-pointer border-b last:border-b-0 border-slate-100"
                 >
                   <input
                     type="checkbox"
@@ -920,7 +928,7 @@ function AccommodationEditorModal({ initial, allNights, initialNights, existingN
                   <span className="text-xs font-semibold text-slate-700">
                     Night {dayOffset + 1}
                   </span>
-                  <span className="text-[10px] text-slate-400 ml-auto">
+                  <span className="text-[10px] text-slate-400 ml-auto flex-shrink-0">
                     {fmt(date, { weekday: 'short', month: 'short', day: 'numeric' })}
                   </span>
                 </label>
@@ -1295,7 +1303,7 @@ function AddStayModal({ onClose, onSave, stayColor, initialDays }: {
 // ─── Visit editor modal ───────────────────────────────────────────────────────
 function VisitFormModal({ initial, title, onClose, onSave, onDelete, onUnschedule }: {
   initial?: Partial<VisitItem>; title: string; onClose: () => void;
-  onSave: (data: { name: string; type: VisitType; durationHint: string; notes: string; lat?: number; lng?: number }) => void;
+  onSave: (data: { name: string; type: VisitType; durationHint: string; notes: string; lat?: number; lng?: number; checklist: ChecklistItem[]; links: VisitLink[] }) => void;
   onDelete?: () => void;
   onUnschedule?: () => void;
 }) {
@@ -1312,6 +1320,33 @@ function VisitFormModal({ initial, title, onClose, onSave, onDelete, onUnschedul
   const [searchError, setSearchError] = useState(false);
   const isEditing = !!initial?.id;
   const [confirmDelete, setConfirmDelete] = useState(false);
+
+  // Checklist
+  const [checklist, setChecklist] = useState<ChecklistItem[]>(initial?.checklist ?? []);
+  const [newChecklistText, setNewChecklistText] = useState('');
+  const addChecklistItem = () => {
+    const text = newChecklistText.trim();
+    if (!text) return;
+    setChecklist((c) => [...c, { id: `cl-${Date.now()}`, text, done: false }]);
+    setNewChecklistText('');
+  };
+  const toggleChecklistItem = (id: string) =>
+    setChecklist((c) => c.map((item) => item.id === id ? { ...item, done: !item.done } : item));
+  const removeChecklistItem = (id: string) =>
+    setChecklist((c) => c.filter((item) => item.id !== id));
+
+  // Links
+  const [links, setLinks] = useState<VisitLink[]>(initial?.links ?? []);
+  const [newLinkUrl, setNewLinkUrl] = useState('');
+  const [newLinkLabel, setNewLinkLabel] = useState('');
+  const addLink = () => {
+    const url = newLinkUrl.trim();
+    if (!url) return;
+    const normalized = url.startsWith('http') ? url : `https://${url}`;
+    setLinks((l) => [...l, { url: normalized, label: newLinkLabel.trim() || undefined }]);
+    setNewLinkUrl('');
+    setNewLinkLabel('');
+  };
 
   // Debounced Nominatim search (only fires when user is actively typing a name without geocode yet)
   useEffect(() => {
@@ -1442,6 +1477,100 @@ function VisitFormModal({ initial, title, onClose, onSave, onDelete, onUnschedul
           />
         </div>
 
+        {/* Checklist */}
+        <div>
+          <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-1.5 block">Checklist</label>
+          <div className="space-y-1">
+            {checklist.map((item) => (
+              <div key={item.id} className="flex items-center gap-2 group px-2">
+                <input
+                  type="checkbox"
+                  checked={item.done}
+                  onChange={() => toggleChecklistItem(item.id)}
+                  className="accent-primary w-3.5 h-3.5 flex-shrink-0 cursor-pointer"
+                />
+                <span className={`flex-1 text-xs ${item.done ? 'line-through text-slate-400' : 'text-slate-700'}`}>
+                  {item.text}
+                </span>
+                <button
+                  onClick={() => removeChecklistItem(item.id)}
+                  className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-50 text-slate-400 hover:text-red-500 transition-all"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            ))}
+            <div className="flex items-center gap-1.5 mt-1">
+              <input
+                className="flex-1 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-primary focus:border-primary outline-none placeholder:text-slate-400"
+                placeholder="Add item…"
+                value={newChecklistText}
+                onChange={(e) => setNewChecklistText(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addChecklistItem(); } }}
+              />
+              <button
+                onClick={addChecklistItem}
+                disabled={!newChecklistText.trim()}
+                className="p-1.5 rounded-lg bg-slate-100 hover:bg-primary/10 text-slate-500 hover:text-primary transition-colors disabled:opacity-40"
+              >
+                <Plus className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Links */}
+        <div>
+          <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-1.5 block">Links</label>
+          <div className="space-y-1">
+            {links.map((link, i) => (
+              <div key={i} className="flex items-center gap-2 group px-2">
+                <ExternalLink className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+                <a
+                  href={link.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 text-xs text-primary hover:underline truncate"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {link.label || link.url}
+                </a>
+                <button
+                  onClick={() => setLinks((l) => l.filter((_, idx) => idx !== i))}
+                  className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-50 text-slate-400 hover:text-red-500 transition-all"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            ))}
+            <div className="space-y-1.5 mt-1">
+              <input
+                className="w-full border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-primary focus:border-primary outline-none"
+                placeholder="https://…"
+                value={newLinkUrl}
+                onChange={(e) => setNewLinkUrl(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addLink(); } }}
+              />
+              <div className="flex gap-1.5">
+                <input
+                  className="flex-1 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-primary focus:border-primary outline-none"
+                  placeholder="Label (optional)"
+                  value={newLinkLabel}
+                  onChange={(e) => setNewLinkLabel(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addLink(); } }}
+                />
+                <button
+                  onClick={addLink}
+                  disabled={!newLinkUrl.trim()}
+                  className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-primary/10 text-slate-500 hover:text-primary text-xs font-bold transition-colors disabled:opacity-40"
+                >
+                  Add
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Delete / unschedule */}
         {(onDelete || onUnschedule) && !confirmDelete && (
           <div className="flex gap-2">
@@ -1486,7 +1615,7 @@ function VisitFormModal({ initial, title, onClose, onSave, onDelete, onUnschedul
             disabled={!name.trim()}
             onClick={() => {
               if (name.trim()) {
-                onSave({ name: name.trim(), type, durationHint: duration, notes, lat: pickedCoords?.lat, lng: pickedCoords?.lng });
+                onSave({ name: name.trim(), type, durationHint: duration, notes, lat: pickedCoords?.lat, lng: pickedCoords?.lng, checklist, links });
                 onClose();
               }
             }}
@@ -1789,6 +1918,22 @@ function DraggableInventoryCard({ visit, onEdit }: { visit: VisitItem; onEdit: (
         <div className="flex-1 min-w-0">
           <p className="text-xs font-bold text-slate-800">{visit.name}</p>
           {visit.durationHint && <p className="text-[10px] text-slate-400 mt-0.5">{visit.durationHint}</p>}
+          {(visit.checklist?.length || visit.links?.length) ? (
+            <div className="flex items-center gap-1.5 mt-1.5">
+              {visit.checklist?.length ? (
+                <span className="flex items-center gap-1.5 text-[9px] font-bold text-slate-500 bg-slate-100 rounded-full px-2 py-1">
+                  <Check className="w-2.5 h-2.5" />
+                  {visit.checklist.filter(i => i.done).length}/{visit.checklist.length}
+                </span>
+              ) : null}
+              {visit.links?.length ? (
+                <span className="flex items-center gap-1.5 text-[9px] font-bold text-slate-500 bg-slate-100 rounded-full px-2 py-1">
+                  <Link2 className="w-2.5 h-2.5" />
+                  {visit.links.length}
+                </span>
+              ) : null}
+            </div>
+          ) : null}
         </div>
         {visit.imageUrl && (
           <div className="size-9 rounded-md overflow-hidden flex-shrink-0 border border-slate-100 shadow-sm">
@@ -1847,6 +1992,22 @@ function SortableVisitCard({ visit, isSelected, onSelect, onEdit }: {
           {visit.notes && (
             <p className="text-[10px] text-slate-400 mt-1 italic leading-snug">{visit.notes}</p>
           )}
+          {(visit.checklist?.length || visit.links?.length) ? (
+            <div className="flex items-center gap-1.5 mt-1.5">
+              {visit.checklist?.length ? (
+                <span className="flex items-center gap-1.5 text-[9px] font-bold text-slate-500 bg-slate-100 rounded-full px-2 py-1">
+                  <Check className="w-2.5 h-2.5" />
+                  {visit.checklist.filter(i => i.done).length}/{visit.checklist.length}
+                </span>
+              ) : null}
+              {visit.links?.length ? (
+                <span className="flex items-center gap-1.5 text-[9px] font-bold text-slate-500 bg-slate-100 rounded-full px-2 py-1">
+                  <Link2 className="w-2.5 h-2.5" />
+                  {visit.links.length}
+                </span>
+              ) : null}
+            </div>
+          ) : null}
         </div>
         {visit.imageUrl && (
           <div className="size-9 rounded-md overflow-hidden flex-shrink-0 border border-slate-100 shadow-sm">
@@ -1854,6 +2015,242 @@ function SortableVisitCard({ visit, isSelected, onSelect, onEdit }: {
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+// ─── Stay overview panel ──────────────────────────────────────────────────────
+function StayOverviewPanel({ stay, stayDays, accommodationGroups, onUpdate }: {
+  stay: Stay;
+  stayDays: ReturnType<typeof deriveStayDays>;
+  accommodationGroups: AccommodationGroup[];
+  onUpdate: (updates: Partial<Stay>) => void;
+}) {
+  const [notes, setNotes] = useState(stay.notes ?? '');
+  const [links, setLinks] = useState<VisitLink[]>(stay.links ?? []);
+  const [newLinkUrl, setNewLinkUrl] = useState('');
+  const [newLinkLabel, setNewLinkLabel] = useState('');
+
+  // Reset local state when switching to a different stay
+  useEffect(() => {
+    setNotes(stay.notes ?? '');
+    setLinks(stay.links ?? []);
+  }, [stay.id]);
+
+  const nights = stayDays.filter((d) => d.hasNight).length;
+  const startDate = stayDays[0]?.date;
+  const endDate = stayDays[stayDays.length - 1]?.date;
+
+  const addLink = () => {
+    const url = newLinkUrl.trim();
+    if (!url) return;
+    const normalized = url.startsWith('http') ? url : `https://${url}`;
+    const next = [...links, { url: normalized, label: newLinkLabel.trim() || undefined }];
+    setLinks(next);
+    onUpdate({ links: next });
+    setNewLinkUrl('');
+    setNewLinkLabel('');
+  };
+
+  return (
+    <div className="flex-1 overflow-y-auto scroll-hide">
+      {/* Hero */}
+      <div className="relative h-24 bg-slate-100 flex-shrink-0">
+        {stay.imageUrl ? (
+          <img src={stay.imageUrl} alt={stay.name} className="w-full h-full object-cover" />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200">
+            <MapPin className="w-7 h-7 text-slate-300" />
+          </div>
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
+        <div className="absolute bottom-2.5 left-3.5 right-3.5">
+          <div className="flex items-center gap-1.5">
+            <div className="w-2 h-2 rounded-full flex-shrink-0 ring-1 ring-white/40" style={{ backgroundColor: stay.color }} />
+            <h2 className="text-white font-bold text-sm leading-tight truncate">{stay.name}</h2>
+          </div>
+          {startDate && endDate && (
+            <p className="text-white/70 text-[10px] mt-0.5">
+              {fmt(startDate, { month: 'short', day: 'numeric' })} → {fmt(endDate, { month: 'short', day: 'numeric' })}
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-3 border-b border-border-neutral">
+        {[
+          { value: stayDays.length, label: 'Days' },
+          { value: nights, label: 'Nights' },
+          { value: stay.visits.length, label: 'Places' },
+        ].map(({ value, label }, i) => (
+          <div key={label} className={`px-3 py-2 text-center ${i < 2 ? 'border-r border-border-neutral' : ''}`}>
+            <p className="text-base font-extrabold text-slate-800">{value}</p>
+            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{label}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Accommodation */}
+      {accommodationGroups.length > 0 && (
+        <div className="px-4 py-2 border-b border-border-neutral">
+          <p className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 mb-1.5">Sleeping</p>
+          <div className="space-y-1">
+            {accommodationGroups.map((g, i) => (
+              <div key={i} className="flex items-center gap-2 px-2.5 py-1.5 bg-primary/5 rounded-lg">
+                <Hotel className="w-3 h-3 text-primary flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-bold text-slate-800 truncate">{g.name}</p>
+                  <p className="text-[9px] text-slate-400">{g.nights} {g.nights === 1 ? 'night' : 'nights'}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Notes */}
+      <div className="px-4 py-2 border-b border-border-neutral">
+        <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 mb-1.5 block">Notes</label>
+        <textarea
+          className="w-full border border-slate-200 rounded-lg px-3 py-2 text-xs focus:ring-1 focus:ring-primary focus:border-primary outline-none resize-none text-slate-700 placeholder:text-slate-300"
+          rows={3}
+          placeholder="Travel tips, booking info, things to know…"
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          onBlur={() => onUpdate({ notes: notes.trim() || undefined })}
+        />
+      </div>
+
+      {/* Links */}
+      <div className="px-4 py-2 border-b border-border-neutral">
+        <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 mb-1.5 block">Links</label>
+        <div className="space-y-1.5">
+          {links.map((link, i) => (
+            <div key={i} className="flex items-center gap-2 group">
+              <ExternalLink className="w-3 h-3 text-slate-400 flex-shrink-0" />
+              <a href={link.url} target="_blank" rel="noopener noreferrer"
+                className="flex-1 text-xs text-primary hover:underline truncate" onClick={(e) => e.stopPropagation()}>
+                {link.label || link.url}
+              </a>
+              <button
+                onClick={() => { const next = links.filter((_, idx) => idx !== i); setLinks(next); onUpdate({ links: next.length > 0 ? next : undefined }); }}
+                className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-50 text-slate-400 hover:text-red-500 transition-all"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+          ))}
+          <div className="space-y-1.5 mt-1">
+            <input
+              className="w-full border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-primary focus:border-primary outline-none"
+              placeholder="https://…"
+              value={newLinkUrl}
+              onChange={(e) => setNewLinkUrl(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addLink(); } }}
+            />
+            <div className="flex gap-1.5">
+              <input
+                className="flex-1 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-primary focus:border-primary outline-none"
+                placeholder="Label (optional)"
+                value={newLinkLabel}
+                onChange={(e) => setNewLinkLabel(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addLink(); } }}
+              />
+              <button
+                onClick={addLink}
+                disabled={!newLinkUrl.trim()}
+                className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-primary/10 text-slate-500 hover:text-primary text-xs font-bold transition-colors disabled:opacity-40"
+              >
+                Add
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* To-do */}
+      <StayTodoSection
+        key={stay.id}
+        stay={stay}
+        onUpdate={(cl) => onUpdate({ checklist: cl.length > 0 ? cl : undefined })}
+      />
+    </div>
+  );
+}
+
+// ─── Stay to-do section ───────────────────────────────────────────────────────
+function StayTodoSection({ stay, onUpdate }: {
+  stay: Stay;
+  onUpdate: (checklist: ChecklistItem[]) => void;
+}) {
+  const checklist = stay.checklist ?? [];
+  const [open, setOpen] = useState(checklist.length > 0);
+  const [inputText, setInputText] = useState('');
+  const doneCount = checklist.filter((i) => i.done).length;
+
+  const addItem = () => {
+    const text = inputText.trim();
+    if (!text) return;
+    onUpdate([...checklist, { id: `cl-${Date.now()}`, text, done: false }]);
+    setInputText('');
+  };
+
+  return (
+    <div className="border-b border-border-neutral flex-shrink-0">
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className="w-full px-4 py-2 flex items-center justify-between hover:bg-slate-50 transition-colors"
+      >
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400">To-Do</span>
+          {checklist.length > 0 && (
+            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${doneCount === checklist.length ? 'bg-emerald-50 text-emerald-600' : 'bg-primary/10 text-primary'}`}>
+              {doneCount}/{checklist.length}
+            </span>
+          )}
+        </div>
+        <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-all duration-200 ${open ? 'rotate-180' : ''}`} />
+      </button>
+      {open && (
+        <div className="px-4 pb-3 space-y-1.5">
+          {checklist.map((item) => (
+            <div key={item.id} className="flex items-center gap-2 group">
+              <input
+                type="checkbox"
+                checked={item.done}
+                onChange={() => onUpdate(checklist.map((i) => i.id === item.id ? { ...i, done: !i.done } : i))}
+                className="accent-primary w-3.5 h-3.5 flex-shrink-0 cursor-pointer"
+              />
+              <span className={`flex-1 text-xs ${item.done ? 'line-through text-slate-400' : 'text-slate-700'}`}>
+                {item.text}
+              </span>
+              <button
+                onClick={() => onUpdate(checklist.filter((i) => i.id !== item.id))}
+                className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-50 text-slate-400 hover:text-red-500 transition-all"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+          ))}
+          <div className="flex items-center gap-1.5 mt-1">
+            <input
+              className="flex-1 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-primary focus:border-primary outline-none placeholder:text-slate-400"
+              placeholder="Add to-do…"
+              value={inputText}
+              onChange={(e) => setInputText(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addItem(); } }}
+            />
+            <button
+              onClick={addItem}
+              disabled={!inputText.trim()}
+              className="p-1.5 rounded-lg bg-slate-100 hover:bg-primary/10 text-slate-500 hover:text-primary transition-colors disabled:opacity-40"
+            >
+              <Plus className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -2677,6 +3074,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
 
   // ── UI state ──────────────────────────────────────────────────────────────
   const [selectedStayId, setSelectedStayId] = useState<string>(trip.stays[0]?.id ?? '');
+  const [sidebarTab, setSidebarTab] = useState<'overview' | 'unplanned'>('unplanned');
   const [hoveredStayId, setHoveredStayId] = useState<string | null>(null);
   const [selectedVisitId, setSelectedVisitId] = useState<string | null>(null);
   const [dragState, setDragState] = useState<DragState>(null);
@@ -3450,10 +3848,10 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                                 borderColor: isSelected ? stay.color : `color-mix(in srgb, ${stay.color} 35%, transparent)`,
                                 boxShadow: isSelected ? `0 0 0 2px white, 0 0 0 4px ${stay.color}, 0 4px 12px color-mix(in srgb, ${stay.color} 25%, transparent)` : undefined,
                               }}
-                              onClick={() => setSelectedStayId(stay.id)}
+                              onClick={() => { setSelectedStayId(stay.id); setSidebarTab('overview'); }}
                               onMouseEnter={() => setHoveredStayId(stay.id)}
                               onMouseLeave={() => setHoveredStayId(null)}
-                              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedStayId(stay.id); } }}
+                              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedStayId(stay.id); setSidebarTab('overview'); } }}
                               onMouseDown={(e) => {
                                 // Only start move drag from the body (not resize handles)
                                 if ((e.target as HTMLElement).dataset.handle) return;
@@ -3572,44 +3970,64 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
 
             {/* Inventory */}
             <aside className={`border-r border-border-neutral flex flex-col bg-white transition-all duration-300 ${mapExpanded ? 'w-0 overflow-hidden opacity-0' : 'w-64 hidden md:flex'}`}>
-              {/* Stay photo banner */}
-              {selectedStay?.imageUrl && (
-                <div className="relative h-20 overflow-hidden flex-shrink-0">
-                  <img src={selectedStay.imageUrl} alt={selectedStay.name} className="w-full h-full object-cover opacity-60" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-white/80 via-white/20 to-transparent" />
-                  <p className="absolute bottom-2 left-3 text-slate-600 text-[10px] font-bold drop-shadow-sm truncate pr-3">{selectedStay.name}</p>
-                </div>
-              )}
-              <div className="px-4 py-3 border-b border-border-neutral flex justify-between items-center bg-slate-50/50 flex-shrink-0">
-                <div>
-                  <h3 className="text-[10px] font-extrabold uppercase tracking-[0.1em] text-slate-400">Unplanned</h3>
-                  {selectedStay && !selectedStay.imageUrl && <p className="text-[9px] text-primary font-semibold mt-0.5 truncate">{selectedStay.name}</p>}
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded flex items-center justify-center ${inboxVisits.length > 0 ? 'bg-primary/10 text-primary' : 'bg-emerald-50 text-emerald-600'}`}>
-                    {inboxVisits.length > 0 ? inboxVisits.length : <Check className="w-3 h-3" />}
-                  </span>
+              {/* Tab bar */}
+              <div className="flex-shrink-0 bg-slate-50 border-b border-border-neutral">
+                <div className="flex h-9">
+                  <button
+                    onClick={() => setSidebarTab('overview')}
+                    className={`flex-1 flex items-center justify-center gap-1.5 text-[11px] font-semibold whitespace-nowrap -mb-px border-b-2 transition-all duration-150 ${sidebarTab === 'overview' ? 'bg-white text-primary border-primary shadow-[0_1px_0_0_white]' : 'text-slate-400 hover:text-slate-600 border-transparent hover:bg-white/60'}`}
+                  >
+                    Overview
+                  </button>
+                  <button
+                    onClick={() => setSidebarTab('unplanned')}
+                    className={`flex-1 flex items-center justify-center gap-1.5 text-[11px] font-semibold whitespace-nowrap -mb-px border-b-2 transition-all duration-150 ${sidebarTab === 'unplanned' ? 'bg-white text-primary border-primary shadow-[0_1px_0_0_white]' : 'text-slate-400 hover:text-slate-600 border-transparent hover:bg-white/60'}`}
+                  >
+                    {inboxVisits.length > 0 ? (
+                      <>Unplanned <span className={`inline-flex items-center justify-center w-4 h-4 rounded-full text-[9px] font-bold ${sidebarTab === 'unplanned' ? 'bg-primary/15 text-primary' : 'bg-slate-200 text-slate-500'}`}>{inboxVisits.length}</span></>
+                    ) : 'Unplanned'}
+                  </button>
                   <button
                     onClick={() => setAddingToInbox(true)}
-                    className="size-8 flex items-center justify-center rounded-lg bg-primary text-white hover:bg-primary/90 transition-colors"
+                    className={`px-2.5 flex items-center justify-center border-l border-border-neutral text-slate-400 hover:text-primary hover:bg-white transition-colors ${sidebarTab === 'unplanned' ? '' : 'invisible pointer-events-none'}`}
                     aria-label="Add new place"
                   >
-                    <Plus className="w-3.5 h-3.5" />
+                    <Plus className="w-3 h-3" />
                   </button>
                 </div>
               </div>
-              <div className="flex-1 overflow-y-auto p-4 space-y-3 scroll-hide">
-                {inboxVisits.map((v) => (
-                  <DraggableInventoryCard key={v.id} visit={v} onEdit={() => setEditingVisit(v)} />
-                ))}
-                {inboxVisits.length === 0 && (
-                  <p className="text-[10px] text-slate-400 text-center py-6 leading-relaxed">
-                    {searchTerm
-                      ? 'No matching places found.'
-                      : selectedStay ? 'All places scheduled! Add more below.' : 'Click a stay to see its unplanned places'}
-                  </p>
-                )}
-              </div>
+
+              {/* Overview tab */}
+              {sidebarTab === 'overview' && selectedStay && (
+                <StayOverviewPanel
+                  key={selectedStay.id}
+                  stay={selectedStay}
+                  stayDays={stayDays}
+                  accommodationGroups={accommodationGroups}
+                  onUpdate={(updates) => updateSelectedStay((s) => ({ ...s, ...updates }))}
+                />
+              )}
+              {sidebarTab === 'overview' && !selectedStay && (
+                <div className="flex-1 flex items-center justify-center p-6">
+                  <p className="text-[10px] text-slate-400 text-center leading-relaxed">Select a stay in the timeline to see its overview.</p>
+                </div>
+              )}
+
+              {/* Unplanned tab */}
+              {sidebarTab === 'unplanned' && (
+                <div className="flex-1 overflow-y-auto p-4 space-y-3 scroll-hide">
+                  {inboxVisits.map((v) => (
+                    <DraggableInventoryCard key={v.id} visit={v} onEdit={() => setEditingVisit(v)} />
+                  ))}
+                  {inboxVisits.length === 0 && (
+                    <p className="text-[10px] text-slate-400 text-center py-6 leading-relaxed">
+                      {searchTerm
+                        ? 'No matching places found.'
+                        : selectedStay ? 'All places scheduled! Add more below.' : 'Click a stay to see its unplanned places'}
+                    </p>
+                  )}
+                </div>
+              )}
             </aside>
 
             {/* Day columns */}
@@ -4052,6 +4470,14 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                   </button>
                 </div>
               </div>
+              {/* Stay to-do */}
+              {selectedStay && (
+                <StayTodoSection
+                  key={selectedStay.id}
+                  stay={selectedStay}
+                  onUpdate={(cl) => updateSelectedStay((s) => ({ ...s, checklist: cl.length > 0 ? cl : undefined }))}
+                />
+              )}
               {/* Items */}
               <div className="flex-1 overflow-y-auto p-4 pb-safe space-y-3 scroll-hide">
                 {inboxVisits.map((v) => (
@@ -4277,11 +4703,15 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
             title="Edit Place"
             initial={editingVisit}
             onClose={() => setEditingVisit(null)}
-            onSave={({ name, type, durationHint, notes }) => {
+            onSave={({ name, type, durationHint, notes, checklist, links }) => {
               updateSelectedStay((stay) => ({
                 ...stay,
                 visits: stay.visits.map((v) =>
-                  v.id === editingVisit.id ? { ...v, name, type, durationHint: durationHint || undefined, notes } : v
+                  v.id === editingVisit.id ? {
+                    ...v, name, type, durationHint: durationHint || undefined, notes,
+                    checklist: checklist.length > 0 ? checklist : undefined,
+                    links: links.length > 0 ? links : undefined,
+                  } : v
                 ),
               }));
             }}
