@@ -1721,19 +1721,26 @@ function DraggableInventoryCard({ visit, onEdit }: { visit: VisitItem; onEdit: (
   return (
     <div
       ref={setNodeRef}
+      {...listeners}
+      {...attributes}
       style={{ transform: CSS.Translate.toString(transform), opacity: isDragging ? 0.4 : 1 }}
-      className="p-3 bg-white rounded-lg border border-slate-200 hover:border-slate-300 hover:shadow-md transition-all group select-none"
+      className="p-3 bg-white rounded-lg border border-slate-200 hover:border-slate-300 hover:shadow-md transition-all group select-none touch-none cursor-grab active:cursor-grabbing"
+      aria-label={`Drag ${visit.name} to schedule`}
     >
       <div className="flex justify-between items-start mb-1.5">
         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-tighter border ${getVisitTypeColor(visit.type)}`}>
           {getVisitLabel(visit.type)}
         </span>
         <div className="flex items-center gap-1">
-          <button onClick={onEdit} className="opacity-60 group-hover:opacity-100 transition-opacity p-2.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 focus-visible:ring-2 focus-visible:ring-primary/50" aria-label={`Edit ${visit.name}`}>
+          <button
+            onClick={(e) => { e.stopPropagation(); onEdit(); }}
+            className="opacity-60 group-hover:opacity-100 transition-opacity p-2.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 focus-visible:ring-2 focus-visible:ring-primary/50 touch-auto"
+            aria-label={`Edit ${visit.name}`}
+          >
             <Pencil className="w-3.5 h-3.5" />
           </button>
-          <div className="cursor-grab active:cursor-grabbing p-2.5 touch-none" {...listeners} {...attributes} aria-label="Drag to schedule" role="button">
-            <GripVertical className="w-4 h-4 text-slate-400 hover:text-slate-500" />
+          <div className="p-2.5 text-slate-300" aria-hidden="true">
+            <GripVertical className="w-4 h-4" />
           </div>
         </div>
       </div>
@@ -1762,8 +1769,10 @@ function SortableVisitCard({ visit, isSelected, onSelect, onEdit }: {
   return (
     <div
       ref={setNodeRef}
+      {...listeners}
+      {...attributes}
       style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.3 : 1 }}
-      className={`relative pl-[18px] pr-3.5 py-3.5 bg-white rounded-lg border transition-all group select-none ${
+      className={`relative pl-[18px] pr-3.5 py-3.5 bg-white rounded-lg border transition-all group select-none touch-none cursor-grab active:cursor-grabbing ${
         isOver
           ? 'border-primary shadow-md ring-2 ring-primary/25 bg-primary/[0.02]'
           : isSelected
@@ -1781,11 +1790,11 @@ function SortableVisitCard({ visit, isSelected, onSelect, onEdit }: {
           {visit.durationHint && <span className="text-[10px] text-slate-400 font-medium">{visit.durationHint}</span>}
         </div>
         <div className="flex items-center gap-1 flex-shrink-0 ml-1">
-          <button onClick={onEdit} className="opacity-60 group-hover:opacity-100 transition-opacity p-2.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 focus-visible:ring-2 focus-visible:ring-primary/50" aria-label={`Edit ${visit.name}`}>
+          <button onClick={(e) => { e.stopPropagation(); onEdit(); }} className="opacity-60 group-hover:opacity-100 transition-opacity p-2.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 focus-visible:ring-2 focus-visible:ring-primary/50 touch-auto" aria-label={`Edit ${visit.name}`}>
             <Pencil className="w-3.5 h-3.5" />
           </button>
-          <div className="cursor-grab active:cursor-grabbing p-2.5 touch-none" {...listeners} {...attributes} onClick={(e) => e.stopPropagation()} aria-label="Drag to reorder" role="button">
-            <GripVertical className="w-4 h-4 text-slate-300 hover:text-slate-400" />
+          <div className="p-2.5" aria-hidden="true">
+            <GripVertical className="w-4 h-4 text-slate-300" />
           </div>
         </div>
       </div>
@@ -2631,9 +2640,12 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
   const [selectedVisitId, setSelectedVisitId] = useState<string | null>(null);
   const [dragState, setDragState] = useState<DragState>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [mapExpanded, setMapExpanded] = useState(false);
-  const [mapCollapsed, setMapCollapsed] = useState(false);
-  const [mapMini, setMapMini] = useState(false);
+  const [mapExpanded, setMapExpanded] = useState(() => localStorage.getItem('itinerary-map-expanded') === '1');
+  const [mapCollapsed, setMapCollapsed] = useState(() => localStorage.getItem('itinerary-map-collapsed') === '1');
+  const [mapMini, setMapMini] = useState(() => localStorage.getItem('itinerary-map-mini') === '1');
+  useEffect(() => { localStorage.setItem('itinerary-map-expanded', mapExpanded ? '1' : '0'); }, [mapExpanded]);
+  useEffect(() => { localStorage.setItem('itinerary-map-collapsed', mapCollapsed ? '1' : '0'); }, [mapCollapsed]);
+  useEffect(() => { localStorage.setItem('itinerary-map-mini', mapMini ? '1' : '0'); }, [mapMini]);
   const [mapAnimClass, setMapAnimClass] = useState('');
   const triggerMapAnim = useCallback((cls: string) => {
     setMapAnimClass(cls);
@@ -4138,7 +4150,14 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                 for (let i = 0; i < nightCount; i++) {
                   delete updated[dayOffset + i];
                 }
-                return { ...s, nightAccommodations: Object.keys(updated).length > 0 ? updated : undefined };
+                // Also clear lodging if it matches — it's used as a fallback and must be
+                // removed too, otherwise the accommodation reappears after deletion.
+                const clearLodging = s.lodging === group.name;
+                return {
+                  ...s,
+                  lodging: clearLodging ? '' : s.lodging,
+                  nightAccommodations: Object.keys(updated).length > 0 ? updated : undefined,
+                };
               }),
             }));
           } : undefined;
