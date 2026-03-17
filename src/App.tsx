@@ -731,17 +731,26 @@ function ModalBase({ title, onClose, children, width = 'max-w-md' }: {
 }
 
 // ─── Accommodation editor modal ──────────────────────────────────────────────
-function AccommodationEditorModal({ initial, nightCount, existingNames, onClose, onSave, onRemove }: {
+function AccommodationEditorModal({ initial, allNights, initialNights, existingNames, onClose, onSave, onRemove }: {
   initial?: NightAccommodation;
-  nightCount: number;
+  allNights: { dayOffset: number; date: Date }[];
+  initialNights: number[];
   existingNames: string[];
   onClose: () => void;
-  onSave: (accom: NightAccommodation) => void;
+  onSave: (accom: NightAccommodation, selectedNights: number[]) => void;
   onRemove?: () => void;
 }) {
   const [name, setName] = useState(initial?.name ?? '');
   const [notes, setNotes] = useState(initial?.notes ?? '');
   const [cost, setCost] = useState(initial?.cost?.toString() ?? '');
+  const [selectedNights, setSelectedNights] = useState<Set<number>>(() => new Set(initialNights));
+  const toggleNight = (dayOffset: number) => {
+    setSelectedNights((prev) => {
+      const next = new Set(prev);
+      if (next.has(dayOffset)) next.delete(dayOffset); else next.add(dayOffset);
+      return next;
+    });
+  };
   const [lat, setLat] = useState<number | undefined>(initial?.lat);
   const [lng, setLng] = useState<number | undefined>(initial?.lng);
   const [searchResults, setSearchResults] = useState<PlaceSearchResult[]>([]);
@@ -777,14 +786,16 @@ function AccommodationEditorModal({ initial, nightCount, existingNames, onClose,
     setShowResults(false);
   };
 
+  const nightCount = selectedNights.size;
+
   const handleSave = () => {
-    if (!name.trim()) return;
+    if (!name.trim() || nightCount === 0) return;
     onSave({
       name: name.trim(),
       notes: notes.trim() || undefined,
       cost: cost ? parseFloat(cost) || undefined : undefined,
       lat, lng,
-    });
+    }, Array.from(selectedNights));
     onClose();
   };
 
@@ -888,6 +899,36 @@ function AccommodationEditorModal({ initial, nightCount, existingNames, onClose,
           />
         </div>
 
+        {/* Night picker */}
+        {allNights.length > 1 && (
+          <div>
+            <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-1.5 block">
+              Nights covered
+            </label>
+            <div className="space-y-0.5 border border-slate-200 rounded-lg overflow-hidden">
+              {allNights.map(({ dayOffset, date }) => (
+                <label
+                  key={dayOffset}
+                  className="flex items-center gap-2.5 px-3 py-2 hover:bg-slate-50 cursor-pointer border-b last:border-b-0 border-slate-100"
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedNights.has(dayOffset)}
+                    onChange={() => toggleNight(dayOffset)}
+                    className="accent-primary w-3.5 h-3.5 flex-shrink-0"
+                  />
+                  <span className="text-xs font-semibold text-slate-700">
+                    Night {dayOffset + 1}
+                  </span>
+                  <span className="text-[10px] text-slate-400 ml-auto">
+                    {fmt(date, { weekday: 'short', month: 'short', day: 'numeric' })}
+                  </span>
+                </label>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Actions */}
         <div className="flex items-center justify-between pt-2 border-t border-slate-100">
           {onRemove ? (
@@ -907,7 +948,7 @@ function AccommodationEditorModal({ initial, nightCount, existingNames, onClose,
             </button>
             <button
               onClick={handleSave}
-              disabled={!name.trim()}
+              disabled={!name.trim() || nightCount === 0}
               className="px-4 py-2 text-xs font-bold text-white bg-primary rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
               Save
@@ -4125,18 +4166,30 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
           const dayOffset = isGroup ? editingAccommodation.group.startDayOffset : editingAccommodation.dayOffset;
           const nightCount = group ? group.nights : 1;
           const initial = group ? group.accommodation : undefined;
+          const initialNights = Array.from({ length: nightCount }, (_, i) => dayOffset + i);
+          const allNights = stayDays.filter((d) => d.hasNight).map((d) => ({ dayOffset: d.dayOffset, date: d.date }));
 
-          const handleSave = (accom: NightAccommodation) => {
+          const handleSave = (accom: NightAccommodation, newNights: number[]) => {
             setTrip((curr) => ({
               ...curr,
               stays: curr.stays.map((s) => {
                 if (s.id !== selectedStay.id) return s;
                 const updated = { ...s.nightAccommodations };
-                // Apply to all nights in the group (or just the single night)
-                for (let i = 0; i < nightCount; i++) {
-                  updated[dayOffset + i] = accom;
+                // Remove from nights that were in the old group but not the new selection
+                for (const n of initialNights) {
+                  if (!newNights.includes(n)) delete updated[n];
                 }
-                return { ...s, nightAccommodations: updated };
+                // Apply to newly selected nights
+                for (const n of newNights) {
+                  updated[n] = accom;
+                }
+                // Clear lodging if it matches — prevents fallback re-appearing
+                const clearLodging = s.lodging === accom.name || (group && s.lodging === group.name);
+                return {
+                  ...s,
+                  lodging: clearLodging ? '' : s.lodging,
+                  nightAccommodations: Object.keys(updated).length > 0 ? updated : undefined,
+                };
               }),
             }));
           };
@@ -4150,8 +4203,6 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                 for (let i = 0; i < nightCount; i++) {
                   delete updated[dayOffset + i];
                 }
-                // Also clear lodging if it matches — it's used as a fallback and must be
-                // removed too, otherwise the accommodation reappears after deletion.
                 const clearLodging = s.lodging === group.name;
                 return {
                   ...s,
@@ -4165,7 +4216,8 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
           return (
             <AccommodationEditorModal
               initial={initial}
-              nightCount={nightCount}
+              allNights={allNights}
+              initialNights={initialNights}
               existingNames={existingAccommodationNames}
               onClose={() => setEditingAccommodation(null)}
               onSave={handleSave}
