@@ -71,6 +71,32 @@ const sanitizeForFirebase = (obj: unknown): unknown => {
   return obj;
 };
 
+/** Firebase Realtime Database converts arrays to objects with numeric keys.
+ *  This reverses that: any object whose keys are all consecutive integers 0..N
+ *  is turned back into an array, recursively. */
+const restoreArrays = (obj: unknown): unknown => {
+  if (obj === null || obj === undefined || typeof obj !== 'object') return obj;
+  if (Array.isArray(obj)) return obj.map(restoreArrays);
+
+  const record = obj as Record<string, unknown>;
+  const keys = Object.keys(record);
+
+  // Check if all keys are sequential integers starting at 0
+  const isNumericArray =
+    keys.length > 0 &&
+    keys.every((k, i) => String(i) === k);
+
+  if (isNumericArray) {
+    return keys.map((k) => restoreArrays(record[k]));
+  }
+
+  const restored: Record<string, unknown> = {};
+  for (const [key, val] of Object.entries(record)) {
+    restored[key] = restoreArrays(val);
+  }
+  return restored;
+};
+
 const formatErrorMessage = (error: unknown) => {
   if (error instanceof Error) return error.message;
   return 'Unknown cloud sync error';
@@ -96,7 +122,7 @@ export const loadItinerary = async (passcode: string): Promise<{ success: boolea
     const dbRef = ref(db);
     const snapshot = await get(child(dbRef, `itineraries/${passcode}`));
     if (snapshot.exists()) {
-      return { success: true, data: snapshot.val() };
+      return { success: true, data: restoreArrays(snapshot.val()) };
     }
     return { success: false, error: "No itinerary found with this passcode" };
   } catch (error) {
@@ -130,7 +156,7 @@ export const loadUserTripStore = async (
     const snapshot = await get(child(dbRef, `users/${uid}/tripStore`));
 
     if (snapshot.exists()) {
-      return { success: true, exists: true, data: snapshot.val() };
+      return { success: true, exists: true, data: restoreArrays(snapshot.val()) };
     }
 
     return { success: true, exists: false };

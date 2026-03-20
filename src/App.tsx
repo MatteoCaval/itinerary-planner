@@ -13,7 +13,7 @@ import {
   Moon, Navigation, Palette, Pencil, Plane, Plus,
   PlusCircle, Redo2, Search, Ship, ShoppingBag, SlidersHorizontal, Sparkles, Sunrise,
   Sun, Train, Trash2, Undo2, Upload, User, X, Layers, Hotel, UtensilsCrossed,
-  PanelRightOpen, PanelRightClose, Shrink, Expand, Eye, EyeOff, ExternalLink, Link2,
+  PanelRightOpen, PanelRightClose, Shrink, Expand, Eye, EyeOff, ExternalLink, Link2, CloudOff,
 } from 'lucide-react';
 import LegacyApp from './features/legacy/LegacyApp';
 import { searchPlace, type PlaceSearchResult } from './utils/geocoding';
@@ -22,7 +22,7 @@ import { generateMarkdown, downloadMarkdown } from './markdownExporter';
 import TripMap from './components/TripMap';
 import DayFilterPills from './components/TripMap/DayFilterPills';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import { saveUserTripStore, loadUserTripStore } from './firebase';
+import { saveUserTripStore, loadUserTripStore, loadItinerary } from './firebase';
 import { searchPhoto } from './unsplash';
 import 'leaflet/dist/leaflet.css';
 
@@ -607,6 +607,22 @@ function hybridTripToLegacy(trip: HybridTrip): LegacyStoredTrip {
   };
 }
 
+/** Ensure all array fields on a HybridTrip are actual arrays (Firebase may return objects with numeric keys). */
+function normalizeTrip(t: HybridTrip): HybridTrip {
+  const toArr = <T,>(v: T[] | Record<string, T> | undefined): T[] => {
+    if (Array.isArray(v)) return v;
+    if (v && typeof v === 'object') return Object.values(v);
+    return [];
+  };
+  return {
+    ...t,
+    stays: toArr(t.stays).map((s) => ({
+      ...s,
+      visits: toArr(s.visits),
+    })),
+  };
+}
+
 // ─── Persistence ──────────────────────────────────────────────────────────────
 function loadStore(): TripStore {
   // 1. Try legacy format (primary storage)
@@ -625,13 +641,16 @@ function loadStore(): TripStore {
   // 2. Fall back to previous hybrid key (users who already used new app)
   try {
     const raw = localStorage.getItem('itinerary-hybrid-trips-v2');
-    if (raw) return JSON.parse(raw);
+    if (raw) {
+      const parsed: TripStore = JSON.parse(raw);
+      return { ...parsed, trips: parsed.trips.map(normalizeTrip) };
+    }
   } catch { /* ignore */ }
   // 3. Oldest single-trip key
   try {
     const old = localStorage.getItem('itinerary-hybrid-v3');
     if (old) {
-      const trip: HybridTrip = JSON.parse(old);
+      const trip = normalizeTrip(JSON.parse(old));
       return { trips: [trip], activeTripId: trip.id };
     }
   } catch { /* ignore */ }
@@ -2539,11 +2558,13 @@ function AIPlannerModal({
 }
 
 // ─── Profile dropdown menu ────────────────────────────────────────────────────
-function ProfileMenu({ trip, onImport, onSwitchToLegacy, onGoHome }: {
+function ProfileMenu({ trip, onImport, onImportFromCode, onSwitchToLegacy, onGoHome, onSignOut }: {
   trip: HybridTrip;
   onImport: (data: HybridTrip) => void;
+  onImportFromCode: () => void;
   onSwitchToLegacy: () => void;
   onGoHome: () => void;
+  onSignOut: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const [showAuth, setShowAuth] = useState(false);
@@ -2654,6 +2675,12 @@ function ProfileMenu({ trip, onImport, onSwitchToLegacy, onGoHome }: {
               </div>
               Import JSON
             </button>
+            <button onClick={() => { onImportFromCode(); setOpen(false); }} className="w-full flex items-center gap-2.5 px-2 py-2 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 rounded-lg transition-colors text-left">
+              <div className="size-6 rounded-md bg-violet-50 flex items-center justify-center flex-shrink-0">
+                <Download className="w-3 h-3 text-violet-500" />
+              </div>
+              Import from code
+            </button>
           </div>
 
           {/* Navigation section */}
@@ -2676,7 +2703,7 @@ function ProfileMenu({ trip, onImport, onSwitchToLegacy, onGoHome }: {
           <div className="px-3 pb-3 pt-1 border-t border-slate-100">
             {user ? (
               <button
-                onClick={async () => { await signOutUser(); setOpen(false); }}
+                onClick={async () => { await signOutUser(); onSignOut(); setOpen(false); }}
                 className="w-full flex items-center justify-center gap-2 py-2 text-[11px] font-bold text-red-500 hover:bg-red-50 rounded-lg transition-colors"
               >
                 <LogOut className="w-3.5 h-3.5" />
@@ -2855,9 +2882,11 @@ function AuthModalSimple({ onClose }: { onClose: () => void }) {
 }
 
 // ─── Merge dialog ─────────────────────────────────────────────────────────────
-function MergeDialog({ localCount, cloudCount, onMerge, onKeepLocal, onUseCloud, onDismiss }: {
+function MergeDialog({ localCount, cloudCount, cloudTripNames, localTripNames, onMerge, onKeepLocal, onUseCloud, onDismiss }: {
   localCount: number;
   cloudCount: number;
+  cloudTripNames: string[];
+  localTripNames: string[];
   onMerge: () => void;
   onKeepLocal: () => void;
   onUseCloud: () => void;
@@ -2877,6 +2906,26 @@ function MergeDialog({ localCount, cloudCount, onMerge, onKeepLocal, onUseCloud,
               <strong className="text-slate-700">{cloudCount} cloud</strong> trips.
               What would you like to do?
             </p>
+          </div>
+        </div>
+
+        {/* Trip name lists */}
+        <div className="grid grid-cols-2 gap-2 mb-4 text-[11px]">
+          <div className="bg-slate-50 rounded-lg px-3 py-2">
+            <span className="font-bold text-slate-500 uppercase tracking-wide text-[10px]">Local</span>
+            <ul className="mt-1 space-y-0.5">
+              {localTripNames.map((name, i) => (
+                <li key={i} className="text-slate-700 truncate">{name || 'Untitled trip'}</li>
+              ))}
+            </ul>
+          </div>
+          <div className="bg-primary/5 rounded-lg px-3 py-2">
+            <span className="font-bold text-primary/60 uppercase tracking-wide text-[10px]">Cloud</span>
+            <ul className="mt-1 space-y-0.5">
+              {cloudTripNames.map((name, i) => (
+                <li key={i} className="text-slate-700 truncate">{name || 'Untitled trip'}</li>
+              ))}
+            </ul>
           </div>
         </div>
 
@@ -2910,6 +2959,132 @@ function MergeDialog({ localCount, cloudCount, onMerge, onKeepLocal, onUseCloud,
         >
           Decide later
         </button>
+      </div>
+    </div>,
+    document.body,
+  );
+}
+
+// ─── Import from code dialog ──────────────────────────────────────────────────
+function ImportFromCodeDialog({ onImport, onClose }: {
+  onImport: (trip: HybridTrip) => void;
+  onClose: () => void;
+}) {
+  const [code, setCode] = useState(() => localStorage.getItem('last-trip-passcode') ?? '');
+  const [status, setStatus] = useState<{ type: 'success' | 'error' | 'loading'; message: string } | null>(null);
+
+  const handleLoad = async () => {
+    const trimmed = code.trim();
+    if (!trimmed) {
+      setStatus({ type: 'error', message: 'Please enter a code.' });
+      return;
+    }
+
+    setStatus({ type: 'loading', message: 'Loading...' });
+    const result = await loadItinerary(trimmed);
+
+    if (!result.success || !result.data) {
+      setStatus({ type: 'error', message: result.error || 'No trip found with this code.' });
+      return;
+    }
+
+    localStorage.setItem('last-trip-passcode', trimmed);
+    const data = result.data as Record<string, unknown>;
+
+    let trip: HybridTrip;
+    try {
+      if (data.stays && data.name) {
+        // Already in HybridTrip format
+        trip = data as unknown as HybridTrip;
+      } else if (data.days && data.locations) {
+        // Legacy format — convert
+        const legacy: LegacyStoredTrip = {
+          id: crypto.randomUUID(),
+          name: `Imported (${trimmed})`,
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+          startDate: (data.startDate as string) ?? '2025-01-01',
+          endDate: (data.endDate as string) ?? '2025-01-01',
+          days: (data.days as LegacyDay[]) ?? [],
+          locations: (data.locations as LegacyLocation[]) ?? [],
+          routes: (data.routes as LegacyRoute[]) ?? [],
+          version: (data.version as string) ?? '1.0',
+        };
+        trip = legacyTripToHybrid(legacy);
+      } else {
+        setStatus({ type: 'error', message: 'Unrecognized trip format.' });
+        return;
+      }
+    } catch (e) {
+      console.error('[ImportFromCode] conversion failed:', e);
+      setStatus({ type: 'error', message: 'Failed to convert trip data.' });
+      return;
+    }
+
+    // Ensure unique ID
+    trip = normalizeTrip({ ...trip, id: crypto.randomUUID() });
+    setStatus({ type: 'success', message: `Loaded "${trip.name}"!` });
+    setTimeout(() => {
+      onImport(trip);
+      onClose();
+    }, 800);
+  };
+
+  return createPortal(
+    <div className="fixed inset-0 bg-black/30 z-[200] flex items-end sm:items-center justify-center p-4 sm:p-6" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-5">
+        <div className="flex items-start gap-3 mb-4">
+          <div className="size-9 rounded-xl bg-violet-50 flex items-center justify-center flex-shrink-0 mt-0.5">
+            <Download className="w-4 h-4 text-violet-500" />
+          </div>
+          <div>
+            <h3 className="font-extrabold text-slate-800 text-sm">Import from code</h3>
+            <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+              Enter a share code to import a trip. It will be added as a new trip.
+            </p>
+          </div>
+        </div>
+
+        <form onSubmit={(e) => { e.preventDefault(); handleLoad(); }}>
+          <input
+            type="text"
+            value={code}
+            onChange={(e) => { setCode(e.target.value.toUpperCase()); setStatus(null); }}
+            placeholder="e.g. TRIP-ABCD"
+            className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm font-mono font-bold text-center tracking-widest placeholder:tracking-normal placeholder:font-normal focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+            autoFocus
+          />
+
+          {status && (
+            <div className={`mt-3 flex items-center gap-2 text-xs px-3 py-2 rounded-lg ${
+              status.type === 'success' ? 'bg-emerald-50 text-emerald-700' :
+              status.type === 'error' ? 'bg-red-50 text-red-600' :
+              'bg-blue-50 text-blue-600'
+            }`}>
+              {status.type === 'success' ? <Check className="w-3.5 h-3.5" /> :
+               status.type === 'error' ? <AlertCircle className="w-3.5 h-3.5" /> :
+               <Search className="w-3.5 h-3.5 animate-spin" />}
+              {status.message}
+            </div>
+          )}
+
+          <div className="flex gap-2 mt-4">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 px-4 py-2.5 border border-slate-200 text-slate-600 rounded-lg text-xs font-semibold hover:bg-slate-50 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={status?.type === 'loading' || status?.type === 'success'}
+              className="flex-1 px-4 py-2.5 bg-primary text-white rounded-lg text-xs font-bold hover:bg-primary/90 transition-colors disabled:opacity-50"
+            >
+              Import
+            </button>
+          </div>
+        </form>
       </div>
     </div>,
     document.body,
@@ -3032,7 +3207,10 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
   const [store, setStore] = useState<TripStore>(() => loadStore());
   const [isDemoMode, setIsDemoMode] = useState(false);
   const [pendingMerge, setPendingMerge] = useState<{ cloudTrips: HybridTrip[]; cloudActiveTripId: string } | null>(null);
+  const [syncError, setSyncError] = useState<string | null>(null);
   const syncedUidRef = useRef<string | null>(null);
+  const storeRef = useRef(store);
+  useEffect(() => { storeRef.current = store; }, [store]);
 
   const trip = useMemo(
     () => store.trips.find((t) => t.id === store.activeTripId) ?? store.trips[0] ?? EMPTY_TRIP,
@@ -3144,6 +3322,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const mobileSearchRef = useRef<HTMLInputElement>(null);
   const [showAIPlanner, setShowAIPlanner] = useState(false);
+  const [showImportCode, setShowImportCode] = useState(false);
   const [aiSettings, setAiSettings] = useState<{ apiKey: string; model: string }>(() => {
     const saved = localStorage.getItem('chronos-ai-settings');
     return saved ? JSON.parse(saved) : { apiKey: '', model: 'gemini-2.0-flash' };
@@ -3184,26 +3363,31 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
 
     (async () => {
       const result = await loadUserTripStore(user.uid);
-      if (!result.success) return;
+      if (!result.success) {
+        setSyncError(result.error || 'Could not load your trips from the cloud. Your local trips are safe.');
+        return;
+      }
+
+      const currentStore = storeRef.current;
 
       if (!result.exists) {
         // First sign-in — upload local trips to cloud silently
-        if (store.trips.length > 0) saveUserTripStore(user.uid, store);
+        if (currentStore.trips.length > 0) saveUserTripStore(user.uid, currentStore);
         return;
       }
 
       const cloudStore = result.data as TripStore;
-      const cloudTrips: HybridTrip[] = cloudStore?.trips ?? [];
-      const localIds = new Set(store.trips.map((t) => t.id));
+      const cloudTrips: HybridTrip[] = (cloudStore?.trips ?? []).map(normalizeTrip);
+      const localIds = new Set(currentStore.trips.map((t) => t.id));
       const cloudOnlyTrips = cloudTrips.filter((t) => !localIds.has(t.id));
 
       if (cloudOnlyTrips.length === 0) {
         // No new cloud trips — push local state up
-        if (store.trips.length > 0) saveUserTripStore(user.uid, store);
+        if (currentStore.trips.length > 0) saveUserTripStore(user.uid, currentStore);
         return;
       }
 
-      if (store.trips.length === 0) {
+      if (currentStore.trips.length === 0) {
         // No local trips — simply pull cloud
         const next: TripStore = {
           trips: cloudTrips,
@@ -3443,6 +3627,16 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
     setSelectedStayId('');
   };
 
+  const handleSignOut = () => {
+    setStore({ trips: [], activeTripId: '' });
+    localStorage.removeItem(LEGACY_STORAGE_KEY);
+    setIsDemoMode(false);
+    setSelectedStayId('');
+    setPendingMerge(null);
+    setSyncError(null);
+    syncedUidRef.current = null;
+  };
+
   const handleMergeDecision = (decision: 'merge' | 'keep-local' | 'use-cloud') => {
     if (!pendingMerge || !user) { setPendingMerge(null); return; }
     const { cloudTrips, cloudActiveTripId } = pendingMerge;
@@ -3459,14 +3653,28 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
       setSelectedStayId('');
     }
 
-    setStore(next);
-    saveStore(next);
-    saveUserTripStore(user.uid, next);
+    // Dismiss modal first so it always closes even if saves fail
     setPendingMerge(null);
+    setStore(next);
+    try {
+      saveStore(next);
+    } catch (e) {
+      console.error('[MergeDecision] saveStore failed:', e);
+    }
+    saveUserTripStore(user.uid, next);
   };
 
   const handleSwitchTrip = (id: string) => {
     setStore((s) => { const next = { ...s, activeTripId: id }; saveStore(next); return next; });
+    setSelectedStayId('');
+  };
+
+  const handleImportFromCode = (importedTrip: HybridTrip) => {
+    setStore((s) => {
+      const next = { trips: [...s.trips, importedTrip], activeTripId: importedTrip.id };
+      saveStore(next);
+      return next;
+    });
     setSelectedStayId('');
   };
 
@@ -3681,9 +3889,23 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
               <span className="hidden sm:block">AI</span>
             </button>
             {/* Profile menu */}
-            <ProfileMenu trip={trip} onImport={(data) => setTrip(() => data)} onSwitchToLegacy={onSwitchToLegacy} onGoHome={handleGoHome} />
+            <ProfileMenu trip={trip} onImport={(data) => setTrip(() => data)} onImportFromCode={() => setShowImportCode(true)} onSwitchToLegacy={onSwitchToLegacy} onGoHome={handleGoHome} onSignOut={handleSignOut} />
           </div>
         </header>
+
+        {/* ── Sync error banner ── */}
+        {syncError && (
+          <div className="flex items-center gap-2 px-4 py-2 bg-red-50 border-b border-red-100 text-xs text-red-700 flex-shrink-0 z-40">
+            <CloudOff className="w-3.5 h-3.5 flex-shrink-0" />
+            <span className="flex-1">{syncError}</span>
+            <button
+              onClick={() => setSyncError(null)}
+              className="p-0.5 hover:bg-red-100 rounded transition-colors"
+            >
+              <X className="w-3 h-3" />
+            </button>
+          </div>
+        )}
 
         <main className="flex-1 flex flex-col min-h-0 isolate">
 
@@ -4796,10 +5018,19 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
           <MergeDialog
             localCount={store.trips.length}
             cloudCount={pendingMerge.cloudTrips.length}
+            localTripNames={store.trips.map((t) => t.name)}
+            cloudTripNames={pendingMerge.cloudTrips.map((t) => t.name)}
             onMerge={() => handleMergeDecision('merge')}
             onKeepLocal={() => handleMergeDecision('keep-local')}
             onUseCloud={() => handleMergeDecision('use-cloud')}
             onDismiss={() => setPendingMerge(null)}
+          />
+        )}
+
+        {showImportCode && (
+          <ImportFromCodeDialog
+            onImport={handleImportFromCode}
+            onClose={() => setShowImportCode(false)}
           />
         )}
       </div>
