@@ -2725,9 +2725,10 @@ function ProfileMenu({ trip, onImport, onImportFromCode, onSwitchToLegacy, onGoH
   };
 
   const handleExportMarkdown = () => {
-    const legacy = hybridTripToLegacy(trip);
-    const endDate = addDaysTo(new Date(trip.startDate), trip.totalDays - 1).toISOString().split('T')[0];
-    const md = generateMarkdown(legacy.days, legacy.locations as unknown as import('./types').Location[], legacy.routes, trip.startDate, endDate);
+    const start = trip.startDate || new Date().toISOString().split('T')[0];
+    const legacy = hybridTripToLegacy({ ...trip, startDate: start });
+    const endDate = addDaysTo(new Date(start), trip.totalDays - 1).toISOString().split('T')[0];
+    const md = generateMarkdown(legacy.days, legacy.locations as unknown as import('./types').Location[], legacy.routes, start, endDate);
     downloadMarkdown(md, `${trip.name.toLowerCase().replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.md`);
     setOpen(false);
   };
@@ -2743,7 +2744,13 @@ function ProfileMenu({ trip, onImport, onImportFromCode, onSwitchToLegacy, onGoH
           alert('Invalid trip file — expected a Chronos trip JSON with "name" and "stays".');
           return;
         }
-        onImport(parsed as HybridTrip);
+        const imported = normalizeTrip({
+          ...parsed,
+          id: parsed.id || `trip-${Date.now()}`,
+          startDate: parsed.startDate || '',
+          totalDays: parsed.totalDays || 1,
+        } as HybridTrip);
+        onImport(imported);
       } catch {
         alert('Error reading file. Please ensure it is valid JSON.');
       }
