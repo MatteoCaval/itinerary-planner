@@ -49,7 +49,7 @@ interface TripMapProps {
   onSelectVisit: (id: string | null) => void;
   expanded: boolean;
   stay: Stay | null;
-  mode: 'overview' | 'detail';
+  mode: 'overview' | 'stay' | 'detail';
   overviewStays?: OverviewStay[];
   onSelectStay?: (stayId: string) => void;
   selectedDayOffset?: number | null;
@@ -81,6 +81,18 @@ export default function TripMap({
 
   const accommodations = useMemo(() => {
     if (mode === 'overview' || !stay?.nightAccommodations) return [];
+    if (mode === 'stay') {
+      // In stay mode, show all accommodations (no day filter)
+      return Object.entries(stay.nightAccommodations)
+        .filter(([, acc]) => acc.lat != null && acc.lng != null)
+        .map(([offset, acc]) => ({
+          id: `accom-${stay.id}-${offset}`,
+          name: acc.name,
+          lat: acc.lat!,
+          lng: acc.lng!,
+          notes: acc.notes,
+        }));
+    }
     return Object.entries(stay.nightAccommodations)
       .filter(([, acc]) => acc.lat != null && acc.lng != null)
       .filter(([offset]) => {
@@ -166,11 +178,14 @@ export default function TripMap({
               </Marker>
             ))}
 
-            <RouteSegments
-              visits={visits}
-              accommodation={primaryAccommodation}
-              showArrows={showArrows}
-            />
+            {/* Only show route lines in detail mode (specific day selected) */}
+            {mode === 'detail' && (
+              <RouteSegments
+                visits={visits}
+                accommodation={primaryAccommodation}
+                showArrows={showArrows}
+              />
+            )}
 
             <SelectedVisitHandler selectedVisitId={selectedVisitId} visits={visits} />
             <MapClickHandler onDeselect={() => onSelectVisit(null)} />

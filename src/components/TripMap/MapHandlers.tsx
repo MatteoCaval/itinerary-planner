@@ -9,9 +9,9 @@ interface FitMapProps {
 function fitPoints(map: ReturnType<typeof useMap>, pts: [number, number][], animate = true) {
   if (!pts.length) return;
   if (pts.length === 1) {
-    map.setView(pts[0], 13, { animate });
+    map.setView(pts[0], 15, { animate });
   } else {
-    map.fitBounds(pts, { padding: [40, 40], animate });
+    map.fitBounds(pts, { padding: [50, 50], maxZoom: 16, animate });
   }
 }
 

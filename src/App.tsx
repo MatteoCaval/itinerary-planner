@@ -3437,7 +3437,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
     window.addEventListener('mousemove', onMove);
     window.addEventListener('mouseup', onUp);
   }, [mapWidth]);
-  const [mapMode, setMapMode] = useState<'overview' | 'detail'>('overview');
+  const [mapMode, setMapMode] = useState<'overview' | 'stay' | 'detail'>('overview');
   const [mapDayFilter, setMapDayFilter] = useState<number | null>(null);
   const [zoomDays, setZoomDays] = useState(() => {
     const saved = localStorage.getItem('itinerary-timeline-zoom');
@@ -3493,7 +3493,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
     return () => window.removeEventListener('keydown', handler);
   }, [hist, updateTrip]);
 
-  useEffect(() => { setMapDayFilter(null); setMapMode('overview'); }, [selectedStayId]);
+  useEffect(() => { setMapDayFilter(null); setMapMode(selectedStayId ? 'stay' : 'overview'); }, [selectedStayId]);
 
 
   // ── Cloud sync: load on login ─────────────────────────────────────────────
@@ -3597,11 +3597,11 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
   const mapVisits = useMemo(() => {
     if (!selectedStay) return [];
     let scheduled = selectedStay.visits.filter((v) => v.dayOffset !== null && v.dayPart !== null);
-    if (mapDayFilter !== null) {
+    if (mapMode === 'detail' && mapDayFilter !== null) {
       scheduled = scheduled.filter((v) => v.dayOffset === mapDayFilter);
     }
     return sortVisits(scheduled);
-  }, [selectedStay, mapDayFilter]);
+  }, [selectedStay, mapDayFilter, mapMode]);
 
   // ── Timeline drag ─────────────────────────────────────────────────────────
   useEffect(() => {
@@ -4435,7 +4435,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                     <div
                       className="flex items-center justify-between cursor-pointer group"
                       onClick={() => {
-                        if (mapDayFilter === day.dayOffset) { setMapDayFilter(null); setMapMode('overview'); }
+                        if (mapDayFilter === day.dayOffset) { setMapDayFilter(null); setMapMode('stay'); }
                         else { setMapDayFilter(day.dayOffset); setMapMode('detail'); }
                       }}
                     >
@@ -4586,17 +4586,17 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                   </div>
                   {!mapMini && (
                     <span className="text-[10px] font-extrabold text-slate-600 tracking-tight uppercase">
-                      {mapMode === 'overview' ? 'Overview' : 'Detail'}
+                      {mapMode === 'overview' ? 'Overview' : mapMode === 'stay' ? 'All spots' : 'Day route'}
                     </span>
                   )}
                 </div>
                 {/* Middle: day filter pills — scrollable, only in detail mode */}
                 <div className="flex-1 overflow-x-auto scroll-hide min-w-0">
-                  {!mapMini && mapMode === 'detail' && dayFilterOptions.length >= 2 && (
+                  {!mapMini && (mapMode === 'stay' || mapMode === 'detail') && dayFilterOptions.length >= 2 && (
                     <DayFilterPills
                       options={dayFilterOptions}
                       selectedDayOffset={mapDayFilter}
-                      onChange={(d) => { setMapDayFilter(d); setMapMode(d !== null ? 'detail' : 'overview'); }}
+                      onChange={(d) => { setMapDayFilter(d); setMapMode(d !== null ? 'detail' : 'stay'); }}
                     />
                   )}
                 </div>
@@ -4604,8 +4604,11 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                 <div className="flex items-center gap-0.5 flex-shrink-0">
                   {!mapMini && (
                     <button
-                      aria-label={mapMode === 'overview' ? 'Show stay detail' : 'Show trip overview'}
-                      onClick={() => { setMapMode(m => m === 'overview' ? 'detail' : 'overview'); if (mapMode === 'detail') setMapDayFilter(null); }}
+                      aria-label={mapMode === 'overview' ? 'Show stay spots' : 'Show trip overview'}
+                      onClick={() => {
+                        if (mapMode === 'overview') { setMapMode('stay'); }
+                        else { setMapMode('overview'); setMapDayFilter(null); }
+                      }}
                       className={`p-1.5 rounded-lg transition-colors focus-visible:ring-2 focus-visible:ring-primary/50 ${
                         mapMode === 'overview'
                           ? 'text-primary bg-primary/10'
@@ -4645,16 +4648,16 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
               </div>
 
               <div className="flex-1 overflow-hidden relative">
-                {(mapMode === 'overview' || mapVisits.length > 0 || mapDayFilter !== null) ? (
+                {(mapMode === 'overview' || mapMode === 'stay' || mapVisits.length > 0 || mapDayFilter !== null) ? (
                   <TripMap
-                    visits={mapMode === 'detail' ? mapVisits : []}
-                    selectedVisitId={mapMode === 'detail' ? selectedVisitId : null}
+                    visits={mapMode !== 'overview' ? mapVisits : []}
+                    selectedVisitId={mapMode !== 'overview' ? selectedVisitId : null}
                     onSelectVisit={(id) => setSelectedVisitId(id)}
                     expanded={mapExpanded}
-                    stay={mapMode === 'detail' ? selectedStay : null}
+                    stay={mapMode !== 'overview' ? selectedStay : null}
                     mode={mapMode}
                     overviewStays={overviewStays}
-                    onSelectStay={(stayId) => { setSelectedStayId(stayId); setMapMode('detail'); }}
+                    onSelectStay={(stayId) => { setSelectedStayId(stayId); }}
                     selectedDayOffset={mapDayFilter}
                     highlightedStayId={mapMode === 'overview' ? hoveredStayId : null}
                   />
