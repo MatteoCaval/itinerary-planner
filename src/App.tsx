@@ -8,7 +8,7 @@ import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } 
 import { CSS } from '@dnd-kit/utilities';
 import {
   AlertCircle, ArrowLeftRight, Bed, Bus, Calendar, Car, Check,
-  ChevronDown, Compass, Database, Download, Footprints,
+  ChevronDown, ChevronLeft, ChevronRight, Compass, Database, Download, Footprints,
   GripVertical, History, Landmark, Lock, LogIn, LogOut, Mail, MapPin, Maximize2, Minimize2,
   Moon, Navigation, Palette, Pencil, Plane, Plus,
   PlusCircle, Redo2, Search, Ship, ShoppingBag, SlidersHorizontal, Sparkles, Sunrise,
@@ -1665,6 +1665,149 @@ function VisitFormModal({ initial, title, onClose, onSave, onDelete, onUnschedul
   );
 }
 
+// ─── Inline date range picker ─────────────────────────────────────────────────
+const CALENDAR_DAYS = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
+const CALENDAR_MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+function toDateStr(y: number, m: number, d: number) {
+  return `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+}
+
+function InlineDateRangePicker({ startDate, endDate, onChange }: {
+  startDate: string;
+  endDate: string;
+  onChange: (start: string, end: string) => void;
+}) {
+  const today = new Date();
+  const todayStr = toDateStr(today.getFullYear(), today.getMonth(), today.getDate());
+  const initDate = startDate ? new Date(startDate + 'T12:00:00') : today;
+
+  const [viewYear, setViewYear] = useState(initDate.getFullYear());
+  const [viewMonth, setViewMonth] = useState(initDate.getMonth());
+  const [selecting, setSelecting] = useState<'start' | 'end'>(startDate ? 'end' : 'start');
+  const [hovered, setHovered] = useState<string | null>(null);
+
+  const prevMonth = () => {
+    if (viewMonth === 0) { setViewMonth(11); setViewYear((y) => y - 1); }
+    else setViewMonth((m) => m - 1);
+  };
+  const nextMonth = () => {
+    if (viewMonth === 11) { setViewMonth(0); setViewYear((y) => y + 1); }
+    else setViewMonth((m) => m + 1);
+  };
+
+  const handleDayClick = (dateStr: string) => {
+    if (selecting === 'start') {
+      onChange(dateStr, endDate && endDate >= dateStr ? endDate : '');
+      setSelecting('end');
+    } else {
+      if (dateStr < startDate) {
+        onChange(dateStr, '');
+        setSelecting('end');
+      } else {
+        onChange(startDate, dateStr);
+        setSelecting('start');
+      }
+    }
+  };
+
+  const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+  const firstDow = (() => { const d = new Date(viewYear, viewMonth, 1).getDay(); return d === 0 ? 6 : d - 1; })();
+  const rangeEnd = selecting === 'end' && hovered ? hovered : endDate;
+
+  return (
+    <div>
+      {/* Month navigation */}
+      <div className="flex items-center justify-between mb-2">
+        <button type="button" onClick={prevMonth} className="p-1 rounded-md hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors">
+          <ChevronLeft className="w-3.5 h-3.5" />
+        </button>
+        <span className="text-xs font-bold text-slate-700">{CALENDAR_MONTHS[viewMonth]} {viewYear}</span>
+        <button type="button" onClick={nextMonth} className="p-1 rounded-md hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors">
+          <ChevronRight className="w-3.5 h-3.5" />
+        </button>
+      </div>
+
+      {/* Hint */}
+      <p className="text-[10px] text-slate-400 text-center mb-2">
+        {selecting === 'start' ? 'Click to set start date' : 'Click to set end date'}
+      </p>
+
+      {/* Day-of-week headers */}
+      <div className="grid grid-cols-7 gap-px mb-1">
+        {CALENDAR_DAYS.map((d) => (
+          <div key={d} className="text-center text-[9px] font-bold text-slate-400 uppercase py-1">{d}</div>
+        ))}
+      </div>
+
+      {/* Days grid */}
+      <div className="grid grid-cols-7 gap-px">
+        {Array.from({ length: firstDow }, (_, i) => <div key={`e${i}`} />)}
+        {Array.from({ length: daysInMonth }, (_, i) => {
+          const d = i + 1;
+          const dateStr = toDateStr(viewYear, viewMonth, d);
+          const isStart = dateStr === startDate;
+          const isEnd = dateStr === endDate;
+          const inRange = startDate && rangeEnd && dateStr > startDate && dateStr < rangeEnd;
+          const isHoverEnd = selecting === 'end' && hovered === dateStr && !isEnd && dateStr >= startDate;
+          const isToday = dateStr === todayStr;
+
+          let bg = '';
+          let text = 'text-slate-700';
+          let font = 'font-normal';
+          let rounded = 'rounded-md';
+          let opacity = '';
+
+          if (isStart || isEnd) {
+            bg = 'bg-primary'; text = 'text-white'; font = 'font-bold';
+          } else if (isHoverEnd) {
+            bg = 'bg-primary'; text = 'text-white'; font = 'font-bold'; opacity = 'opacity-60';
+          } else if (inRange) {
+            bg = 'bg-primary/10'; text = 'text-primary'; rounded = 'rounded-none';
+          }
+
+          if (isStart && (endDate || isHoverEnd || inRange)) rounded = 'rounded-l-md rounded-r-none';
+          if ((isEnd || isHoverEnd) && (startDate || inRange)) rounded = 'rounded-r-md rounded-l-none';
+
+          return (
+            <div
+              key={dateStr}
+              onClick={() => handleDayClick(dateStr)}
+              onMouseEnter={() => selecting === 'end' && setHovered(dateStr)}
+              onMouseLeave={() => setHovered(null)}
+              className={`flex items-center justify-center h-7 text-[11px] cursor-pointer transition-colors ${bg} ${text} ${font} ${rounded} ${opacity} ${
+                !bg && 'hover:bg-slate-100'
+              } ${isToday && !isStart && !isEnd ? 'ring-1 ring-primary ring-inset' : ''}`}
+            >
+              {d}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Selection summary */}
+      {(startDate || endDate) && (
+        <div className="flex items-center justify-between mt-3 pt-2 border-t border-slate-100">
+          <span className="text-[10px] text-slate-500">
+            {startDate && endDate
+              ? `${fmt(new Date(startDate + 'T12:00:00'), { month: 'short', day: 'numeric' })} → ${fmt(new Date(endDate + 'T12:00:00'), { month: 'short', day: 'numeric' })}`
+              : startDate
+                ? `${fmt(new Date(startDate + 'T12:00:00'), { month: 'short', day: 'numeric' })} → pick end`
+                : ''}
+          </span>
+          <button
+            type="button"
+            onClick={() => { onChange('', ''); setSelecting('start'); }}
+            className="text-[10px] font-bold text-red-400 hover:text-red-600 transition-colors"
+          >
+            Clear
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Trip editor modal ────────────────────────────────────────────────────────
 function TripEditorModal({ trip, onClose, onSave, onDelete }: {
   trip: HybridTrip; onClose: () => void;
@@ -1674,17 +1817,18 @@ function TripEditorModal({ trip, onClose, onSave, onDelete }: {
   const [name, setName] = useState(trip.name);
   const [startDate, setStartDate] = useState(trip.startDate);
   const [totalDays, setTotalDays] = useState(trip.totalDays);
-  const [dateMode, setDateMode] = useState<'duration' | 'endDate'>('duration');
   const [confirmDelete, setConfirmDelete] = useState(false);
 
-  const endDateStr = startDate
+  const endDateStr = startDate && totalDays > 0
     ? addDaysTo(new Date(startDate), totalDays - 1).toISOString().split('T')[0]
     : '';
 
-  const handleEndDateChange = (end: string) => {
-    if (!startDate || !end) return;
-    const diff = Math.round((new Date(end).getTime() - new Date(startDate).getTime()) / 86400000) + 1;
-    if (diff >= 1) setTotalDays(diff);
+  const handleDateChange = (start: string, end: string) => {
+    setStartDate(start);
+    if (start && end) {
+      const diff = Math.round((new Date(end).getTime() - new Date(start).getTime()) / 86400000) + 1;
+      if (diff >= 1) setTotalDays(diff);
+    }
   };
 
   const inputClass = 'w-full border border-slate-200 rounded-lg px-3 py-2 text-xs focus:ring-1 focus:ring-primary focus:border-primary outline-none';
@@ -1702,57 +1846,15 @@ function TripEditorModal({ trip, onClose, onSave, onDelete }: {
           />
         </div>
 
-        {/* Date mode toggle */}
+        {/* Date range picker */}
         <div>
           <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 block">Dates</label>
-          <div className="flex bg-slate-100 rounded-lg p-0.5 mb-3">
-            <button
-              onClick={() => setDateMode('duration')}
-              className={`flex-1 py-1.5 text-[10px] font-bold rounded-md transition-colors ${dateMode === 'duration' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-            >
-              Start + Days
-            </button>
-            <button
-              onClick={() => setDateMode('endDate')}
-              className={`flex-1 py-1.5 text-[10px] font-bold rounded-md transition-colors ${dateMode === 'endDate' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-            >
-              Start + End Date
-            </button>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-[9px] font-bold uppercase tracking-wider text-slate-400 mb-1 block">Start</label>
-              <input
-                type="date"
-                className={inputClass}
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-              />
-            </div>
-            {dateMode === 'duration' ? (
-              <div>
-                <label className="text-[9px] font-bold uppercase tracking-wider text-slate-400 mb-1 block">Days</label>
-                <input
-                  type="number"
-                  min={1} max={60}
-                  className={inputClass}
-                  value={totalDays}
-                  onChange={(e) => setTotalDays(Math.max(1, parseInt(e.target.value) || 1))}
-                />
-              </div>
-            ) : (
-              <div>
-                <label className="text-[9px] font-bold uppercase tracking-wider text-slate-400 mb-1 block">End</label>
-                <input
-                  type="date"
-                  className={inputClass}
-                  value={endDateStr}
-                  min={startDate}
-                  onChange={(e) => handleEndDateChange(e.target.value)}
-                />
-              </div>
-            )}
+          <div className="border border-slate-200 rounded-xl p-3">
+            <InlineDateRangePicker
+              startDate={startDate}
+              endDate={endDateStr}
+              onChange={handleDateChange}
+            />
           </div>
         </div>
 
@@ -1790,7 +1892,8 @@ function TripEditorModal({ trip, onClose, onSave, onDelete }: {
             </button>
             <button
               onClick={() => { onSave({ name, startDate, totalDays }); onClose(); }}
-              className="flex-1 py-2 bg-primary text-white rounded-lg text-xs font-bold hover:bg-primary/90 transition-colors"
+              disabled={!startDate || totalDays < 1}
+              className="flex-1 py-2 bg-primary text-white rounded-lg text-xs font-bold hover:bg-primary/90 transition-colors disabled:opacity-40"
             >
               Save
             </button>
@@ -3629,8 +3732,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
 
   // ── Trip management ───────────────────────────────────────────────────────
   const handleNewTrip = () => {
-    const tomorrow = addDaysTo(new Date(), 1).toISOString().split('T')[0];
-    const sample = { ...createSampleTrip(), id: `trip-${Date.now()}`, name: 'New Trip', stays: [], startDate: tomorrow };
+    const sample: HybridTrip = { id: `trip-${Date.now()}`, name: 'New Trip', stays: [], startDate: '', totalDays: 7 };
     setStore((s) => {
       const next = { trips: [...s.trips, sample], activeTripId: sample.id };
       saveStore(next);
