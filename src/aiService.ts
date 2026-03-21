@@ -276,67 +276,97 @@ export const generateHybridItinerary = async (
   prompt: string,
   settings: AISettings,
   totalDays: number,
+  startDate: string,
+  tripName: string,
   mode: 'scratch' | 'refine',
-  currentStays?: Array<{ name: string; startSlot: number; endSlot: number }>,
+  currentStays?: Array<{ name: string; startSlot: number; endSlot: number; visits: Array<{ name: string; dayOffset: number | null; dayPart: string | null }> }>,
 ): Promise<AIHybridResult> => {
   const selectedModel = settings.model?.trim() || DEFAULT_AI_MODEL;
   const totalSlots = totalDays * 3;
 
   const systemPrompt = `You are a professional travel planner. Generate a trip itinerary for a Gantt-style timeline app.
 
+TRIP CONTEXT:
+- Trip name: "${tripName}"
+- Start date: ${startDate}
+- Duration: ${totalDays} days (${totalSlots} slots total)
+
 TIMELINE MODEL:
-- Trip has ${totalDays} days total (${totalSlots} slots).
-- Each day has 3 slots in order: morning, afternoon, evening.
-- Global slot index formula: slot = day_index * 3 + part (morning=0, afternoon=1, evening=2).
-  Example: day 0 morning = slot 0, day 0 evening = slot 2, day 1 morning = slot 3.
-- Stays must fit within 0..${totalSlots} and must NOT overlap.
-- A stay typically starts at day_N * 3 (morning) and ends at (day_N + nights) * 3.
+- Each day has exactly 3 slots: morning (index 0), afternoon (index 1), evening (index 2).
+- Global slot formula: slot = day_index * 3 + part_index.
+  Example: day 0 morning = slot 0, day 0 evening = slot 2, day 1 morning = slot 3, day 2 afternoon = slot 7.
+- Stays are destination blocks that span a range of slots. They must fit within 0..${totalSlots} and must NOT overlap.
+- A stay covering N days starts at day_X * 3 and ends at (day_X + N) * 3.
+- Every slot across all ${totalDays} days MUST be covered by exactly one stay. No gaps between stays.
 
-VISITS are activities within a stay:
-- dayOffset: 0-based day index within the stay (0 = first day of stay, 1 = second day, etc.)
-- dayPart: "morning" | "afternoon" | "evening"
-- Multiple visits can share the same dayOffset + dayPart (they stack in that slot).
+STAYS represent destinations (cities/regions). Each stay has:
+- name: The destination name (city, region, etc.)
+- startSlot / endSlot: The slot range on the timeline
+- centerLat / centerLng: Geographic center coordinates (must be accurate)
+- lodging: Primary hotel/accommodation name (can be empty)
+- nightAccommodations: Per-night accommodation details (see schema below)
+- travelModeToNext: How to reach the next destination
+- visits: Activities and places to visit within this stay
 
-${mode === 'refine' && currentStays?.length ? `EXISTING STAYS (refine these or fill gaps):
+VISITS are activities/places within a stay:
+- dayOffset: 0-based day index within the stay (0 = first day of stay). Use null for unscheduled/wishlist items.
+- dayPart: "morning" | "afternoon" | "evening". Use null for unscheduled items.
+- Each scheduled visit must have both dayOffset and dayPart set.
+- Multiple visits can share the same dayOffset + dayPart — they stack in that time slot.
+- Aim for 2-4 visits per day, spread across morning/afternoon/evening.
+- Include a mix of types: landmarks, museums, food spots, walks, shopping.
+- The "area" field should be the neighborhood or district name.
+
+NIGHT ACCOMMODATIONS:
+- nightAccommodations is an object keyed by dayOffset (0-based within stay).
+- Each entry has: name, lat, lng (optional), cost (optional), notes (optional), link (optional).
+- Include accommodation for each night the traveler sleeps in that stay.
+- The last day of a stay typically doesn't need accommodation (they travel to next destination).
+
+${mode === 'refine' && currentStays?.length ? `EXISTING STAYS (refine, improve, or fill gaps — keep what works):
 ${JSON.stringify(currentStays, null, 2)}` : ''}
 
 Pick stay colors from this palette (cycle through): ${STAY_COLORS.join(', ')}
 
-Return ONLY valid JSON (no markdown, no prose):
+Return ONLY valid JSON (no markdown, no code fences, no prose outside JSON):
 {
-  "explanation": "2-3 sentence summary of the plan",
+  "explanation": "2-3 sentence summary of the plan and key highlights",
   "stays": [
     {
       "name": "City Name",
       "color": "#2167d7",
       "startSlot": 0,
-      "endSlot": 12,
+      "endSlot": 9,
       "centerLat": 35.6762,
       "centerLng": 139.6503,
-      "lodging": "Hotel name or empty string",
+      "lodging": "Hotel Name",
+      "nightAccommodations": {
+        "0": { "name": "Hotel Name", "lat": 35.68, "lng": 139.69 },
+        "1": { "name": "Hotel Name", "lat": 35.68, "lng": 139.69 }
+      },
       "travelModeToNext": "train",
       "travelDurationToNext": "2h 30m",
-      "travelNotesToNext": "Optional notes",
+      "travelNotesToNext": "Shinkansen from Tokyo Station",
       "visits": [
         {
           "id": "v1",
           "name": "Activity Name",
           "type": "landmark",
-          "area": "Neighborhood",
+          "area": "Neighborhood Name",
           "lat": 35.7148,
           "lng": 139.7967,
           "dayOffset": 0,
           "dayPart": "morning",
           "order": 0,
           "durationHint": "2h",
-          "notes": "Brief description"
+          "notes": "Brief useful description or tip"
         }
       ]
     }
   ]
 }
 
-Valid types: area, landmark, museum, food, walk, hotel
+Valid visit types: landmark, museum, food, walk, shopping, area
 Valid travelModeToNext: train, flight, drive, ferry, bus, walk
 Valid dayPart: morning, afternoon, evening`;
 

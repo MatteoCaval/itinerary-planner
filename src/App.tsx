@@ -669,24 +669,41 @@ function saveStore(store: TripStore) {
 type HistorySnapshot = { trip: HybridTrip; timestamp: number };
 
 function useHistory(initial: HybridTrip) {
-  const [snapshots, setSnapshots] = useState<HistorySnapshot[]>([{ trip: initial, timestamp: Date.now() }]);
-  const [idx, setIdx] = useState(0);
+  const stateRef = useRef({
+    snapshots: [{ trip: initial, timestamp: Date.now() }] as HistorySnapshot[],
+    idx: 0,
+  });
+  const [, forceRender] = useState(0);
+  const rerender = useCallback(() => forceRender((n) => n + 1), []);
 
   const push = useCallback((next: HybridTrip) => {
-    setSnapshots((prev) => [...prev.slice(0, idx + 1), { trip: next, timestamp: Date.now() }].slice(-50));
-    setIdx((i) => Math.min(i + 1, 49));
-  }, [idx]);
+    const s = stateRef.current;
+    const sliced = [...s.snapshots.slice(0, s.idx + 1), { trip: next, timestamp: Date.now() }].slice(-50);
+    stateRef.current = { snapshots: sliced, idx: Math.min(s.idx + 1, 49) };
+    rerender();
+  }, [rerender]);
 
   const undo = useCallback(() => {
-    if (idx > 0) { setIdx((i) => i - 1); return snapshots[idx - 1].trip; }
+    const s = stateRef.current;
+    if (s.idx > 0) {
+      stateRef.current = { ...s, idx: s.idx - 1 };
+      rerender();
+      return s.snapshots[s.idx - 1].trip;
+    }
     return null;
-  }, [idx, snapshots]);
+  }, [rerender]);
 
   const redo = useCallback(() => {
-    if (idx < snapshots.length - 1) { setIdx((i) => i + 1); return snapshots[idx + 1].trip; }
+    const s = stateRef.current;
+    if (s.idx < s.snapshots.length - 1) {
+      stateRef.current = { ...s, idx: s.idx + 1 };
+      rerender();
+      return s.snapshots[s.idx + 1].trip;
+    }
     return null;
-  }, [idx, snapshots]);
+  }, [rerender]);
 
+  const { idx, snapshots } = stateRef.current;
   return {
     push, undo, redo,
     canUndo: idx > 0, canRedo: idx < snapshots.length - 1,
@@ -2347,36 +2364,51 @@ function AIPlannerModal({
     try {
       const result = await generateHybridItinerary(
         prompt, { apiKey: settings.apiKey, model: settings.model },
-        trip.totalDays, mode,
-        mode === 'refine' ? trip.stays.map((s) => ({ name: s.name, startSlot: s.startSlot, endSlot: s.endSlot })) : undefined,
+        trip.totalDays, trip.startDate, trip.name, mode,
+        mode === 'refine' ? trip.stays.map((s) => ({
+          name: s.name, startSlot: s.startSlot, endSlot: s.endSlot,
+          visits: s.visits.map((v) => ({ name: v.name, dayOffset: v.dayOffset, dayPart: v.dayPart })),
+        })) : undefined,
       );
       // Map AI output → app Stay type
-      const newStays: Stay[] = (result.stays as AIHybridStay[]).map((s, i) => ({
-        id: `ai-stay-${Date.now()}-${i}`,
-        name: s.name,
-        color: s.color,
-        startSlot: s.startSlot,
-        endSlot: s.endSlot,
-        centerLat: s.centerLat,
-        centerLng: s.centerLng,
-        lodging: s.lodging ?? '',
-        travelModeToNext: s.travelModeToNext ?? 'train',
-        travelDurationToNext: s.travelDurationToNext,
-        travelNotesToNext: s.travelNotesToNext,
-        visits: (s.visits ?? []).map((v, vi) => ({
-          id: `ai-visit-${Date.now()}-${i}-${vi}`,
-          name: v.name,
-          type: v.type ?? 'landmark',
-          area: v.area ?? '',
-          lat: v.lat,
-          lng: v.lng,
-          dayOffset: v.dayOffset ?? 0,
-          dayPart: v.dayPart ?? 'morning',
-          order: v.order ?? vi,
-          durationHint: v.durationHint,
-          notes: v.notes,
-        })),
-      }));
+      const newStays: Stay[] = (result.stays as AIHybridStay[]).map((s, i) => {
+        // Parse nightAccommodations from AI response
+        const rawAccom = (s as unknown as Record<string, unknown>).nightAccommodations as
+          Record<string, { name: string; lat?: number; lng?: number; cost?: number; notes?: string; link?: string }> | undefined;
+        const nightAccommodations: Record<number, NightAccommodation> | undefined = rawAccom
+          ? Object.fromEntries(
+              Object.entries(rawAccom).map(([k, v]) => [Number(k), { name: v.name, lat: v.lat, lng: v.lng, cost: v.cost, notes: v.notes, link: v.link }]),
+            )
+          : undefined;
+
+        return {
+          id: `ai-stay-${Date.now()}-${i}`,
+          name: s.name,
+          color: s.color,
+          startSlot: s.startSlot,
+          endSlot: s.endSlot,
+          centerLat: s.centerLat,
+          centerLng: s.centerLng,
+          lodging: s.lodging ?? '',
+          nightAccommodations: nightAccommodations && Object.keys(nightAccommodations).length > 0 ? nightAccommodations : undefined,
+          travelModeToNext: s.travelModeToNext ?? 'train',
+          travelDurationToNext: s.travelDurationToNext,
+          travelNotesToNext: s.travelNotesToNext,
+          visits: (s.visits ?? []).map((v, vi) => ({
+            id: `ai-visit-${Date.now()}-${i}-${vi}`,
+            name: v.name,
+            type: v.type ?? 'landmark',
+            area: v.area ?? '',
+            lat: v.lat,
+            lng: v.lng,
+            dayOffset: v.dayOffset ?? 0,
+            dayPart: v.dayPart ?? 'morning',
+            order: v.order ?? vi,
+            durationHint: v.durationHint,
+            notes: v.notes,
+          })),
+        };
+      });
       if (result.explanation) {
         setExplanation(result.explanation);
         setPendingStays(newStays);
@@ -3713,9 +3745,13 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
     window.addEventListener('mouseup', handleMouseUp);
     return () => window.removeEventListener('mouseup', handleMouseUp);
   }, [timelineDragCreate, isSlotRangeEmpty]);
-  const dayLabels = Array.from({ length: numDays }, (_, i) =>
-    fmt(addDaysTo(new Date(trip.startDate), i), { month: 'short', day: 'numeric' }),
-  );
+  const dayLabels = Array.from({ length: numDays }, (_, i) => {
+    const d = addDaysTo(new Date(trip.startDate), i);
+    return {
+      date: fmt(d, { month: 'short', day: 'numeric' }),
+      weekday: fmt(d, { weekday: 'short' }),
+    };
+  });
   const tripStartLabel = fmt(new Date(trip.startDate), { month: 'short', day: 'numeric' });
 
   const editingRouteStay = editingRouteStayId ? sortedStays.find((s) => s.id === editingRouteStayId) ?? null : null;
@@ -3937,9 +3973,12 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
               <div data-timeline-track className="h-full flex flex-col" style={{ width: `${Math.max(100, (numDays / (zoomDays || numDays)) * 100)}%` }}>
                 {/* Day labels */}
                 <div className="flex border-b border-border-neutral divide-x divide-border-neutral bg-slate-50/30 flex-shrink-0" style={{ height: 28 }}>
-                  {dayLabels.map((label, i) => (
+                  {dayLabels.map(({ date, weekday }, i) => (
                     <div key={i} className="flex-1 flex flex-col">
-                      <div className="flex-1 flex items-center justify-center text-[9px] font-bold text-slate-400 uppercase tracking-tighter border-b border-slate-100">{label}</div>
+                      <div className="flex-1 flex items-center justify-center gap-1 text-[9px] font-bold text-slate-400 uppercase tracking-tighter border-b border-slate-100">
+                        <span className="text-slate-300">{weekday}</span>
+                        <span>{date}</span>
+                      </div>
                       <div className="flex h-3 divide-x divide-slate-100">
                         {['M', 'A', 'E'].map((p) => (
                           <div key={p} className="flex-1 flex items-center justify-center text-[9px] font-semibold text-slate-300">{p}</div>
