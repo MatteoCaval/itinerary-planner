@@ -155,6 +155,13 @@ function addDaysTo(date: Date, n: number) {
   const d = new Date(date); d.setDate(d.getDate() + n); return d;
 }
 
+/** Parse a date string safely, falling back to today if empty/invalid. */
+function safeDate(s: string): Date {
+  if (!s) return new Date();
+  const d = new Date(s);
+  return isNaN(d.getTime()) ? new Date() : d;
+}
+
 function fmt(date: Date, opts: Intl.DateTimeFormatOptions) {
   return new Intl.DateTimeFormat('en-US', opts).format(date);
 }
@@ -227,7 +234,7 @@ function deriveStayDays(trip: HybridTrip, stay: Stay) {
     const nightAccom = hasNight ? (stay.nightAccommodations?.[i] ?? (stay.lodging ? { name: stay.lodging } : undefined)) : undefined;
     return {
       dayOffset: i, absoluteDay,
-      date: addDaysTo(new Date(trip.startDate), absoluteDay),
+      date: addDaysTo(safeDate(trip.startDate), absoluteDay),
       enabledParts,
       hasNight,
       nightAccommodation: nightAccom as NightAccommodation | undefined,
@@ -3855,13 +3862,13 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
     return () => window.removeEventListener('mouseup', handleMouseUp);
   }, [timelineDragCreate, isSlotRangeEmpty]);
   const dayLabels = Array.from({ length: numDays }, (_, i) => {
-    const d = addDaysTo(new Date(trip.startDate), i);
+    const d = addDaysTo(safeDate(trip.startDate), i);
     return {
       date: fmt(d, { month: 'short', day: 'numeric' }),
       weekday: fmt(d, { weekday: 'short' }),
     };
   });
-  const tripStartLabel = fmt(new Date(trip.startDate), { month: 'short', day: 'numeric' });
+  const tripStartLabel = fmt(safeDate(trip.startDate), { month: 'short', day: 'numeric' });
 
   const editingRouteStay = editingRouteStayId ? sortedStays.find((s) => s.id === editingRouteStayId) ?? null : null;
   const editingRouteNextStay = editingRouteStay
@@ -3935,7 +3942,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
             >
               <span className="font-bold text-slate-700">{tripStartLabel}</span>
               <span className="text-slate-300">–</span>
-              <span className="font-bold text-slate-700">{fmt(addDaysTo(new Date(trip.startDate), trip.totalDays - 1), { month: 'short', day: 'numeric' })}</span>
+              <span className="font-bold text-slate-700">{fmt(addDaysTo(safeDate(trip.startDate), trip.totalDays - 1), { month: 'short', day: 'numeric' })}</span>
               <span className="ml-0.5 text-[9px] font-extrabold text-primary bg-primary/8 px-1.5 py-0.5 rounded-md">{trip.totalDays}d</span>
             </button>
           </div>
