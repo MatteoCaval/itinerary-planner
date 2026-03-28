@@ -19,20 +19,24 @@ import { DayPicker, type DateRange } from 'react-day-picker';
 import { addDays, format as fnsFormat, parse as fnsParse } from 'date-fns';
 import 'react-day-picker/style.css';
 import type {
-  AccommodationGroup, ChecklistItem, DayPart, DragState, HybridTrip, LegacyDaySection,
-  LegacyLocation, LegacyLocationCategory, LegacyRoute, LegacyStoredTrip, LegacyTransportType,
-  LegacyTripsStore, NightAccommodation, Stay, TravelMode, TripStore, VisitItem, VisitLink, VisitType,
-  LegacyAccommodation, LegacyDay,
+  AccommodationGroup, ChecklistItem, DayPart, DragState, HybridTrip,
+  LegacyDay, LegacyLocation, LegacyRoute, LegacyStoredTrip, LegacyTripsStore,
+  NightAccommodation, Stay, TravelMode, TripStore, VisitItem, VisitLink, VisitType,
 } from './domain/types';
 import {
   createEmptyTrip, DAY_PARTS, LEGACY_STORAGE_KEY, STAY_COLORS, TRANSPORT_LABELS,
   TRAVEL_MODES, VISIT_TYPES,
 } from './domain/constants';
 import { addDaysTo, fmt, formatRelativeTime, safeDate } from './domain/dateUtils';
-import { clamp, haversineKm, jitter } from './domain/geoUtils';
+import { haversineKm, jitter } from './domain/geoUtils';
 import { deriveAccommodationGroups, deriveStayDays, getOverlapIds, getStayNightCount } from './domain/stayLogic';
 import { createVisit, normalizeVisitOrders, sortVisits } from './domain/visitLogic';
 import { getVisitTypeBg, getVisitTypeColor, getVisitLabel } from './domain/visitTypeDisplay';
+import {
+  hybridTripToLegacy, legacyTripToHybrid, normalizeTrip,
+} from './domain/migration';
+import { createSampleTrip } from './domain/sampleData';
+import { adjustStaysForDateChange, applyTimelineDrag, extendTripAfter, extendTripBefore } from './domain/tripMutations';
 import LegacyApp from './features/legacy/LegacyApp';
 import { searchPlace, type PlaceSearchResult } from './utils/geocoding';
 import { generateHybridItinerary, type AIHybridStay } from './aiService';
@@ -75,327 +79,6 @@ function getVisitTypeIcon(type: VisitType, cls = 'w-4 h-4') {
 }
 
 // ─── Sample data ──────────────────────────────────────────────────────────────
-function createSampleTrip(): HybridTrip {
-  return {
-    id: 'sample-hybrid-trip',
-    name: 'Japan Late Spring Circuit',
-    startDate: '2026-05-28',
-    totalDays: 15,
-    stays: [
-      {
-        id: 'stay-tokyo', name: 'Tokyo Exploration', color: '#2167d7',
-        startSlot: 0, endSlot: 10, centerLat: 35.6895, centerLng: 139.6917,
-        lodging: 'Park Hyatt Tokyo', travelModeToNext: 'train',
-        travelDurationToNext: '150 mins',
-        travelNotesToNext: 'Hokuriku Shinkansen Kagayaki from Tokyo to Kanazawa.',
-        visits: [
-          createVisit('tokyo-1', 'Shinjuku & Omoide Yokocho', 'landmark', 'Shinjuku', 35.6923, 139.7024, 0, 'evening', 0),
-          createVisit('tokyo-2', 'Sushi dinner at Sukiyabashi Jiro', 'food', 'Ginza', 35.6716, 139.7657, 0, 'evening', 1, '90m'),
-          createVisit('tokyo-3', 'Meiji Jingu & Harajuku', 'landmark', 'Harajuku', 35.6764, 139.6993, 1, 'morning', 0, '2h'),
-          createVisit('tokyo-4', 'Shibuya Crossing & Hachiko', 'landmark', 'Shibuya', 35.6585, 139.7013, 1, 'afternoon', 0, '2h'),
-          createVisit('tokyo-5', 'Tokyo Tower', 'landmark', 'Minato', 35.6584, 139.7455, 2, 'morning', 0, '1h'),
-          createVisit('tokyo-6', 'Senso-ji & Sumida River', 'landmark', 'Asakusa', 35.7148, 139.7967, 2, 'afternoon', 0, '2h'),
-          createVisit('tokyo-7', 'Akihabara Electric Town', 'shopping', 'Akihabara', 35.6984, 139.7711, 2, 'evening', 0, '2h'),
-          createVisit('tokyo-8', 'Tsukiji Outer Market', 'food', 'Tsukiji', 35.6655, 139.7707, 3, 'morning', 0, '90m'),
-          createVisit('tokyo-9', 'Ginza department stores', 'shopping', 'Ginza', 35.671, 139.765, null, null, 0, 'Flexible'),
-          createVisit('tokyo-10', 'Imperial Palace gardens', 'walk', 'Chiyoda', 35.6852, 139.7528, null, null, 1, '1h'),
-          createVisit('tokyo-11', 'teamLab Planets', 'museum', 'Toyosu', 35.6449, 139.7904, null, null, 2, '2h'),
-        ],
-      },
-      {
-        id: 'stay-kanazawa', name: 'Kanazawa & Hokuriku', color: '#615cf6',
-        startSlot: 10, endSlot: 18, centerLat: 36.5613, centerLng: 136.6562,
-        lodging: 'Hyatt Centric Kanazawa', travelModeToNext: 'bus',
-        travelDurationToNext: '75 mins',
-        travelNotesToNext: 'Advance-booked Nohi Bus toward Shirakawa-go.',
-        visits: [
-          createVisit('kanazawa-1', 'Higashi Chaya District', 'landmark', 'Higashi Chaya', 36.5724, 136.6665, 0, 'evening', 0, '2h'),
-          createVisit('kanazawa-2', 'Kenrokuen Garden & Castle', 'walk', 'Kenrokuen', 36.5621, 136.6627, 1, 'morning', 0, '2-3h'),
-          createVisit('kanazawa-3', '21st Century Museum of Contemporary Art', 'museum', 'Hirosaka', 36.5609, 136.6582, 1, 'evening', 0, '2h'),
-          createVisit('kanazawa-4', 'Omicho Market dinner', 'food', 'Omicho', 36.5718, 136.6567, 1, 'afternoon', 0, '90m'),
-          createVisit('kanazawa-5', 'Kaga Onsen (Yamanaka)', 'walk', 'Yamanaka Onsen', 36.2464, 136.3758, 2, 'morning', 0, 'Half day'),
-          createVisit('kanazawa-6', 'Nagamachi Samurai District', 'landmark', 'Nagamachi', 36.5596, 136.6514, null, null, 0, '90m'),
-        ],
-      },
-      {
-        id: 'stay-kyoto', name: 'Kyoto & Nara Cultural Core', color: '#d78035',
-        startSlot: 21, endSlot: 36, centerLat: 35.0116, centerLng: 135.7681,
-        lodging: 'The Ritz-Carlton Kyoto', travelModeToNext: 'train',
-        travelDurationToNext: '30 mins',
-        travelNotesToNext: 'JR Special Rapid Service from Kyoto to Osaka.',
-        visits: [
-          createVisit('kyoto-1', 'Gion & Pontocho Alley', 'landmark', 'Gion', 35.0037, 135.775, 0, 'evening', 0, '2h'),
-          createVisit('kyoto-2', 'Arashiyama Bamboo Grove & Tenryu-ji', 'walk', 'Arashiyama', 35.0158, 135.672, 1, 'morning', 0, '2h'),
-          createVisit('kyoto-3', 'Kinkaku-ji & Ryoan-ji', 'landmark', 'Kita', 35.0394, 135.7292, 1, 'afternoon', 0, '2h'),
-          createVisit('kyoto-4', 'Kiyomizu-dera & Sannenzaka', 'landmark', 'Higashiyama', 34.9949, 135.785, 1, 'evening', 0, '2h'),
-          createVisit('kyoto-5', 'Nara Day Trip (Todai-ji & Deer Park)', 'landmark', 'Nara', 34.6851, 135.8048, 2, 'morning', 0, 'Half day'),
-          createVisit('kyoto-6', 'Fushimi Inari Shrine', 'landmark', 'Fushimi', 34.9671, 135.7727, 3, 'morning', 0, '90m'),
-          createVisit('kyoto-7', 'Nishiki Market & Teramachi', 'food', 'Downtown', 35.005, 135.7649, 3, 'afternoon', 0, '2h'),
-          createVisit('kyoto-8', "Philosopher's Path", 'walk', 'Sakyo', 35.0269, 135.7959, null, null, 0, 'Flexible'),
-        ],
-      },
-      {
-        id: 'stay-osaka', name: 'Osaka City', color: '#20b5a8',
-        startSlot: 36, endSlot: 45, centerLat: 34.6937, centerLng: 135.5023,
-        lodging: 'W Osaka', travelModeToNext: 'train',
-        travelDurationToNext: '155 mins',
-        travelNotesToNext: 'Tokaido Shinkansen Nozomi to Tokyo Station.',
-        visits: [
-          createVisit('osaka-1', 'Osaka Castle Park', 'landmark', 'Chuo', 34.6873, 135.5262, 0, 'morning', 0, '2h'),
-          createVisit('osaka-2', 'Dotonbori Neon & Food Tour', 'food', 'Namba', 34.6687, 135.5013, 0, 'evening', 0, '2h'),
-          createVisit('osaka-3', 'Kuromon Market', 'food', 'Nippombashi', 34.6654, 135.5064, 1, 'morning', 0, '90m'),
-          createVisit('osaka-4', 'Shinsekai & Abeno Harukas', 'landmark', 'Tennoji', 34.6525, 135.5063, 1, 'afternoon', 0, '2h'),
-          createVisit('osaka-5', 'teamLab Botanical Garden', 'museum', 'Nagai', 34.6129, 135.5227, null, null, 0, '2h'),
-        ],
-      },
-    ],
-  };
-}
-
-// ─── Legacy ↔ Hybrid adapters ─────────────────────────────────────────────────
-function legacySlotToIndex(slot?: LegacyDaySection): number {
-  if (slot === 'afternoon') return 1;
-  if (slot === 'evening') return 2;
-  return 0;
-}
-
-function indexToLegacySlot(idx: number): LegacyDaySection {
-  const r = idx % 3;
-  if (r === 1) return 'afternoon';
-  if (r === 2) return 'evening';
-  return 'morning';
-}
-
-function legacyTransportToMode(t?: LegacyTransportType): TravelMode {
-  if (t === 'car') return 'drive';
-  if (t === 'other' || !t) return 'train';
-  return t as TravelMode;
-}
-
-function modeToLegacyTransport(m: TravelMode): LegacyTransportType {
-  if (m === 'drive') return 'car';
-  return m as LegacyTransportType;
-}
-
-function legacyCategoryToVisitType(cat?: LegacyLocationCategory, hint?: string): VisitType {
-  if (hint && (VISIT_TYPES as string[]).includes(hint)) return hint as VisitType;
-  if (hint === 'area' || hint === 'hotel') return 'landmark'; // migrate legacy types
-  if (cat === 'dining') return 'food';
-  if (cat === 'hotel') return 'landmark';
-  if (cat === 'sightseeing') return 'landmark';
-  if (cat === 'transit') return 'walk';
-  return 'landmark';
-}
-
-function visitTypeToLegacyCategory(type: VisitType): LegacyLocationCategory {
-  if (type === 'food') return 'dining';
-  if (type === 'landmark' || type === 'museum') return 'sightseeing';
-  if (type === 'walk') return 'transit';
-  return 'other';
-}
-
-function legacyTripToHybrid(leg: LegacyStoredTrip, colorOffset = 0): HybridTrip {
-  const startDate = leg.startDate ?? '2025-01-01';
-  const s = new Date(startDate);
-  const e = new Date(leg.endDate ?? startDate);
-  const rawDays = Math.round((e.getTime() - s.getTime()) / 86400000) + 1;
-  const totalDays = Number.isFinite(rawDays) && rawDays >= 1 ? rawDays : 1;
-  const days = leg.days ?? [];
-  const routes = leg.routes ?? [];
-
-  const dayIdxById: Record<string, number> = {};
-  days.forEach((d, i) => { dayIdxById[d.id] = i; });
-
-  const stays: Stay[] = (leg.locations ?? []).map((loc, locIdx) => {
-    const startDayIdx = loc.startDayId ? (dayIdxById[loc.startDayId] ?? 0) : 0;
-    const startSlot = startDayIdx * 3 + legacySlotToIndex(loc.startSlot);
-    const duration = loc.duration ?? 3;
-    const endSlot = Math.min(startSlot + duration, totalDays * 3);
-
-    const nextLoc = leg.locations?.[locIdx + 1];
-    const routeToNext = nextLoc
-      ? routes.find((r) =>
-          (r.fromLocationId === loc.id && r.toLocationId === nextLoc.id) ||
-          (r.fromLocationId === nextLoc.id && r.toLocationId === loc.id),
-        )
-      : undefined;
-
-    const lodging = loc._lodging ?? days[startDayIdx]?.accommodation?.name ?? '';
-    const color = loc._color ?? STAY_COLORS[(colorOffset + locIdx) % STAY_COLORS.length];
-
-    // Build per-night accommodation from legacy days.
-    // A "night" on dayOffset i means sleeping between day i and day i+1,
-    // so we check if the evening slot of that absolute day is within the stay.
-    const lastDay = Math.floor((endSlot - 1) / 3);
-    const nightAccommodations: Record<number, NightAccommodation> = {};
-    for (let absDay = startDayIdx; absDay <= lastDay; absDay++) {
-      const eveningSlot = absDay * 3 + 2; // evening = last slot of the day
-      if (eveningSlot >= startSlot && eveningSlot < endSlot) {
-        const legDay = days[absDay];
-        if (legDay?.accommodation?.name) {
-          const a = legDay.accommodation;
-          nightAccommodations[absDay - startDayIdx] = {
-            name: a.name, lat: a.lat, lng: a.lng, cost: a.cost, notes: a.notes, link: a.link,
-          };
-        }
-      }
-    }
-
-    const visits: VisitItem[] = (loc.subLocations ?? []).map((sub) => {
-      // Legacy uses sub.dayOffset (0-based relative to parent) + sub.startSlot directly
-      const dayOffset = sub.dayOffset ?? null;
-      const dayPart = sub.startSlot ? (sub.startSlot as DayPart) : null;
-      const isScheduled = dayOffset !== null && dayPart !== null;
-      return {
-        id: sub.id,
-        name: sub.name,
-        type: legacyCategoryToVisitType(sub.category, sub._visitType),
-        area: sub._area ?? sub.name,
-        lat: sub.lat,
-        lng: sub.lng,
-        durationHint: sub.duration != null ? `${sub.duration}h` : undefined,
-        dayOffset: isScheduled ? dayOffset : null,
-        dayPart: isScheduled ? dayPart : null,
-        order: sub.order ?? 0,
-        notes: sub.notes,
-      };
-    });
-
-    return {
-      id: loc.id, name: loc.name, color,
-      startSlot, endSlot,
-      centerLat: loc.lat, centerLng: loc.lng,
-      lodging,
-      nightAccommodations: Object.keys(nightAccommodations).length > 0 ? nightAccommodations : undefined,
-      travelModeToNext: legacyTransportToMode(routeToNext?.transportType),
-      travelDurationToNext: routeToNext?.duration,
-      travelNotesToNext: routeToNext?.notes,
-      visits,
-    };
-  });
-
-  return { id: leg.id, name: leg.name, startDate, totalDays, stays };
-}
-
-function hybridTripToLegacy(trip: HybridTrip): LegacyStoredTrip {
-  const startDate = trip.startDate || '2025-01-01';
-  const totalDays = Number.isFinite(trip.totalDays) && trip.totalDays >= 1 ? trip.totalDays : 1;
-  const endDate = addDaysTo(new Date(startDate), totalDays - 1).toISOString().split('T')[0];
-
-  const days: LegacyDay[] = Array.from({ length: totalDays }, (_, i) => {
-    const date = addDaysTo(new Date(startDate), i).toISOString().split('T')[0];
-    const coveringStay = trip.stays.find((s) => {
-      const sStart = Math.floor(s.startSlot / 3);
-      const sEnd = Math.ceil(s.endSlot / 3);
-      return i >= sStart && i < sEnd;
-    });
-    // Prefer per-night accommodation if available, fall back to stay.lodging
-    let accommodation: LegacyAccommodation | undefined;
-    if (coveringStay) {
-      const dayOffset = i - Math.floor(coveringStay.startSlot / 3);
-      const nightAccom = coveringStay.nightAccommodations?.[dayOffset];
-      if (nightAccom) {
-        accommodation = { ...nightAccom };
-      } else if (coveringStay.lodging) {
-        accommodation = { name: coveringStay.lodging };
-      }
-    }
-    return {
-      id: `day-${i}-${trip.id}`,
-      date,
-      accommodation,
-    };
-  });
-
-  const dayIdByIdx: Record<number, string> = {};
-  days.forEach((d, i) => { dayIdByIdx[i] = d.id; });
-
-  const routes: LegacyRoute[] = [];
-  const sortedStays = [...trip.stays].sort((a, b) => a.startSlot - b.startSlot);
-
-  const locations: LegacyLocation[] = sortedStays.map((stay, stayIdx) => {
-    const startDayIdx = Math.floor(stay.startSlot / 3);
-    const startDayId = dayIdByIdx[startDayIdx];
-    const duration = stay.endSlot - stay.startSlot;
-
-    const nextStay = sortedStays[stayIdx + 1];
-    if (nextStay) {
-      routes.push({
-        id: `route-${stay.id}-${nextStay.id}`,
-        fromLocationId: stay.id,
-        toLocationId: nextStay.id,
-        transportType: modeToLegacyTransport(stay.travelModeToNext),
-        duration: stay.travelDurationToNext,
-        notes: stay.travelNotesToNext,
-      });
-    }
-
-    const subLocations: LegacyLocation[] = stay.visits.map((v) => {
-      const absDayIdx = v.dayOffset !== null ? startDayIdx + v.dayOffset : startDayIdx;
-      const subDayId = v.dayOffset !== null ? (dayIdByIdx[absDayIdx] ?? startDayId) : undefined;
-      let durationNum: number | undefined;
-      if (v.durationHint) {
-        const m = v.durationHint.match(/(\d+(?:\.\d+)?)/);
-        if (m) durationNum = parseFloat(m[1]);
-      }
-      return {
-        id: v.id, name: v.name,
-        lat: v.lat, lng: v.lng,
-        notes: v.notes,
-        category: visitTypeToLegacyCategory(v.type),
-        dayIds: subDayId ? [subDayId] : [],
-        startDayId: subDayId,
-        startSlot: v.dayPart as LegacyDaySection | undefined,
-        // dayOffset is the canonical scheduling field in legacy sub-itineraries
-        dayOffset: v.dayOffset ?? undefined,
-        duration: durationNum,
-        order: v.order,
-        checklist: [], links: [],
-        _area: v.area,
-        _visitType: v.type,
-      };
-    });
-
-    return {
-      id: stay.id, name: stay.name,
-      lat: stay.centerLat, lng: stay.centerLng,
-      notes: '', category: 'hotel',
-      dayIds: [],
-      startDayId,
-      startSlot: indexToLegacySlot(stay.startSlot),
-      duration,
-      order: stayIdx,
-      subLocations,
-      checklist: [], links: [],
-      _color: stay.color,
-      _lodging: stay.lodging,
-    };
-  });
-
-  return {
-    id: trip.id, name: trip.name,
-    createdAt: Date.now(), updatedAt: Date.now(),
-    startDate, endDate,
-    days, locations, routes,
-    version: '2.0',
-  };
-}
-
-/** Ensure all array fields on a HybridTrip are actual arrays (Firebase may return objects with numeric keys). */
-function normalizeTrip(t: HybridTrip): HybridTrip {
-  const toArr = <T,>(v: T[] | Record<string, T> | undefined): T[] => {
-    if (Array.isArray(v)) return v;
-    if (v && typeof v === 'object') return Object.values(v);
-    return [];
-  };
-  return {
-    ...t,
-    stays: toArr(t.stays).map((s) => ({
-      ...s,
-      visits: toArr(s.visits),
-    })),
-  };
-}
 
 // ─── Persistence ──────────────────────────────────────────────────────────────
 function loadStore(): TripStore {
@@ -1543,31 +1226,7 @@ function TripEditorModal({ trip, onClose, onSave, onDelete }: {
 
   const doSave = (withClamp: boolean) => {
     if (withClamp || slotShift !== 0) {
-      const adjustedStays = trip.stays
-        .map((s) => {
-          const newStartSlot = s.startSlot - slotShift;
-          const newEndSlot = s.endSlot - slotShift;
-          return { ...s, startSlot: newStartSlot, endSlot: newEndSlot };
-        })
-        // Remove stays fully outside the new range
-        .filter((s) => s.endSlot > 0 && s.startSlot < newMaxSlot)
-        .map((s) => {
-          const clamped = { ...s, startSlot: Math.max(0, s.startSlot), endSlot: Math.min(newMaxSlot, s.endSlot) };
-          if (clamped.startSlot === s.startSlot && clamped.endSlot === s.endSlot) return clamped;
-          // Clamp visits: recalculate valid day range within the clamped stay
-          const newDayCount = Math.ceil((clamped.endSlot - clamped.startSlot) / 3);
-          const dayShiftWithinStay = Math.max(0, Math.floor((clamped.startSlot - s.startSlot) / 3));
-          return {
-            ...clamped,
-            visits: clamped.visits.map((v) => {
-              if (v.dayOffset === null) return v;
-              const adjusted = v.dayOffset - dayShiftWithinStay;
-              return adjusted >= 0 && adjusted < newDayCount
-                ? { ...v, dayOffset: adjusted }
-                : { ...v, dayOffset: null, dayPart: null };
-            }),
-          };
-        });
+      const adjustedStays = adjustStaysForDateChange(trip.stays, slotShift, newMaxSlot);
       onSave({ name, startDate, totalDays, stays: adjustedStays });
     } else {
       onSave({ name, startDate, totalDays });
@@ -3386,18 +3045,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
       const delta = Math.round((clientX - dragState.originX) / slotWidth);
       setTrip((curr) => ({
         ...curr,
-        stays: curr.stays.map((s) => {
-          if (s.id !== dragState.stayId) return s;
-          const len = dragState.originalEnd - dragState.originalStart;
-          if (dragState.mode === 'move') {
-            const next = clamp(dragState.originalStart + delta, 0, curr.totalDays * 3 - len);
-            return { ...s, startSlot: next, endSlot: next + len };
-          }
-          if (dragState.mode === 'resize-start') {
-            return { ...s, startSlot: clamp(dragState.originalStart + delta, 0, dragState.originalEnd - 1) };
-          }
-          return { ...s, endSlot: clamp(dragState.originalEnd + delta, dragState.originalStart + 1, curr.totalDays * 3) };
-        }),
+        stays: applyTimelineDrag(curr.stays, dragState, delta, curr.totalDays * 3),
       }));
     };
     const onMove = (e: MouseEvent) => applyDelta(e.clientX);
@@ -3643,17 +3291,8 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
   })();
   const displayDays = numDays + 2;
 
-  const extendTripBefore = () => {
-    setTrip((t) => ({
-      ...t,
-      startDate: addDaysTo(safeDate(t.startDate), -1).toISOString().split('T')[0],
-      totalDays: t.totalDays + 1,
-      stays: t.stays.map((s) => ({ ...s, startSlot: s.startSlot + 3, endSlot: s.endSlot + 3 })),
-    }));
-  };
-  const extendTripAfter = () => {
-    setTrip((t) => ({ ...t, totalDays: t.totalDays + 1 }));
-  };
+  const handleExtendBefore = () => setTrip((t) => extendTripBefore(t));
+  const handleExtendAfter = () => setTrip((t) => extendTripAfter(t));
 
   const tripStartLabel = fmt(safeDate(trip.startDate), { month: 'short', day: 'numeric' });
 
@@ -3914,7 +3553,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                 </div>
                 {/* Stay zone — buffer before */}
                 <button
-                  onClick={extendTripBefore}
+                  onClick={handleExtendBefore}
                   className="group/buf relative flex items-center justify-center border-r border-border-neutral transition-colors hover:bg-slate-100/60"
                   style={{
                     background: 'repeating-linear-gradient(-45deg, transparent, transparent 4px, rgba(148,163,184,0.13) 4px, rgba(148,163,184,0.13) 8px), rgba(241,245,249,0.8)',
@@ -4164,7 +3803,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                 </div>
                 {/* Stay zone — buffer after */}
                 <button
-                  onClick={extendTripAfter}
+                  onClick={handleExtendAfter}
                   className="group/buf relative flex items-center justify-center border-l border-border-neutral transition-colors hover:bg-slate-100/60"
                   style={{
                     background: 'repeating-linear-gradient(-45deg, transparent, transparent 4px, rgba(148,163,184,0.13) 4px, rgba(148,163,184,0.13) 8px), rgba(241,245,249,0.8)',
