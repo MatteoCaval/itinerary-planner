@@ -18,6 +18,21 @@ import {
 import { DayPicker, type DateRange } from 'react-day-picker';
 import { addDays, format as fnsFormat, parse as fnsParse } from 'date-fns';
 import 'react-day-picker/style.css';
+import type {
+  AccommodationGroup, ChecklistItem, DayPart, DragState, HybridTrip, LegacyDaySection,
+  LegacyLocation, LegacyLocationCategory, LegacyRoute, LegacyStoredTrip, LegacyTransportType,
+  LegacyTripsStore, NightAccommodation, Stay, TravelMode, TripStore, VisitItem, VisitLink, VisitType,
+  LegacyAccommodation, LegacyDay,
+} from './domain/types';
+import {
+  createEmptyTrip, DAY_PARTS, LEGACY_STORAGE_KEY, STAY_COLORS, TRANSPORT_LABELS,
+  TRAVEL_MODES, VISIT_TYPES,
+} from './domain/constants';
+import { addDaysTo, fmt, formatRelativeTime, safeDate } from './domain/dateUtils';
+import { clamp, haversineKm, jitter } from './domain/geoUtils';
+import { deriveAccommodationGroups, deriveStayDays, getOverlapIds, getStayNightCount } from './domain/stayLogic';
+import { createVisit, normalizeVisitOrders, sortVisits } from './domain/visitLogic';
+import { getVisitTypeBg, getVisitTypeColor, getVisitLabel } from './domain/visitTypeDisplay';
 import LegacyApp from './features/legacy/LegacyApp';
 import { searchPlace, type PlaceSearchResult } from './utils/geocoding';
 import { generateHybridItinerary, type AIHybridStay } from './aiService';
@@ -31,102 +46,7 @@ import 'leaflet/dist/leaflet.css';
 
 // ─── View switcher ────────────────────────────────────────────────────────────
 const APP_VIEW_KEY = 'itinerary-app-view-v1';
-
-// ─── Types ────────────────────────────────────────────────────────────────────
-type DayPart = 'morning' | 'afternoon' | 'evening';
-type TravelMode = 'train' | 'flight' | 'drive' | 'ferry' | 'bus' | 'walk';
-type VisitType = 'landmark' | 'museum' | 'food' | 'walk' | 'shopping' | 'area' | 'hotel'; // area/hotel kept for legacy compat
-
-type ChecklistItem = { id: string; text: string; done: boolean };
-type VisitLink = { url: string; label?: string };
-
-type VisitItem = {
-  id: string; name: string; type: VisitType; area: string;
-  lat: number; lng: number; durationHint?: string;
-  dayOffset: number | null; dayPart: DayPart | null; order: number;
-  notes?: string; imageUrl?: string;
-  checklist?: ChecklistItem[];
-  links?: VisitLink[];
-};
-
-type NightAccommodation = {
-  name: string; lat?: number; lng?: number; cost?: number; notes?: string; link?: string;
-};
-
-type Stay = {
-  id: string; name: string; color: string;
-  startSlot: number; endSlot: number;
-  centerLat: number; centerLng: number;
-  lodging: string; imageUrl?: string;
-  /** Per-night accommodation keyed by dayOffset (0-based within the stay). A night on dayOffset=0 means "sleeping between day 0 and day 1". */
-  nightAccommodations?: Record<number, NightAccommodation>;
-  travelModeToNext: TravelMode; travelDurationToNext?: string; travelNotesToNext?: string;
-  visits: VisitItem[];
-  checklist?: ChecklistItem[];
-  notes?: string;
-  links?: VisitLink[];
-};
-
-type HybridTrip = {
-  id: string; name: string; startDate: string; totalDays: number; stays: Stay[];
-};
-
-type TripStore = { trips: HybridTrip[]; activeTripId: string };
-
-type DragState = {
-  stayId: string; mode: 'move' | 'resize-start' | 'resize-end';
-  originX: number; originalStart: number; originalEnd: number;
-} | null;
-
-// ─── Legacy data model types (for storage compatibility) ──────────────────────
-type LegacyDaySection = 'morning' | 'afternoon' | 'evening';
-type LegacyTransportType = 'walk' | 'car' | 'bus' | 'train' | 'flight' | 'ferry' | 'other';
-type LegacyLocationCategory = 'sightseeing' | 'dining' | 'hotel' | 'transit' | 'other';
-type LegacyAccommodation = { name: string; lat?: number; lng?: number; cost?: number; notes?: string; link?: string };
-type LegacyDay = { id: string; date: string; label?: string; accommodation?: LegacyAccommodation };
-type LegacyRoute = { id: string; fromLocationId: string; toLocationId: string; transportType: LegacyTransportType; duration?: string; cost?: number; notes?: string };
-type LegacyLocation = {
-  id: string; name: string; lat: number; lng: number;
-  notes?: string; category?: LegacyLocationCategory;
-  checklist?: unknown[]; links?: unknown[];
-  cost?: number; targetTime?: string; imageUrl?: string;
-  dayIds: string[]; startDayId?: string; startSlot?: LegacyDaySection;
-  duration?: number; order: number;
-  subLocations?: LegacyLocation[]; dayOffset?: number;
-  _color?: string; _lodging?: string; _area?: string; _visitType?: string;
-};
-type LegacyStoredTrip = {
-  id: string; name: string; createdAt: number; updatedAt: number;
-  startDate: string; endDate: string;
-  days: LegacyDay[]; locations: LegacyLocation[]; routes: LegacyRoute[];
-  version: string;
-};
-type LegacyTripsStore = { activeTripId: string; trips: LegacyStoredTrip[] };
-
-// ─── Constants ────────────────────────────────────────────────────────────────
-const LEGACY_STORAGE_KEY = 'itinerary-trips-v1';
-const DAY_PARTS: DayPart[] = ['morning', 'afternoon', 'evening'];
-const TRAVEL_MODES: TravelMode[] = ['train', 'flight', 'drive', 'ferry', 'bus', 'walk'];
-const TRANSPORT_LABELS: Record<TravelMode, string> = {
-  train: 'Train', flight: 'Flight', drive: 'Drive', ferry: 'Ferry', bus: 'Bus', walk: 'Walk',
-};
-const STAY_COLORS = [
-  '#2167d7', '#615cf6', '#2db6ab', '#d78035',
-  '#20b5a8', '#3b6dd8', '#c45c99', '#4c9463',
-];
-
-function getTomorrow() {
-  const d = new Date(); d.setDate(d.getDate() + 1); return d.toISOString().split('T')[0];
-}
-
-const EMPTY_TRIP: HybridTrip = {
-  id: '_empty',
-  name: 'New Trip',
-  startDate: getTomorrow(),
-  totalDays: 7,
-  stays: [],
-};
-const VISIT_TYPES: VisitType[] = ['landmark', 'museum', 'food', 'walk', 'shopping'];
+const EMPTY_TRIP = createEmptyTrip();
 
 // ─── Transport icon ───────────────────────────────────────────────────────────
 function TransportIcon({ mode, className = 'w-3.5 h-3.5' }: { mode: TravelMode; className?: string }) {
@@ -141,163 +61,7 @@ function TransportIcon({ mode, className = 'w-3.5 h-3.5' }: { mode: TravelMode; 
   return <>{icons[mode]}</>;
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-function createVisit(
-  id: string, name: string, type: VisitType, area: string,
-  lat: number, lng: number, dayOffset: number | null, dayPart: DayPart | null,
-  order: number, durationHint?: string,
-): VisitItem {
-  return { id, name, type, area, lat, lng, dayOffset, dayPart, order, durationHint };
-}
-
-function jitter(base: number, mag: number) { return base + (Math.random() - 0.5) * mag; }
-
-function clamp(v: number, min: number, max: number) { return Math.min(Math.max(v, min), max); }
-
-function addDaysTo(date: Date, n: number) {
-  const d = new Date(date); d.setDate(d.getDate() + n); return d;
-}
-
-/** Parse a date string safely, falling back to today if empty/invalid. */
-function safeDate(s: string): Date {
-  if (!s) return new Date();
-  const d = new Date(s);
-  return isNaN(d.getTime()) ? new Date() : d;
-}
-
-function fmt(date: Date, opts: Intl.DateTimeFormatOptions) {
-  return new Intl.DateTimeFormat('en-US', opts).format(date);
-}
-
-function getStayNightCount(stay: Stay) {
-  return Math.max(1, Math.ceil((stay.endSlot - stay.startSlot) / 3));
-}
-
-function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
-  const R = 6371;
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLng = (lng2 - lng1) * Math.PI / 180;
-  const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
-
-function getVisitTypeBg(type: VisitType) {
-  switch (type) {
-    case 'landmark': return 'bg-primary';
-    case 'museum':   return 'bg-blue-400';
-    case 'food':     return 'bg-emerald-400';
-    case 'walk':     return 'bg-teal-400';
-    case 'shopping': return 'bg-violet-400';
-    default:         return 'bg-slate-400';
-  }
-}
-
-function getOverlapIds(stays: Stay[]) {
-  const overlaps = new Set<string>();
-  stays.forEach((a, i) => stays.slice(i + 1).forEach((b) => {
-    if (a.startSlot < b.endSlot && b.startSlot < a.endSlot) {
-      overlaps.add(a.id); overlaps.add(b.id);
-    }
-  }));
-  return overlaps;
-}
-
-function sortVisits(visits: VisitItem[]) {
-  return [...visits].sort((a, b) => {
-    if (a.dayOffset === null && b.dayOffset === null) return a.order - b.order;
-    if (a.dayOffset === null) return -1;
-    if (b.dayOffset === null) return 1;
-    if (a.dayOffset !== b.dayOffset) return a.dayOffset - b.dayOffset;
-    if (a.dayPart !== b.dayPart)
-      return DAY_PARTS.indexOf(a.dayPart as DayPart) - DAY_PARTS.indexOf(b.dayPart as DayPart);
-    return a.order - b.order;
-  });
-}
-
-function normalizeVisitOrders(visits: VisitItem[]) {
-  const buckets = new Map<string, VisitItem[]>();
-  sortVisits(visits).forEach((v) => {
-    const key = v.dayOffset === null || v.dayPart === null ? 'inbox' : `${v.dayOffset}-${v.dayPart}`;
-    buckets.set(key, [...(buckets.get(key) ?? []), v]);
-  });
-  return Array.from(buckets.values()).flatMap((b) => b.map((v, i) => ({ ...v, order: i })));
-}
-
-function deriveStayDays(trip: HybridTrip, stay: Stay) {
-  const firstDay = Math.floor(stay.startSlot / 3);
-  const lastDay = Math.floor((stay.endSlot - 1) / 3);
-  return Array.from({ length: lastDay - firstDay + 1 }, (_, i) => {
-    const absoluteDay = firstDay + i;
-    const enabledParts = DAY_PARTS.filter((p) => {
-      const slot = absoluteDay * 3 + DAY_PARTS.indexOf(p);
-      return slot >= stay.startSlot && slot < stay.endSlot;
-    });
-    // A night is spent here if the evening slot is within the stay
-    const hasNight = enabledParts.includes('evening');
-    const nightAccom = hasNight ? (stay.nightAccommodations?.[i] ?? (stay.lodging ? { name: stay.lodging } : undefined)) : undefined;
-    return {
-      dayOffset: i, absoluteDay,
-      date: addDaysTo(safeDate(trip.startDate), absoluteDay),
-      enabledParts,
-      hasNight,
-      nightAccommodation: nightAccom as NightAccommodation | undefined,
-    };
-  });
-}
-
-type AccommodationGroup = {
-  name: string;
-  startDayOffset: number;
-  nights: number;
-  accommodation: NightAccommodation;
-};
-
-/** Groups consecutive nights with the same accommodation into spans */
-function deriveAccommodationGroups(stayDays: ReturnType<typeof deriveStayDays>): AccommodationGroup[] {
-  const groups: AccommodationGroup[] = [];
-  let current: AccommodationGroup | null = null;
-  for (const day of stayDays) {
-    if (!day.hasNight || !day.nightAccommodation) {
-      if (current) { groups.push(current); current = null; }
-      continue;
-    }
-    if (current && current.name === day.nightAccommodation.name) {
-      current.nights++;
-    } else {
-      if (current) groups.push(current);
-      current = {
-        name: day.nightAccommodation.name,
-        startDayOffset: day.dayOffset,
-        nights: 1,
-        accommodation: day.nightAccommodation,
-      };
-    }
-  }
-  if (current) groups.push(current);
-  return groups;
-}
-
-function getVisitTypeColor(type: VisitType) {
-  switch (type) {
-    case 'landmark': return 'text-primary bg-primary/10 border-primary/20';
-    case 'museum':   return 'text-blue-600 bg-blue-50 border-blue-200';
-    case 'food':     return 'text-emerald-600 bg-emerald-50 border-emerald-200';
-    case 'walk':     return 'text-teal-600 bg-teal-50 border-teal-200';
-    case 'shopping': return 'text-violet-600 bg-violet-50 border-violet-200';
-    default:         return 'text-slate-500 bg-slate-50 border-slate-200';
-  }
-}
-
-function getVisitLabel(type: VisitType) {
-  switch (type) {
-    case 'landmark': return 'Sight';
-    case 'museum':   return 'Culture';
-    case 'food':     return 'Food';
-    case 'walk':     return 'Nature';
-    case 'shopping': return 'Shopping';
-    default:         return 'Place';
-  }
-}
+// ─── UI helpers (depend on React/JSX — stay in App.tsx) ───────────────────────
 
 function getVisitTypeIcon(type: VisitType, cls = 'w-4 h-4') {
   switch (type) {
@@ -1957,14 +1721,6 @@ function TripSwitcherPanel({ store, onSwitch, onNew, onClose }: {
 }
 
 // ─── History panel ────────────────────────────────────────────────────────────
-function formatRelativeTime(ts: number): string {
-  const diff = Date.now() - ts;
-  if (diff < 60_000) return 'just now';
-  if (diff < 3_600_000) return `${Math.floor(diff / 60_000)}m ago`;
-  if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)}h ago`;
-  return new Date(ts).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-}
-
 function HistoryPanel({ history, index, onNavigate, onClose }: {
   history: HistorySnapshot[]; index: number; onNavigate: (i: number) => void; onClose: () => void;
 }) {
