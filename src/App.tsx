@@ -36,7 +36,10 @@ import {
   hybridTripToLegacy, legacyTripToHybrid, normalizeTrip,
 } from './domain/migration';
 import { createSampleTrip } from './domain/sampleData';
-import { adjustStaysForDateChange, applyTimelineDrag, extendTripAfter, extendTripBefore } from './domain/tripMutations';
+import {
+  adjustStaysForDateChange, applyTimelineDrag, extendTripAfter, extendTripBefore,
+  shrinkTripAfter, shrinkTripBefore,
+} from './domain/tripMutations';
 import LegacyApp from './features/legacy/LegacyApp';
 import { searchPlace, type PlaceSearchResult } from './utils/geocoding';
 import { generateHybridItinerary, type AIHybridStay } from './aiService';
@@ -1224,8 +1227,14 @@ function TripEditorModal({ trip, onClose, onSave, onDelete }: {
     (s) => !(s._shiftedEnd <= 0 || s._shiftedStart >= newMaxSlot),
   );
 
+  // Pure date move: same totalDays, different startDate → just shift the calendar, keep stays
+  const isPureDateMove = totalDays === trip.totalDays && slotShift !== 0;
+
   const doSave = (withClamp: boolean) => {
-    if (withClamp || slotShift !== 0) {
+    if (isPureDateMove) {
+      // Only update startDate — stays are trip-relative, no slot changes needed
+      onSave({ name, startDate, totalDays });
+    } else if (withClamp || slotShift !== 0) {
       const adjustedStays = adjustStaysForDateChange(trip.stays, slotShift, newMaxSlot);
       onSave({ name, startDate, totalDays, stays: adjustedStays });
     } else {
@@ -1235,10 +1244,10 @@ function TripEditorModal({ trip, onClose, onSave, onDelete }: {
   };
 
   const handleSave = () => {
-    if (affectedStays.length > 0) {
+    if (!isPureDateMove && affectedStays.length > 0) {
       setConfirmShrink(true);
     } else {
-      doSave(slotShift !== 0);
+      doSave(false);
     }
   };
 
@@ -3293,6 +3302,10 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
 
   const handleExtendBefore = () => setTrip((t) => extendTripBefore(t));
   const handleExtendAfter = () => setTrip((t) => extendTripAfter(t));
+  const canShrinkBefore = trip.totalDays > 1 && !sortedStays.some((s) => s.startSlot < 3);
+  const canShrinkAfter = trip.totalDays > 1 && !sortedStays.some((s) => s.endSlot > (trip.totalDays - 1) * 3);
+  const handleShrinkBefore = () => { const r = shrinkTripBefore(trip); if (r) setTrip(r); };
+  const handleShrinkAfter = () => { const r = shrinkTripAfter(trip); if (r) setTrip(r); };
 
   const tripStartLabel = fmt(safeDate(trip.startDate), { month: 'short', day: 'numeric' });
 
@@ -3800,6 +3813,32 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                     </div>
                     )}
                   </div>
+                  {/* Shrink strip — empty first day (bottom edge) */}
+                  {canShrinkBefore && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleShrinkBefore(); }}
+                      onMouseDown={(e) => e.stopPropagation()}
+                      className="absolute bottom-0 left-0 z-30 h-5 flex items-center justify-center gap-1 rounded-tr-md transition-all opacity-0 hover:opacity-100 bg-slate-100/80 hover:bg-red-50 border-t border-r border-slate-200/60"
+                      style={{ width: `${(1 / numDays) * 100}%` }}
+                      title="Remove empty first day"
+                    >
+                      <Trash2 className="w-2.5 h-2.5 text-red-400" />
+                      <span className="text-[7px] font-bold text-red-400 uppercase">Remove day</span>
+                    </button>
+                  )}
+                  {/* Shrink strip — empty last day (bottom edge) */}
+                  {canShrinkAfter && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleShrinkAfter(); }}
+                      onMouseDown={(e) => e.stopPropagation()}
+                      className="absolute bottom-0 right-0 z-30 h-5 flex items-center justify-center gap-1 rounded-tl-md transition-all opacity-0 hover:opacity-100 bg-slate-100/80 hover:bg-red-50 border-t border-l border-slate-200/60"
+                      style={{ width: `${(1 / numDays) * 100}%` }}
+                      title="Remove empty last day"
+                    >
+                      <Trash2 className="w-2.5 h-2.5 text-red-400" />
+                      <span className="text-[7px] font-bold text-red-400 uppercase">Remove day</span>
+                    </button>
+                  )}
                 </div>
                 {/* Stay zone — buffer after */}
                 <button

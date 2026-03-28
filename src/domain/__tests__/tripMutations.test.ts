@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { adjustStaysForDateChange, applyTimelineDrag, extendTripAfter, extendTripBefore } from '../tripMutations';
+import {
+  adjustStaysForDateChange, applyTimelineDrag, extendTripAfter, extendTripBefore,
+  shrinkTripAfter, shrinkTripBefore,
+} from '../tripMutations';
 import type { DragState, HybridTrip, Stay } from '../types';
 
 function makeStay(overrides: Partial<Stay> = {}): Stay {
@@ -41,6 +44,54 @@ describe('extendTripAfter', () => {
     expect(result.totalDays).toBe(6);
     expect(result.stays[0].startSlot).toBe(0);
     expect(result.stays[0].endSlot).toBe(9);
+  });
+});
+
+describe('shrinkTripBefore', () => {
+  it('removes first day and shifts stays back by 3 slots', () => {
+    const trip = makeTrip({
+      startDate: '2026-03-27', totalDays: 3,
+      stays: [makeStay({ startSlot: 3, endSlot: 9 })],
+    });
+    const result = shrinkTripBefore(trip);
+    expect(result).not.toBeNull();
+    expect(result!.startDate).toBe('2026-03-28');
+    expect(result!.totalDays).toBe(2);
+    expect(result!.stays[0].startSlot).toBe(0);
+    expect(result!.stays[0].endSlot).toBe(6);
+  });
+
+  it('returns null if first day has a stay', () => {
+    const trip = makeTrip({
+      stays: [makeStay({ startSlot: 0, endSlot: 6 })],
+    });
+    expect(shrinkTripBefore(trip)).toBeNull();
+  });
+
+  it('returns null for 1-day trip', () => {
+    const trip = makeTrip({ totalDays: 1 });
+    expect(shrinkTripBefore(trip)).toBeNull();
+  });
+});
+
+describe('shrinkTripAfter', () => {
+  it('removes last day when empty', () => {
+    const trip = makeTrip({
+      totalDays: 3,
+      stays: [makeStay({ startSlot: 0, endSlot: 6 })], // covers days 0-1, day 2 empty
+    });
+    const result = shrinkTripAfter(trip);
+    expect(result).not.toBeNull();
+    expect(result!.totalDays).toBe(2);
+    expect(result!.stays[0].startSlot).toBe(0); // unchanged
+  });
+
+  it('returns null if last day has a stay', () => {
+    const trip = makeTrip({
+      totalDays: 3,
+      stays: [makeStay({ startSlot: 0, endSlot: 9 })], // covers all 3 days
+    });
+    expect(shrinkTripAfter(trip)).toBeNull();
   });
 });
 

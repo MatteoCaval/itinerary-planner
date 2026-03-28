@@ -19,6 +19,30 @@ export function extendTripAfter(trip: HybridTrip): HybridTrip {
   return { ...trip, totalDays: trip.totalDays + 1 };
 }
 
+// ─── Trip shrink (remove empty edge days) ────────────────────────────────────
+
+/** Remove one day from the start of the trip. Shifts all stay slots -3. Only valid if day 0 has no stays. */
+export function shrinkTripBefore(trip: HybridTrip): HybridTrip | null {
+  if (trip.totalDays <= 1) return null;
+  const hasStayOnFirstDay = trip.stays.some((s) => s.startSlot < 3);
+  if (hasStayOnFirstDay) return null;
+  return {
+    ...trip,
+    startDate: addDaysTo(safeDate(trip.startDate), 1).toISOString().split('T')[0],
+    totalDays: trip.totalDays - 1,
+    stays: trip.stays.map((s) => ({ ...s, startSlot: s.startSlot - 3, endSlot: s.endSlot - 3 })),
+  };
+}
+
+/** Remove one day from the end of the trip. Only valid if the last day has no stays. */
+export function shrinkTripAfter(trip: HybridTrip): HybridTrip | null {
+  if (trip.totalDays <= 1) return null;
+  const lastDayStart = (trip.totalDays - 1) * 3;
+  const hasStayOnLastDay = trip.stays.some((s) => s.endSlot > lastDayStart);
+  if (hasStayOnLastDay) return null;
+  return { ...trip, totalDays: trip.totalDays - 1 };
+}
+
 // ─── Timeline drag ───────────────────────────────────────────────────────────
 
 /** Apply a slot delta to a stay during timeline drag (move/resize). Returns updated stays array. */
