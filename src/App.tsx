@@ -1754,42 +1754,57 @@ function TripEditorModal({ trip, onClose, onSave, onDelete }: {
     }
   };
 
-  // Detect stays that will be affected when shortening the trip
+  // Detect stays affected by start-date shift and/or end-date shrink
+  const oldStart = fnsParse(trip.startDate, 'yyyy-MM-dd', new Date());
+  const newStart = startDate ? fnsParse(startDate, 'yyyy-MM-dd', new Date()) : oldStart;
+  const startShiftDays = Math.round((newStart.getTime() - oldStart.getTime()) / 86400000);
+  const slotShift = startShiftDays * 3; // positive = start moved later, stays shift left
   const newMaxSlot = totalDays * 3;
-  const affectedStays = totalDays < trip.totalDays
-    ? trip.stays.filter((s) => s.endSlot > newMaxSlot)
-    : [];
-  const fullyOutsideStays = affectedStays.filter((s) => s.startSlot >= newMaxSlot);
-  const partiallyCutStays = affectedStays.filter((s) => s.startSlot < newMaxSlot);
+
+  // After applying the shift, compute which stays are affected
+  const staysAfterShift = trip.stays.map((s) => ({
+    ...s,
+    _shiftedStart: s.startSlot - slotShift,
+    _shiftedEnd: s.endSlot - slotShift,
+  }));
+  const affectedStays = staysAfterShift.filter(
+    (s) => s._shiftedStart < 0 || s._shiftedEnd > newMaxSlot,
+  );
+  const fullyOutsideStays = affectedStays.filter(
+    (s) => s._shiftedEnd <= 0 || s._shiftedStart >= newMaxSlot,
+  );
+  const partiallyCutStays = affectedStays.filter(
+    (s) => !(s._shiftedEnd <= 0 || s._shiftedStart >= newMaxSlot),
+  );
 
   const doSave = (withClamp: boolean) => {
-    if (withClamp) {
-      const clampedStays = trip.stays.map((s) => {
-        if (s.endSlot <= newMaxSlot && s.startSlot < newMaxSlot) return s;
-        // Stay is fully outside → squeeze into last day, unschedule all visits
-        if (s.startSlot >= newMaxSlot) {
-          const lastDayStart = Math.max(0, newMaxSlot - 3);
+    if (withClamp || slotShift !== 0) {
+      const adjustedStays = trip.stays
+        .map((s) => {
+          const newStartSlot = s.startSlot - slotShift;
+          const newEndSlot = s.endSlot - slotShift;
+          return { ...s, startSlot: newStartSlot, endSlot: newEndSlot };
+        })
+        // Remove stays fully outside the new range
+        .filter((s) => s.endSlot > 0 && s.startSlot < newMaxSlot)
+        .map((s) => {
+          const clamped = { ...s, startSlot: Math.max(0, s.startSlot), endSlot: Math.min(newMaxSlot, s.endSlot) };
+          if (clamped.startSlot === s.startSlot && clamped.endSlot === s.endSlot) return clamped;
+          // Clamp visits: recalculate valid day range within the clamped stay
+          const newDayCount = Math.ceil((clamped.endSlot - clamped.startSlot) / 3);
+          const dayShiftWithinStay = Math.max(0, Math.floor((clamped.startSlot - s.startSlot) / 3));
           return {
-            ...s,
-            startSlot: lastDayStart,
-            endSlot: newMaxSlot,
-            visits: s.visits.map((v) => ({ ...v, dayOffset: null, dayPart: null })),
+            ...clamped,
+            visits: clamped.visits.map((v) => {
+              if (v.dayOffset === null) return v;
+              const adjusted = v.dayOffset - dayShiftWithinStay;
+              return adjusted >= 0 && adjusted < newDayCount
+                ? { ...v, dayOffset: adjusted }
+                : { ...v, dayOffset: null, dayPart: null };
+            }),
           };
-        }
-        // Stay is partially outside → clamp endSlot, unschedule overflowing visits
-        const clampedEnd = newMaxSlot;
-        const newDayCount = Math.ceil((clampedEnd - s.startSlot) / 3);
-        return {
-          ...s,
-          endSlot: clampedEnd,
-          visits: s.visits.map((v) =>
-            v.dayOffset !== null && v.dayOffset >= newDayCount
-              ? { ...v, dayOffset: null, dayPart: null }
-              : v,
-          ),
-        };
-      });
-      onSave({ name, startDate, totalDays, stays: clampedStays });
+        });
+      onSave({ name, startDate, totalDays, stays: adjustedStays });
     } else {
       onSave({ name, startDate, totalDays });
     }
@@ -1800,7 +1815,7 @@ function TripEditorModal({ trip, onClose, onSave, onDelete }: {
     if (affectedStays.length > 0) {
       setConfirmShrink(true);
     } else {
-      doSave(false);
+      doSave(slotShift !== 0);
     }
   };
 
@@ -1842,28 +1857,28 @@ function TripEditorModal({ trip, onClose, onSave, onDelete }: {
         )}
 
         {confirmShrink ? (
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+          <div className={`${fullyOutsideStays.length > 0 ? 'bg-red-50 border-red-200' : 'bg-amber-50 border-amber-200'} border rounded-lg p-3`}>
             <div className="flex items-start gap-2 mb-3">
-              <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
-              <div className="text-xs text-amber-800">
-                <p className="font-bold mb-1">
-                  {affectedStays.length} destination{affectedStays.length > 1 ? 's' : ''} will be affected
-                </p>
+              <AlertTriangle className={`w-4 h-4 flex-shrink-0 mt-0.5 ${fullyOutsideStays.length > 0 ? 'text-red-500' : 'text-amber-500'}`} />
+              <div className="text-xs">
                 {fullyOutsideStays.length > 0 && (
-                  <p className="text-amber-700"><strong>{fullyOutsideStays.map((s) => s.name).join(', ')}</strong> will be moved to the last day.</p>
+                  <p className="text-red-700 mb-1">
+                    <strong>{fullyOutsideStays.map((s) => s.name).join(', ')}</strong> {fullyOutsideStays.length > 1 ? 'are' : 'is'} fully outside the new date range and will be <strong>removed</strong>.
+                  </p>
                 )}
                 {partiallyCutStays.length > 0 && (
-                  <p className="text-amber-700"><strong>{partiallyCutStays.map((s) => s.name).join(', ')}</strong> will be shortened.</p>
+                  <p className="text-amber-700 mb-1">
+                    <strong>{partiallyCutStays.map((s) => s.name).join(', ')}</strong> will be shortened to fit. Activities outside the new range will be unplanned.
+                  </p>
                 )}
-                <p className="text-amber-600 mt-1">Scheduled activities outside the new range will be moved to unplanned.</p>
               </div>
             </div>
             <div className="flex gap-2">
               <button onClick={() => setConfirmShrink(false)} className="flex-1 py-2 border border-slate-200 rounded-lg text-xs font-bold text-slate-600 hover:bg-white transition-colors">
                 Go Back
               </button>
-              <button onClick={() => doSave(true)} className="flex-1 py-2 bg-amber-500 text-white rounded-lg text-xs font-bold hover:bg-amber-600 transition-colors">
-                Confirm &amp; Shorten
+              <button onClick={() => doSave(true)} className={`flex-1 py-2 text-white rounded-lg text-xs font-bold transition-colors ${fullyOutsideStays.length > 0 ? 'bg-red-500 hover:bg-red-600' : 'bg-amber-500 hover:bg-amber-600'}`}>
+                {fullyOutsideStays.length > 0 ? 'Remove & Shorten' : 'Confirm & Shorten'}
               </button>
             </div>
           </div>
