@@ -174,6 +174,137 @@ a:focus-visible {
   outline: none;
 }
 
+/* ─── react-day-picker overrides ───────────────────────────────────────────── */
+.rdp-inline .rdp-root {
+  /* Accent colors */
+  --rdp-accent-color: #ec5b13;
+  --rdp-accent-background-color: #fef3ee;
+  /* Range — seamless band with no gaps */
+  --rdp-range_middle-background-color: #fef3ee;
+  --rdp-range_middle-color: #9a3412;
+  --rdp-range_start-color: #fff;
+  --rdp-range_end-color: #fff;
+  --rdp-range_start-date-background-color: #ec5b13;
+  --rdp-range_end-date-background-color: #ec5b13;
+  --rdp-range_start-background: linear-gradient(90deg, transparent 50%, #fef3ee 50%);
+  --rdp-range_end-background: linear-gradient(90deg, #fef3ee 50%, transparent 50%);
+  /* Cell sizing — compact */
+  --rdp-day-height: 36px;
+  --rdp-day-width: 36px;
+  --rdp-day_button-height: 32px;
+  --rdp-day_button-width: 32px;
+  --rdp-day_button-border-radius: 8px;
+  --rdp-day_button-border: 2px solid transparent;
+  /* Nav */
+  --rdp-nav-height: 36px;
+  --rdp-nav_button-height: 28px;
+  --rdp-nav_button-width: 28px;
+  /* Misc */
+  --rdp-outside-opacity: 0.25;
+  --rdp-weekday-padding: 0 0 4px;
+  --rdp-weekday-opacity: 1;
+  font: 500 11px/1.4 'Inter', ui-sans-serif, system-ui, sans-serif;
+  width: 100%;
+}
+/* Fill container width */
+.rdp-inline .rdp-months {
+  width: 100%;
+  max-width: 100%;
+}
+.rdp-inline .rdp-month {
+  width: 100%;
+}
+.rdp-inline .rdp-month_grid {
+  width: 100%;
+}
+/* Stretch day cells to fill the row evenly */
+.rdp-inline .rdp-weekdays,
+.rdp-inline .rdp-week {
+  display: flex;
+}
+.rdp-inline .rdp-weekday,
+.rdp-inline .rdp-day {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+/* Day button fills the cell */
+.rdp-inline .rdp-day_button {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  font-weight: 500;
+  transition: background 0.15s, color 0.15s;
+}
+.rdp-inline .rdp-day_button:hover:not(:disabled) {
+  background: #f1f5f9;
+}
+/* Caption */
+.rdp-inline .rdp-month_caption {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1e293b;
+  padding-bottom: 4px;
+}
+/* Nav buttons */
+.rdp-inline .rdp-button_previous,
+.rdp-inline .rdp-button_next {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.rdp-inline .rdp-button_previous:hover,
+.rdp-inline .rdp-button_next:hover {
+  background: #f1f5f9;
+}
+.rdp-inline .rdp-chevron {
+  width: 14px;
+  height: 14px;
+  fill: #64748b;
+}
+/* Weekday headers */
+.rdp-inline .rdp-weekday {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #94a3b8;
+}
+/* Today ring */
+.rdp-inline .rdp-today:not(.rdp-range_start):not(.rdp-range_end) .rdp-day_button {
+  box-shadow: inset 0 0 0 1.5px #ec5b13;
+  font-weight: 700;
+  color: #ec5b13;
+}
+/* Selected start/end — solid pill */
+.rdp-inline .rdp-range_start .rdp-day_button,
+.rdp-inline .rdp-range_end .rdp-day_button {
+  border-radius: 8px;
+  font-weight: 700;
+}
+/* Range middle — full-width background band without gaps */
+.rdp-inline .rdp-range_middle {
+  background: #fef3ee;
+  border-radius: 0;
+}
+.rdp-inline .rdp-range_middle .rdp-day_button {
+  background: transparent;
+  color: #9a3412;
+  font-weight: 600;
+  border-radius: 8px;
+}
+.rdp-inline .rdp-range_middle .rdp-day_button:hover {
+  background: rgba(236, 91, 19, 0.12);
+}
+/* Outside days in range — keep the band but fade text */
+.rdp-inline .rdp-range_middle.rdp-outside {
+  opacity: 0.5;
+}
+
 /* ─── Map Marker Styles ─────────────────────────────────────────────────────── */
 
 .route-tooltip {
