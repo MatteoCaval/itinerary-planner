@@ -38,6 +38,22 @@ There are **two parallel app instances** in this codebase:
 - Visits with `dayOffset !== null` = scheduled activities rendered in day columns
 - Visits with `dayOffset === null` = inbox/unscheduled (left sidebar)
 
+### Domain layer (`src/domain/`) — pure business logic
+```
+types.ts              # All data model types (HybridTrip, Stay, VisitItem, legacy types)
+constants.ts          # DAY_PARTS, STAY_COLORS, VISIT_TYPES, etc.
+dateUtils.ts          # addDaysTo, safeDate, fmt, formatRelativeTime
+geoUtils.ts           # haversineKm, clamp, jitter
+stayLogic.ts          # deriveStayDays, getOverlapIds, deriveAccommodationGroups, isSlotRangeEmpty
+visitLogic.ts         # createVisit, sortVisits, normalizeVisitOrders
+visitTypeDisplay.ts   # getVisitTypeBg, getVisitTypeColor, getVisitLabel
+migration.ts          # legacyTripToHybrid, hybridTripToLegacy, normalizeTrip
+tripMutations.ts      # extendTripBefore/After, applyTimelineDrag, adjustStaysForDateChange
+sampleData.ts         # createSampleTrip (Japan demo)
+__tests__/            # 31 unit tests
+```
+Zero React dependencies. All functions are pure and unit-testable. App.tsx imports from this layer.
+
 ### 2. Legacy app (`src/features/legacy/LegacyApp.tsx`) — kept for reference only
 Uses `ItineraryContext` and the full feature pane architecture. Not rendered in production. The view switcher key `itinerary-app-view-v1` in localStorage controls which app loads.
 
@@ -88,7 +104,7 @@ src/theme.ts
 - **Design tokens:** Primary orange `#ec5b13`, font Inter.
 - **Formatting:** 2-space indent, single quotes, semicolons, trailing commas, 100-char line width (Prettier-enforced).
 - **Naming:** PascalCase components, `use` prefix hooks, camelCase utilities.
-- **`src/types.ts`** is for the legacy/context-based app. The CHRONOS `App.tsx` declares its own inline types.
+- **`src/types.ts`** is for the legacy/context-based app. The CHRONOS app uses types from `src/domain/types.ts`.
 - **Never touch `.env.local`.**
 
 ## Optional Integrations (env vars)

@@ -8,14 +8,14 @@
 
 CHRONOS is a browser-based trip planner with three linked views: a **Gantt timeline** of destinations, a **kanban activity board** per destination, and a **Leaflet map**. Trips are stored locally (localStorage) and optionally synced to Firebase. AI generation via Gemini (user API key). Single-user, desktop-first.
 
-**Stack:** React 18 + TypeScript, Tailwind v4, @dnd-kit, react-leaflet, Firebase Auth + Realtime DB, Gemini REST API.
+**Stack:** React 18 + TypeScript, Tailwind v4, @dnd-kit, react-leaflet, react-day-picker + date-fns, Firebase Auth + Realtime DB, Gemini REST API.
 
 ---
 
 ## Features
 
 ### Timeline
-Horizontal scrollable Gantt. Each **Stay** = colored block spanning days. Draggable, resizable from both ends. Overlap detection (visual warning only). Zoom slider. 3 slots/day (morning · afternoon · evening).
+Horizontal scrollable Gantt (CSS Grid layout). Each **Stay** = colored block spanning days. Draggable, resizable from both ends. Overlap detection (visual warning only). Zoom slider. 3 slots/day (morning · afternoon · evening). **Blocked buffer days** shown before/after the trip range with diagonal stripe pattern — clicking them extends the trip by one day in that direction.
 
 ### Stays
 City-level destinations. Create via geocoded search (Nominatim) + day-count stepper. Edit name, color, default lodging. Delete with confirmation. Between stays: a **route chip** shows transport mode (train/flight/drive/ferry/bus/walk), duration, notes.
@@ -57,6 +57,12 @@ JSON (native `HybridTrip` format) and Markdown (human-readable, grouped by day).
 
 ### Multi-Trip & Welcome Screen
 Trip switcher modal. Shown when no trips exist: "Plan a trip" → new empty trip, "See a demo" → loads Japan sample without persisting. Deleting the last trip returns to welcome screen.
+
+### Date Range Editing
+Trip dates edited via an inline calendar (react-day-picker v9). When shortening the trip:
+- Stays partially outside the new range are **clamped** (shortened to fit). Visits on removed days become unplanned.
+- Stays fully outside the new range are **removed** with a confirmation dialog listing affected destinations.
+- Handles both start-date shifts (moving start forward) and end-date shrinks.
 
 ### Undo / Redo
 50-step in-memory history. Cmd/Ctrl+Z · Cmd/Ctrl+Y. Toolbar buttons. History browser modal shows snapshot diffs.
@@ -102,7 +108,8 @@ VisitLink       { url, label?: string }
 
 | Feature | Status | Notes |
 |---|---|---|
-| Gantt timeline | ✅ | Drag, resize, zoom, overlap detection |
+| Gantt timeline | ✅ | Drag, resize, zoom, overlap detection, blocked buffer days, extend trip |
+| Date range shrink/shift | ✅ | Clamping, removal confirmation, visit unscheduling |
 | Stay CRUD | ✅ | Geocoding, color, route chips |
 | Activity kanban + inbox | ✅ | DnD, search, type grid |
 | Accommodation per-night | ✅ | Geocoding, cost, grouping, night-range editing |
@@ -136,5 +143,5 @@ VisitLink       { url, label?: string }
 - **Merge is all-or-nothing** — same trip edited on two devices: last write wins.
 - **No sync indicator** — no "saving…" / "saved" / "offline" status visible.
 - **History is in-memory** — page reload resets the undo stack.
-- **`src/App.tsx` is a monolith** (~2500 lines, intentional for now).
+- **`src/App.tsx` is still large** (~4800 lines). Domain logic has been extracted to `src/domain/` (10 modules, 31 tests). Service layer, hooks, and UI component extraction are planned (Phases 2-4).
 - **Dark mode not implemented** — light mode only for now.

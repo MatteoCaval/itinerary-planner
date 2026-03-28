@@ -2,46 +2,115 @@
 
 A travel itinerary planner with a synchronized timeline and interactive map. Build multi-day trips, organize activities into time slots, connect them with routes, and export the plan as JSON or Markdown.
 
-**Stack**
+## Stack
+
 - React 18 + TypeScript
 - Vite (build and dev server)
-- Mantine UI 7 + PostCSS
+- Tailwind CSS v4 (via `@tailwindcss/vite` plugin)
 - Leaflet + React-Leaflet (map rendering)
-- @dnd-kit (drag and drop timeline)
-- Firebase Realtime Database (cloud sync)
+- @dnd-kit (drag and drop)
+- react-day-picker + date-fns (date range selection)
+- Firebase Auth + Realtime Database (cloud sync)
 
-**Key Features**
+## Key Features
+
 - Gantt-style timeline with morning/afternoon/evening slots
-- Drag-and-drop scheduling with resizeable durations
-- Nested sub-itineraries (destinations with day offsets)
-- Interactive map with markers, routes, and route editor
-- Local autosave with JSON import/export
-- Markdown itinerary export
-- Optional AI itinerary generation
+- Drag-and-drop scheduling with resizable stay durations
+- Blocked buffer days before/after the trip with one-click extend
+- Trip date range editing with stay clamping and confirmation when shrinking
+- Interactive map with markers, routes, day filtering, and two modes (overview/detail)
+- Per-night accommodation tracking with grouped display
+- Visit checklists, links, and notes
+- Local autosave with JSON/Markdown import/export
+- Firebase cloud sync with merge conflict resolution
+- AI itinerary generation via Google Gemini
+- 50-step undo/redo with history browser
+- Multi-trip support with demo mode
 
-**Tools and Integrations**
+## Project Structure
+
+```
+src/
+  domain/                  # Pure business logic (no React, no external services)
+    types.ts               # All data model types (HybridTrip, Stay, VisitItem, etc.)
+    constants.ts           # DAY_PARTS, STAY_COLORS, VISIT_TYPES, etc.
+    dateUtils.ts           # Date helpers (addDaysTo, safeDate, fmt)
+    geoUtils.ts            # Geo helpers (haversineKm, clamp, jitter)
+    stayLogic.ts           # Stay calculations (deriveStayDays, overlaps, accommodations)
+    visitLogic.ts          # Visit scheduling (sortVisits, normalizeVisitOrders)
+    visitTypeDisplay.ts    # Visit type display mappings (colors, labels)
+    migration.ts           # Legacy <-> Hybrid trip conversion, normalizeTrip
+    tripMutations.ts       # Trip mutations (extend, drag, date range shrink)
+    sampleData.ts          # Demo trip data
+    __tests__/             # Unit tests for domain logic (31 tests)
+
+  services/
+    httpClient.ts          # HTTP client with retry/timeout
+    telemetry.ts           # Error/event tracking
+
+  firebase.ts              # Firebase config, cloud sync helpers
+  aiService.ts             # Gemini AI integration (scratch + refine modes)
+  markdownExporter.ts      # Markdown export
+
+  hooks/
+    usePlaceSearch.ts      # Nominatim geocoding with debounce
+    useRouteGeometry.ts    # OSRM route geometry fetching
+    useItineraryDrillDown.ts
+    useSidebarResize.ts
+
+  components/
+    TripMap/               # Leaflet map (markers, routes, clustering, day filters)
+    DaySidebar/            # Timeline CSS-grid rendering
+    LocationDetailPanel/   # Detail drawer
+    CalendarView.tsx       # Month grid alternative view
+
+  context/
+    AuthContext.tsx         # Firebase auth provider
+    ItineraryContext.tsx    # Legacy app state (kept for reference)
+
+  features/
+    legacy/                # LegacyApp.tsx (reference only, not rendered in production)
+    shell/                 # Layout shell
+    ui/primitives/         # Shared UI components (AppButton, AppModal, etc.)
+
+  App.tsx                  # CHRONOS app — main UI component
+  index.css                # Tailwind theme, custom CSS, react-day-picker overrides
+  utils/
+    geocoding.ts           # Nominatim search wrapper
+    itinerarySchema.ts     # Zod validation for imports
+```
+
+## Tools and Integrations
+
 - **Geocoding/Search:** OpenStreetMap Nominatim
 - **Routing:** OSRM public routing service (route geometry for map paths)
 - **Images:** Unsplash API (destination photos)
-- **Cloud Sync:** Firebase Realtime Database
+- **Cloud Sync:** Firebase Auth + Realtime Database
 - **AI Planning:** Google Gemini API (user-provided API key)
+- **Date Picker:** react-day-picker v9 with date-fns
 
-**Getting Started**
+## Getting Started
+
 ```bash
 npm install
-npm run dev
+npm run dev        # http://localhost:5173/itinerary-planner/
 ```
 
-**Build**
+## Build
+
 ```bash
-npm run build
+npm run build      # TypeScript check + production bundle
 ```
 
-**Quick Demo Route**
-- A preloaded demo trip is available at `/itinerary-planner/sample` (and `/sample` in local dev).
-- The route autoloads `sample-trip.json` so reviewers can explore the app immediately.
+## Test
 
-**Optional Environment Variables**
+```bash
+npm run test       # Run full Vitest suite
+npx vitest run src/domain/   # Run domain logic tests only
+```
+
+## Optional Environment Variables
+
 These are only required if you want to enable the related integrations:
 - `VITE_UNSPLASH_ACCESS_KEY`
 - `VITE_FIREBASE_API_KEY`
