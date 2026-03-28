@@ -3448,7 +3448,9 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
   const [mapDayFilter, setMapDayFilter] = useState<number | null>(null);
   const [zoomDays, setZoomDays] = useState(() => {
     const saved = localStorage.getItem('itinerary-timeline-zoom');
-    return saved ? Number(saved) : 15;
+    const v = saved ? Number(saved) : 0;
+    // Clamp: if saved zoom exceeds trip length, fall back to ALL
+    return v !== 0 && v > trip.totalDays ? 0 : v;
   });
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -3613,9 +3615,9 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
   // ── Timeline drag ─────────────────────────────────────────────────────────
   useEffect(() => {
     if (!dragState) return;
-    const track = document.querySelector('[data-timeline-track]') as HTMLElement | null;
+    const zone = timelineZoneRef.current;
     const numDays = zoomDays === 0 ? trip.totalDays : zoomDays;
-    const slotWidth = (track?.clientWidth ?? numDays * 42) / (numDays * 3);
+    const slotWidth = (zone?.clientWidth ?? numDays * 42) / (numDays * 3);
 
     const applyDelta = (clientX: number) => {
       const delta = Math.round((clientX - dragState.originX) / slotWidth);
@@ -3868,6 +3870,28 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
       weekday: fmt(d, { weekday: 'short' }),
     };
   });
+  const bufferBefore = (() => {
+    const d = addDaysTo(safeDate(trip.startDate), -1);
+    return { date: fmt(d, { month: 'short', day: 'numeric' }), weekday: fmt(d, { weekday: 'short' }) };
+  })();
+  const bufferAfter = (() => {
+    const d = addDaysTo(safeDate(trip.startDate), trip.totalDays);
+    return { date: fmt(d, { month: 'short', day: 'numeric' }), weekday: fmt(d, { weekday: 'short' }) };
+  })();
+  const displayDays = numDays + 2;
+
+  const extendTripBefore = () => {
+    setTrip((t) => ({
+      ...t,
+      startDate: addDaysTo(safeDate(t.startDate), -1).toISOString().split('T')[0],
+      totalDays: t.totalDays + 1,
+      stays: t.stays.map((s) => ({ ...s, startSlot: s.startSlot + 3, endSlot: s.endSlot + 3 })),
+    }));
+  };
+  const extendTripAfter = () => {
+    setTrip((t) => ({ ...t, totalDays: t.totalDays + 1 }));
+  };
+
   const tripStartLabel = fmt(safeDate(trip.startDate), { month: 'short', day: 'numeric' });
 
   const editingRouteStay = editingRouteStayId ? sortedStays.find((s) => s.id === editingRouteStayId) ?? null : null;
@@ -4086,28 +4110,65 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
             </div>
 
             <div className="flex-1 relative overflow-x-auto overflow-y-hidden scroll-hide">
-              <div data-timeline-track className="h-full flex flex-col" style={{ width: `${Math.max(100, (numDays / (zoomDays || numDays)) * 100)}%` }}>
-                {/* Day labels */}
-                <div className="flex border-b border-border-neutral divide-x divide-border-neutral bg-slate-50/30 flex-shrink-0" style={{ height: 28 }}>
-                  {dayLabels.map(({ date, weekday }, i) => (
-                    <div key={i} className="flex-1 flex flex-col">
-                      <div className="flex-1 flex items-center justify-center gap-1 text-[9px] font-bold text-slate-400 uppercase tracking-tighter border-b border-slate-100">
-                        <span className="text-slate-300">{weekday}</span>
-                        <span>{date}</span>
-                      </div>
-                      <div className="flex h-3 divide-x divide-slate-100">
-                        {['M', 'A', 'E'].map((p) => (
-                          <div key={p} className="flex-1 flex items-center justify-center text-[9px] font-semibold text-slate-300">{p}</div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
+              <div data-timeline-track className="h-full" style={{ width: `${Math.max(100, (displayDays / ((zoomDays || numDays) + 2)) * 100)}%`, display: 'grid', gridTemplateColumns: `1fr repeat(${numDays}, 1fr) 1fr`, gridTemplateRows: '28px 1fr' }}>
+                {/* Day labels — buffer before */}
+                <div className="flex flex-col bg-slate-100/80 border-b border-r border-border-neutral">
+                  <div className="flex-1 flex items-center justify-center gap-1 text-[9px] font-bold text-slate-300 uppercase tracking-tighter border-b border-slate-100">
+                    <span className="text-slate-200">{bufferBefore.weekday}</span>
+                    <span className="text-slate-300">{bufferBefore.date}</span>
+                  </div>
+                  <div className="flex h-3 divide-x divide-slate-100">
+                    {['M', 'A', 'E'].map((p) => (
+                      <div key={p} className="flex-1 flex items-center justify-center text-[9px] font-semibold text-slate-200">{p}</div>
+                    ))}
+                  </div>
                 </div>
-                {/* Stay blocks */}
+                {/* Day labels — trip days */}
+                {dayLabels.map(({ date, weekday }, i) => (
+                  <div key={i} className="flex flex-col border-b border-r border-border-neutral bg-slate-50/30">
+                    <div className="flex-1 flex items-center justify-center gap-1 text-[9px] font-bold text-slate-400 uppercase tracking-tighter border-b border-slate-100">
+                      <span className="text-slate-300">{weekday}</span>
+                      <span>{date}</span>
+                    </div>
+                    <div className="flex h-3 divide-x divide-slate-100">
+                      {['M', 'A', 'E'].map((p) => (
+                        <div key={p} className="flex-1 flex items-center justify-center text-[9px] font-semibold text-slate-300">{p}</div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+                {/* Day labels — buffer after */}
+                <div className="flex flex-col bg-slate-100/80 border-b border-border-neutral">
+                  <div className="flex-1 flex items-center justify-center gap-1 text-[9px] font-bold text-slate-300 uppercase tracking-tighter border-b border-slate-100">
+                    <span className="text-slate-200">{bufferAfter.weekday}</span>
+                    <span className="text-slate-300">{bufferAfter.date}</span>
+                  </div>
+                  <div className="flex h-3 divide-x divide-slate-100">
+                    {['M', 'A', 'E'].map((p) => (
+                      <div key={p} className="flex-1 flex items-center justify-center text-[9px] font-semibold text-slate-200">{p}</div>
+                    ))}
+                  </div>
+                </div>
+                {/* Stay zone — buffer before */}
+                <button
+                  onClick={extendTripBefore}
+                  className="group/buf relative flex items-center justify-center border-r border-border-neutral transition-colors hover:bg-slate-100/60"
+                  style={{
+                    background: 'repeating-linear-gradient(-45deg, transparent, transparent 4px, rgba(148,163,184,0.13) 4px, rgba(148,163,184,0.13) 8px), rgba(241,245,249,0.8)',
+                  }}
+                  title="Extend trip one day earlier"
+                >
+                  <div className="flex flex-col items-center gap-0.5 opacity-0 group-hover/buf:opacity-100 transition-opacity">
+                    <Plus className="w-3.5 h-3.5 text-slate-400" />
+                    <span className="text-[8px] font-bold text-slate-400 uppercase">Extend</span>
+                  </div>
+                </button>
+                {/* Stay zone — main (spans all trip day columns) */}
                 <div
                   ref={timelineZoneRef}
-                  className="flex-1 relative"
+                  className="relative overflow-hidden"
                   style={{
+                    gridColumn: `2 / ${numDays + 2}`,
                     backgroundImage: 'linear-gradient(to right, rgba(0,0,0,0.06) 1px, transparent 1px), linear-gradient(to right, rgba(0,0,0,0.02) 1px, transparent 1px)',
                     backgroundSize: `calc(100% / ${numDays}) 100%, calc(100% / ${numDays * 3}) 100%`,
                     cursor: (timelineHoverDay !== null || timelineDragCreate) ? 'crosshair' : undefined,
@@ -4338,6 +4399,20 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                     )}
                   </div>
                 </div>
+                {/* Stay zone — buffer after */}
+                <button
+                  onClick={extendTripAfter}
+                  className="group/buf relative flex items-center justify-center border-l border-border-neutral transition-colors hover:bg-slate-100/60"
+                  style={{
+                    background: 'repeating-linear-gradient(-45deg, transparent, transparent 4px, rgba(148,163,184,0.13) 4px, rgba(148,163,184,0.13) 8px), rgba(241,245,249,0.8)',
+                  }}
+                  title="Extend trip one day later"
+                >
+                  <div className="flex flex-col items-center gap-0.5 opacity-0 group-hover/buf:opacity-100 transition-opacity">
+                    <Plus className="w-3.5 h-3.5 text-slate-400" />
+                    <span className="text-[8px] font-bold text-slate-400 uppercase">Extend</span>
+                  </div>
+                </button>
               </div>
             </div>
           </section>
