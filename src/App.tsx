@@ -2998,7 +2998,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
   const sortedStays = useMemo(() => [...trip.stays].sort((a, b) => a.startSlot - b.startSlot), [trip.stays]);
   const overlaps = useMemo(() => getOverlapIds(sortedStays), [sortedStays]);
   const selectedStay = useMemo(
-    () => sortedStays.find((s) => s.id === selectedStayId) ?? sortedStays[0] ?? null,
+    () => selectedStayId ? (sortedStays.find((s) => s.id === selectedStayId) ?? null) : null,
     [selectedStayId, sortedStays],
   );
   const stayDays = useMemo(() => selectedStay ? deriveStayDays(trip, selectedStay) : [], [selectedStay, trip]);
@@ -3701,14 +3701,16 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                                 borderColor: isSelected ? stay.color : `color-mix(in srgb, ${stay.color} 35%, transparent)`,
                                 boxShadow: isSelected ? `0 0 0 2px white, 0 0 0 4px ${stay.color}, 0 4px 12px color-mix(in srgb, ${stay.color} 25%, transparent)` : undefined,
                               }}
-                              onClick={() => { setSelectedStayId(stay.id); setSidebarTab('overview'); }}
+                              onClick={() => {
+                                if (selectedStay?.id === stay.id) { setSelectedStayId(''); }
+                                else { setSelectedStayId(stay.id); setSidebarTab('overview'); }
+                              }}
                               onMouseEnter={() => setHoveredStayId(stay.id)}
                               onMouseLeave={() => setHoveredStayId(null)}
                               onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedStayId(stay.id); setSidebarTab('overview'); } }}
                               onMouseDown={(e) => {
                                 // Only start move drag from the body (not resize handles)
                                 if ((e.target as HTMLElement).dataset.handle) return;
-                                setSelectedStayId(stay.id);
                                 setDragState({ stayId: stay.id, mode: 'move', originX: e.clientX, originalStart: stay.startSlot, originalEnd: stay.endSlot });
                               }}
                             >
@@ -4129,8 +4131,15 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                     <button
                       aria-label={mapMode === 'overview' ? 'Show stay spots' : 'Show trip overview'}
                       onClick={() => {
-                        if (mapMode === 'overview') { setMapMode('stay'); }
-                        else { setMapMode('overview'); setMapDayFilter(null); }
+                        if (mapMode === 'overview') {
+                          // Re-select first stay to go back to stay mode
+                          if (sortedStays.length > 0) setSelectedStayId(sortedStays[0].id);
+                          setMapMode('stay');
+                        } else {
+                          setSelectedStayId('');
+                          setMapMode('overview');
+                          setMapDayFilter(null);
+                        }
                       }}
                       className={`p-1.5 rounded-lg transition-colors focus-visible:ring-2 focus-visible:ring-primary/50 ${
                         mapMode === 'overview'
