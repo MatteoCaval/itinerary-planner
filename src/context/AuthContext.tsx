@@ -2,7 +2,7 @@ import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, 
 import type { User } from 'firebase/auth';
 import { getFirebaseAuth } from '../firebase';
 import { trackError } from '../services/telemetry';
-import { ENABLE_ACCOUNT_AUTH } from '../constants/featureFlags';
+const ENABLE_ACCOUNT_AUTH = true;
 
 type AuthActionResult = {
   success: boolean;
