@@ -1546,7 +1546,7 @@ function SortableVisitCard({ visit, isSelected, onSelect, onEdit }: {
           ? 'border-primary shadow-md ring-2 ring-primary/25 bg-primary/[0.02]'
           : isSelected
           ? 'border-primary/30 shadow-[0_4px_12px_rgba(236,91,19,0.1)] ring-1 ring-primary/10'
-          : 'border-slate-200 hover:border-slate-300 hover:shadow-sm'
+          : 'border-slate-200 hover:border-slate-300 hover:shadow-md'
       }`}
     >
       <div className={`absolute left-0 top-0 bottom-0 w-1 rounded-l-lg ${getVisitTypeBg(visit.type)}`} />
@@ -3468,7 +3468,8 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                 onClick={() => { const p = hist.undo(); if (p) updateTrip(() => p); }}
                 disabled={!hist.canUndo}
                 title="Undo (Ctrl+Z)"
-                className="hidden sm:block p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors disabled:opacity-40"
+                aria-label="Undo"
+                className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors disabled:opacity-40"
               >
                 <Undo2 className="w-4 h-4" />
               </button>
@@ -3476,7 +3477,8 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                 onClick={() => { const n = hist.redo(); if (n) updateTrip(() => n); }}
                 disabled={!hist.canRedo}
                 title="Redo (Ctrl+Y)"
-                className="hidden sm:block p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors disabled:opacity-40"
+                aria-label="Redo"
+                className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors disabled:opacity-40"
               >
                 <Redo2 className="w-4 h-4" />
               </button>
