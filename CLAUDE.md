@@ -107,6 +107,16 @@ src/theme.ts
 - **`src/types.ts`** is for the legacy/context-based app. The CHRONOS app uses types from `src/domain/types.ts`.
 - **Never touch `.env.local`.**
 
+## Working on UI Features
+
+When implementing or modifying any UI feature, don't just code what's literally asked — think like a product designer:
+
+- **Before building:** Consider how the feature interacts with existing UI. Will it conflict with other panels? Is the placement intuitive? Are there better patterns? Flag concerns and propose alternatives before writing code.
+- **During building:** Handle edge cases proactively — empty states, mobile layout, very long text, many items, narrow containers. Don't wait for these to be reported.
+- **After building:** Self-review the result before presenting it. Would a first-time user understand this? Is the affordance clear (hover states, icons, cursors)? Does it look polished and consistent with the rest of the app? Fix issues before saying "done."
+- **Challenge the approach:** If an idea has a UX problem, say so and propose the better alternative. Don't implement something that clearly conflicts with the existing layout just because it was asked.
+- **Extend ideas:** Fill in the details with good judgment — discoverability cues, transitions, confirmation dialogs for destructive actions, mobile behavior.
+
 ## Optional Integrations (env vars)
 
 All optional — app works without them:
