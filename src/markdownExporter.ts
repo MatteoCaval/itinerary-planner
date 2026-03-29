@@ -1,4 +1,9 @@
-import { Day, Location, Route, TRANSPORT_LABELS } from './types';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// Types inlined after legacy ./types removal — permissive to handle the legacy format
+type Day = { id: string; date: string; label?: string; accommodation?: { name: string; notes?: string } };
+type Location = any;
+type Route = { id: string; fromLocationId: string; toLocationId: string; transportType: string; duration?: string; cost?: number; notes?: string };
+const TRANSPORT_LABELS: Record<string, string> = { train: 'Train', flight: 'Flight', drive: 'Drive', ferry: 'Ferry', bus: 'Bus', walk: 'Walk', car: 'Car', other: 'Other' };
 import { getSectionIndex } from './constants/daySection';
 
 export const generateMarkdown = (days: Day[], locations: Location[], routes: Route[], startDate: string, endDate: string) => {
@@ -23,7 +28,7 @@ export const generateMarkdown = (days: Day[], locations: Location[], routes: Rou
     const hasSubs = !!(loc.subLocations && loc.subLocations.length > 0);
     if (hasSubs) {
       const parentStartIdx = days.findIndex(d => d.id === loc.startDayId);
-      loc.subLocations!.forEach(sub => {
+      loc.subLocations!.forEach((sub: any) => {
         if (sub.dayOffset === undefined || parentStartIdx === -1) {
           pushItem(null, { location: sub, parent: loc });
           return;
@@ -101,7 +106,7 @@ export const generateMarkdown = (days: Day[], locations: Location[], routes: Rou
 
         if (location.checklist && location.checklist.length > 0) {
           md += `**Checklist:**\n`;
-          location.checklist.forEach(item => {
+          location.checklist.forEach((item: any) => {
             md += `- [${item.completed ? 'x' : ' '}] ${item.text}\n`;
           });
           md += `\n`;
@@ -109,7 +114,7 @@ export const generateMarkdown = (days: Day[], locations: Location[], routes: Rou
 
         if (location.links && location.links.length > 0) {
           md += `**Links:**\n`;
-          location.links.forEach(link => {
+          location.links.forEach((link: any) => {
             md += `- [${link.label}](${link.url})\n`;
           });
           md += `\n`;

@@ -1,4 +1,4 @@
-import { DaySection } from '../types';
+type DaySection = 'morning' | 'afternoon' | 'evening';
 
 export const SECTION_ORDER: DaySection[] = ['morning', 'afternoon', 'evening'];
 

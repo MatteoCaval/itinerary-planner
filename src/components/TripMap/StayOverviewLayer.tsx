@@ -5,7 +5,7 @@ import { ChevronRight } from 'lucide-react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { createStayMarkerIcon, getPointAt, getAngleAt } from './markerFactories';
 import { useRouteGeometry } from '../../hooks/useRouteGeometry';
-import type { TransportType } from '../../types';
+import type { TravelMode as TransportType } from '../../domain/types';
 
 type TravelMode = 'train' | 'flight' | 'drive' | 'ferry' | 'bus' | 'walk';
 
@@ -41,8 +41,7 @@ const TRAVEL_EMOJI: Record<TravelMode, string> = {
 const STRAIGHT_LINE_MODES = new Set<TravelMode>(['flight', 'ferry']);
 
 function toTransportType(mode: TravelMode): TransportType {
-  if (mode === 'drive') return 'car';
-  return mode as TransportType;
+  return mode;
 }
 
 type StayOverviewLayerProps = {

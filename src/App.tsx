@@ -2364,7 +2364,7 @@ function ProfileMenu({ trip, onImport, onImportFromCode, onGoHome, onSignOut }: 
     const start = trip.startDate || new Date().toISOString().split('T')[0];
     const legacy = hybridTripToLegacy({ ...trip, startDate: start });
     const endDate = addDaysTo(new Date(start), trip.totalDays - 1).toISOString().split('T')[0];
-    const md = generateMarkdown(legacy.days, legacy.locations as unknown as import('./types').Location[], legacy.routes, start, endDate);
+    const md = generateMarkdown(legacy.days, legacy.locations as any, legacy.routes, start, endDate);
     downloadMarkdown(md, `${trip.name.toLowerCase().replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.md`);
     setOpen(false);
   };

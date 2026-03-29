@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { fetchRouteGeometry, LatLngTuple } from '../utils/routing';
-import { Route, TransportType } from '../types';
+import type { TravelMode } from '../domain/types';
+type TransportType = TravelMode;
+type Route = { id: string; [key: string]: unknown };
 
 interface RouteSegmentInput {
   key: string;

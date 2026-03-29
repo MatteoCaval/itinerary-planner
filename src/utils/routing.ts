@@ -1,4 +1,4 @@
-import { TransportType } from '../types';
+import type { TravelMode as TransportType } from '../domain/types';
 import { fetchJson } from '../services/httpClient';
 import { trackError } from '../services/telemetry';
 

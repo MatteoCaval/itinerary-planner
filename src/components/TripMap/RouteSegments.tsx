@@ -6,7 +6,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { getPointAt, getAngleAt, haversineKm } from './markerFactories';
 import type { LatLngTuple } from './markerFactories';
 import { useRouteGeometry } from '../../hooks/useRouteGeometry';
-import type { TransportType } from '../../types';
+import type { TravelMode as TransportType } from '../../domain/types';
 
 interface VisitPoint {
   id: string;
