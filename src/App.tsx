@@ -973,10 +973,13 @@ function VisitFormModal({ initial, title, onClose, onSave, onDelete, onUnschedul
           />
         </div>
 
-        {/* Checklist */}
-        <div>
-          <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-1.5 block">Checklist</label>
-          <div className="space-y-1">
+        {/* Checklist (collapsible) */}
+        <details open={checklist.length > 0 || undefined}>
+          <summary className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-1.5 cursor-pointer select-none flex items-center gap-1.5 hover:text-slate-700 transition-colors">
+            <ChevronDown className="w-3 h-3 transition-transform [details:not([open])_&]:-rotate-90" />
+            Checklist {checklist.length > 0 && <span className="text-[9px] font-bold text-primary bg-primary/10 px-1.5 rounded-full">{checklist.length}</span>}
+          </summary>
+          <div className="space-y-1 mt-1">
             {checklist.map((item) => (
               <div key={item.id} className="flex items-center gap-2 group px-2">
                 <input
@@ -1013,12 +1016,15 @@ function VisitFormModal({ initial, title, onClose, onSave, onDelete, onUnschedul
               </button>
             </div>
           </div>
-        </div>
+        </details>
 
-        {/* Links */}
-        <div>
-          <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-1.5 block">Links</label>
-          <div className="space-y-1">
+        {/* Links (collapsible) */}
+        <details open={links.length > 0 || undefined}>
+          <summary className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-1.5 cursor-pointer select-none flex items-center gap-1.5 hover:text-slate-700 transition-colors">
+            <ChevronDown className="w-3 h-3 transition-transform [details:not([open])_&]:-rotate-90" />
+            Links {links.length > 0 && <span className="text-[9px] font-bold text-primary bg-primary/10 px-1.5 rounded-full">{links.length}</span>}
+          </summary>
+          <div className="space-y-1 mt-1">
             {links.map((link, i) => (
               <div key={i} className="flex items-center gap-2 group px-2">
                 <ExternalLink className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
@@ -1065,16 +1071,16 @@ function VisitFormModal({ initial, title, onClose, onSave, onDelete, onUnschedul
               </div>
             </div>
           </div>
-        </div>
+        </details>
 
         {/* Delete / unschedule */}
         {(onDelete || onUnschedule) && !confirmDelete && (
           <div className="flex gap-2">
             {onUnschedule && (
               <button onClick={() => { onUnschedule(); onClose(); }}
-                className="flex-1 py-1.5 border border-slate-200 rounded-lg text-xs font-bold text-slate-500 hover:bg-slate-50 transition-colors flex items-center justify-center gap-1.5"
+                className="flex-1 py-1.5 border border-blue-200 rounded-lg text-xs font-bold text-blue-500 hover:bg-blue-50 transition-colors flex items-center justify-center gap-1.5"
               >
-                <X className="w-3 h-3" /> Move to Unplanned
+                <ArrowLeftRight className="w-3 h-3" /> Move to Unplanned
               </button>
             )}
             {onDelete && (
@@ -2987,10 +2993,19 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
   }, [user?.uid]);
 
   // ── Cloud sync: auto-save on store change ─────────────────────────────────
+  const [syncStatus, setSyncStatus] = useState<'saved' | 'saving' | 'error' | 'local'>('local');
   useEffect(() => {
-    if (!user || isDemoMode) return;
-    if (pendingMerge) return; // don't overwrite cloud while merge is pending
-    const timer = setTimeout(() => saveUserTripStore(user.uid, store), 2000);
+    if (!user || isDemoMode) { setSyncStatus('local'); return; }
+    if (pendingMerge) return;
+    setSyncStatus('saving');
+    const timer = setTimeout(async () => {
+      try {
+        await saveUserTripStore(user.uid, store);
+        setSyncStatus('saved');
+      } catch {
+        setSyncStatus('error');
+      }
+    }, 2000);
     return () => clearTimeout(timer);
   }, [store, user, isDemoMode, pendingMerge]);
 
@@ -3374,15 +3389,22 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
               <span className="text-xs font-bold text-slate-800 truncate max-w-[120px] sm:max-w-none">{trip.name}</span>
               <ChevronDown className="w-3.5 h-3.5 text-slate-400 flex-shrink-0 group-hover:text-slate-600 transition-colors" />
             </button>
-            {/* Date range */}
+            {/* Date range — full on desktop, compact on mobile */}
             <button
               onClick={() => setShowTripEditor(true)}
-              className="hidden md:flex items-center gap-1.5 text-[10px] font-semibold text-slate-500 hover:text-slate-700 hover:bg-slate-50 border border-slate-200/60 px-2.5 py-1 rounded-lg transition-colors flex-shrink-0 group"
+              className="hidden md:flex items-center gap-1.5 text-[10px] font-semibold text-slate-500 hover:text-slate-700 hover:bg-slate-50 border border-slate-200/60 px-2.5 py-1 rounded-lg transition-colors flex-shrink-0"
             >
               <span className="font-bold text-slate-700">{tripStartLabel}</span>
               <span className="text-slate-300">–</span>
               <span className="font-bold text-slate-700">{fmt(addDaysTo(safeDate(trip.startDate), trip.totalDays - 1), { month: 'short', day: 'numeric' })}</span>
               <span className="ml-0.5 text-[9px] font-extrabold text-primary bg-primary/8 px-1.5 py-0.5 rounded-md">{trip.totalDays}d</span>
+            </button>
+            <button
+              onClick={() => setShowTripEditor(true)}
+              className="md:hidden flex items-center gap-1 text-[9px] font-bold text-primary bg-primary/8 px-2 py-1 rounded-lg transition-colors flex-shrink-0"
+            >
+              <Calendar className="w-3 h-3" />
+              {trip.totalDays}d
             </button>
           </div>
 
@@ -3735,7 +3757,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                                   setDragState({ stayId: stay.id, mode: 'resize-start', originX: e.clientX, originalStart: stay.startSlot, originalEnd: stay.endSlot });
                                 }}
                               >
-                                <div className="w-0.5 h-4 rounded-full bg-current opacity-0 group-hover:opacity-30 transition-opacity pointer-events-none"
+                                <div className="w-0.5 h-4 rounded-full bg-current opacity-15 group-hover:opacity-40 transition-opacity pointer-events-none"
                                   style={{ color: isSelected ? 'white' : stay.color }} />
                               </div>
                               {/* Content */}
@@ -3783,7 +3805,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                                   setDragState({ stayId: stay.id, mode: 'resize-end', originX: e.clientX, originalStart: stay.startSlot, originalEnd: stay.endSlot });
                                 }}
                               >
-                                <div className="w-0.5 h-4 rounded-full bg-current opacity-0 group-hover:opacity-30 transition-opacity pointer-events-none"
+                                <div className="w-0.5 h-4 rounded-full bg-current opacity-15 group-hover:opacity-40 transition-opacity pointer-events-none"
                                   style={{ color: isSelected ? 'white' : stay.color }} />
                               </div>
                             </div>
@@ -3872,15 +3894,15 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                     onClick={() => setSidebarTab('overview')}
                     className={`flex-1 flex items-center justify-center gap-1.5 text-[11px] font-semibold whitespace-nowrap -mb-px border-b-2 transition-all duration-150 ${sidebarTab === 'overview' ? 'bg-white text-primary border-primary shadow-[0_1px_0_0_white]' : 'text-slate-400 hover:text-slate-600 border-transparent hover:bg-white/60'}`}
                   >
-                    Overview
+                    Details
                   </button>
                   <button
                     onClick={() => setSidebarTab('unplanned')}
                     className={`flex-1 flex items-center justify-center gap-1.5 text-[11px] font-semibold whitespace-nowrap -mb-px border-b-2 transition-all duration-150 ${sidebarTab === 'unplanned' ? 'bg-white text-primary border-primary shadow-[0_1px_0_0_white]' : 'text-slate-400 hover:text-slate-600 border-transparent hover:bg-white/60'}`}
                   >
                     {inboxVisits.length > 0 ? (
-                      <>Unplanned <span className={`inline-flex items-center justify-center w-4 h-4 rounded-full text-[9px] font-bold ${sidebarTab === 'unplanned' ? 'bg-primary/15 text-primary' : 'bg-slate-200 text-slate-500'}`}>{inboxVisits.length}</span></>
-                    ) : 'Unplanned'}
+                      <>Inbox <span className={`inline-flex items-center justify-center w-4 h-4 rounded-full text-[9px] font-bold ${sidebarTab === 'unplanned' ? 'bg-primary/15 text-primary' : 'bg-slate-200 text-slate-500'}`}>{inboxVisits.length}</span></>
+                    ) : 'Inbox'}
                   </button>
                   <button
                     onClick={() => setAddingToInbox(true)}
@@ -3903,8 +3925,15 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                 />
               )}
               {sidebarTab === 'overview' && !selectedStay && (
-                <div className="flex-1 flex items-center justify-center p-6">
-                  <p className="text-[10px] text-slate-400 text-center leading-relaxed">Select a stay in the timeline to see its overview.</p>
+                <div className="flex-1 flex flex-col items-center justify-center p-6 gap-3">
+                  <div className="size-10 rounded-xl bg-primary/8 flex items-center justify-center">
+                    <Navigation className="w-5 h-5 text-primary/40" />
+                  </div>
+                  <div className="text-center">
+                    <p className="text-[11px] font-bold text-slate-600">Trip Overview</p>
+                    <p className="text-[10px] text-slate-400 mt-1">{sortedStays.length} destination{sortedStays.length !== 1 ? 's' : ''} · {trip.totalDays} days</p>
+                  </div>
+                  <p className="text-[9px] text-slate-400 text-center leading-relaxed">Click a destination on the timeline to see its details and plan activities.</p>
                 </div>
               )}
 
@@ -3957,18 +3986,20 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                   : [];
                 return (
                   <div key={day.dayOffset} className={`flex-none w-72 max-md:w-[85vw] max-md:snap-start flex flex-col gap-4 rounded-xl transition-colors ${mapMode === 'detail' && mapDayFilter === day.dayOffset ? 'ring-2 ring-primary/40 bg-primary/[0.03] p-2 -m-2' : ''}`}>
-                    <div
-                      className="flex items-center justify-between cursor-pointer group"
+                    <button
+                      className={`flex items-center justify-between w-full cursor-pointer group rounded-lg px-2 py-1 -mx-2 transition-colors ${mapMode === 'detail' && mapDayFilter === day.dayOffset ? 'bg-primary/8' : 'hover:bg-slate-50'}`}
                       onClick={() => {
                         if (mapDayFilter === day.dayOffset) { setMapDayFilter(null); setMapMode('stay'); }
                         else { setMapDayFilter(day.dayOffset); setMapMode('detail'); }
                       }}
+                      title="Click to show this day on the map"
                     >
                       <h4 className="font-extrabold text-sm tracking-tight group-hover:text-primary transition-colors">
                         Day {(day.dayOffset + 1).toString().padStart(2, '0')}
                         <span className="text-slate-400 font-medium ml-1.5">{fmt(day.date, { weekday: 'short', month: 'short', day: 'numeric' })}</span>
                       </h4>
-                    </div>
+                      <MapPin className={`w-3 h-3 transition-colors ${mapMode === 'detail' && mapDayFilter === day.dayOffset ? 'text-primary' : 'text-slate-300 group-hover:text-primary/50'}`} />
+                    </button>
                     {/* Accommodation bar — rendered on the first day of each accommodation group */}
                     {(() => {
                       const group = accommodationGroups.find((g) => g.startDayOffset === day.dayOffset);
@@ -3996,7 +4027,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                           <div className="absolute inset-y-0 left-0 z-10" style={{ width: `calc(${group.nights} * var(--day-col-width) + ${group.nights - 1} * var(--day-col-gap))` }}>
                             <button
                               onClick={() => setEditingAccommodation({ group })}
-                              className="h-full w-full bg-white border border-primary/30 rounded-lg shadow-sm flex items-center px-4 gap-3 hover:border-primary/50 hover:shadow-md transition-all cursor-pointer text-left"
+                              className="group/accom h-full w-full bg-white border border-primary/30 rounded-lg shadow-sm flex items-center px-4 gap-3 hover:border-primary/50 hover:shadow-md transition-all cursor-pointer text-left"
                             >
                               <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary flex-shrink-0">
                                 <Hotel className="w-4 h-4" />
@@ -4018,7 +4049,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                                   {group.accommodation.notes}
                                 </span>
                               )}
-                              <Pencil className="w-3.5 h-3.5 text-slate-300 flex-shrink-0" />
+                              <Pencil className="w-3.5 h-3.5 text-slate-300 group-hover/accom:text-primary/60 transition-colors flex-shrink-0" />
                             </button>
                           </div>
                         </div>
@@ -4096,10 +4127,10 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
               {!mapExpanded && !mapCollapsed && !mapMini && (
                 <div
                   onMouseDown={startMapResize}
-                  className="absolute left-0 top-0 bottom-0 w-1.5 cursor-col-resize z-50 group"
+                  className="absolute left-0 top-0 bottom-0 w-3 -ml-1.5 cursor-col-resize z-50 group flex items-center justify-center"
                   title="Drag to resize"
                 >
-                  <div className="absolute inset-y-0 left-0 w-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity bg-primary/40" style={{ left: 2 }} />
+                  <div className="w-1 h-8 rounded-full bg-slate-300/60 group-hover:bg-primary/50 group-hover:h-12 transition-all" />
                 </div>
               )}
               {/* Map panel header */}
@@ -4402,8 +4433,18 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
         <footer className="hidden md:flex bg-white text-slate-500 px-6 py-1.5 text-[10px] font-bold justify-between items-center border-t border-border-neutral flex-shrink-0">
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-2">
-              <div className="size-1.5 rounded-full bg-emerald-500" />
-              <span className="uppercase tracking-widest text-slate-400">Saved</span>
+              <div className={`size-1.5 rounded-full ${
+                syncStatus === 'saved' ? 'bg-emerald-500' :
+                syncStatus === 'saving' ? 'bg-amber-400 animate-pulse' :
+                syncStatus === 'error' ? 'bg-red-500' :
+                'bg-slate-400'
+              }`} />
+              <span className="uppercase tracking-widest text-slate-400">
+                {syncStatus === 'saved' ? 'Synced' :
+                 syncStatus === 'saving' ? 'Saving…' :
+                 syncStatus === 'error' ? 'Sync error' :
+                 'Local only'}
+              </span>
             </div>
             <div className="flex items-center gap-2 text-slate-400">
               <Database className="w-3 h-3" />
