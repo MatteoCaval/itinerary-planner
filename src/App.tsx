@@ -40,7 +40,6 @@ import {
   adjustStaysForDateChange, applyTimelineDrag, extendTripAfter, extendTripBefore,
   shrinkTripAfter, shrinkTripBefore,
 } from './domain/tripMutations';
-import LegacyApp from './features/legacy/LegacyApp';
 import { searchPlace, type PlaceSearchResult } from './utils/geocoding';
 import { generateHybridItinerary, type AIHybridStay } from './aiService';
 import { generateMarkdown, downloadMarkdown } from './markdownExporter';
@@ -52,7 +51,6 @@ import { searchPhoto } from './unsplash';
 import 'leaflet/dist/leaflet.css';
 
 // ─── View switcher ────────────────────────────────────────────────────────────
-const APP_VIEW_KEY = 'itinerary-app-view-v1';
 const EMPTY_TRIP = createEmptyTrip();
 
 // ─── Transport icon ───────────────────────────────────────────────────────────
@@ -2332,11 +2330,10 @@ function AIPlannerModal({
 }
 
 // ─── Profile dropdown menu ────────────────────────────────────────────────────
-function ProfileMenu({ trip, onImport, onImportFromCode, onSwitchToLegacy, onGoHome, onSignOut }: {
+function ProfileMenu({ trip, onImport, onImportFromCode, onGoHome, onSignOut }: {
   trip: HybridTrip;
   onImport: (data: HybridTrip) => void;
   onImportFromCode: () => void;
-  onSwitchToLegacy: () => void;
   onGoHome: () => void;
   onSignOut: () => void;
 }) {
@@ -2471,12 +2468,6 @@ function ProfileMenu({ trip, onImport, onImportFromCode, onSwitchToLegacy, onGoH
                 <Compass className="w-3 h-3 text-slate-500" />
               </div>
               Back to start
-            </button>
-            <button onClick={() => { onSwitchToLegacy(); setOpen(false); }} className="w-full flex items-center gap-2.5 px-2 py-2 text-[11px] font-semibold text-slate-500 hover:bg-slate-50 rounded-lg transition-colors text-left">
-              <div className="size-6 rounded-md bg-slate-100 flex items-center justify-center flex-shrink-0">
-                <Layers className="w-3 h-3 text-slate-400" />
-              </div>
-              Classic view
             </button>
           </div>
 
@@ -2983,7 +2974,7 @@ function WelcomeScreen({ onCreateTrip, onLoadDemo }: { onCreateTrip: () => void;
 }
 
 // ─── CHRONOS App ──────────────────────────────────────────────────────────────
-function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
+function ChronosApp() {
   // ── Store (multi-trip) ───────────────────────────────────────────────────
   const [store, setStore] = useState<TripStore>(() => loadStore());
   const [isDemoMode, setIsDemoMode] = useState(false);
@@ -3699,7 +3690,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
               <span className="hidden sm:block">AI</span>
             </button>
             {/* Profile menu */}
-            <ProfileMenu trip={trip} onImport={(data) => setTrip(() => data)} onImportFromCode={() => setShowImportCode(true)} onSwitchToLegacy={onSwitchToLegacy} onGoHome={handleGoHome} onSignOut={handleSignOut} />
+            <ProfileMenu trip={trip} onImport={(data) => setTrip(() => data)} onImportFromCode={() => setShowImportCode(true)} onGoHome={handleGoHome} onSignOut={handleSignOut} />
           </div>
         </header>
 
@@ -5067,36 +5058,12 @@ class ChronosErrorBoundary extends Component<
   }
 }
 
-// ─── Root switcher ────────────────────────────────────────────────────────────
+// ─── Root ─────────────────────────────────────────────────────────────────────
 export default function App() {
-  const [view, setView] = useState<'itinerary' | 'legacy'>(
-    () => (localStorage.getItem(APP_VIEW_KEY) as 'itinerary' | 'legacy') ?? 'itinerary',
-  );
-
-  const switchTo = (v: 'itinerary' | 'legacy') => {
-    setView(v);
-    localStorage.setItem(APP_VIEW_KEY, v);
-  };
-
-  if (view === 'legacy') {
-    return (
-      <div className="relative h-screen">
-        <LegacyApp />
-        <button
-          onClick={() => switchTo('itinerary')}
-          className="fixed bottom-4 right-4 z-[9999] flex items-center gap-2 bg-slate-900 text-slate-200 text-[11px] font-bold px-3 py-2 rounded-full shadow-xl border border-slate-700 hover:bg-slate-700 transition-all"
-        >
-          <Layers className="w-3.5 h-3.5" />
-          New View
-        </button>
-      </div>
-    );
-  }
-
   return (
     <ChronosErrorBoundary>
       <AuthProvider>
-        <ChronosApp onSwitchToLegacy={() => switchTo('legacy')} />
+        <ChronosApp />
       </AuthProvider>
     </ChronosErrorBoundary>
   );
