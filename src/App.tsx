@@ -316,7 +316,7 @@ function AccommodationEditorModal({ initial, allNights, initialNights, existingN
 
         {/* Name input with autocomplete */}
         <div className="relative">
-          <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-1.5 block">
+          <label className="text-[11px] font-extrabold uppercase tracking-widest text-slate-500 mb-1.5 block">
             Hotel / Address <span className="text-red-400">*</span>
           </label>
           <div className="relative">
@@ -369,7 +369,7 @@ function AccommodationEditorModal({ initial, allNights, initialNights, existingN
                     <MapPin className="w-3.5 h-3.5 text-slate-400 flex-shrink-0 mt-0.5" />
                     <div className="min-w-0">
                       <p className="text-xs font-semibold text-slate-800 truncate">{parts[0].trim()}</p>
-                      <p className="text-[10px] text-slate-500 truncate">{parts.slice(1, 4).join(',').trim()}</p>
+                      <p className="text-[11px] text-slate-500 truncate">{parts.slice(1, 4).join(',').trim()}</p>
                     </div>
                   </button>
                 );
@@ -380,7 +380,7 @@ function AccommodationEditorModal({ initial, allNights, initialNights, existingN
 
         {/* Notes */}
         <div>
-          <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-1.5 block">Notes</label>
+          <label className="text-[11px] font-extrabold uppercase tracking-widest text-slate-500 mb-1.5 block">Notes</label>
           <input
             className="w-full border border-slate-200 rounded-lg px-3 py-2 text-xs focus:ring-1 focus:ring-primary focus:border-primary outline-none"
             placeholder="Address, confirmation #, etc."
@@ -391,7 +391,7 @@ function AccommodationEditorModal({ initial, allNights, initialNights, existingN
 
         {/* Cost */}
         <div>
-          <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-1.5 block">Nightly Cost</label>
+          <label className="text-[11px] font-extrabold uppercase tracking-widest text-slate-500 mb-1.5 block">Nightly Cost</label>
           <input
             className="w-full border border-slate-200 rounded-lg px-3 py-2 text-xs focus:ring-1 focus:ring-primary focus:border-primary outline-none"
             placeholder="0.00"
@@ -406,7 +406,7 @@ function AccommodationEditorModal({ initial, allNights, initialNights, existingN
         {/* Night picker */}
         {allNights.length > 1 && (
           <div>
-            <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-1.5 block">
+            <label className="text-[11px] font-extrabold uppercase tracking-widest text-slate-500 mb-1.5 block">
               Nights covered
             </label>
             <div className="border border-slate-200 rounded-lg overflow-hidden">
@@ -424,7 +424,7 @@ function AccommodationEditorModal({ initial, allNights, initialNights, existingN
                   <span className="text-xs font-semibold text-slate-700">
                     Night {dayOffset + 1}
                   </span>
-                  <span className="text-[10px] text-slate-400 ml-auto flex-shrink-0">
+                  <span className="text-[11px] text-slate-400 ml-auto flex-shrink-0">
                     {fmt(date, { weekday: 'short', month: 'short', day: 'numeric' })}
                   </span>
                 </label>
@@ -494,7 +494,7 @@ function RouteEditorModal({ stay, nextStay, onClose, onSave }: {
 
         {/* Transport mode picker */}
         <div>
-          <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 block">Transport Mode</label>
+          <label className="text-[11px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 block">Transport Mode</label>
           <div className="grid grid-cols-3 gap-2">
             {TRAVEL_MODES.map((m) => (
               <button
@@ -509,7 +509,7 @@ function RouteEditorModal({ stay, nextStay, onClose, onSave }: {
                 style={mode === m ? { borderColor: modeConfig[m].color, color: modeConfig[m].color } : {}}
               >
                 <TransportIcon mode={m} className="w-5 h-5" />
-                <span className="text-[10px] font-bold uppercase tracking-tight">{modeConfig[m].label}</span>
+                <span className="text-[11px] font-bold uppercase tracking-tight">{modeConfig[m].label}</span>
               </button>
             ))}
           </div>
@@ -517,7 +517,7 @@ function RouteEditorModal({ stay, nextStay, onClose, onSave }: {
 
         {/* Duration */}
         <div>
-          <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 block">Duration</label>
+          <label className="text-[11px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 block">Duration</label>
           <input
             className="w-full border border-slate-200 rounded-lg px-3 py-2 text-xs focus:ring-1 focus:ring-primary focus:border-primary outline-none"
             placeholder="e.g. 2h 30m"
@@ -528,7 +528,7 @@ function RouteEditorModal({ stay, nextStay, onClose, onSave }: {
 
         {/* Notes */}
         <div>
-          <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 block">Notes</label>
+          <label className="text-[11px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 block">Notes</label>
           <textarea
             className="w-full border border-slate-200 rounded-lg px-3 py-2 text-xs focus:ring-1 focus:ring-primary focus:border-primary outline-none resize-none"
             rows={3}
@@ -569,7 +569,7 @@ function StayEditorModal({ stay, onClose, onSave, onDelete }: {
     <ModalBase title="Edit Stay" onClose={onClose}>
       <div className="space-y-4">
         <div>
-          <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 block">Destination Name</label>
+          <label className="text-[11px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 block">Destination Name</label>
           <input
             className="w-full border border-slate-200 rounded-lg px-3 py-2 text-xs focus:ring-1 focus:ring-primary focus:border-primary outline-none font-semibold"
             value={name}
@@ -578,7 +578,7 @@ function StayEditorModal({ stay, onClose, onSave, onDelete }: {
           />
         </div>
         <div>
-          <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 block">Lodging</label>
+          <label className="text-[11px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 block">Lodging</label>
           <input
             className="w-full border border-slate-200 rounded-lg px-3 py-2 text-xs focus:ring-1 focus:ring-primary focus:border-primary outline-none"
             value={lodging}
@@ -587,7 +587,7 @@ function StayEditorModal({ stay, onClose, onSave, onDelete }: {
           />
         </div>
         <div>
-          <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 block">Color</label>
+          <label className="text-[11px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 block">Color</label>
           <div className="flex gap-2 flex-wrap">
             {STAY_COLORS.map((c) => (
               <button
@@ -692,7 +692,7 @@ function AddStayModal({ onClose, onSave, stayColor, initialDays }: {
 
         {/* Destination search */}
         <div className="relative">
-          <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 block">
+          <label className="text-[11px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 block">
             City or destination
           </label>
           <div className="relative">
@@ -725,7 +725,7 @@ function AddStayModal({ onClose, onSave, stayColor, initialDays }: {
                     <MapPin className="w-3.5 h-3.5 text-slate-400 flex-shrink-0 mt-0.5" />
                     <div className="min-w-0">
                       <p className="text-xs font-semibold text-slate-800 truncate">{parts[0].trim()}</p>
-                      <p className="text-[10px] text-slate-500 truncate">{parts.slice(1, 4).join(',').trim()}</p>
+                      <p className="text-[11px] text-slate-500 truncate">{parts.slice(1, 4).join(',').trim()}</p>
                     </div>
                   </button>
                 );
@@ -733,13 +733,13 @@ function AddStayModal({ onClose, onSave, stayColor, initialDays }: {
             </div>
           )}
           {searchError && (
-            <p className="text-[10px] text-red-500 font-medium mt-1">Search failed — you can still save with a manual name.</p>
+            <p className="text-[11px] text-red-500 font-medium mt-1">Search failed — you can still save with a manual name.</p>
           )}
         </div>
 
         {/* Days stepper */}
         <div>
-          <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 block">
+          <label className="text-[11px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 block">
             Duration
           </label>
           <div className="flex items-center gap-3">
@@ -767,7 +767,7 @@ function AddStayModal({ onClose, onSave, stayColor, initialDays }: {
           <div className="w-2 h-8 rounded-full flex-shrink-0" style={{ background: stayColor }} />
           <div className="flex-1 min-w-0">
             <p className="text-xs font-extrabold text-slate-800 truncate">{name || 'New destination'}</p>
-            <p className="text-[10px] text-slate-400 font-medium mt-0.5">{days} {days === 1 ? 'day' : 'days'} on the timeline</p>
+            <p className="text-[11px] text-slate-400 font-medium mt-0.5">{days} {days === 1 ? 'day' : 'days'} on the timeline</p>
           </div>
           {pickedCoords && (
             <span className="text-[9px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-full flex-shrink-0">
@@ -878,7 +878,7 @@ function VisitFormModal({ initial, title, onClose, onSave, onDelete, onUnschedul
 
         {/* Place search */}
         <div className="relative">
-          <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 block">
+          <label className="text-[11px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 block">
             Place name
           </label>
           <div className="relative">
@@ -911,7 +911,7 @@ function VisitFormModal({ initial, title, onClose, onSave, onDelete, onUnschedul
                     <MapPin className="w-3.5 h-3.5 text-slate-400 flex-shrink-0 mt-0.5" />
                     <div className="min-w-0">
                       <p className="text-xs font-semibold text-slate-800 truncate">{parts[0].trim()}</p>
-                      <p className="text-[10px] text-slate-500 truncate">{parts.slice(1, 4).join(',').trim()}</p>
+                      <p className="text-[11px] text-slate-500 truncate">{parts.slice(1, 4).join(',').trim()}</p>
                     </div>
                   </button>
                 );
@@ -919,13 +919,13 @@ function VisitFormModal({ initial, title, onClose, onSave, onDelete, onUnschedul
             </div>
           )}
           {searchError && (
-            <p className="text-[10px] text-red-500 font-medium mt-1">Search failed — you can still save with a manual name.</p>
+            <p className="text-[11px] text-red-500 font-medium mt-1">Search failed — you can still save with a manual name.</p>
           )}
         </div>
 
         {/* Type grid */}
         <div>
-          <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 block">Category</label>
+          <label className="text-[11px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 block">Category</label>
           <div className="grid grid-cols-5 gap-1.5">
             {VISIT_TYPES.map((t) => {
               const selected = type === t;
@@ -950,7 +950,7 @@ function VisitFormModal({ initial, title, onClose, onSave, onDelete, onUnschedul
 
         {/* Duration */}
         <div>
-          <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-1.5 block">
+          <label className="text-[11px] font-extrabold uppercase tracking-widest text-slate-500 mb-1.5 block">
             Duration
           </label>
           <input
@@ -963,7 +963,7 @@ function VisitFormModal({ initial, title, onClose, onSave, onDelete, onUnschedul
 
         {/* Notes */}
         <div>
-          <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-1.5 block">Notes</label>
+          <label className="text-[11px] font-extrabold uppercase tracking-widest text-slate-500 mb-1.5 block">Notes</label>
           <textarea
             className="w-full border border-slate-200 rounded-lg px-3 py-2 text-xs focus:ring-1 focus:ring-primary focus:border-primary outline-none resize-none"
             rows={2}
@@ -975,7 +975,7 @@ function VisitFormModal({ initial, title, onClose, onSave, onDelete, onUnschedul
 
         {/* Checklist (collapsible) */}
         <details open={checklist.length > 0 || undefined}>
-          <summary className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-1.5 cursor-pointer select-none flex items-center gap-1.5 hover:text-slate-700 transition-colors">
+          <summary className="text-[11px] font-extrabold uppercase tracking-widest text-slate-500 mb-1.5 cursor-pointer select-none flex items-center gap-1.5 hover:text-slate-700 transition-colors">
             <ChevronDown className="w-3 h-3 transition-transform [details:not([open])_&]:-rotate-90" />
             Checklist {checklist.length > 0 && <span className="text-[9px] font-bold text-primary bg-primary/10 px-1.5 rounded-full">{checklist.length}</span>}
           </summary>
@@ -1020,7 +1020,7 @@ function VisitFormModal({ initial, title, onClose, onSave, onDelete, onUnschedul
 
         {/* Links (collapsible) */}
         <details open={links.length > 0 || undefined}>
-          <summary className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-1.5 cursor-pointer select-none flex items-center gap-1.5 hover:text-slate-700 transition-colors">
+          <summary className="text-[11px] font-extrabold uppercase tracking-widest text-slate-500 mb-1.5 cursor-pointer select-none flex items-center gap-1.5 hover:text-slate-700 transition-colors">
             <ChevronDown className="w-3 h-3 transition-transform [details:not([open])_&]:-rotate-90" />
             Links {links.length > 0 && <span className="text-[9px] font-bold text-primary bg-primary/10 px-1.5 rounded-full">{links.length}</span>}
           </summary>
@@ -1164,7 +1164,7 @@ function InlineDateRangePicker({ startDate, endDate, onChange }: {
       />
       {(startDate || endDate) && (
         <div className="flex items-center justify-between mt-1 pt-2 border-t border-slate-100">
-          <span className="text-[10px] text-slate-500">
+          <span className="text-[11px] text-slate-500">
             {startDate && endDate
               ? `${fmt(new Date(startDate + 'T12:00:00'), { month: 'short', day: 'numeric' })} → ${fmt(new Date(endDate + 'T12:00:00'), { month: 'short', day: 'numeric' })}`
               : startDate
@@ -1174,7 +1174,7 @@ function InlineDateRangePicker({ startDate, endDate, onChange }: {
           <button
             type="button"
             onClick={() => onChange('', '')}
-            className="text-[10px] font-bold text-red-400 hover:text-red-600 transition-colors"
+            className="text-[11px] font-bold text-red-400 hover:text-red-600 transition-colors"
           >
             Clear
           </button>
@@ -1263,7 +1263,7 @@ function TripEditorModal({ trip, onClose, onSave, onDelete }: {
     <ModalBase title="Edit Trip" onClose={onClose}>
       <div className="space-y-4">
         <div>
-          <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 block">Trip Name</label>
+          <label className="text-[11px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 block">Trip Name</label>
           <input
             className={`${inputClass} font-semibold`}
             value={name}
@@ -1274,7 +1274,7 @@ function TripEditorModal({ trip, onClose, onSave, onDelete }: {
 
         {/* Date range picker */}
         <div>
-          <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 block">Dates</label>
+          <label className="text-[11px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 block">Dates</label>
           <div className="border border-slate-200 rounded-xl p-3">
             <InlineDateRangePicker
               startDate={startDate}
@@ -1285,7 +1285,7 @@ function TripEditorModal({ trip, onClose, onSave, onDelete }: {
         </div>
 
         {startDate && totalDays > 0 && (
-          <div className="flex items-center gap-2 text-[10px] text-slate-500 bg-slate-50 rounded-lg px-3 py-2">
+          <div className="flex items-center gap-2 text-[11px] text-slate-500 bg-slate-50 rounded-lg px-3 py-2">
             <Calendar className="w-3 h-3 text-slate-400 flex-shrink-0" />
             <span>
               {fmt(new Date(startDate), { month: 'short', day: 'numeric' })} — {fmt(addDaysTo(new Date(startDate), totalDays - 1), { month: 'short', day: 'numeric', year: 'numeric' })}
@@ -1376,7 +1376,7 @@ function TripSwitcherPanel({ store, onSwitch, onNew, onClose }: {
           >
             <div>
               <p className="text-sm font-bold text-slate-800">{t.name}</p>
-              <p className="text-[10px] text-slate-500 mt-0.5">
+              <p className="text-[11px] text-slate-500 mt-0.5">
                 {fmt(new Date(t.startDate), { month: 'short', day: 'numeric', year: 'numeric' })} · {t.totalDays} days · {t.stays.length} stays
               </p>
             </div>
@@ -1424,7 +1424,7 @@ function HistoryPanel({ history, index, onNavigate, onClose }: {
               }`}
             >
               <div className="flex items-start gap-2.5 min-w-0">
-                <span className={`text-[10px] font-mono mt-0.5 shrink-0 ${isCurrent ? 'text-primary' : 'text-slate-300'}`}>
+                <span className={`text-[11px] font-mono mt-0.5 shrink-0 ${isCurrent ? 'text-primary' : 'text-slate-300'}`}>
                   #{i}
                 </span>
                 <div className="min-w-0">
@@ -1432,7 +1432,7 @@ function HistoryPanel({ history, index, onNavigate, onClose }: {
                     {snap.trip.name}
                   </p>
                   <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                    <p className="text-[10px] text-slate-400">
+                    <p className="text-[11px] text-slate-400">
                       {snap.trip.stays.length} stays · {snap.trip.stays.reduce((s, st) => s + st.visits.length, 0)} places
                     </p>
                     {staysDiff !== null && staysDiff !== 0 && (
@@ -1481,7 +1481,7 @@ function DraggableInventoryCard({ visit, onEdit }: { visit: VisitItem; onEdit: (
       aria-label={`Drag ${visit.name} to schedule`}
     >
       <div className="flex justify-between items-start mb-1.5">
-        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-tighter border ${getVisitTypeColor(visit.type)}`}>
+        <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full uppercase tracking-tighter border ${getVisitTypeColor(visit.type)}`}>
           {getVisitLabel(visit.type)}
         </span>
         <div className="flex items-center gap-1">
@@ -1500,7 +1500,7 @@ function DraggableInventoryCard({ visit, onEdit }: { visit: VisitItem; onEdit: (
       <div className="flex items-start gap-2">
         <div className="flex-1 min-w-0">
           <p className="text-xs font-bold text-slate-800">{visit.name}</p>
-          {visit.durationHint && <p className="text-[10px] text-slate-400 mt-0.5">{visit.durationHint}</p>}
+          {visit.durationHint && <p className="text-[11px] text-slate-400 mt-0.5">{visit.durationHint}</p>}
           {(visit.checklist?.length || visit.links?.length) ? (
             <div className="flex items-center gap-1.5 mt-1.5">
               {visit.checklist?.length ? (
@@ -1553,10 +1553,10 @@ function SortableVisitCard({ visit, isSelected, onSelect, onEdit }: {
       {isOver && <div className="absolute -top-1 left-2 right-2 h-0.5 bg-primary rounded-full z-10" />}
       <div className="flex items-start justify-between mb-1.5">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-tighter border ${getVisitTypeColor(visit.type)}`}>
+          <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full uppercase tracking-tighter border ${getVisitTypeColor(visit.type)}`}>
             {getVisitLabel(visit.type)}
           </span>
-          {visit.durationHint && <span className="text-[10px] text-slate-400 font-medium">{visit.durationHint}</span>}
+          {visit.durationHint && <span className="text-[11px] text-slate-400 font-medium">{visit.durationHint}</span>}
         </div>
         <div className="flex items-center gap-1 flex-shrink-0 ml-1">
           <button onClick={(e) => { e.stopPropagation(); onEdit(); }} className="opacity-60 group-hover:opacity-100 transition-opacity p-2.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 focus-visible:ring-2 focus-visible:ring-primary/50 touch-auto" aria-label={`Edit ${visit.name}`}>
@@ -1573,7 +1573,7 @@ function SortableVisitCard({ visit, isSelected, onSelect, onEdit }: {
             {visit.name}
           </p>
           {visit.notes && (
-            <p className="text-[10px] text-slate-400 mt-1 italic leading-snug">{visit.notes}</p>
+            <p className="text-[11px] text-slate-400 mt-1 italic leading-snug">{visit.notes}</p>
           )}
           {(visit.checklist?.length || visit.links?.length) ? (
             <div className="flex items-center gap-1.5 mt-1.5">
@@ -1653,7 +1653,7 @@ function StayOverviewPanel({ stay, stayDays, accommodationGroups, onUpdate }: {
             <h2 className="text-white font-bold text-sm leading-tight truncate">{stay.name}</h2>
           </div>
           {startDate && endDate && (
-            <p className="text-white/70 text-[10px] mt-0.5">
+            <p className="text-white/70 text-[11px] mt-0.5">
               {fmt(startDate, { month: 'short', day: 'numeric' })} → {fmt(endDate, { month: 'short', day: 'numeric' })}
             </p>
           )}
@@ -1677,7 +1677,7 @@ function StayOverviewPanel({ stay, stayDays, accommodationGroups, onUpdate }: {
       {/* Accommodation */}
       {accommodationGroups.length > 0 && (
         <div className="px-4 py-2 border-b border-border-neutral">
-          <p className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 mb-1.5">Sleeping</p>
+          <p className="text-[11px] font-extrabold uppercase tracking-widest text-slate-400 mb-1.5">Sleeping</p>
           <div className="space-y-1">
             {accommodationGroups.map((g, i) => (
               <div key={i} className="flex items-center gap-2 px-2.5 py-1.5 bg-primary/5 rounded-lg">
@@ -1694,7 +1694,7 @@ function StayOverviewPanel({ stay, stayDays, accommodationGroups, onUpdate }: {
 
       {/* Notes */}
       <div className="px-4 py-2 border-b border-border-neutral">
-        <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 mb-1.5 block">Notes</label>
+        <label className="text-[11px] font-extrabold uppercase tracking-widest text-slate-400 mb-1.5 block">Notes</label>
         <textarea
           className="w-full border border-slate-200 rounded-lg px-3 py-2 text-xs focus:ring-1 focus:ring-primary focus:border-primary outline-none resize-none text-slate-700 placeholder:text-slate-300"
           rows={3}
@@ -1707,7 +1707,7 @@ function StayOverviewPanel({ stay, stayDays, accommodationGroups, onUpdate }: {
 
       {/* Links */}
       <div className="px-4 py-2 border-b border-border-neutral">
-        <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 mb-1.5 block">Links</label>
+        <label className="text-[11px] font-extrabold uppercase tracking-widest text-slate-400 mb-1.5 block">Links</label>
         <div className="space-y-1.5">
           {links.map((link, i) => (
             <div key={i} className="flex items-center gap-2 group">
@@ -1786,7 +1786,7 @@ function StayTodoSection({ stay, onUpdate }: {
         className="w-full px-4 py-2 flex items-center justify-between hover:bg-slate-50 transition-colors"
       >
         <div className="flex items-center gap-2">
-          <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400">To-Do</span>
+          <span className="text-[11px] font-extrabold uppercase tracking-widest text-slate-400">To-Do</span>
           {checklist.length > 0 && (
             <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${doneCount === checklist.length ? 'bg-emerald-50 text-emerald-600' : 'bg-primary/10 text-primary'}`}>
               {doneCount}/{checklist.length}
@@ -1872,7 +1872,7 @@ function DroppablePeriodSlot({ dayOffset, period, visits, selectedVisitId, onSel
           className="w-full h-10 border-2 border-dashed border-slate-300 rounded-lg flex items-center justify-center gap-1.5 text-slate-400 hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all group"
         >
           <PlusCircle className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
-          <span className="text-[10px] font-bold uppercase tracking-tight">Drop or add</span>
+          <span className="text-[11px] font-bold uppercase tracking-tight">Drop or add</span>
         </button>
       </div>
     </div>
@@ -1995,7 +1995,7 @@ function AIPlannerModal({
         <div className="space-y-4">
           {/* Mode toggle */}
           <div>
-            <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 mb-2 block">Mode</span>
+            <span className="text-[11px] font-extrabold uppercase tracking-widest text-slate-400 mb-2 block">Mode</span>
             <div className="flex gap-2">
               {(['scratch', 'refine'] as const).map((m) => (
                 <button
@@ -2016,7 +2016,7 @@ function AIPlannerModal({
           {/* Prompt */}
           {!explanation ? (
             <div>
-              <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 mb-2 block">
+              <label className="text-[11px] font-extrabold uppercase tracking-widest text-slate-400 mb-2 block">
                 What should I plan? <span className="text-slate-300 normal-case font-medium">({trip.totalDays} days available)</span>
               </label>
               <textarea
@@ -2034,7 +2034,7 @@ function AIPlannerModal({
                   <div className="h-2.5 bg-slate-100 rounded-full w-3/4" />
                   <div className="h-2.5 bg-slate-100 rounded-full w-1/2" />
                   <div className="h-2.5 bg-slate-100 rounded-full w-5/6" />
-                  <p className="text-[10px] text-slate-400 font-medium pt-1">Generating your itinerary…</p>
+                  <p className="text-[11px] text-slate-400 font-medium pt-1">Generating your itinerary…</p>
                 </div>
               )}
             </div>
@@ -2042,10 +2042,10 @@ function AIPlannerModal({
             <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-2">
               <div className="flex items-center gap-2 mb-1">
                 <Sparkles className="w-3.5 h-3.5 text-primary flex-shrink-0" />
-                <span className="text-[10px] font-extrabold uppercase tracking-widest text-primary">AI Plan Ready</span>
+                <span className="text-[11px] font-extrabold uppercase tracking-widest text-primary">AI Plan Ready</span>
               </div>
               <p className="text-xs text-slate-700 leading-relaxed italic">{explanation}</p>
-              <p className="text-[10px] text-slate-400 pt-1">Review the summary above, then apply to your timeline.</p>
+              <p className="text-[11px] text-slate-400 pt-1">Review the summary above, then apply to your timeline.</p>
             </div>
           )}
 
@@ -2087,7 +2087,7 @@ function AIPlannerModal({
       {tab === 'settings' && (
         <div className="space-y-4">
           <div>
-            <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 mb-2 block">Gemini API Key</label>
+            <label className="text-[11px] font-extrabold uppercase tracking-widest text-slate-400 mb-2 block">Gemini API Key</label>
             <input
               type="password"
               className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:ring-1 focus:ring-primary focus:border-primary outline-none font-mono"
@@ -2095,13 +2095,13 @@ function AIPlannerModal({
               value={settings.apiKey}
               onChange={(e) => onSettingsChange({ ...settings, apiKey: e.target.value })}
             />
-            <p className="text-[10px] text-slate-400 mt-1.5">
+            <p className="text-[11px] text-slate-400 mt-1.5">
               Stored locally in your browser.{' '}
               <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-primary underline">Get a free key →</a>
             </p>
           </div>
           <div>
-            <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 mb-2 block">Model</label>
+            <label className="text-[11px] font-extrabold uppercase tracking-widest text-slate-400 mb-2 block">Model</label>
             <div className="flex flex-wrap gap-1.5 mb-2">
               {[
                 { id: 'gemini-3.1-flash-lite-preview', label: '3.1 Lite', badge: 'recommended' },
@@ -2112,7 +2112,7 @@ function AIPlannerModal({
                   key={id}
                   type="button"
                   onClick={() => onSettingsChange({ ...settings, model: id })}
-                  className={`px-2.5 py-1 text-[10px] font-bold rounded-lg border transition-all ${
+                  className={`px-2.5 py-1 text-[11px] font-bold rounded-lg border transition-all ${
                     settings.model === id
                       ? 'bg-primary text-white border-primary'
                       : 'bg-white text-slate-600 border-slate-200 hover:border-primary/50 hover:text-primary'
@@ -2215,7 +2215,7 @@ function ProfileMenu({ trip, onImport, onImportFromCode, onSwitchToLegacy, onGoH
             : 'bg-primary/10 text-primary border-primary/20 hover:bg-primary hover:text-white'
         }`}
       >
-        {user ? <span className="text-[10px] font-bold">{(user.email?.[0] ?? 'U').toUpperCase()}</span> : <User className="w-3.5 h-3.5" />}
+        {user ? <span className="text-[11px] font-bold">{(user.email?.[0] ?? 'U').toUpperCase()}</span> : <User className="w-3.5 h-3.5" />}
       </button>
       {open && (
         <div className="absolute right-0 top-full mt-2 w-60 bg-white rounded-xl shadow-2xl border border-slate-200/60 overflow-hidden z-50">
@@ -2232,7 +2232,7 @@ function ProfileMenu({ trip, onImport, onImportFromCode, onSwitchToLegacy, onGoH
                 </p>
                 <div className="flex items-center gap-1.5 mt-0.5">
                   {user ? <Check className="w-3 h-3 text-emerald-500 flex-shrink-0" /> : <Lock className="w-3 h-3 text-slate-300 flex-shrink-0" />}
-                  <p className={`text-[10px] font-semibold ${user ? 'text-emerald-600' : 'text-slate-400'}`}>
+                  <p className={`text-[11px] font-semibold ${user ? 'text-emerald-600' : 'text-slate-400'}`}>
                     {user ? 'Synced to cloud' : 'Local storage only'}
                   </p>
                 </div>
@@ -2359,7 +2359,7 @@ function AuthModalSimple({ onClose }: { onClose: () => void }) {
                 <div className="size-6 rounded-lg bg-primary/10 flex items-center justify-center">
                   <Navigation className="w-3 h-3 text-primary" />
                 </div>
-                <span className="text-[10px] font-extrabold tracking-[0.18em] uppercase text-slate-400">Itinerary</span>
+                <span className="text-[11px] font-extrabold tracking-[0.18em] uppercase text-slate-400">Itinerary</span>
               </div>
               <h2 className="text-[22px] font-extrabold text-slate-900 tracking-tight leading-none">
                 {mode === 'signin' ? 'Welcome back' : 'Get started'}
@@ -2437,7 +2437,7 @@ function AuthModalSimple({ onClose }: { onClose: () => void }) {
 
           <div className="flex items-center gap-3 my-4">
             <div className="flex-1 h-px bg-slate-100" />
-            <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">or</span>
+            <span className="text-[11px] font-bold text-slate-300 uppercase tracking-widest">or</span>
             <div className="flex-1 h-px bg-slate-100" />
           </div>
 
@@ -2453,7 +2453,7 @@ function AuthModalSimple({ onClose }: { onClose: () => void }) {
             Continue with Google
           </button>
 
-          <p className="text-[10px] text-center text-slate-400 mt-4">
+          <p className="text-[11px] text-center text-slate-400 mt-4">
             {mode === 'signin' ? "Don't have an account? " : 'Already have an account? '}
             <button type="button"
               onClick={() => { setMode(mode === 'signin' ? 'signup' : 'signin'); setError(null); }}
@@ -2498,7 +2498,7 @@ function MergeDialog({ localCount, cloudCount, cloudTripNames, localTripNames, o
         {/* Trip name lists */}
         <div className="grid grid-cols-2 gap-2 mb-4 text-[11px]">
           <div className="bg-slate-50 rounded-lg px-3 py-2">
-            <span className="font-bold text-slate-500 uppercase tracking-wide text-[10px]">Local</span>
+            <span className="font-bold text-slate-500 uppercase tracking-wide text-[11px]">Local</span>
             <ul className="mt-1 space-y-0.5">
               {localTripNames.map((name, i) => (
                 <li key={i} className="text-slate-700 truncate">{name || 'Untitled trip'}</li>
@@ -2506,7 +2506,7 @@ function MergeDialog({ localCount, cloudCount, cloudTripNames, localTripNames, o
             </ul>
           </div>
           <div className="bg-primary/5 rounded-lg px-3 py-2">
-            <span className="font-bold text-primary/60 uppercase tracking-wide text-[10px]">Cloud</span>
+            <span className="font-bold text-primary/60 uppercase tracking-wide text-[11px]">Cloud</span>
             <ul className="mt-1 space-y-0.5">
               {cloudTripNames.map((name, i) => (
                 <li key={i} className="text-slate-700 truncate">{name || 'Untitled trip'}</li>
@@ -2730,7 +2730,7 @@ function WelcomeScreen({ onCreateTrip, onLoadDemo }: { onCreateTrip: () => void;
                 }}
               >
                 <div className="w-1 h-5 rounded-full flex-shrink-0" style={{ background: s.color }} />
-                <span className="text-[10px] font-bold truncate" style={{ color: s.color }}>{s.label}</span>
+                <span className="text-[11px] font-bold truncate" style={{ color: s.color }}>{s.label}</span>
               </div>
             ))}
             {/* Transit chips */}
@@ -3392,7 +3392,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
             {/* Date range — full on desktop, compact on mobile */}
             <button
               onClick={() => setShowTripEditor(true)}
-              className="hidden md:flex items-center gap-1.5 text-[10px] font-semibold text-slate-500 hover:text-slate-700 hover:bg-slate-50 border border-slate-200/60 px-2.5 py-1 rounded-lg transition-colors flex-shrink-0"
+              className="hidden md:flex items-center gap-1.5 text-[11px] font-semibold text-slate-500 hover:text-slate-700 hover:bg-slate-50 border border-slate-200/60 px-2.5 py-1 rounded-lg transition-colors flex-shrink-0"
             >
               <span className="font-bold text-slate-700">{tripStartLabel}</span>
               <span className="text-slate-300">–</span>
@@ -3410,12 +3410,12 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
 
           <div className="flex items-center gap-1 flex-shrink-0">
             {isDemoMode && (
-              <div className="flex items-center gap-1.5 bg-slate-100 border border-slate-200 rounded-lg pl-2.5 pr-1 py-1 text-[10px] font-bold text-slate-500 mr-1">
+              <div className="flex items-center gap-1.5 bg-slate-100 border border-slate-200 rounded-lg pl-2.5 pr-1 py-1 text-[11px] font-bold text-slate-500 mr-1">
                 <span className="hidden sm:inline">Demo</span>
                 <button
                   onClick={handleMakeMine}
                   aria-label="Save demo trip to your trips"
-                  className="px-2 py-0.5 bg-primary text-white rounded-md text-[10px] font-bold hover:bg-primary/90 transition-colors whitespace-nowrap"
+                  className="px-2 py-0.5 bg-primary text-white rounded-md text-[11px] font-bold hover:bg-primary/90 transition-colors whitespace-nowrap"
                 >
                   <span className="hidden sm:inline">Make it mine</span>
                   <span className="sm:hidden">Save</span>
@@ -3423,14 +3423,14 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                 <button
                   onClick={handleGoHome}
                   aria-label="Discard demo and start fresh"
-                  className="hidden sm:block px-2 py-0.5 rounded-md text-[10px] font-semibold hover:bg-slate-200 transition-colors"
+                  className="hidden sm:block px-2 py-0.5 rounded-md text-[11px] font-semibold hover:bg-slate-200 transition-colors"
                 >
                   Start fresh
                 </button>
               </div>
             )}
             {overlaps.size > 0 && (
-              <div className="flex items-center gap-1.5 text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1 text-[10px] font-bold">
+              <div className="flex items-center gap-1.5 text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1 text-[11px] font-bold">
                 <AlertCircle className="w-3 h-3 flex-shrink-0" />
                 <span className="hidden sm:inline">{overlaps.size} conflict{overlaps.size > 1 ? 's' : ''}</span>
               </div>
@@ -3528,7 +3528,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
           <section className="border-b border-border-neutral flex flex-col bg-white flex-shrink-0 z-40" style={{ height: 140 }}>
             <div className="flex items-center justify-between px-6 border-b border-border-neutral bg-slate-50/50 py-1.5">
               <div className="flex items-center gap-4">
-                <span className="text-[10px] font-extrabold uppercase tracking-[0.15em] text-slate-500">Timeline</span>
+                <span className="text-[11px] font-extrabold uppercase tracking-[0.15em] text-slate-500">Timeline</span>
                 <div className="flex bg-white rounded-lg border border-border-neutral p-0.5 overflow-x-auto scroll-hide">
                   {([5, 10, 15, 30, 0] as const).filter((d) => d === 0 || d <= trip.totalDays).map((d) => (
                     <button key={d} onClick={() => { setZoomDays(d); localStorage.setItem('itinerary-timeline-zoom', String(d)); }}
@@ -3599,7 +3599,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                 >
                   <div className="flex flex-col items-center gap-0.5 opacity-0 group-hover/buf:opacity-100 transition-opacity">
                     <Plus className="w-3.5 h-3.5 text-slate-400" />
-                    <span className="text-[8px] font-bold text-slate-400 uppercase">Extend</span>
+                    <span className="text-[9px] font-bold text-slate-400 uppercase">Extend</span>
                   </div>
                 </button>
                 {/* Stay zone — main (spans all trip day columns) */}
@@ -3772,7 +3772,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                                     <div className="flex items-center gap-1.5">
                                       {!isVeryNarrow && <Bed className="w-3 h-3 flex-shrink-0" style={{ color: isSelected ? 'rgba(255,255,255,0.85)' : stay.color }} />}
                                       <span
-                                        className="text-[10px] font-bold truncate"
+                                        className="text-[11px] font-bold truncate"
                                         style={{ color: isSelected ? 'white' : stay.color }}
                                       >{stay.name}</span>
                                       {isOverlapping && (
@@ -3833,7 +3833,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                                 >
                                   <TransportIcon mode={stay.travelModeToNext} className="w-3.5 h-3.5 text-slate-400" />
                                   {stay.travelDurationToNext && (
-                                    <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-slate-800 text-white text-[10px] font-bold rounded-md whitespace-nowrap opacity-0 group-hover/chip:opacity-100 transition-opacity shadow-lg">
+                                    <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-slate-800 text-white text-[11px] font-bold rounded-md whitespace-nowrap opacity-0 group-hover/chip:opacity-100 transition-opacity shadow-lg">
                                       {stay.travelDurationToNext}
                                     </div>
                                   )}
@@ -3856,7 +3856,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                       title="Remove empty first day"
                     >
                       <Trash2 className="w-2.5 h-2.5 text-red-400" />
-                      <span className="text-[7px] font-bold text-red-400 uppercase">Remove day</span>
+                      <span className="text-[9px] font-bold text-red-400 uppercase">Remove day</span>
                     </button>
                   )}
                   {/* Shrink strip — empty last day (bottom edge) */}
@@ -3869,7 +3869,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                       title="Remove empty last day"
                     >
                       <Trash2 className="w-2.5 h-2.5 text-red-400" />
-                      <span className="text-[7px] font-bold text-red-400 uppercase">Remove day</span>
+                      <span className="text-[9px] font-bold text-red-400 uppercase">Remove day</span>
                     </button>
                   )}
                 </div>
@@ -3884,7 +3884,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                 >
                   <div className="flex flex-col items-center gap-0.5 opacity-0 group-hover/buf:opacity-100 transition-opacity">
                     <Plus className="w-3.5 h-3.5 text-slate-400" />
-                    <span className="text-[8px] font-bold text-slate-400 uppercase">Extend</span>
+                    <span className="text-[9px] font-bold text-slate-400 uppercase">Extend</span>
                   </div>
                 </button>
               </div>
@@ -3940,7 +3940,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                   </div>
                   <div className="text-center">
                     <p className="text-[11px] font-bold text-slate-600">Trip Overview</p>
-                    <p className="text-[10px] text-slate-400 mt-1">{sortedStays.length} destination{sortedStays.length !== 1 ? 's' : ''} · {trip.totalDays} days</p>
+                    <p className="text-[11px] text-slate-400 mt-1">{sortedStays.length} destination{sortedStays.length !== 1 ? 's' : ''} · {trip.totalDays} days</p>
                   </div>
                   <p className="text-[9px] text-slate-400 text-center leading-relaxed">Click a destination on the timeline to see its details and plan activities.</p>
                 </div>
@@ -3957,7 +3957,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                       <div className="size-9 rounded-xl bg-slate-100 flex items-center justify-center">
                         {searchTerm ? <Search className="w-4 h-4 text-slate-400" /> : selectedStay ? <Check className="w-4 h-4 text-emerald-500" /> : <Compass className="w-4 h-4 text-slate-400" />}
                       </div>
-                      <p className="text-[10px] font-bold text-slate-500">
+                      <p className="text-[11px] font-bold text-slate-500">
                         {searchTerm ? 'No matching places' : selectedStay ? 'All scheduled!' : 'No stay selected'}
                       </p>
                       <p className="text-[9px] text-slate-400 text-center leading-relaxed">
@@ -4030,7 +4030,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                             className="h-full w-full border-2 border-dashed border-slate-200 rounded-lg flex items-center justify-center gap-2 text-slate-400 hover:text-primary hover:border-primary/40 hover:bg-primary/5 transition-all"
                           >
                             <Hotel className="w-4 h-4" />
-                            <span className="text-[10px] font-bold">Set Accommodation</span>
+                            <span className="text-[11px] font-bold">Set Accommodation</span>
                           </button>
                         </div>
                       );
@@ -4049,17 +4049,17 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                               </div>
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2">
-                                  <span className="text-[10px] font-extrabold text-primary uppercase tracking-tighter">
+                                  <span className="text-[11px] font-extrabold text-primary uppercase tracking-tighter">
                                     {group.nights > 1 ? 'Continuous Stay' : 'Overnight'}
                                   </span>
-                                  <span className="text-[10px] font-medium text-slate-400 tracking-tight">
+                                  <span className="text-[11px] font-medium text-slate-400 tracking-tight">
                                     • {group.nights} {group.nights === 1 ? 'Night' : 'Nights'}
                                   </span>
                                 </div>
                                 <p className="text-xs font-extrabold text-slate-800 truncate">{group.name}</p>
                               </div>
                               {group.accommodation.notes && (
-                                <span className="text-[10px] font-medium text-slate-500 bg-slate-50 border border-slate-100 px-2.5 py-1 rounded-full flex items-center gap-1.5 flex-shrink-0 max-w-[180px] truncate">
+                                <span className="text-[11px] font-medium text-slate-500 bg-slate-50 border border-slate-100 px-2.5 py-1 rounded-full flex items-center gap-1.5 flex-shrink-0 max-w-[180px] truncate">
                                   <span className="material-icons text-slate-400 text-[12px]">#</span>
                                   {group.accommodation.notes}
                                 </span>
@@ -4156,7 +4156,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                     <MapPin className="w-3 h-3 text-primary" />
                   </div>
                   {!mapMini && (
-                    <span className="text-[10px] font-extrabold text-slate-600 tracking-tight uppercase">
+                    <span className="text-[11px] font-extrabold text-slate-600 tracking-tight uppercase">
                       {mapMode === 'overview' ? 'Overview' : mapMode === 'stay' ? 'All spots' : 'Day route'}
                     </span>
                   )}
@@ -4361,7 +4361,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
           >
             <Layers className="w-6 h-6" />
             {inboxVisits.length > 0 && (
-              <span className="absolute -top-1 -right-1 size-5 rounded-full bg-white text-primary text-[10px] font-extrabold flex items-center justify-center shadow-sm border border-primary/20">
+              <span className="absolute -top-1 -right-1 size-5 rounded-full bg-white text-primary text-[11px] font-extrabold flex items-center justify-center shadow-sm border border-primary/20">
                 {inboxVisits.length}
               </span>
             )}
@@ -4400,7 +4400,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
               <div className="px-4 pb-3 flex justify-between items-center border-b border-border-neutral">
                 <div className="flex items-center gap-2">
                   <h3 className="text-sm font-extrabold text-slate-800">Unplanned</h3>
-                  <span className={`text-[10px] font-extrabold px-1.5 py-0.5 rounded ${inboxVisits.length > 0 ? 'bg-primary/10 text-primary' : 'bg-emerald-50 text-emerald-600'}`}>
+                  <span className={`text-[11px] font-extrabold px-1.5 py-0.5 rounded ${inboxVisits.length > 0 ? 'bg-primary/10 text-primary' : 'bg-emerald-50 text-emerald-600'}`}>
                     {inboxVisits.length > 0 ? inboxVisits.length : <Check className="w-3 h-3" />}
                   </span>
                 </div>
@@ -4442,7 +4442,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                     <p className="text-[11px] font-bold text-slate-500">
                       {selectedStay ? 'All scheduled!' : 'No stay selected'}
                     </p>
-                    <p className="text-[10px] text-slate-400 text-center">
+                    <p className="text-[11px] text-slate-400 text-center">
                       {selectedStay ? 'Add more with the + button.' : 'Tap a destination on the timeline.'}
                     </p>
                   </div>
@@ -4453,7 +4453,7 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
         )}
 
         {/* ── Footer ── */}
-        <footer className="hidden md:flex bg-white text-slate-500 px-6 py-1.5 text-[10px] font-bold justify-between items-center border-t border-border-neutral flex-shrink-0">
+        <footer className="hidden md:flex bg-white text-slate-500 px-6 py-1.5 text-[11px] font-bold justify-between items-center border-t border-border-neutral flex-shrink-0">
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-2">
               <div className={`size-1.5 rounded-full ${
@@ -4851,7 +4851,7 @@ export default function App() {
         <LegacyApp />
         <button
           onClick={() => switchTo('itinerary')}
-          className="fixed bottom-4 right-4 z-[9999] flex items-center gap-2 bg-slate-900 text-slate-200 text-[10px] font-bold px-3 py-2 rounded-full shadow-xl border border-slate-700 hover:bg-slate-700 transition-all"
+          className="fixed bottom-4 right-4 z-[9999] flex items-center gap-2 bg-slate-900 text-slate-200 text-[11px] font-bold px-3 py-2 rounded-full shadow-xl border border-slate-700 hover:bg-slate-700 transition-all"
         >
           <Layers className="w-3.5 h-3.5" />
           New View
