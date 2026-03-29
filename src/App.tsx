@@ -2063,7 +2063,7 @@ function AIPlannerModal({
             {explanation ? (
               <button
                 onClick={handleApply}
-                className="flex-1 py-2.5 bg-primary text-white rounded-lg text-sm font-bold hover:bg-primary/90 transition-colors flex items-center justify-center gap-2"
+                className="flex-1 py-2.5 bg-primary text-white rounded-lg text-xs font-bold hover:bg-primary/90 transition-colors flex items-center justify-center gap-2"
               >
                 <Check className="w-4 h-4" /> Apply to Timeline
               </button>
@@ -2071,7 +2071,7 @@ function AIPlannerModal({
               <button
                 onClick={handleGenerate}
                 disabled={loading || !prompt.trim()}
-                className="flex-1 py-2.5 bg-primary text-white rounded-lg text-sm font-bold hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+                className="flex-1 py-2.5 bg-primary text-white rounded-lg text-xs font-bold hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 {loading ? (
                   <span className="flex items-center gap-2"><span className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" /> Generating…</span>
@@ -3761,24 +3761,31 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                                   style={{ color: isSelected ? 'white' : stay.color }} />
                               </div>
                               {/* Content */}
-                              <div className="flex flex-col overflow-hidden flex-1 pointer-events-none pl-3.5 pr-2">
-                                <div className="flex items-center gap-1.5">
-                                  <Bed className="w-3 h-3 flex-shrink-0" style={{ color: isSelected ? 'rgba(255,255,255,0.85)' : stay.color }} />
-                                  <span
-                                    className="text-[10px] font-bold truncate"
-                                    style={{ color: isSelected ? 'white' : stay.color }}
-                                  >{stay.name}</span>
-                                  {isOverlapping && (
-                                    <span className="flex-shrink-0 text-[9px] font-extrabold px-1 py-0.5 rounded-md bg-amber-400 text-white leading-none">!</span>
-                                  )}
-                                </div>
-                                {stay.lodging && (
-                                  <span
-                                    className="text-[9px] font-semibold truncate mt-px"
-                                    style={{ color: isSelected ? 'rgba(255,255,255,0.6)' : `color-mix(in srgb, ${stay.color} 60%, #64748b)` }}
-                                  >{stay.lodging}</span>
-                                )}
-                              </div>
+                              {(() => {
+                                const staySlots = stay.endSlot - stay.startSlot;
+                                const isNarrow = staySlots < 6; // less than 2 days
+                                const isVeryNarrow = staySlots < 3; // less than 1 day
+                                return (
+                                  <div className="flex flex-col overflow-hidden flex-1 pointer-events-none pl-3.5 pr-2">
+                                    <div className="flex items-center gap-1.5">
+                                      {!isVeryNarrow && <Bed className="w-3 h-3 flex-shrink-0" style={{ color: isSelected ? 'rgba(255,255,255,0.85)' : stay.color }} />}
+                                      <span
+                                        className="text-[10px] font-bold truncate"
+                                        style={{ color: isSelected ? 'white' : stay.color }}
+                                      >{stay.name}</span>
+                                      {isOverlapping && (
+                                        <span className="flex-shrink-0 text-[9px] font-extrabold px-1 py-0.5 rounded-md bg-amber-400 text-white leading-none">!</span>
+                                      )}
+                                    </div>
+                                    {stay.lodging && !isNarrow && (
+                                      <span
+                                        className="text-[9px] font-semibold truncate mt-px"
+                                        style={{ color: isSelected ? 'rgba(255,255,255,0.6)' : `color-mix(in srgb, ${stay.color} 60%, #64748b)` }}
+                                      >{stay.lodging}</span>
+                                    )}
+                                  </div>
+                                );
+                              })()}
                               {/* Drag grip — visible on hover when not selected */}
                               <GripVertical
                                 className="w-3 h-3 flex-shrink-0 mr-1 opacity-0 group-hover:opacity-40 transition-opacity pointer-events-none"
@@ -3944,11 +3951,17 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                     <DraggableInventoryCard key={v.id} visit={v} onEdit={() => setEditingVisit(v)} />
                   ))}
                   {inboxVisits.length === 0 && (
-                    <p className="text-[10px] text-slate-400 text-center py-6 leading-relaxed">
-                      {searchTerm
-                        ? 'No matching places found.'
-                        : selectedStay ? 'All places scheduled! Add more below.' : 'Click a stay to see its unplanned places'}
-                    </p>
+                    <div className="flex flex-col items-center justify-center py-8 gap-2">
+                      <div className="size-9 rounded-xl bg-slate-100 flex items-center justify-center">
+                        {searchTerm ? <Search className="w-4 h-4 text-slate-400" /> : selectedStay ? <Check className="w-4 h-4 text-emerald-500" /> : <Compass className="w-4 h-4 text-slate-400" />}
+                      </div>
+                      <p className="text-[10px] font-bold text-slate-500">
+                        {searchTerm ? 'No matching places' : selectedStay ? 'All scheduled!' : 'No stay selected'}
+                      </p>
+                      <p className="text-[9px] text-slate-400 text-center leading-relaxed">
+                        {searchTerm ? 'Try a different search term.' : selectedStay ? 'Add more with the + button above.' : 'Click a destination on the timeline.'}
+                      </p>
+                    </div>
                   )}
                 </div>
               )}
@@ -4420,9 +4433,17 @@ function ChronosApp({ onSwitchToLegacy }: { onSwitchToLegacy: () => void }) {
                   <DraggableInventoryCard key={v.id} visit={v} onEdit={() => setEditingVisit(v)} />
                 ))}
                 {inboxVisits.length === 0 && (
-                  <p className="text-[11px] text-slate-400 text-center py-8 leading-relaxed">
-                    {selectedStay ? 'All places scheduled!' : 'Select a stay to see unplanned places.'}
-                  </p>
+                  <div className="flex flex-col items-center justify-center py-8 gap-2">
+                    <div className="size-9 rounded-xl bg-slate-100 flex items-center justify-center">
+                      {selectedStay ? <Check className="w-4 h-4 text-emerald-500" /> : <Compass className="w-4 h-4 text-slate-400" />}
+                    </div>
+                    <p className="text-[11px] font-bold text-slate-500">
+                      {selectedStay ? 'All scheduled!' : 'No stay selected'}
+                    </p>
+                    <p className="text-[10px] text-slate-400 text-center">
+                      {selectedStay ? 'Add more with the + button.' : 'Tap a destination on the timeline.'}
+                    </p>
+                  </div>
                 )}
               </div>
             </div>
@@ -4798,7 +4819,7 @@ class ChronosErrorBoundary extends Component<
               </button>
               <button
                 onClick={() => window.location.reload()}
-                className="flex-1 py-2.5 bg-primary text-white rounded-lg text-sm font-bold hover:bg-primary/90 transition-colors"
+                className="flex-1 py-2.5 bg-primary text-white rounded-lg text-xs font-bold hover:bg-primary/90 transition-colors"
               >
                 Reload App
               </button>
