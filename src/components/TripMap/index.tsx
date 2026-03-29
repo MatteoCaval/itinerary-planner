@@ -4,8 +4,9 @@ import { createAccommodationIcon } from './markerFactories';
 import { ClusteredMarkers } from './ClusteredMarkers';
 import { RouteSegments } from './RouteSegments';
 import { FitMap, SelectedVisitHandler, MapClickHandler } from './MapHandlers';
-import { MapControlsPanel, useBasemapState } from './MapControlsPanel';
-import type { BasemapMode } from './MapControlsPanel';
+import { MapControlsPanel } from './MapControlsPanel';
+import { useBasemapState } from './useBasemapState';
+import type { BasemapMode } from './useBasemapState';
 import StayOverviewLayer from './StayOverviewLayer';
 import type { OverviewStay } from './StayOverviewLayer';
 

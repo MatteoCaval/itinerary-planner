@@ -667,7 +667,7 @@ function AddStayModal({ onClose, onSave, stayColor, initialDays }: {
       try {
         const results = await searchPlace(name.trim(), { signal: controller.signal });
         setSearchResults(results.slice(0, 6)); setShowResults(true);
-      } catch (err) {
+      } catch {
         if (!controller.signal.aborted) setSearchError(true);
       } finally {
         if (!controller.signal.aborted) setIsSearching(false);
@@ -853,7 +853,7 @@ function VisitFormModal({ initial, title, onClose, onSave, onDelete, onUnschedul
         const results = await searchPlace(name.trim(), { signal: controller.signal });
         setSearchResults(results.slice(0, 6));
         setShowResults(true);
-      } catch (err) {
+      } catch {
         if (!controller.signal.aborted) setSearchError(true);
       } finally {
         if (!controller.signal.aborted) setIsSearching(false);
@@ -2364,7 +2364,7 @@ function ProfileMenu({ trip, onImport, onImportFromCode, onGoHome, onSignOut }: 
     const start = trip.startDate || new Date().toISOString().split('T')[0];
     const legacy = hybridTripToLegacy({ ...trip, startDate: start });
     const endDate = addDaysTo(new Date(start), trip.totalDays - 1).toISOString().split('T')[0];
-    const md = generateMarkdown(legacy.days, legacy.locations as any, legacy.routes, start, endDate);
+    const md = generateMarkdown(legacy.days, legacy.locations as unknown as Parameters<typeof generateMarkdown>[1], legacy.routes, start, endDate);
     downloadMarkdown(md, `${trip.name.toLowerCase().replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.md`);
     setOpen(false);
   };

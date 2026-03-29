@@ -1,6 +1,6 @@
 // AISettings was previously in ./types — inlined here since the legacy types file was removed
 type AISettings = { apiKey: string; model: string };
-type Location = { id: string; name: string; lat: number; lng: number; subLocations?: any[]; [key: string]: unknown };
+type Location = { id: string; name: string; lat: number; lng: number; subLocations?: Location[]; [key: string]: unknown };
 type Route = { id: string; fromLocationId: string; toLocationId: string; [key: string]: unknown };
 type Day = { id: string; date: string; [key: string]: unknown };
 import { ApiError, fetchJson } from './services/httpClient';
