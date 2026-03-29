@@ -5,7 +5,7 @@ export function getTomorrow() {
 
 /** Adds n days to a Date, returning a new Date. */
 export function addDaysTo(date: Date, n: number) {
-  const d = new Date(date); d.setDate(d.getDate() + n); return d;
+  const d = new Date(date); d.setDate(d.getDate() + (Number.isFinite(n) ? n : 0)); return d;
 }
 
 /** Parse a date string safely, falling back to today if empty/invalid. */
@@ -17,6 +17,7 @@ export function safeDate(s: string): Date {
 
 /** Format a date using Intl.DateTimeFormat with en-US locale. */
 export function fmt(date: Date, opts: Intl.DateTimeFormatOptions) {
+  if (!date || isNaN(date.getTime())) return '';
   return new Intl.DateTimeFormat('en-US', opts).format(date);
 }
 
