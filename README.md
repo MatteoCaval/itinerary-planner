@@ -42,7 +42,7 @@ src/
     migration.ts           # Legacy <-> Hybrid trip conversion, normalizeTrip
     tripMutations.ts       # Trip mutations (extend, drag, date range shrink)
     sampleData.ts          # Demo trip data
-    __tests__/             # Unit tests for domain logic (31 tests)
+    __tests__/             # Unit tests for domain logic (36 tests)
 
   services/
     httpClient.ts          # HTTP client with retry/timeout
@@ -51,33 +51,24 @@ src/
   firebase.ts              # Firebase config, cloud sync helpers
   aiService.ts             # Gemini AI integration (scratch + refine modes)
   markdownExporter.ts      # Markdown export
+  unsplash.ts              # Unsplash photo search
 
   hooks/
     usePlaceSearch.ts      # Nominatim geocoding with debounce
     useRouteGeometry.ts    # OSRM route geometry fetching
-    useItineraryDrillDown.ts
-    useSidebarResize.ts
 
   components/
     TripMap/               # Leaflet map (markers, routes, clustering, day filters)
-    DaySidebar/            # Timeline CSS-grid rendering
-    LocationDetailPanel/   # Detail drawer
-    CalendarView.tsx       # Month grid alternative view
 
   context/
     AuthContext.tsx         # Firebase auth provider
-    ItineraryContext.tsx    # Legacy app state (kept for reference)
-
-  features/
-    legacy/                # LegacyApp.tsx (reference only, not rendered in production)
-    shell/                 # Layout shell
-    ui/primitives/         # Shared UI components (AppButton, AppModal, etc.)
 
   App.tsx                  # CHRONOS app — main UI component
+  main.tsx                 # Entry point (React root)
   index.css                # Tailwind theme, custom CSS, react-day-picker overrides
   utils/
     geocoding.ts           # Nominatim search wrapper
-    itinerarySchema.ts     # Zod validation for imports
+    routing.ts             # OSRM route geometry fetching
 ```
 
 ## Tools and Integrations

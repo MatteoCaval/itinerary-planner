@@ -27,10 +27,8 @@ Tests use jsdom + Testing Library. Setup file: `src/test/setup.ts`.
 
 ## Architecture
 
-There are **two parallel app instances** in this codebase:
-
-### 1. CHRONOS app (`src/App.tsx`) — the active UI
-~900-line self-contained component. Defines its own local types (`HybridTrip`, `Stay`, `VisitItem`) inline rather than importing from `src/types.ts`. Persists to localStorage key `itinerary-hybrid-v3`. Has legacy data migration logic at the top of the file for importing from old storage formats.
+### CHRONOS app (`src/App.tsx`)
+The main UI component (~4800 lines). Types and business logic are imported from the domain layer.
 
 **Data model:**
 - `HybridTrip` → `Stay[]` → `VisitItem[]`
@@ -50,52 +48,29 @@ visitTypeDisplay.ts   # getVisitTypeBg, getVisitTypeColor, getVisitLabel
 migration.ts          # legacyTripToHybrid, hybridTripToLegacy, normalizeTrip
 tripMutations.ts      # extendTripBefore/After, applyTimelineDrag, adjustStaysForDateChange
 sampleData.ts         # createSampleTrip (Japan demo)
-__tests__/            # 31 unit tests
+__tests__/            # 36 unit tests
 ```
 Zero React dependencies. All functions are pure and unit-testable. App.tsx imports from this layer.
 
-### 2. Legacy app (`src/features/legacy/LegacyApp.tsx`) — kept for reference only
-Uses `ItineraryContext` and the full feature pane architecture. Not rendered in production. The view switcher key `itinerary-app-view-v1` in localStorage controls which app loads.
-
-### Feature pane architecture (used by legacy app)
+### Supporting files
 ```
-src/features/
-  shell/          # AppShell layout (shell.css)
-  hybrid/         # Timeline/kanban CSS (hybrid.css)
-  planner/        # PlannerPane, MobilePlannerSheet, TripActionDialogs
-  map/            # MapPane
-  inspector/      # InspectorPane
-  controllers/    # useSelectionFlow, useSubItineraryActions, useTripActions
-  ui/primitives/  # AppButton, AppIconButton, AppModal, AppTextInput
-  legacy/         # LegacyApp.tsx (reference only)
-  trips/          # TripActionDialogs (shared)
 src/context/
-  ItineraryContext.tsx  # All itinerary state + mutations + undo/redo history
-  AuthContext.tsx       # Firebase auth
+  AuthContext.tsx       # Firebase auth provider
 src/hooks/
-  useImportExport.ts    # JSON/Markdown import-export
-  useItineraryDrillDown.ts
-  usePlaceSearch.ts     # Nominatim geocoding wrapper
-  useRouteGeometry.ts   # OSRM route geometry
-  useSidebarResize.ts
-src/services/
-  httpClient.ts
-  telemetry.ts
+  usePlaceSearch.ts    # Nominatim geocoding with debounce
+  useRouteGeometry.ts  # OSRM route geometry
 src/components/
-  DaySidebar/           # Timeline CSS-grid rendering
-  MapDisplay/           # Leaflet map + routing
-  LocationDetailPanel/  # Right-side detail drawer
-  TripMap/              # Map component used by CHRONOS app
-  CalendarView.tsx      # Month grid alternative view
-  DaySidebar.tsx        # (older version, may coexist)
+  TripMap/             # Leaflet map (markers, routes, clustering, day filters)
+src/services/
+  httpClient.ts        # HTTP client with retry/timeout
+  telemetry.ts         # Error/event tracking
 src/utils/
-  geocoding.ts          # searchPlace (Nominatim)
-  itinerarySchema.ts    # Zod validation for imports
-src/aiService.ts        # Gemini AI integration
+  geocoding.ts         # Nominatim search wrapper
+  routing.ts           # OSRM route geometry fetching
+src/aiService.ts       # Gemini AI integration
 src/markdownExporter.ts
-src/firebase.ts         # Firebase config + cloud sync helpers
-src/types.ts            # Shared types for legacy app
-src/theme.ts
+src/firebase.ts        # Firebase config + cloud sync helpers
+src/unsplash.ts        # Unsplash photo search
 ```
 
 ## Key Conventions
@@ -104,7 +79,7 @@ src/theme.ts
 - **Design tokens:** Primary orange `#ec5b13`, font Inter.
 - **Formatting:** 2-space indent, single quotes, semicolons, trailing commas, 100-char line width (Prettier-enforced).
 - **Naming:** PascalCase components, `use` prefix hooks, camelCase utilities.
-- **`src/types.ts`** is for the legacy/context-based app. The CHRONOS app uses types from `src/domain/types.ts`.
+- **Types** live in `src/domain/types.ts`. No separate `src/types.ts`.
 - **Never touch `.env.local`.**
 
 ## Working on UI Features

@@ -143,5 +143,6 @@ VisitLink       { url, label?: string }
 - **Merge is all-or-nothing** — same trip edited on two devices: last write wins.
 - **No sync indicator** — no "saving…" / "saved" / "offline" status visible.
 - **History is in-memory** — page reload resets the undo stack.
-- **`src/App.tsx` is still large** (~4800 lines). Domain logic has been extracted to `src/domain/` (10 modules, 31 tests). Service layer, hooks, and UI component extraction are planned (Phases 2-4).
+- **`src/App.tsx` is still large** (~4800 lines). Domain logic has been extracted to `src/domain/` (10 modules, 36 tests). Service layer, hooks, and UI component extraction are planned (Phases 2-4).
+- **Legacy app removed** — the old Mantine-based UI has been fully deleted. Only the CHRONOS app remains.
 - **Dark mode not implemented** — light mode only for now.
