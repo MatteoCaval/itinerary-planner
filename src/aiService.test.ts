@@ -131,6 +131,6 @@ describe('generateAIItinerary', () => {
     await generateAIItinerary('Plan', { apiKey: 'key', model: '' }, days, [], [], 'scratch');
 
     const calledUrl = mockFetchJson.mock.calls[0][0] as string;
-    expect(calledUrl).toContain('gemini-3-flash-preview');
+    expect(calledUrl).toContain('gemini-3.1-flash-lite-preview');
   });
 });
