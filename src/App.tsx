@@ -3251,8 +3251,7 @@ function ChronosApp() {
   useEffect(() => {
     if (!dragState) return;
     const zone = timelineZoneRef.current;
-    const numDays = zoomDays === 0 ? trip.totalDays : zoomDays;
-    const slotWidth = (zone?.clientWidth ?? numDays * 42) / (numDays * 3);
+    const slotWidth = (zone?.clientWidth ?? trip.totalDays * 42) / (trip.totalDays * 3);
 
     const applyDelta = (clientX: number) => {
       const delta = Math.round((clientX - dragState.originX) / slotWidth);
@@ -3454,7 +3453,7 @@ function ChronosApp() {
   };
 
   // ── Render helpers ────────────────────────────────────────────────────────
-  const numDays = zoomDays === 0 ? trip.totalDays : zoomDays;
+  const numDays = trip.totalDays;
 
   // ── Timeline drag-to-create helpers ──────────────────────────────────────
   const numSlots = numDays * 3;
@@ -3503,8 +3502,6 @@ function ChronosApp() {
     const d = addDaysTo(safeDate(trip.startDate), trip.totalDays);
     return { date: fmt(d, { month: 'short', day: 'numeric' }), weekday: fmt(d, { weekday: 'short' }) };
   })();
-  const displayDays = numDays + 2;
-
   const handleExtendBefore = () => setTrip((t) => extendTripBefore(t));
   const handleExtendAfter = () => setTrip((t) => extendTripAfter(t));
   const canShrinkBefore = trip.totalDays > 1 && !sortedStays.some((s) => s.startSlot < 3);
@@ -3739,8 +3736,9 @@ function ChronosApp() {
             </div>
 
             <div className="flex-1 relative overflow-x-auto overflow-y-hidden scroll-hide">
-              <div data-timeline-track className="h-full" style={{ width: `${Math.max(100, (displayDays / ((zoomDays || numDays) + 2)) * 100)}%`, display: 'grid', gridTemplateColumns: `1fr repeat(${numDays}, 1fr) 1fr`, gridTemplateRows: '28px 1fr' }}>
-                {/* Day labels — buffer before */}
+              <div data-timeline-track className="h-full" style={{ width: zoomDays === 0 ? '100%' : `${Math.max(100, Math.round(numDays / zoomDays * 100))}%`, display: 'grid', gridTemplateColumns: zoomDays === 0 ? `1fr repeat(${numDays}, 1fr) 1fr` : `repeat(${numDays}, 1fr)`, gridTemplateRows: '28px 1fr' }}>
+                {/* Day labels — buffer before (ALL view only) */}
+                {zoomDays === 0 && (
                 <div className="flex flex-col bg-slate-100/80 border-b border-r border-border-neutral">
                   <div className="flex-1 flex items-center justify-center gap-1 text-[9px] font-bold text-slate-300 uppercase tracking-tighter border-b border-slate-100">
                     <span className="text-slate-200">{bufferBefore.weekday}</span>
@@ -3752,6 +3750,7 @@ function ChronosApp() {
                     ))}
                   </div>
                 </div>
+                )}
                 {/* Day labels — trip days */}
                 {dayLabels.map(({ date, weekday }, i) => (
                   <div key={i} className="flex flex-col border-b border-r border-border-neutral bg-slate-50/30">
@@ -3766,7 +3765,8 @@ function ChronosApp() {
                     </div>
                   </div>
                 ))}
-                {/* Day labels — buffer after */}
+                {/* Day labels — buffer after (ALL view only) */}
+                {zoomDays === 0 && (
                 <div className="flex flex-col bg-slate-100/80 border-b border-border-neutral">
                   <div className="flex-1 flex items-center justify-center gap-1 text-[9px] font-bold text-slate-300 uppercase tracking-tighter border-b border-slate-100">
                     <span className="text-slate-200">{bufferAfter.weekday}</span>
@@ -3778,8 +3778,9 @@ function ChronosApp() {
                     ))}
                   </div>
                 </div>
-                {/* Stay zone — buffer before */}
-                <button
+                )}
+                {/* Stay zone — buffer before (ALL view only) */}
+                {zoomDays === 0 && <button
                   onClick={handleExtendBefore}
                   className="group/buf relative flex items-center justify-center border-r border-border-neutral transition-colors hover:bg-slate-100/60"
                   style={{
@@ -3791,13 +3792,13 @@ function ChronosApp() {
                     <Plus className="w-3.5 h-3.5 text-slate-400" />
                     <span className="text-[9px] font-bold text-slate-400 uppercase">Extend</span>
                   </div>
-                </button>
+                </button>}
                 {/* Stay zone — main (spans all trip day columns) */}
                 <div
                   ref={timelineZoneRef}
                   className="relative overflow-x-clip"
                   style={{
-                    gridColumn: `2 / ${numDays + 2}`,
+                    gridColumn: zoomDays === 0 ? `2 / ${numDays + 2}` : `1 / ${numDays + 1}`,
                     backgroundImage: 'linear-gradient(to right, rgba(0,0,0,0.06) 1px, transparent 1px), linear-gradient(to right, rgba(0,0,0,0.02) 1px, transparent 1px)',
                     backgroundSize: `calc(100% / ${numDays}) 100%, calc(100% / ${numDays * 3}) 100%`,
                     cursor: (timelineHoverDay !== null || timelineDragCreate) ? 'crosshair' : undefined,
@@ -4063,8 +4064,8 @@ function ChronosApp() {
                     </button>
                   )}
                 </div>
-                {/* Stay zone — buffer after */}
-                <button
+                {/* Stay zone — buffer after (ALL view only) */}
+                {zoomDays === 0 && <button
                   onClick={handleExtendAfter}
                   className="group/buf relative flex items-center justify-center border-l border-border-neutral transition-colors hover:bg-slate-100/60"
                   style={{
@@ -4076,7 +4077,7 @@ function ChronosApp() {
                     <Plus className="w-3.5 h-3.5 text-slate-400" />
                     <span className="text-[9px] font-bold text-slate-400 uppercase">Extend</span>
                   </div>
-                </button>
+                </button>}
               </div>
             </div>
           </section>
