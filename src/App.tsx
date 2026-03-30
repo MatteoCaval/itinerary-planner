@@ -1613,10 +1613,11 @@ function StayOverviewPanel({ stay, stayDays, accommodationGroups, onUpdate }: {
   const [newLinkUrl, setNewLinkUrl] = useState('');
   const [newLinkLabel, setNewLinkLabel] = useState('');
 
-  // Reset local state when switching to a different stay
+  // Reset local state when switching to a different stay (not on every prop change — would clobber edits)
   useEffect(() => {
     setNotes(stay.notes ?? '');
     setLinks(stay.links ?? []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stay.id]);
 
   const nights = stayDays.filter((d) => d.hasNight).length;
@@ -1851,9 +1852,11 @@ function VisitDetailDrawer({ visit, dayLabel, onClose, onEdit, onUnschedule, onD
   const [checklist, setChecklist] = useState<ChecklistItem[]>(visit.checklist ?? []);
   const [newChecklistText, setNewChecklistText] = useState('');
 
+  // Reset local state when switching visits (not on every prop change — would clobber edits)
   useEffect(() => {
     setNotes(visit.notes ?? '');
     setChecklist(visit.checklist ?? []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visit.id]);
 
   const saveNotes = () => {
@@ -3271,6 +3274,7 @@ function ChronosApp() {
       window.removeEventListener('touchmove', onTouchMove);
       window.removeEventListener('touchend', onUp);
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- setTrip changes on every trip update; including it would break mid-drag
   }, [dragState, zoomDays, trip.totalDays]);
 
   // ── Auto-fetch visit photos for selected stay ─────────────────────────────
