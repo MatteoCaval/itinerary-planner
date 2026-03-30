@@ -19,6 +19,7 @@ dist-ssr/
 # Editor
 .vscode/
 .idea/
+.obsidian/
 
 # Testing/Coverage
 coverage/
@@ -38,3 +39,4 @@ vite.config.ts.timestamp-*
 
 # Docker
 docker-compose.override.yml
+.claude/

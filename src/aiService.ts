@@ -1,4 +1,8 @@
-import { AISettings, Location, Route, Day } from './types';
+// AISettings was previously in ./types — inlined here since the legacy types file was removed
+type AISettings = { apiKey: string; model: string };
+type Location = { id: string; name: string; lat: number; lng: number; subLocations?: Location[]; [key: string]: unknown };
+type Route = { id: string; fromLocationId: string; toLocationId: string; [key: string]: unknown };
+type Day = { id: string; date: string; [key: string]: unknown };
 import { ApiError, fetchJson } from './services/httpClient';
 import { trackError } from './services/telemetry';
 import { DEFAULT_AI_MODEL } from './constants/daySection';
@@ -228,5 +232,183 @@ export const generateAIItinerary = async (
       } catch (error) {
       trackError('ai_invalid_json', error, { responsePreview: content.slice(0, 300) });
       throw new Error("AI returned invalid JSON format.");
+  }
+};
+
+// ─── Hybrid (CHRONOS) format ──────────────────────────────────────────────────
+
+export type AIHybridVisitType = 'area' | 'landmark' | 'museum' | 'food' | 'walk' | 'hotel';
+export type AIHybridDayPart = 'morning' | 'afternoon' | 'evening';
+export type AIHybridTravelMode = 'train' | 'flight' | 'drive' | 'ferry' | 'bus' | 'walk';
+
+export interface AIHybridVisit {
+  id: string;
+  name: string;
+  type: AIHybridVisitType;
+  area: string;
+  lat: number;
+  lng: number;
+  dayOffset: number | null;
+  dayPart: AIHybridDayPart | null;
+  order: number;
+  durationHint?: string;
+  notes?: string;
+}
+
+export interface AIHybridStay {
+  name: string;
+  color: string;
+  startSlot: number;
+  endSlot: number;
+  centerLat: number;
+  centerLng: number;
+  lodging: string;
+  travelModeToNext: AIHybridTravelMode;
+  travelDurationToNext?: string;
+  travelNotesToNext?: string;
+  visits: AIHybridVisit[];
+}
+
+export interface AIHybridResult {
+  explanation?: string;
+  stays: AIHybridStay[];
+}
+
+const STAY_COLORS = ['#2167d7', '#615cf6', '#2db6ab', '#d78035', '#20b5a8', '#3b6dd8', '#c45c99', '#4c9463'];
+
+export const generateHybridItinerary = async (
+  prompt: string,
+  settings: AISettings,
+  totalDays: number,
+  startDate: string,
+  tripName: string,
+  mode: 'scratch' | 'refine',
+  currentStays?: Array<{ name: string; startSlot: number; endSlot: number; visits: Array<{ name: string; dayOffset: number | null; dayPart: string | null }> }>,
+): Promise<AIHybridResult> => {
+  const selectedModel = settings.model?.trim() || DEFAULT_AI_MODEL;
+  const totalSlots = totalDays * 3;
+
+  const systemPrompt = `You are a professional travel planner. Generate a trip itinerary for a Gantt-style timeline app.
+
+TRIP CONTEXT:
+- Trip name: "${tripName}"
+- Start date: ${startDate}
+- Duration: ${totalDays} days (${totalSlots} slots total)
+
+TIMELINE MODEL:
+- Each day has exactly 3 slots: morning (index 0), afternoon (index 1), evening (index 2).
+- Global slot formula: slot = day_index * 3 + part_index.
+  Example: day 0 morning = slot 0, day 0 evening = slot 2, day 1 morning = slot 3, day 2 afternoon = slot 7.
+- Stays are destination blocks that span a range of slots. They must fit within 0..${totalSlots} and must NOT overlap.
+- A stay covering N days starts at day_X * 3 and ends at (day_X + N) * 3.
+- Every slot across all ${totalDays} days MUST be covered by exactly one stay. No gaps between stays.
+
+STAYS represent destinations (cities/regions). Each stay has:
+- name: The destination name (city, region, etc.)
+- startSlot / endSlot: The slot range on the timeline
+- centerLat / centerLng: Geographic center coordinates (must be accurate)
+- lodging: Primary hotel/accommodation name (can be empty)
+- nightAccommodations: Per-night accommodation details (see schema below)
+- travelModeToNext: How to reach the next destination
+- visits: Activities and places to visit within this stay
+
+VISITS are activities/places within a stay:
+- dayOffset: 0-based day index within the stay (0 = first day of stay). Use null for unscheduled/wishlist items.
+- dayPart: "morning" | "afternoon" | "evening". Use null for unscheduled items.
+- Each scheduled visit must have both dayOffset and dayPart set.
+- Multiple visits can share the same dayOffset + dayPart — they stack in that time slot.
+- Aim for 2-4 visits per day, spread across morning/afternoon/evening.
+- Include a mix of types: landmarks, museums, food spots, walks, shopping.
+- The "area" field should be the neighborhood or district name.
+
+NIGHT ACCOMMODATIONS:
+- nightAccommodations is an object keyed by dayOffset (0-based within stay).
+- Each entry has: name, lat, lng (optional), cost (optional), notes (optional), link (optional).
+- Include accommodation for each night the traveler sleeps in that stay.
+- The last day of a stay typically doesn't need accommodation (they travel to next destination).
+
+${mode === 'refine' && currentStays?.length ? `EXISTING STAYS (refine, improve, or fill gaps — keep what works):
+${JSON.stringify(currentStays, null, 2)}` : ''}
+
+Pick stay colors from this palette (cycle through): ${STAY_COLORS.join(', ')}
+
+Return ONLY valid JSON (no markdown, no code fences, no prose outside JSON):
+{
+  "explanation": "2-3 sentence summary of the plan and key highlights",
+  "stays": [
+    {
+      "name": "City Name",
+      "color": "#2167d7",
+      "startSlot": 0,
+      "endSlot": 9,
+      "centerLat": 35.6762,
+      "centerLng": 139.6503,
+      "lodging": "Hotel Name",
+      "nightAccommodations": {
+        "0": { "name": "Hotel Name", "lat": 35.68, "lng": 139.69 },
+        "1": { "name": "Hotel Name", "lat": 35.68, "lng": 139.69 }
+      },
+      "travelModeToNext": "train",
+      "travelDurationToNext": "2h 30m",
+      "travelNotesToNext": "Shinkansen from Tokyo Station",
+      "visits": [
+        {
+          "id": "v1",
+          "name": "Activity Name",
+          "type": "landmark",
+          "area": "Neighborhood Name",
+          "lat": 35.7148,
+          "lng": 139.7967,
+          "dayOffset": 0,
+          "dayPart": "morning",
+          "order": 0,
+          "durationHint": "2h",
+          "notes": "Brief useful description or tip"
+        }
+      ]
+    }
+  ]
+}
+
+Valid visit types: landmark, museum, food, walk, shopping, area
+Valid travelModeToNext: train, flight, drive, ferry, bus, walk
+Valid dayPart: morning, afternoon, evening`;
+
+  let data: GeminiResponse;
+  try {
+    data = await fetchJson<GeminiResponse>(
+      `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${settings.apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: `${systemPrompt}\n\nMode: ${mode}\nUser Request: ${prompt}` }] }],
+        }),
+        retries: 1,
+        retryDelayMs: 500,
+        timeoutMs: 60000,
+      },
+    );
+  } catch (error) {
+    trackError('ai_hybrid_generate_failed', error, { mode, promptLength: prompt.length });
+    throw new Error(getGeminiErrorMessage(error, selectedModel));
+  }
+
+  if (!data.candidates || data.candidates.length === 0) {
+    throw new Error('AI returned no results.');
+  }
+
+  let content = data.candidates[0].content?.parts?.[0]?.text || '';
+  content = content.replace(/```json/g, '').replace(/```/g, '').trim();
+
+  try {
+    const parsed = JSON.parse(content);
+    return {
+      explanation: parsed.explanation,
+      stays: parsed.stays || [],
+    };
+  } catch (error) {
+    trackError('ai_hybrid_invalid_json', error, { responsePreview: content.slice(0, 300) });
+    throw new Error('AI returned invalid JSON format.');
   }
 };
