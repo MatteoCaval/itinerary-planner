@@ -3795,7 +3795,7 @@ function ChronosApp() {
                 {/* Stay zone — main (spans all trip day columns) */}
                 <div
                   ref={timelineZoneRef}
-                  className="relative overflow-hidden"
+                  className="relative overflow-x-clip"
                   style={{
                     gridColumn: `2 / ${numDays + 2}`,
                     backgroundImage: 'linear-gradient(to right, rgba(0,0,0,0.06) 1px, transparent 1px), linear-gradient(to right, rgba(0,0,0,0.02) 1px, transparent 1px)',
@@ -4023,7 +4023,7 @@ function ChronosApp() {
                                 >
                                   <TransportIcon mode={stay.travelModeToNext} className="w-3.5 h-3.5 text-slate-400" />
                                   {stay.travelDurationToNext && (
-                                    <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-slate-800 text-white text-[11px] font-bold rounded-md whitespace-nowrap opacity-0 group-hover/chip:opacity-100 transition-opacity shadow-lg">
+                                    <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-slate-800 text-white text-[11px] font-bold rounded-md whitespace-nowrap opacity-0 group-hover/chip:opacity-100 transition-opacity shadow-lg z-40">
                                       {stay.travelDurationToNext}
                                     </div>
                                   )}
@@ -4303,7 +4303,11 @@ function ChronosApp() {
                           onSelectVisit={(id) => {
                             const next = id === selectedVisitId ? null : id;
                             setSelectedVisitId(next);
-                            if (next) setSidebarTab('overview');
+                            if (next) {
+                              setSidebarTab('overview');
+                              // On mobile, open the bottom drawer to show visit detail
+                              if (window.innerWidth < 768) setMobileDrawerOpen(true);
+                            }
                           }}
                           onEditVisit={(v) => setEditingVisit(v)}
                           onAddVisit={(d, p) => setAddingVisitToSlot({ dayOffset: d, part: p })}
@@ -4624,58 +4628,97 @@ function ChronosApp() {
               >
                 <div className="w-10 h-1 rounded-full bg-slate-300" />
               </div>
-              {/* Header */}
-              <div className="px-4 pb-3 flex justify-between items-center border-b border-border-neutral">
-                <div className="flex items-center gap-2">
-                  <h3 className="text-sm font-extrabold text-slate-800">Unplanned</h3>
-                  <span className={`text-[11px] font-extrabold px-1.5 py-0.5 rounded ${inboxVisits.length > 0 ? 'bg-primary/10 text-primary' : 'bg-emerald-50 text-emerald-600'}`}>
-                    {inboxVisits.length > 0 ? inboxVisits.length : <Check className="w-3 h-3" />}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setAddingToInbox(true)}
-                    className="size-8 flex items-center justify-center rounded-lg bg-primary text-white hover:bg-primary/90 transition-colors"
-                    aria-label="Add new place"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    onClick={() => setMobileDrawerOpen(false)}
-                    className="size-8 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 transition-colors"
-                    aria-label="Close drawer"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-              {/* Stay to-do */}
-              {selectedStay && (
-                <StayTodoSection
-                  key={selectedStay.id}
-                  stay={selectedStay}
-                  onUpdate={(cl) => updateSelectedStay((s) => ({ ...s, checklist: cl.length > 0 ? cl : undefined }))}
-                />
-              )}
-              {/* Items */}
-              <div className="flex-1 overflow-y-auto p-4 pb-safe space-y-3 scroll-hide">
-                {inboxVisits.map((v) => (
-                  <DraggableInventoryCard key={v.id} visit={v} onEdit={() => setEditingVisit(v)} />
-                ))}
-                {inboxVisits.length === 0 && (
-                  <div className="flex flex-col items-center justify-center py-8 gap-2">
-                    <div className="size-9 rounded-xl bg-slate-100 flex items-center justify-center">
-                      {selectedStay ? <Check className="w-4 h-4 text-emerald-500" /> : <Compass className="w-4 h-4 text-slate-400" />}
+              {/* Mobile visit detail — shown when a visit is selected */}
+              {selectedVisitId && selectedStay && (() => {
+                const visit = selectedStay.visits.find((v) => v.id === selectedVisitId);
+                if (!visit) return null;
+                const dayLabel = visit.dayOffset !== null
+                  ? `Day ${visit.dayOffset + 1}${visit.dayPart ? ', ' + visit.dayPart.charAt(0).toUpperCase() + visit.dayPart.slice(1) : ''}`
+                  : 'Unplanned';
+                return (
+                  <VisitDetailDrawer
+                    key={visit.id}
+                    visit={visit}
+                    dayLabel={dayLabel}
+                    onClose={() => { setSelectedVisitId(null); setMobileDrawerOpen(false); }}
+                    onEdit={() => { setEditingVisit(visit); setSelectedVisitId(null); setMobileDrawerOpen(false); }}
+                    onUnschedule={() => {
+                      updateSelectedStay((stay) => ({
+                        ...stay,
+                        visits: stay.visits.map((v) => v.id === visit.id ? { ...v, dayOffset: null, dayPart: null } : v),
+                      }));
+                      setSelectedVisitId(null); setMobileDrawerOpen(false);
+                    }}
+                    onDelete={() => {
+                      updateSelectedStay((stay) => ({ ...stay, visits: stay.visits.filter((v) => v.id !== visit.id) }));
+                      setSelectedVisitId(null); setMobileDrawerOpen(false);
+                    }}
+                    onUpdateVisit={(updates) => {
+                      updateSelectedStay((stay) => ({
+                        ...stay,
+                        visits: stay.visits.map((v) => v.id === visit.id ? { ...v, ...updates } : v),
+                      }));
+                    }}
+                  />
+                );
+              })()}
+              {/* Unplanned list — shown when no visit is selected */}
+              {!selectedVisitId && (
+                <>
+                  {/* Header */}
+                  <div className="px-4 pb-3 flex justify-between items-center border-b border-border-neutral">
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-sm font-extrabold text-slate-800">Unplanned</h3>
+                      <span className={`text-[11px] font-extrabold px-1.5 py-0.5 rounded ${inboxVisits.length > 0 ? 'bg-primary/10 text-primary' : 'bg-emerald-50 text-emerald-600'}`}>
+                        {inboxVisits.length > 0 ? inboxVisits.length : <Check className="w-3 h-3" />}
+                      </span>
                     </div>
-                    <p className="text-[11px] font-bold text-slate-500">
-                      {selectedStay ? 'All scheduled!' : 'No stay selected'}
-                    </p>
-                    <p className="text-[11px] text-slate-400 text-center">
-                      {selectedStay ? 'Add more with the + button.' : 'Tap a destination on the timeline.'}
-                    </p>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setAddingToInbox(true)}
+                        className="size-8 flex items-center justify-center rounded-lg bg-primary text-white hover:bg-primary/90 transition-colors"
+                        aria-label="Add new place"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => setMobileDrawerOpen(false)}
+                        className="size-8 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 transition-colors"
+                        aria-label="Close drawer"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
-                )}
-              </div>
+                  {/* Stay to-do */}
+                  {selectedStay && (
+                    <StayTodoSection
+                      key={selectedStay.id}
+                      stay={selectedStay}
+                      onUpdate={(cl) => updateSelectedStay((s) => ({ ...s, checklist: cl.length > 0 ? cl : undefined }))}
+                    />
+                  )}
+                  {/* Items */}
+                  <div className="flex-1 overflow-y-auto p-4 pb-safe space-y-3 scroll-hide">
+                    {inboxVisits.map((v) => (
+                      <DraggableInventoryCard key={v.id} visit={v} onEdit={() => setEditingVisit(v)} />
+                    ))}
+                    {inboxVisits.length === 0 && (
+                      <div className="flex flex-col items-center justify-center py-8 gap-2">
+                        <div className="size-9 rounded-xl bg-slate-100 flex items-center justify-center">
+                          {selectedStay ? <Check className="w-4 h-4 text-emerald-500" /> : <Compass className="w-4 h-4 text-slate-400" />}
+                        </div>
+                        <p className="text-[11px] font-bold text-slate-500">
+                          {selectedStay ? 'All scheduled!' : 'No stay selected'}
+                        </p>
+                        <p className="text-[11px] text-slate-400 text-center">
+                          {selectedStay ? 'Add more with the + button.' : 'Tap a destination on the timeline.'}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
             </div>
           </div>
         )}
