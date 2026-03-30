@@ -4600,33 +4600,28 @@ function ChronosApp() {
           </button>
         )}
 
-        {/* ── Mobile bottom drawer ── */}
+        {/* ── Mobile overlay panel ── */}
         {mobileDrawerOpen && (
-          <div className="md:hidden fixed inset-0 z-50 flex flex-col justify-end" onClick={() => setMobileDrawerOpen(false)}>
-            <div className="absolute inset-0 bg-black/40" />
-            <div
-              className="relative bg-white rounded-t-2xl max-h-[70dvh] flex flex-col animate-slide-up"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* Drag handle — tapping it also closes the drawer */}
-              <div
-                className="flex justify-center py-3 cursor-pointer"
-                onClick={() => setMobileDrawerOpen(false)}
-                onTouchStart={(e) => {
-                  const startY = e.touches[0].clientY;
-                  const onTouchMove = (ev: TouchEvent) => {
-                    if (ev.touches[0].clientY - startY > 60) {
-                      setMobileDrawerOpen(false);
-                      document.removeEventListener('touchmove', onTouchMove);
-                    }
-                  };
-                  document.addEventListener('touchmove', onTouchMove, { passive: true });
-                  document.addEventListener('touchend', () => document.removeEventListener('touchmove', onTouchMove), { once: true });
-                }}
-                aria-label="Close drawer"
-                role="button"
-              >
-                <div className="w-10 h-1 rounded-full bg-slate-300" />
+          <div className="md:hidden fixed inset-0 z-50 flex flex-col bg-white animate-fade-in">
+              {/* Header */}
+              <div className="flex items-center justify-between px-4 h-12 border-b border-border-neutral flex-shrink-0 bg-white/80 backdrop-blur-md">
+                <button
+                  onClick={() => { setMobileDrawerOpen(false); if (selectedVisitId) setSelectedVisitId(null); }}
+                  className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-500 hover:text-primary transition-colors"
+                >
+                  <ChevronDown className="w-4 h-4 rotate-90" />
+                  Back
+                </button>
+                <span className="text-[11px] font-bold text-slate-700">
+                  {selectedVisitId ? 'Place Details' : 'Inbox'}
+                </span>
+                <button
+                  onClick={() => { setMobileDrawerOpen(false); if (selectedVisitId) setSelectedVisitId(null); }}
+                  className="size-8 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 transition-colors"
+                  aria-label="Close"
+                >
+                  <X className="w-4 h-4" />
+                </button>
               </div>
               {/* Mobile visit detail — shown when a visit is selected */}
               {selectedVisitId && selectedStay && (() => {
@@ -4665,31 +4660,6 @@ function ChronosApp() {
               {/* Unplanned list — shown when no visit is selected */}
               {!selectedVisitId && (
                 <>
-                  {/* Header */}
-                  <div className="px-4 pb-3 flex justify-between items-center border-b border-border-neutral">
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-sm font-extrabold text-slate-800">Unplanned</h3>
-                      <span className={`text-[11px] font-extrabold px-1.5 py-0.5 rounded ${inboxVisits.length > 0 ? 'bg-primary/10 text-primary' : 'bg-emerald-50 text-emerald-600'}`}>
-                        {inboxVisits.length > 0 ? inboxVisits.length : <Check className="w-3 h-3" />}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => setAddingToInbox(true)}
-                        className="size-8 flex items-center justify-center rounded-lg bg-primary text-white hover:bg-primary/90 transition-colors"
-                        aria-label="Add new place"
-                      >
-                        <Plus className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => setMobileDrawerOpen(false)}
-                        className="size-8 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 transition-colors"
-                        aria-label="Close drawer"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
                   {/* Stay to-do */}
                   {selectedStay && (
                     <StayTodoSection
@@ -4719,7 +4689,6 @@ function ChronosApp() {
                   </div>
                 </>
               )}
-            </div>
           </div>
         )}
 
