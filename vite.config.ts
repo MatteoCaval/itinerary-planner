@@ -1,7 +1,7 @@
-import path from 'path'
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import tailwindcss from '@tailwindcss/vite'
+import path from 'path';
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import tailwindcss from '@tailwindcss/vite';
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -19,7 +19,7 @@ export default defineConfig({
     host: true, // Needed for Docker
     port: 5173,
     watch: {
-      usePolling: true // Often needed for Docker volumes
-    }
-  }
-})
+      usePolling: true, // Often needed for Docker volumes
+    },
+  },
+});

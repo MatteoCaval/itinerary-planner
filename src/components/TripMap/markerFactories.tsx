@@ -29,11 +29,7 @@ const VISIT_TYPE_ICONS: Record<VisitType, LucideIcon> = {
 export const getVisitTypeColor = (type: VisitType): string =>
   VISIT_TYPE_COLORS[type] || VISIT_TYPE_COLORS.area;
 
-export const createIcon = (
-  type: VisitType,
-  index: number,
-  isSelected: boolean,
-) => {
+export const createIcon = (type: VisitType, index: number, isSelected: boolean) => {
   const IconComponent = VISIT_TYPE_ICONS[type] || Compass;
   const baseColor = VISIT_TYPE_COLORS[type] || VISIT_TYPE_COLORS.area;
   return L.divIcon({
@@ -120,10 +116,7 @@ export const getPointAt = (positions: LatLngTuple[], t: number): LatLngTuple => 
     const ratio = seg === 0 ? 0 : target / seg;
     const start = positions[i];
     const end = positions[i + 1];
-    return [
-      start[0] + (end[0] - start[0]) * ratio,
-      start[1] + (end[1] - start[1]) * ratio,
-    ];
+    return [start[0] + (end[0] - start[0]) * ratio, start[1] + (end[1] - start[1]) * ratio];
   }
 
   return positions[positions.length - 1];

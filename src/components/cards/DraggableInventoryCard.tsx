@@ -8,7 +8,8 @@ import type { VisitItem } from '@/domain/types';
 
 function DraggableInventoryCard({ visit, onEdit }: { visit: VisitItem; onEdit: () => void }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
-    id: `inbox-${visit.id}`, data: { type: 'inbox', visit },
+    id: `inbox-${visit.id}`,
+    data: { type: 'inbox', visit },
   });
   return (
     <div
@@ -20,14 +21,20 @@ function DraggableInventoryCard({ visit, onEdit }: { visit: VisitItem; onEdit: (
       aria-label={`Drag ${visit.name} to schedule`}
     >
       <div className="flex justify-between items-start mb-1.5">
-        <Badge variant="outline" className={`text-[11px] font-bold uppercase tracking-tighter ${getVisitTypeColor(visit.type)}`}>
+        <Badge
+          variant="outline"
+          className={`text-[11px] font-bold uppercase tracking-tighter ${getVisitTypeColor(visit.type)}`}
+        >
           {getVisitLabel(visit.type)}
         </Badge>
         <div className="flex items-center gap-1">
           <Button
             variant="ghost"
             size="icon-sm"
-            onClick={(e) => { e.stopPropagation(); onEdit(); }}
+            onClick={(e) => {
+              e.stopPropagation();
+              onEdit();
+            }}
             className="opacity-60 group-hover:opacity-100 transition-opacity text-slate-400 hover:text-slate-600 touch-auto"
             aria-label={`Edit ${visit.name}`}
           >
@@ -41,13 +48,15 @@ function DraggableInventoryCard({ visit, onEdit }: { visit: VisitItem; onEdit: (
       <div className="flex items-start gap-2">
         <div className="flex-1 min-w-0">
           <p className="text-xs font-bold text-slate-800">{visit.name}</p>
-          {visit.durationHint && <p className="text-[11px] text-slate-400 mt-0.5">{visit.durationHint}</p>}
-          {(visit.checklist?.length || visit.links?.length) ? (
+          {visit.durationHint && (
+            <p className="text-[11px] text-slate-400 mt-0.5">{visit.durationHint}</p>
+          )}
+          {visit.checklist?.length || visit.links?.length ? (
             <div className="flex items-center gap-1.5 mt-1.5">
               {visit.checklist?.length ? (
                 <Badge variant="secondary" className="text-[9px] font-bold text-slate-500 gap-1.5">
                   <Check className="w-2.5 h-2.5" />
-                  {visit.checklist.filter(i => i.done).length}/{visit.checklist.length}
+                  {visit.checklist.filter((i) => i.done).length}/{visit.checklist.length}
                 </Badge>
               ) : null}
               {visit.links?.length ? (
@@ -61,7 +70,12 @@ function DraggableInventoryCard({ visit, onEdit }: { visit: VisitItem; onEdit: (
         </div>
         {visit.imageUrl && (
           <div className="size-9 rounded-md overflow-hidden flex-shrink-0 border border-slate-100 shadow-sm">
-            <img src={visit.imageUrl} alt="" className="w-full h-full object-cover" loading="lazy" />
+            <img
+              src={visit.imageUrl}
+              alt=""
+              className="w-full h-full object-cover"
+              loading="lazy"
+            />
           </div>
         )}
       </div>

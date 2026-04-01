@@ -15,23 +15,30 @@ CHRONOS is a browser-based trip planner with three linked views: a **Gantt timel
 ## Features
 
 ### Timeline
+
 Horizontal scrollable Gantt (CSS Grid layout). Each **Stay** = colored block spanning days. Draggable, resizable from both ends. Overlap detection (visual warning only). Zoom slider. 3 slots/day (morning · afternoon · evening). **Blocked buffer days** shown before/after the trip range with diagonal stripe pattern — clicking them extends the trip by one day in that direction.
 
 ### Stays
+
 City-level destinations. Create via geocoded search (Nominatim) + day-count stepper. Edit name, color, default lodging. Delete with confirmation. Between stays: a **route chip** shows transport mode (train/flight/drive/ferry/bus/walk), duration, notes.
 
 ### Activities (Visits)
+
 Each stay has a kanban board: one column per day, three buckets (morning/afternoon/evening). Cards show name, type badge, area, notes. Draggable between slots and to/from the **unplanned inbox** (left sidebar). Types: `landmark` · `museum` · `food` · `walk` · `shopping` (`area` / `hotel` kept for legacy data only).
 
 Each visit supports:
+
 - **Checklist** — to-do items with done/undone toggle. Progress badge shown on card.
 - **Links** — external URLs with optional label. Link count badge shown on card.
 
 ### Accommodations
+
 Per-night hotel records (`NightAccommodation`) separate from the stay's default lodging. Geocoded, with cost/notes/link fields. Consecutive nights at the same hotel are collapsed into a grouped chip in the day column header. Night range is editable (select which nights within the stay the accommodation applies to). Removal correctly clears the `lodging` fallback field.
 
 ### Stay Overview Panel
+
 Clicking a stay in the timeline opens its **Overview** tab in the left sidebar (desktop) or bottom drawer (mobile):
+
 - **Hero image** — destination photo (Unsplash) with color dot + name + date range overlay
 - **Stats grid** — days / nights / places count
 - **Sleeping** — accommodation group summary
@@ -40,31 +47,40 @@ Clicking a stay in the timeline opens its **Overview** tab in the left sidebar (
 - **To-Do** — collapsible checklist for the whole stay (e.g. "Book Shinkansen pass")
 
 ### Map
+
 Two modes:
+
 - **Overview** — all stays as labeled markers, connected by route lines with transport icons.
 - **Detail** — visits for the selected stay, colored by type, optional clustering, accommodation pins, route arrows between visits.
 
 Day-filter pills narrow markers to a single day. Basemap toggle (CartoDB / ArcGIS English). Panel is resizable and collapsible.
 
 ### AI Planner
+
 Gemini REST API (user-supplied key). Two modes: **From Scratch** (full trip generation) or **Refine Existing** (fills gaps around current stays). Output previewed before applying. Undo available immediately after apply.
 
 ### Auth & Cloud Sync
+
 Firebase Auth (email/password + Google OAuth). On login, local and cloud trips are compared by ID. If both have unique trips → **MergeDialog** (Merge / Keep Local / Use Cloud / Decide Later). Auto-save debounced 2s after any change. Demo mode bypasses save.
 
 ### Import / Export
+
 JSON (native `HybridTrip` format) and Markdown (human-readable, grouped by day). Import validates with Zod. Access via profile menu.
 
 ### Multi-Trip & Welcome Screen
+
 Trip switcher modal. Shown when no trips exist: "Plan a trip" → new empty trip, "See a demo" → loads Japan sample without persisting. Deleting the last trip returns to welcome screen.
 
 ### Date Range Editing
+
 Trip dates edited via an inline calendar (react-day-picker v9). When shortening the trip:
+
 - Stays partially outside the new range are **clamped** (shortened to fit). Visits on removed days become unplanned.
 - Stays fully outside the new range are **removed** with a confirmation dialog listing affected destinations.
 - Handles both start-date shifts (moving start forward) and end-date shrinks.
 
 ### Undo / Redo
+
 50-step in-memory history. Cmd/Ctrl+Z · Cmd/Ctrl+Y. Toolbar buttons. History browser modal shows snapshot diffs.
 
 ---
@@ -106,30 +122,30 @@ VisitLink       { url, label?: string }
 
 ## Feature Status
 
-| Feature | Status | Notes |
-|---|---|---|
-| Gantt timeline | ✅ | Drag, resize, zoom, overlap detection, blocked buffer days, extend trip |
-| Date range shrink/shift | ✅ | Clamping, removal confirmation, visit unscheduling |
-| Stay CRUD | ✅ | Geocoding, color, route chips |
-| Activity kanban + inbox | ✅ | DnD, search, type grid |
-| Accommodation per-night | ✅ | Geocoding, cost, grouping, night-range editing |
-| Stay overview panel | ✅ | Hero, stats, notes, links, accommodation summary, to-do |
-| Visit checklist + links | ✅ | Per-visit to-do items and external links |
-| Stay notes + links + todo | ✅ | Freeform notes, external links, collapsible checklist |
-| Map — overview | ✅ | Stay markers + route lines |
-| Map — detail | ✅ | Visit/accommodation markers, clustering, arrows |
-| Map resize + day filter | ✅ | Collapsed/expanded/mini state persisted across refresh |
-| AI planner (Gemini) | ✅ | From scratch + refine |
-| Firebase Auth + cloud sync | ✅ | Email + Google OAuth, merge dialog |
-| JSON + Markdown export | ✅ | |
-| JSON import | ✅ | Zod validation |
-| Undo/redo + history browser | ✅ | 50-step, keyboard shortcuts |
-| Multi-trip + welcome screen | ✅ | Demo mode |
-| Mobile layout | ✅ | Adaptive layout: map hidden <768px, sidebar → bottom drawer FAB (with swipe-to-dismiss), snap-scroll day columns (85vw) with correct scroll-padding-left, footer hidden, touch DnD (long-press), responsive header; safe-area insets on FAB + drawer; conflict/demo banners visible on all sizes |
-| Passcode sharing | ⚠️ | Firebase functions exist; not exposed in UI |
-| Cost/budget dashboard | ❌ | `cost` field exists, no aggregate display |
-| Markdown import | ❌ | |
-| Trip duplication | ❌ | |
+| Feature                     | Status | Notes                                                                                                                                                                                                                                                                                            |
+| --------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Gantt timeline              | ✅     | Drag, resize, zoom, overlap detection, blocked buffer days, extend trip                                                                                                                                                                                                                          |
+| Date range shrink/shift     | ✅     | Clamping, removal confirmation, visit unscheduling                                                                                                                                                                                                                                               |
+| Stay CRUD                   | ✅     | Geocoding, color, route chips                                                                                                                                                                                                                                                                    |
+| Activity kanban + inbox     | ✅     | DnD, search, type grid                                                                                                                                                                                                                                                                           |
+| Accommodation per-night     | ✅     | Geocoding, cost, grouping, night-range editing                                                                                                                                                                                                                                                   |
+| Stay overview panel         | ✅     | Hero, stats, notes, links, accommodation summary, to-do                                                                                                                                                                                                                                          |
+| Visit checklist + links     | ✅     | Per-visit to-do items and external links                                                                                                                                                                                                                                                         |
+| Stay notes + links + todo   | ✅     | Freeform notes, external links, collapsible checklist                                                                                                                                                                                                                                            |
+| Map — overview              | ✅     | Stay markers + route lines                                                                                                                                                                                                                                                                       |
+| Map — detail                | ✅     | Visit/accommodation markers, clustering, arrows                                                                                                                                                                                                                                                  |
+| Map resize + day filter     | ✅     | Collapsed/expanded/mini state persisted across refresh                                                                                                                                                                                                                                           |
+| AI planner (Gemini)         | ✅     | From scratch + refine                                                                                                                                                                                                                                                                            |
+| Firebase Auth + cloud sync  | ✅     | Email + Google OAuth, merge dialog                                                                                                                                                                                                                                                               |
+| JSON + Markdown export      | ✅     |                                                                                                                                                                                                                                                                                                  |
+| JSON import                 | ✅     | Zod validation                                                                                                                                                                                                                                                                                   |
+| Undo/redo + history browser | ✅     | 50-step, keyboard shortcuts                                                                                                                                                                                                                                                                      |
+| Multi-trip + welcome screen | ✅     | Demo mode                                                                                                                                                                                                                                                                                        |
+| Mobile layout               | ✅     | Adaptive layout: map hidden <768px, sidebar → bottom drawer FAB (with swipe-to-dismiss), snap-scroll day columns (85vw) with correct scroll-padding-left, footer hidden, touch DnD (long-press), responsive header; safe-area insets on FAB + drawer; conflict/demo banners visible on all sizes |
+| Passcode sharing            | ⚠️     | Firebase functions exist; not exposed in UI                                                                                                                                                                                                                                                      |
+| Cost/budget dashboard       | ❌     | `cost` field exists, no aggregate display                                                                                                                                                                                                                                                        |
+| Markdown import             | ❌     |                                                                                                                                                                                                                                                                                                  |
+| Trip duplication            | ❌     |                                                                                                                                                                                                                                                                                                  |
 
 ---
 

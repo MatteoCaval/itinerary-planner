@@ -15,7 +15,9 @@ export function loadStore(): TripStore {
         };
       }
     }
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
   // 2. Fall back to previous hybrid key (users who already used new app)
   try {
     const raw = localStorage.getItem('itinerary-hybrid-trips-v2');
@@ -23,7 +25,9 @@ export function loadStore(): TripStore {
       const parsed: TripStore = JSON.parse(raw);
       return { ...parsed, trips: parsed.trips.map(normalizeTrip) };
     }
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
   // 3. Oldest single-trip key
   try {
     const old = localStorage.getItem('itinerary-hybrid-v3');
@@ -31,7 +35,9 @@ export function loadStore(): TripStore {
       const trip = normalizeTrip(JSON.parse(old));
       return { trips: [trip], activeTripId: trip.id };
     }
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
   return { trips: [], activeTripId: '' };
 }
 

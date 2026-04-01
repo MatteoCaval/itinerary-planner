@@ -1,15 +1,27 @@
 import { describe, expect, it } from 'vitest';
 import {
-  adjustStaysForDateChange, applyTimelineDrag, extendTripAfter, extendTripBefore,
-  shrinkTripAfter, shrinkTripBefore,
+  adjustStaysForDateChange,
+  applyTimelineDrag,
+  extendTripAfter,
+  extendTripBefore,
+  shrinkTripAfter,
+  shrinkTripBefore,
 } from '../tripMutations';
 import type { DragState, HybridTrip, Stay } from '../types';
 
 function makeStay(overrides: Partial<Stay> = {}): Stay {
   return {
-    id: 's1', name: 'Test', color: '#000', startSlot: 0, endSlot: 9,
-    centerLat: 0, centerLng: 0, lodging: 'Hotel', travelModeToNext: 'train',
-    visits: [], ...overrides,
+    id: 's1',
+    name: 'Test',
+    color: '#000',
+    startSlot: 0,
+    endSlot: 9,
+    centerLat: 0,
+    centerLng: 0,
+    lodging: 'Hotel',
+    travelModeToNext: 'train',
+    visits: [],
+    ...overrides,
   };
 }
 
@@ -27,7 +39,10 @@ describe('extendTripBefore', () => {
 
   it('shifts all stay slots by +3', () => {
     const trip = makeTrip({
-      stays: [makeStay({ startSlot: 0, endSlot: 6 }), makeStay({ id: 's2', startSlot: 6, endSlot: 9 })],
+      stays: [
+        makeStay({ startSlot: 0, endSlot: 6 }),
+        makeStay({ id: 's2', startSlot: 6, endSlot: 9 }),
+      ],
     });
     const result = extendTripBefore(trip);
     expect(result.stays[0].startSlot).toBe(3);
@@ -50,7 +65,8 @@ describe('extendTripAfter', () => {
 describe('shrinkTripBefore', () => {
   it('removes first day and shifts stays back by 3 slots', () => {
     const trip = makeTrip({
-      startDate: '2026-03-27', totalDays: 3,
+      startDate: '2026-03-27',
+      totalDays: 3,
       stays: [makeStay({ startSlot: 3, endSlot: 9 })],
     });
     const result = shrinkTripBefore(trip);
@@ -97,7 +113,11 @@ describe('shrinkTripAfter', () => {
 
 describe('applyTimelineDrag', () => {
   const drag: NonNullable<DragState> = {
-    stayId: 's1', mode: 'move', originX: 0, originalStart: 0, originalEnd: 6,
+    stayId: 's1',
+    mode: 'move',
+    originX: 0,
+    originalStart: 0,
+    originalEnd: 6,
   };
 
   it('moves a stay by delta slots', () => {
@@ -155,13 +175,37 @@ describe('adjustStaysForDateChange', () => {
   });
 
   it('unschedules visits that overflow after clamping', () => {
-    const stays = [makeStay({
-      id: 'a', startSlot: 0, endSlot: 9,
-      visits: [
-        { id: 'v1', name: 'V1', type: 'landmark', area: '', lat: 0, lng: 0, dayOffset: 0, dayPart: 'morning', order: 0 },
-        { id: 'v2', name: 'V2', type: 'landmark', area: '', lat: 0, lng: 0, dayOffset: 2, dayPart: 'morning', order: 0 },
-      ],
-    })];
+    const stays = [
+      makeStay({
+        id: 'a',
+        startSlot: 0,
+        endSlot: 9,
+        visits: [
+          {
+            id: 'v1',
+            name: 'V1',
+            type: 'landmark',
+            area: '',
+            lat: 0,
+            lng: 0,
+            dayOffset: 0,
+            dayPart: 'morning',
+            order: 0,
+          },
+          {
+            id: 'v2',
+            name: 'V2',
+            type: 'landmark',
+            area: '',
+            lat: 0,
+            lng: 0,
+            dayOffset: 2,
+            dayPart: 'morning',
+            order: 0,
+          },
+        ],
+      }),
+    ];
     // Shrink to 2 days (6 slots)
     const result = adjustStaysForDateChange(stays, 0, 6);
     const v1 = result[0].visits.find((v) => v.id === 'v1')!;

@@ -18,7 +18,7 @@ export function useRouteGeometry(routeSegments: RouteSegmentInput[]) {
 
   // Prune stale entries when segments change
   useEffect(() => {
-    const activeKeys = new Set(routeSegments.map(segment => segment.key));
+    const activeKeys = new Set(routeSegments.map((segment) => segment.key));
     const next: Record<string, LatLngTuple[]> = {};
 
     Object.entries(routeShapesRef.current).forEach(([key, value]) => {
@@ -41,7 +41,7 @@ export function useRouteGeometry(routeSegments: RouteSegmentInput[]) {
           [segment.from.lat, segment.from.lng],
           [segment.to.lat, segment.to.lng],
           segment.transportType,
-          { signal: controller.signal }
+          { signal: controller.signal },
         );
         if (cancelled || !geometry) continue;
         routeShapesRef.current = { ...routeShapesRef.current, [segment.key]: geometry };

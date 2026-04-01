@@ -7,8 +7,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 
-function StayOverviewPanel({ stay, stayDays, accommodationGroups, onUpdate }: {
+function StayOverviewPanel({
+  stay,
+  stayDays,
+  accommodationGroups,
+  onUpdate,
+}: {
   stay: Stay;
   stayDays: ReturnType<typeof deriveStayDays>;
   accommodationGroups: AccommodationGroup[];
@@ -23,7 +29,7 @@ function StayOverviewPanel({ stay, stayDays, accommodationGroups, onUpdate }: {
   useEffect(() => {
     setNotes(stay.notes ?? '');
     setLinks(stay.links ?? []);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stay.id]);
 
   const nights = stayDays.filter((d) => d.hasNight).length;
@@ -55,12 +61,16 @@ function StayOverviewPanel({ stay, stayDays, accommodationGroups, onUpdate }: {
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
         <div className="absolute bottom-2.5 left-3.5 right-3.5">
           <div className="flex items-center gap-1.5">
-            <div className="w-2 h-2 rounded-full flex-shrink-0 ring-1 ring-white/40" style={{ backgroundColor: stay.color }} />
+            <div
+              className="w-2 h-2 rounded-full flex-shrink-0 ring-1 ring-white/40"
+              style={{ backgroundColor: stay.color }}
+            />
             <h2 className="text-white font-bold text-sm leading-tight truncate">{stay.name}</h2>
           </div>
           {startDate && endDate && (
             <p className="text-white/70 text-[11px] mt-0.5">
-              {fmt(startDate, { month: 'short', day: 'numeric' })} → {fmt(endDate, { month: 'short', day: 'numeric' })}
+              {fmt(startDate, { month: 'short', day: 'numeric' })} →{' '}
+              {fmt(endDate, { month: 'short', day: 'numeric' })}
             </p>
           )}
         </div>
@@ -73,9 +83,14 @@ function StayOverviewPanel({ stay, stayDays, accommodationGroups, onUpdate }: {
           { value: nights, label: 'Nights' },
           { value: stay.visits.length, label: 'Places' },
         ].map(({ value, label }, i) => (
-          <div key={label} className={`px-3 py-2 text-center ${i < 2 ? 'border-r border-border-neutral' : ''}`}>
+          <div
+            key={label}
+            className={`px-3 py-2 text-center ${i < 2 ? 'border-r border-border-neutral' : ''}`}
+          >
             <p className="text-base font-extrabold text-slate-800">{value}</p>
-            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{label}</p>
+            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
+              {label}
+            </p>
           </div>
         ))}
       </div>
@@ -83,14 +98,21 @@ function StayOverviewPanel({ stay, stayDays, accommodationGroups, onUpdate }: {
       {/* Accommodation */}
       {accommodationGroups.length > 0 && (
         <div className="px-4 py-2 border-b border-border-neutral">
-          <p className="text-[11px] font-extrabold uppercase tracking-widest text-slate-400 mb-1.5">Sleeping</p>
+          <p className="text-[11px] font-extrabold uppercase tracking-widest text-slate-400 mb-1.5">
+            Sleeping
+          </p>
           <div className="space-y-1">
             {accommodationGroups.map((g, i) => (
-              <div key={i} className="flex items-center gap-2 px-2.5 py-1.5 bg-primary/5 rounded-lg">
+              <div
+                key={i}
+                className="flex items-center gap-2 px-2.5 py-1.5 bg-primary/5 rounded-lg"
+              >
                 <Hotel className="w-3 h-3 text-primary flex-shrink-0" />
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-bold text-slate-800 truncate">{g.name}</p>
-                  <p className="text-[9px] text-slate-400">{g.nights} {g.nights === 1 ? 'night' : 'nights'}</p>
+                  <p className="text-[9px] text-slate-400">
+                    {g.nights} {g.nights === 1 ? 'night' : 'nights'}
+                  </p>
                 </div>
               </div>
             ))}
@@ -100,7 +122,9 @@ function StayOverviewPanel({ stay, stayDays, accommodationGroups, onUpdate }: {
 
       {/* Notes */}
       <div className="px-4 py-2 border-b border-border-neutral">
-        <label className="text-[11px] font-extrabold uppercase tracking-widest text-slate-400 mb-1.5 block">Notes</label>
+        <label className="text-[11px] font-extrabold uppercase tracking-widest text-slate-400 mb-1.5 block">
+          Notes
+        </label>
         <Textarea
           className="text-xs resize-none text-slate-700 placeholder:text-slate-300"
           rows={3}
@@ -113,19 +137,30 @@ function StayOverviewPanel({ stay, stayDays, accommodationGroups, onUpdate }: {
 
       {/* Links */}
       <div className="px-4 py-2 border-b border-border-neutral">
-        <label className="text-[11px] font-extrabold uppercase tracking-widest text-slate-400 mb-1.5 block">Links</label>
+        <label className="text-[11px] font-extrabold uppercase tracking-widest text-slate-400 mb-1.5 block">
+          Links
+        </label>
         <div className="space-y-1.5">
           {links.map((link, i) => (
             <div key={i} className="flex items-center gap-2 group">
               <ExternalLink className="w-3 h-3 text-slate-400 flex-shrink-0" />
-              <a href={link.url} target="_blank" rel="noopener noreferrer"
-                className="flex-1 text-xs text-primary hover:underline truncate" onClick={(e) => e.stopPropagation()}>
+              <a
+                href={link.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 text-xs text-primary hover:underline truncate"
+                onClick={(e) => e.stopPropagation()}
+              >
                 {link.label || link.url}
               </a>
               <Button
                 variant="ghost"
                 size="icon-xs"
-                onClick={() => { const next = links.filter((_, idx) => idx !== i); setLinks(next); onUpdate({ links: next.length > 0 ? next : undefined }); }}
+                onClick={() => {
+                  const next = links.filter((_, idx) => idx !== i);
+                  setLinks(next);
+                  onUpdate({ links: next.length > 0 ? next : undefined });
+                }}
                 className="opacity-0 group-hover:opacity-100 hover:bg-red-50 text-slate-400 hover:text-red-500"
               >
                 <X className="w-3 h-3" />
@@ -138,7 +173,12 @@ function StayOverviewPanel({ stay, stayDays, accommodationGroups, onUpdate }: {
               placeholder="https://…"
               value={newLinkUrl}
               onChange={(e) => setNewLinkUrl(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addLink(); } }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  addLink();
+                }
+              }}
             />
             <div className="flex gap-1.5">
               <Input
@@ -146,7 +186,12 @@ function StayOverviewPanel({ stay, stayDays, accommodationGroups, onUpdate }: {
                 placeholder="Label (optional)"
                 value={newLinkLabel}
                 onChange={(e) => setNewLinkLabel(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addLink(); } }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    addLink();
+                  }
+                }}
               />
               <Button
                 variant="secondary"
@@ -173,7 +218,10 @@ function StayOverviewPanel({ stay, stayDays, accommodationGroups, onUpdate }: {
 }
 
 // ─── Stay to-do section ───────────────────────────────────────────────────────
-export function StayTodoSection({ stay, onUpdate }: {
+export function StayTodoSection({
+  stay,
+  onUpdate,
+}: {
   stay: Stay;
   onUpdate: (checklist: ChecklistItem[]) => void;
 }) {
@@ -196,26 +244,36 @@ export function StayTodoSection({ stay, onUpdate }: {
         className="w-full px-4 py-2 flex items-center justify-between hover:bg-slate-50 transition-colors"
       >
         <div className="flex items-center gap-2">
-          <span className="text-[11px] font-extrabold uppercase tracking-widest text-slate-400">To-Do</span>
+          <span className="text-[11px] font-extrabold uppercase tracking-widest text-slate-400">
+            To-Do
+          </span>
           {checklist.length > 0 && (
-            <Badge variant="secondary" className={`text-[9px] font-bold h-auto px-1.5 py-0.5 ${doneCount === checklist.length ? 'bg-emerald-50 text-emerald-600' : 'bg-primary/10 text-primary'}`}>
+            <Badge
+              variant="secondary"
+              className={`text-[9px] font-bold h-auto px-1.5 py-0.5 ${doneCount === checklist.length ? 'bg-emerald-50 text-emerald-600' : 'bg-primary/10 text-primary'}`}
+            >
               {doneCount}/{checklist.length}
             </Badge>
           )}
         </div>
-        <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-all duration-200 ${open ? 'rotate-180' : ''}`} />
+        <ChevronDown
+          className={`w-3.5 h-3.5 text-slate-400 transition-all duration-200 ${open ? 'rotate-180' : ''}`}
+        />
       </button>
       {open && (
         <div className="px-4 pb-3 space-y-1.5">
           {checklist.map((item) => (
             <div key={item.id} className="flex items-center gap-2 group">
-              <input
-                type="checkbox"
+              <Checkbox
                 checked={item.done}
-                onChange={() => onUpdate(checklist.map((i) => i.id === item.id ? { ...i, done: !i.done } : i))}
-                className="accent-primary w-3.5 h-3.5 flex-shrink-0 cursor-pointer"
+                onCheckedChange={() =>
+                  onUpdate(checklist.map((i) => (i.id === item.id ? { ...i, done: !i.done } : i)))
+                }
+                className="size-3.5"
               />
-              <span className={`flex-1 text-xs ${item.done ? 'line-through text-slate-400' : 'text-slate-700'}`}>
+              <span
+                className={`flex-1 text-xs ${item.done ? 'line-through text-slate-400' : 'text-slate-700'}`}
+              >
                 {item.text}
               </span>
               <Button
@@ -234,7 +292,12 @@ export function StayTodoSection({ stay, onUpdate }: {
               placeholder="Add to-do…"
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addItem(); } }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  addItem();
+                }
+              }}
             />
             <Button
               variant="secondary"

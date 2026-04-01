@@ -1,33 +1,79 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  DndContext, DragOverlay,
-  type DragEndEvent, type DragStartEvent, PointerSensor, TouchSensor, useSensor, useSensors,
+  DndContext,
+  DragOverlay,
+  type DragEndEvent,
+  type DragStartEvent,
+  PointerSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
 } from '@dnd-kit/core';
 import { arrayMove } from '@dnd-kit/sortable';
 import {
-  Bed, Check, ChevronDown, CloudOff, Compass, Database,
-  History, Hotel, Layers, MapPin, Maximize2, Minimize2,
-  Navigation, Pencil, Plus, Redo2, Search, SlidersHorizontal, Sparkles,
-  PanelRightOpen, PanelRightClose, Shrink, Expand, Trash2, Undo2, X, Calendar,
+  Bed,
+  Check,
+  ChevronDown,
+  CloudOff,
+  Compass,
+  Database,
+  History,
+  Hotel,
+  Layers,
+  MapPin,
+  Maximize2,
+  Minimize2,
+  Navigation,
+  Pencil,
+  Plus,
+  Redo2,
+  Search,
+  SlidersHorizontal,
+  Sparkles,
+  PanelRightOpen,
+  PanelRightClose,
+  Shrink,
+  Expand,
+  Trash2,
+  Undo2,
+  X,
+  Calendar,
 } from 'lucide-react';
 import type {
-  AccommodationGroup, DayPart, DragState, HybridTrip,
-  NightAccommodation, Stay, TripStore, VisitItem,
+  AccommodationGroup,
+  DayPart,
+  DragState,
+  HybridTrip,
+  NightAccommodation,
+  Stay,
+  TripStore,
+  VisitItem,
 } from './domain/types';
 import {
-  createEmptyTrip, DAY_PARTS, LEGACY_STORAGE_KEY, STAY_COLORS,
+  createEmptyTrip,
+  DAY_PARTS,
+  LEGACY_STORAGE_KEY,
+  STAY_COLORS,
   TRANSPORT_LABELS,
 } from './domain/constants';
 import { addDaysTo, fmt, safeDate } from './domain/dateUtils';
 import { haversineKm, jitter } from './domain/geoUtils';
-import { deriveAccommodationGroups, deriveStayDays, getOverlapIds, getStayNightCount } from './domain/stayLogic';
+import {
+  deriveAccommodationGroups,
+  deriveStayDays,
+  getOverlapIds,
+  getStayNightCount,
+} from './domain/stayLogic';
 import { createVisit, normalizeVisitOrders, sortVisits } from './domain/visitLogic';
 import { getVisitTypeColor, getVisitLabel } from './domain/visitTypeDisplay';
 import { normalizeTrip } from './domain/migration';
 import { createSampleTrip } from './domain/sampleData';
 import {
-  applyTimelineDrag, extendTripAfter, extendTripBefore,
-  shrinkTripAfter, shrinkTripBefore,
+  applyTimelineDrag,
+  extendTripAfter,
+  extendTripBefore,
+  shrinkTripAfter,
+  shrinkTripBefore,
 } from './domain/tripMutations';
 import TripMap from './components/TripMap';
 import DayFilterPills from './components/TripMap/DayFilterPills';
@@ -36,6 +82,15 @@ import { saveUserTripStore, loadUserTripStore } from './firebase';
 import { searchPhoto } from './unsplash';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from '@/components/ui/sheet';
 import 'leaflet/dist/leaflet.css';
 
 // ─── Extracted components ─────────────────────────────────────────────────────
@@ -70,29 +125,39 @@ function ChronosApp() {
   // ── Store (multi-trip) ───────────────────────────────────────────────────
   const [store, setStore] = useState<TripStore>(() => loadStore());
   const [isDemoMode, setIsDemoMode] = useState(false);
-  const [pendingMerge, setPendingMerge] = useState<{ cloudTrips: HybridTrip[]; cloudActiveTripId: string } | null>(null);
+  const [pendingMerge, setPendingMerge] = useState<{
+    cloudTrips: HybridTrip[];
+    cloudActiveTripId: string;
+  } | null>(null);
   const [syncError, setSyncError] = useState<string | null>(null);
   const syncedUidRef = useRef<string | null>(null);
   const storeRef = useRef(store);
-  useEffect(() => { storeRef.current = store; }, [store]);
+  useEffect(() => {
+    storeRef.current = store;
+  }, [store]);
 
   const trip = useMemo(
     () => store.trips.find((t) => t.id === store.activeTripId) ?? store.trips[0] ?? EMPTY_TRIP,
     [store],
   );
 
-  const updateTrip = useCallback((updater: (t: HybridTrip) => HybridTrip) => {
-    setStore((s) => {
-      const updated = s.trips.map((t) => t.id === trip.id ? updater(t) : t);
-      const next = { ...s, trips: updated };
-      saveStore(next);
-      return next;
-    });
-  }, [trip.id]);
+  const updateTrip = useCallback(
+    (updater: (t: HybridTrip) => HybridTrip) => {
+      setStore((s) => {
+        const updated = s.trips.map((t) => (t.id === trip.id ? updater(t) : t));
+        const next = { ...s, trips: updated };
+        saveStore(next);
+        return next;
+      });
+    },
+    [trip.id],
+  );
 
   // ── Auto-fetch Unsplash photos ────────────────────────────────────────────
   const updateTripRef = useRef(updateTrip);
-  useEffect(() => { updateTripRef.current = updateTrip; }, [updateTrip]);
+  useEffect(() => {
+    updateTripRef.current = updateTrip;
+  }, [updateTrip]);
 
   useEffect(() => {
     if (!import.meta.env.VITE_UNSPLASH_ACCESS_KEY) return;
@@ -100,19 +165,26 @@ function ChronosApp() {
     if (staysNeedingImages.length === 0) return;
     staysNeedingImages.forEach(async (stay) => {
       const url = await searchPhoto(`${stay.name} city travel`);
-      if (url) updateTripRef.current((t) => ({ ...t, stays: t.stays.map((s) => s.id === stay.id ? { ...s, imageUrl: url } : s) }));
+      if (url)
+        updateTripRef.current((t) => ({
+          ...t,
+          stays: t.stays.map((s) => (s.id === stay.id ? { ...s, imageUrl: url } : s)),
+        }));
     });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trip.stays.map((s) => `${s.id}:${s.imageUrl ?? ''}`).join('|')]);
 
   // Sync with history
   const hist = useHistory(trip);
 
-  const setTrip = useCallback((fn: ((t: HybridTrip) => HybridTrip) | HybridTrip) => {
-    const next = typeof fn === 'function' ? fn(trip) : fn;
-    hist.push(next);
-    updateTrip(() => next);
-  }, [trip, hist, updateTrip]);
+  const setTrip = useCallback(
+    (fn: ((t: HybridTrip) => HybridTrip) | HybridTrip) => {
+      const next = typeof fn === 'function' ? fn(trip) : fn;
+      hist.push(next);
+      updateTrip(() => next);
+    },
+    [trip, hist, updateTrip],
+  );
 
   // ── UI state ──────────────────────────────────────────────────────────────
   const [selectedStayId, setSelectedStayId] = useState<string>(trip.stays[0]?.id ?? '');
@@ -121,12 +193,22 @@ function ChronosApp() {
   const [selectedVisitId, setSelectedVisitId] = useState<string | null>(null);
   const [dragState, setDragState] = useState<DragState>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [mapExpanded, setMapExpanded] = useState(() => localStorage.getItem('itinerary-map-expanded') === '1');
-  const [mapCollapsed, setMapCollapsed] = useState(() => localStorage.getItem('itinerary-map-collapsed') === '1');
+  const [mapExpanded, setMapExpanded] = useState(
+    () => localStorage.getItem('itinerary-map-expanded') === '1',
+  );
+  const [mapCollapsed, setMapCollapsed] = useState(
+    () => localStorage.getItem('itinerary-map-collapsed') === '1',
+  );
   const [mapMini, setMapMini] = useState(() => localStorage.getItem('itinerary-map-mini') === '1');
-  useEffect(() => { localStorage.setItem('itinerary-map-expanded', mapExpanded ? '1' : '0'); }, [mapExpanded]);
-  useEffect(() => { localStorage.setItem('itinerary-map-collapsed', mapCollapsed ? '1' : '0'); }, [mapCollapsed]);
-  useEffect(() => { localStorage.setItem('itinerary-map-mini', mapMini ? '1' : '0'); }, [mapMini]);
+  useEffect(() => {
+    localStorage.setItem('itinerary-map-expanded', mapExpanded ? '1' : '0');
+  }, [mapExpanded]);
+  useEffect(() => {
+    localStorage.setItem('itinerary-map-collapsed', mapCollapsed ? '1' : '0');
+  }, [mapCollapsed]);
+  useEffect(() => {
+    localStorage.setItem('itinerary-map-mini', mapMini ? '1' : '0');
+  }, [mapMini]);
   const [mapAnimClass, setMapAnimClass] = useState('');
   const triggerMapAnim = useCallback((cls: string) => {
     setMapAnimClass(cls);
@@ -137,28 +219,41 @@ function ChronosApp() {
     const saved = localStorage.getItem('itinerary-map-width');
     return saved ? Number(saved) : 500;
   });
-  const mapResizingRef = useRef<{ startX: number; startWidth: number; currentWidth: number } | null>(null);
+  const mapResizingRef = useRef<{
+    startX: number;
+    startWidth: number;
+    currentWidth: number;
+  } | null>(null);
   const mapPanelRef = useRef<HTMLElement>(null);
-  const startMapResize = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    mapResizingRef.current = { startX: e.clientX, startWidth: mapWidth, currentWidth: mapWidth };
-    const onMove = (ev: MouseEvent) => {
-      if (!mapResizingRef.current) return;
-      const newWidth = Math.min(900, Math.max(280, mapResizingRef.current.startWidth + (mapResizingRef.current.startX - ev.clientX)));
-      mapResizingRef.current.currentWidth = newWidth;
-      setMapWidth(newWidth);
-    };
-    const onUp = () => {
-      if (mapResizingRef.current) {
-        localStorage.setItem('itinerary-map-width', String(mapResizingRef.current.currentWidth));
-      }
-      mapResizingRef.current = null;
-      window.removeEventListener('mousemove', onMove);
-      window.removeEventListener('mouseup', onUp);
-    };
-    window.addEventListener('mousemove', onMove);
-    window.addEventListener('mouseup', onUp);
-  }, [mapWidth]);
+  const startMapResize = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      mapResizingRef.current = { startX: e.clientX, startWidth: mapWidth, currentWidth: mapWidth };
+      const onMove = (ev: MouseEvent) => {
+        if (!mapResizingRef.current) return;
+        const newWidth = Math.min(
+          900,
+          Math.max(
+            280,
+            mapResizingRef.current.startWidth + (mapResizingRef.current.startX - ev.clientX),
+          ),
+        );
+        mapResizingRef.current.currentWidth = newWidth;
+        setMapWidth(newWidth);
+      };
+      const onUp = () => {
+        if (mapResizingRef.current) {
+          localStorage.setItem('itinerary-map-width', String(mapResizingRef.current.currentWidth));
+        }
+        mapResizingRef.current = null;
+        window.removeEventListener('mousemove', onMove);
+        window.removeEventListener('mouseup', onUp);
+      };
+      window.addEventListener('mousemove', onMove);
+      window.addEventListener('mouseup', onUp);
+    },
+    [mapWidth],
+  );
   const [mapMode, setMapMode] = useState<'overview' | 'stay' | 'detail'>('overview');
   const [mapDayFilter, setMapDayFilter] = useState<number | null>(null);
   const [zoomDays, setZoomDays] = useState(() => {
@@ -172,17 +267,28 @@ function ChronosApp() {
   // Modals
   const [editingRouteStayId, setEditingRouteStayId] = useState<string | null>(null);
   const [editingStayId, setEditingStayId] = useState<string | null>(null);
-  const [addingVisitToSlot, setAddingVisitToSlot] = useState<{ dayOffset: number; part: DayPart } | null>(null);
+  const [addingVisitToSlot, setAddingVisitToSlot] = useState<{
+    dayOffset: number;
+    part: DayPart;
+  } | null>(null);
   const [editingVisit, setEditingVisit] = useState<VisitItem | null>(null);
   const [addingToInbox, setAddingToInbox] = useState(false);
-  const [editingAccommodation, setEditingAccommodation] = useState<{ group: AccommodationGroup } | { dayOffset: number } | null>(null);
+  const [editingAccommodation, setEditingAccommodation] = useState<
+    { group: AccommodationGroup } | { dayOffset: number } | null
+  >(null);
   const [showTripSwitcher, setShowTripSwitcher] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [showTripEditor, setShowTripEditor] = useState(false);
   const [addingStay, setAddingStay] = useState(false);
   const [timelineHoverDay, setTimelineHoverDay] = useState<number | null>(null);
-  const [timelineDragCreate, setTimelineDragCreate] = useState<{ startSlot: number; currentSlot: number } | null>(null);
-  const [pendingTimelineSlot, setPendingTimelineSlot] = useState<{ startSlot: number; days: number } | null>(null);
+  const [timelineDragCreate, setTimelineDragCreate] = useState<{
+    startSlot: number;
+    currentSlot: number;
+  } | null>(null);
+  const [pendingTimelineSlot, setPendingTimelineSlot] = useState<{
+    startSlot: number;
+    days: number;
+  } | null>(null);
   const timelineZoneRef = useRef<HTMLDivElement>(null);
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
@@ -217,8 +323,10 @@ function ChronosApp() {
     return () => window.removeEventListener('keydown', handler);
   }, [hist, updateTrip]);
 
-  useEffect(() => { setMapDayFilter(null); setMapMode(selectedStayId ? 'stay' : 'overview'); }, [selectedStayId]);
-
+  useEffect(() => {
+    setMapDayFilter(null);
+    setMapMode(selectedStayId ? 'stay' : 'overview');
+  }, [selectedStayId]);
 
   // ── Cloud sync: load on login ─────────────────────────────────────────────
   const { user } = useAuth();
@@ -230,7 +338,9 @@ function ChronosApp() {
     (async () => {
       const result = await loadUserTripStore(user.uid);
       if (!result.success) {
-        setSyncError(result.error || 'Could not load your trips from the cloud. Your local trips are safe.');
+        setSyncError(
+          result.error || 'Could not load your trips from the cloud. Your local trips are safe.',
+        );
         return;
       }
 
@@ -265,15 +375,21 @@ function ChronosApp() {
       }
 
       // Both sides have unique trips — ask the user
-      setPendingMerge({ cloudTrips: cloudOnlyTrips, cloudActiveTripId: cloudStore.activeTripId ?? '' });
+      setPendingMerge({
+        cloudTrips: cloudOnlyTrips,
+        cloudActiveTripId: cloudStore.activeTripId ?? '',
+      });
     })();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.uid]);
 
   // ── Cloud sync: auto-save on store change ─────────────────────────────────
   const [syncStatus, setSyncStatus] = useState<'saved' | 'saving' | 'error' | 'local'>('local');
   useEffect(() => {
-    if (!user || isDemoMode) { setSyncStatus('local'); return; }
+    if (!user || isDemoMode) {
+      setSyncStatus('local');
+      return;
+    }
     if (pendingMerge) return;
     setSyncStatus('saving');
     const timer = setTimeout(async () => {
@@ -288,32 +404,45 @@ function ChronosApp() {
   }, [store, user, isDemoMode, pendingMerge]);
 
   // ── Derived values ────────────────────────────────────────────────────────
-  const sortedStays = useMemo(() => [...trip.stays].sort((a, b) => a.startSlot - b.startSlot), [trip.stays]);
+  const sortedStays = useMemo(
+    () => [...trip.stays].sort((a, b) => a.startSlot - b.startSlot),
+    [trip.stays],
+  );
   const overlaps = useMemo(() => getOverlapIds(sortedStays), [sortedStays]);
   const selectedStay = useMemo(
-    () => selectedStayId ? (sortedStays.find((s) => s.id === selectedStayId) ?? null) : null,
+    () => (selectedStayId ? (sortedStays.find((s) => s.id === selectedStayId) ?? null) : null),
     [selectedStayId, sortedStays],
   );
-  const stayDays = useMemo(() => selectedStay ? deriveStayDays(trip, selectedStay) : [], [selectedStay, trip]);
-  const overviewStays = useMemo(() =>
-    sortedStays.map(s => ({
-      id: s.id, name: s.name, color: s.color,
-      centerLat: s.centerLat, centerLng: s.centerLng,
-      travelModeToNext: s.travelModeToNext,
-      travelDurationToNext: s.travelDurationToNext,
-    })),
-    [sortedStays]
+  const stayDays = useMemo(
+    () => (selectedStay ? deriveStayDays(trip, selectedStay) : []),
+    [selectedStay, trip],
   );
-  const dayFilterOptions = useMemo(() =>
-    stayDays.map(d => ({ dayOffset: d.dayOffset, label: `Day ${d.dayOffset + 1}` })),
-    [stayDays]
+  const overviewStays = useMemo(
+    () =>
+      sortedStays.map((s) => ({
+        id: s.id,
+        name: s.name,
+        color: s.color,
+        centerLat: s.centerLat,
+        centerLng: s.centerLng,
+        travelModeToNext: s.travelModeToNext,
+        travelDurationToNext: s.travelDurationToNext,
+      })),
+    [sortedStays],
+  );
+  const dayFilterOptions = useMemo(
+    () => stayDays.map((d) => ({ dayOffset: d.dayOffset, label: `Day ${d.dayOffset + 1}` })),
+    [stayDays],
   );
   const accommodationGroups = useMemo(() => deriveAccommodationGroups(stayDays), [stayDays]);
   const existingAccommodationNames = useMemo(() => {
     const names = new Set<string>();
     trip.stays.forEach((s) => {
       if (s.lodging) names.add(s.lodging);
-      if (s.nightAccommodations) Object.values(s.nightAccommodations).forEach((a) => { if (a.name) names.add(a.name); });
+      if (s.nightAccommodations)
+        Object.values(s.nightAccommodations).forEach((a) => {
+          if (a.name) names.add(a.name);
+        });
     });
     return Array.from(names);
   }, [trip.stays]);
@@ -350,7 +479,10 @@ function ChronosApp() {
       }));
     };
     const onMove = (e: MouseEvent) => applyDelta(e.clientX);
-    const onTouchMove = (e: TouchEvent) => { e.preventDefault(); applyDelta(e.touches[0].clientX); };
+    const onTouchMove = (e: TouchEvent) => {
+      e.preventDefault();
+      applyDelta(e.touches[0].clientX);
+    };
     const onUp = () => setDragState(null);
     window.addEventListener('mousemove', onMove);
     window.addEventListener('mouseup', onUp);
@@ -362,7 +494,7 @@ function ChronosApp() {
       window.removeEventListener('touchmove', onTouchMove);
       window.removeEventListener('touchend', onUp);
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- setTrip changes on every trip update; including it would break mid-drag
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- setTrip changes on every trip update; including it would break mid-drag
   }, [dragState, zoomDays, trip.totalDays]);
 
   // ── Auto-fetch visit photos for selected stay ─────────────────────────────
@@ -373,24 +505,48 @@ function ChronosApp() {
     const stayId = selectedStay.id;
     visitsNeedingImages.forEach(async (visit) => {
       const url = await searchPhoto(visit.name);
-      if (url) updateTripRef.current((t) => ({ ...t, stays: t.stays.map((s) => s.id === stayId ? { ...s, visits: s.visits.map((v) => v.id === visit.id ? { ...v, imageUrl: url } : v) } : s) }));
+      if (url)
+        updateTripRef.current((t) => ({
+          ...t,
+          stays: t.stays.map((s) =>
+            s.id === stayId
+              ? {
+                  ...s,
+                  visits: s.visits.map((v) => (v.id === visit.id ? { ...v, imageUrl: url } : v)),
+                }
+              : s,
+          ),
+        }));
     });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedStay?.id, selectedStay?.visits.map((v) => `${v.id}:${v.imageUrl ?? ''}`).join('|')]);
 
   // ── Mutators ──────────────────────────────────────────────────────────────
   const updateSelectedStay = (fn: (s: Stay) => Stay) => {
     if (!selectedStay) return;
-    setTrip((curr) => ({ ...curr, stays: curr.stays.map((s) => s.id === selectedStay.id ? fn(s) : s) }));
+    setTrip((curr) => ({
+      ...curr,
+      stays: curr.stays.map((s) => (s.id === selectedStay.id ? fn(s) : s)),
+    }));
   };
 
-  const scheduleVisit = (visitId: string, targetDayOffset: number | null, targetPart: DayPart | null) => {
+  const scheduleVisit = (
+    visitId: string,
+    targetDayOffset: number | null,
+    targetPart: DayPart | null,
+  ) => {
     if (!selectedStay) return;
     updateSelectedStay((stay) => {
       const moving = stay.visits.find((v) => v.id === visitId);
       if (!moving) return stay;
       const rest = stay.visits.filter((v) => v.id !== visitId);
-      return { ...stay, visits: normalizeVisitOrders([...rest, { ...moving, dayOffset: targetDayOffset, dayPart: targetPart, order: 9999 }]) };
+      return {
+        ...stay,
+        visits: normalizeVisitOrders([
+          ...rest,
+          { ...moving, dayOffset: targetDayOffset, dayPart: targetPart, order: 9999 },
+        ]),
+      };
     });
   };
 
@@ -410,7 +566,9 @@ function ChronosApp() {
       const newOrders = new Map(reordered.map((v, i) => [v.id, i]));
       return {
         ...stay,
-        visits: stay.visits.map((v) => newOrders.has(v.id) ? { ...v, order: newOrders.get(v.id)! } : v),
+        visits: stay.visits.map((v) =>
+          newOrders.has(v.id) ? { ...v, order: newOrders.get(v.id)! } : v,
+        ),
       };
     });
   };
@@ -449,7 +607,10 @@ function ChronosApp() {
       // Scheduled visit → another visit
       const activeVisit = selectedStay.visits.find((v) => v.id === visitId);
       if (!activeVisit) return;
-      if (activeVisit.dayOffset === targetVisit.dayOffset && activeVisit.dayPart === targetVisit.dayPart) {
+      if (
+        activeVisit.dayOffset === targetVisit.dayOffset &&
+        activeVisit.dayPart === targetVisit.dayPart
+      ) {
         // Same slot → reorder
         reorderVisits(visitId, targetVisitId);
       } else {
@@ -461,7 +622,13 @@ function ChronosApp() {
 
   // ── Trip management ───────────────────────────────────────────────────────
   const handleNewTrip = () => {
-    const sample: HybridTrip = { id: `trip-${Date.now()}`, name: 'New Trip', stays: [], startDate: '', totalDays: 7 };
+    const sample: HybridTrip = {
+      id: `trip-${Date.now()}`,
+      name: 'New Trip',
+      stays: [],
+      startDate: '',
+      totalDays: 7,
+    };
     setStore((s) => {
       const next = { trips: [...s.trips, sample], activeTripId: sample.id };
       saveStore(next);
@@ -501,7 +668,10 @@ function ChronosApp() {
   };
 
   const handleMergeDecision = (decision: 'merge' | 'keep-local' | 'use-cloud') => {
-    if (!pendingMerge || !user) { setPendingMerge(null); return; }
+    if (!pendingMerge || !user) {
+      setPendingMerge(null);
+      return;
+    }
     const { cloudTrips, cloudActiveTripId } = pendingMerge;
 
     let next: TripStore;
@@ -528,7 +698,11 @@ function ChronosApp() {
   };
 
   const handleSwitchTrip = (id: string) => {
-    setStore((s) => { const next = { ...s, activeTripId: id }; saveStore(next); return next; });
+    setStore((s) => {
+      const next = { ...s, activeTripId: id };
+      saveStore(next);
+      return next;
+    });
     setSelectedStayId('');
   };
 
@@ -547,19 +721,25 @@ function ChronosApp() {
   // ── Timeline drag-to-create helpers ──────────────────────────────────────
   const numSlots = numDays * 3;
 
-  const getSlotFromClientX = useCallback((clientX: number): number => {
-    const el = timelineZoneRef.current;
-    if (!el) return 0;
-    const rect = el.getBoundingClientRect();
-    const innerLeft = rect.left + rect.width * 0.01;
-    const innerWidth = rect.width * 0.98;
-    const ratio = Math.max(0, Math.min(1, (clientX - innerLeft) / innerWidth));
-    return Math.min(numSlots - 1, Math.floor(ratio * numSlots));
-  }, [numSlots]);
+  const getSlotFromClientX = useCallback(
+    (clientX: number): number => {
+      const el = timelineZoneRef.current;
+      if (!el) return 0;
+      const rect = el.getBoundingClientRect();
+      const innerLeft = rect.left + rect.width * 0.01;
+      const innerWidth = rect.width * 0.98;
+      const ratio = Math.max(0, Math.min(1, (clientX - innerLeft) / innerWidth));
+      return Math.min(numSlots - 1, Math.floor(ratio * numSlots));
+    },
+    [numSlots],
+  );
 
-  const isSlotRangeEmpty = useCallback((startSlot: number, endSlotExcl: number): boolean => {
-    return !sortedStays.some((s) => s.startSlot < endSlotExcl && s.endSlot > startSlot);
-  }, [sortedStays]);
+  const isSlotRangeEmpty = useCallback(
+    (startSlot: number, endSlotExcl: number): boolean => {
+      return !sortedStays.some((s) => s.startSlot < endSlotExcl && s.endSlot > startSlot);
+    },
+    [sortedStays],
+  );
 
   useEffect(() => {
     const handleMouseUp = () => {
@@ -568,7 +748,10 @@ function ChronosApp() {
       const minSlot = Math.min(startSlot, currentSlot);
       const maxSlot = Math.max(startSlot, currentSlot);
       if (isSlotRangeEmpty(minSlot, maxSlot + 1)) {
-        setPendingTimelineSlot({ startSlot: minSlot, days: Math.max(1, Math.ceil((maxSlot - minSlot + 1) / 3)) });
+        setPendingTimelineSlot({
+          startSlot: minSlot,
+          days: Math.max(1, Math.ceil((maxSlot - minSlot + 1) / 3)),
+        });
         setAddingStay(true);
       }
       setTimelineDragCreate(null);
@@ -585,34 +768,57 @@ function ChronosApp() {
   });
   const bufferBefore = (() => {
     const d = addDaysTo(safeDate(trip.startDate), -1);
-    return { date: fmt(d, { month: 'short', day: 'numeric' }), weekday: fmt(d, { weekday: 'short' }) };
+    return {
+      date: fmt(d, { month: 'short', day: 'numeric' }),
+      weekday: fmt(d, { weekday: 'short' }),
+    };
   })();
   const bufferAfter = (() => {
     const d = addDaysTo(safeDate(trip.startDate), trip.totalDays);
-    return { date: fmt(d, { month: 'short', day: 'numeric' }), weekday: fmt(d, { weekday: 'short' }) };
+    return {
+      date: fmt(d, { month: 'short', day: 'numeric' }),
+      weekday: fmt(d, { weekday: 'short' }),
+    };
   })();
   const handleExtendBefore = () => setTrip((t) => extendTripBefore(t));
   const handleExtendAfter = () => setTrip((t) => extendTripAfter(t));
   const canShrinkBefore = trip.totalDays > 1 && !sortedStays.some((s) => s.startSlot < 3);
-  const canShrinkAfter = trip.totalDays > 1 && !sortedStays.some((s) => s.endSlot > (trip.totalDays - 1) * 3);
-  const handleShrinkBefore = () => { const r = shrinkTripBefore(trip); if (r) setTrip(r); };
-  const handleShrinkAfter = () => { const r = shrinkTripAfter(trip); if (r) setTrip(r); };
+  const canShrinkAfter =
+    trip.totalDays > 1 && !sortedStays.some((s) => s.endSlot > (trip.totalDays - 1) * 3);
+  const handleShrinkBefore = () => {
+    const r = shrinkTripBefore(trip);
+    if (r) setTrip(r);
+  };
+  const handleShrinkAfter = () => {
+    const r = shrinkTripAfter(trip);
+    if (r) setTrip(r);
+  };
 
   const tripStartLabel = fmt(safeDate(trip.startDate), { month: 'short', day: 'numeric' });
 
-  const editingRouteStay = editingRouteStayId ? sortedStays.find((s) => s.id === editingRouteStayId) ?? null : null;
+  const editingRouteStay = editingRouteStayId
+    ? (sortedStays.find((s) => s.id === editingRouteStayId) ?? null)
+    : null;
   const editingRouteNextStay = editingRouteStay
-    ? sortedStays[sortedStays.indexOf(editingRouteStay) + 1] ?? null
+    ? (sortedStays[sortedStays.indexOf(editingRouteStay) + 1] ?? null)
     : null;
 
-  const activeInboxVisit = activeId?.startsWith('inbox-') ? inboxVisits.find((v) => `inbox-${v.id}` === activeId) : null;
-  const activeScheduledVisit = activeId?.startsWith('visit-') && selectedStay ? selectedStay.visits.find((v) => `visit-${v.id}` === activeId) : null;
+  const activeInboxVisit = activeId?.startsWith('inbox-')
+    ? inboxVisits.find((v) => `inbox-${v.id}` === activeId)
+    : null;
+  const activeScheduledVisit =
+    activeId?.startsWith('visit-') && selectedStay
+      ? selectedStay.visits.find((v) => `visit-${v.id}` === activeId)
+      : null;
 
   // ── Welcome screen for first-time users ──────────────────────────────────
   if (store.trips.length === 0) {
     return (
       <WelcomeScreen
-        onCreateTrip={() => { handleNewTrip(); setShowTripEditor(true); }}
+        onCreateTrip={() => {
+          handleNewTrip();
+          setShowTripEditor(true);
+        }}
         onLoadDemo={handleLoadDemo}
       />
     );
@@ -622,10 +828,8 @@ function ChronosApp() {
   return (
     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
       <div className="flex h-dvh w-full flex-col overflow-hidden bg-background-light text-slate-900 font-sans">
-
         {/* ── Header ── */}
         <header className="relative flex h-11 items-center justify-between border-b border-border-neutral px-4 bg-white/80 backdrop-blur-md z-50 flex-shrink-0 gap-2">
-
           {/* ── Mobile search overlay ── */}
           {mobileSearchOpen && (
             <div className="md:hidden absolute inset-0 bg-white/95 backdrop-blur-md z-10 flex items-center px-3 gap-2 animate-search-reveal">
@@ -640,7 +844,10 @@ function ChronosApp() {
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
               <button
-                onClick={() => { setMobileSearchOpen(false); setSearchQuery(''); }}
+                onClick={() => {
+                  setMobileSearchOpen(false);
+                  setSearchQuery('');
+                }}
                 className="p-2 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100 transition-colors flex-shrink-0"
                 aria-label="Close search"
               >
@@ -654,7 +861,9 @@ function ChronosApp() {
               <div className="size-7 rounded-lg bg-primary/10 flex items-center justify-center">
                 <Compass className="w-4 h-4 text-primary" />
               </div>
-              <span className="text-xs font-extrabold tracking-tight hidden sm:block">Itinerary</span>
+              <span className="text-xs font-extrabold tracking-tight hidden sm:block">
+                Itinerary
+              </span>
             </div>
             <div className="h-5 w-px bg-slate-200 flex-shrink-0" />
             {/* Trip selector */}
@@ -662,7 +871,9 @@ function ChronosApp() {
               onClick={() => setShowTripSwitcher(true)}
               className="flex items-center gap-2 min-w-0 hover:bg-slate-50 rounded-lg px-2.5 py-1.5 -ml-1 transition-colors group"
             >
-              <span className="text-xs font-bold text-slate-800 truncate max-w-[120px] sm:max-w-none">{trip.name}</span>
+              <span className="text-xs font-bold text-slate-800 truncate max-w-[120px] sm:max-w-none">
+                {trip.name}
+              </span>
               <ChevronDown className="w-3.5 h-3.5 text-slate-400 flex-shrink-0 group-hover:text-slate-600 transition-colors" />
             </button>
             {/* Date range — full on desktop, compact on mobile */}
@@ -672,8 +883,18 @@ function ChronosApp() {
             >
               <span className="font-bold text-slate-700">{tripStartLabel}</span>
               <span className="text-slate-300">–</span>
-              <span className="font-bold text-slate-700">{fmt(addDaysTo(safeDate(trip.startDate), trip.totalDays - 1), { month: 'short', day: 'numeric' })}</span>
-              <Badge variant="secondary" className="ml-0.5 text-[9px] font-extrabold text-primary bg-primary/8 px-1.5 py-0.5">{trip.totalDays}d</Badge>
+              <span className="font-bold text-slate-700">
+                {fmt(addDaysTo(safeDate(trip.startDate), trip.totalDays - 1), {
+                  month: 'short',
+                  day: 'numeric',
+                })}
+              </span>
+              <Badge
+                variant="secondary"
+                className="ml-0.5 text-[9px] font-extrabold text-primary bg-primary/8 px-1.5 py-0.5"
+              >
+                {trip.totalDays}d
+              </Badge>
             </button>
             <button
               onClick={() => setShowTripEditor(true)}
@@ -706,9 +927,14 @@ function ChronosApp() {
               </div>
             )}
             {overlaps.size > 0 && (
-              <Badge variant="outline" className="text-amber-600 bg-amber-50 border-amber-200 gap-1.5 px-2 py-1 text-[11px] font-bold">
+              <Badge
+                variant="outline"
+                className="text-amber-600 bg-amber-50 border-amber-200 gap-1.5 px-2 py-1 text-[11px] font-bold"
+              >
                 <X className="w-3 h-3 flex-shrink-0" />
-                <span className="hidden sm:inline">{overlaps.size} conflict{overlaps.size > 1 ? 's' : ''}</span>
+                <span className="hidden sm:inline">
+                  {overlaps.size} conflict{overlaps.size > 1 ? 's' : ''}
+                </span>
               </Badge>
             )}
 
@@ -732,7 +958,11 @@ function ChronosApp() {
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
               {searchQuery && (
-                <button onClick={() => setSearchQuery('')} className="absolute right-2.5 text-slate-400 hover:text-slate-600" aria-label="Clear search">
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-2.5 text-slate-400 hover:text-slate-600"
+                  aria-label="Clear search"
+                >
                   <X className="w-3 h-3" />
                 </button>
               )}
@@ -742,54 +972,82 @@ function ChronosApp() {
 
             {/* Undo/Redo cluster */}
             <div className="flex items-center">
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                onClick={() => { const p = hist.undo(); if (p) updateTrip(() => p); }}
-                disabled={!hist.canUndo}
-                title="Undo (Ctrl+Z)"
-                aria-label="Undo"
-                className="text-slate-400 hover:text-slate-600"
-              >
-                <Undo2 className="w-4 h-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                onClick={() => { const n = hist.redo(); if (n) updateTrip(() => n); }}
-                disabled={!hist.canRedo}
-                title="Redo (Ctrl+Y)"
-                aria-label="Redo"
-                className="text-slate-400 hover:text-slate-600"
-              >
-                <Redo2 className="w-4 h-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                onClick={() => setShowHistory(true)}
-                disabled={!hist.canUndo && !hist.canRedo}
-                title="View history"
-                className="hidden sm:flex text-slate-400 hover:text-slate-600"
-              >
-                <History className="w-4 h-4" />
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    onClick={() => {
+                      const p = hist.undo();
+                      if (p) updateTrip(() => p);
+                    }}
+                    disabled={!hist.canUndo}
+                    aria-label="Undo"
+                    className="text-slate-400 hover:text-slate-600"
+                  >
+                    <Undo2 className="w-4 h-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Undo (Ctrl+Z)</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    onClick={() => {
+                      const n = hist.redo();
+                      if (n) updateTrip(() => n);
+                    }}
+                    disabled={!hist.canRedo}
+                    aria-label="Redo"
+                    className="text-slate-400 hover:text-slate-600"
+                  >
+                    <Redo2 className="w-4 h-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Redo (Ctrl+Y)</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    onClick={() => setShowHistory(true)}
+                    disabled={!hist.canUndo && !hist.canRedo}
+                    className="hidden sm:flex text-slate-400 hover:text-slate-600"
+                  >
+                    <History className="w-4 h-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>View history</TooltipContent>
+              </Tooltip>
             </div>
 
             <div className="hidden sm:block h-5 w-px bg-slate-200 mx-1" />
 
             {/* AI Planner */}
-            <Button
-              size="sm"
-              onClick={() => setShowAIPlanner(true)}
-              title="AI Planner"
-              className="text-[11px] font-bold shadow-sm shadow-primary/20"
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span className="hidden sm:block">AI</span>
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size="sm"
+                  onClick={() => setShowAIPlanner(true)}
+                  className="text-[11px] font-bold shadow-sm shadow-primary/20"
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span className="hidden sm:block">AI</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>AI Planner</TooltipContent>
+            </Tooltip>
             {/* Profile menu */}
-            <ProfileMenu trip={trip} onImport={(data) => setTrip(() => data)} onImportFromCode={() => setShowImportCode(true)} onGoHome={handleGoHome} onSignOut={handleSignOut} />
+            <ProfileMenu
+              trip={trip}
+              onImport={(data) => setTrip(() => data)}
+              onImportFromCode={() => setShowImportCode(true)}
+              onGoHome={handleGoHome}
+              onSignOut={handleSignOut}
+            />
           </div>
         </header>
 
@@ -810,104 +1068,149 @@ function ChronosApp() {
         )}
 
         <main className="flex-1 flex flex-col min-h-0 isolate">
-
           {/* ── Timeline ── */}
-          <section className="border-b border-border-neutral flex flex-col bg-white flex-shrink-0 z-40" style={{ height: 140 }}>
+          <section
+            className="border-b border-border-neutral flex flex-col bg-white flex-shrink-0 z-40"
+            style={{ height: 140 }}
+          >
             <div className="flex items-center justify-between px-6 border-b border-border-neutral bg-slate-50/50 py-1.5">
               <div className="flex items-center gap-4">
-                <span className="text-[11px] font-extrabold uppercase tracking-[0.15em] text-slate-500">Timeline</span>
+                <span className="text-[11px] font-extrabold uppercase tracking-[0.15em] text-slate-500">
+                  Timeline
+                </span>
                 <div className="flex bg-white rounded-lg border border-border-neutral p-0.5 overflow-x-auto scroll-hide">
-                  {([5, 10, 15, 30, 0] as const).filter((d) => d === 0 || d <= trip.totalDays).map((d) => (
-                    <button key={d} onClick={() => { setZoomDays(d); localStorage.setItem('itinerary-timeline-zoom', String(d)); }}
-                      className={`px-3 py-1.5 text-[9px] font-bold rounded-md transition-colors whitespace-nowrap ${zoomDays === d ? 'bg-primary text-white shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}
-                    >
-                      {d === 0 ? 'ALL' : `${d} DAYS`}
-                    </button>
-                  ))}
+                  {([5, 10, 15, 30, 0] as const)
+                    .filter((d) => d === 0 || d <= trip.totalDays)
+                    .map((d) => (
+                      <button
+                        key={d}
+                        onClick={() => {
+                          setZoomDays(d);
+                          localStorage.setItem('itinerary-timeline-zoom', String(d));
+                        }}
+                        className={`px-3 py-1.5 text-[9px] font-bold rounded-md transition-colors whitespace-nowrap ${zoomDays === d ? 'bg-primary text-white shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}
+                      >
+                        {d === 0 ? 'ALL' : `${d} DAYS`}
+                      </button>
+                    ))}
                 </div>
               </div>
-              <Button
-                size="icon-sm"
-                onClick={() => setAddingStay(true)}
-                aria-label="Add stay"
-              >
+              <Button size="icon-sm" onClick={() => setAddingStay(true)} aria-label="Add stay">
                 <Plus className="w-3.5 h-3.5" />
               </Button>
             </div>
 
             <div className="flex-1 relative overflow-x-auto overflow-y-hidden scroll-hide">
-              <div data-timeline-track className="h-full" style={{ width: zoomDays === 0 ? '100%' : `${Math.max(100, Math.round(numDays / zoomDays * 100))}%`, display: 'grid', gridTemplateColumns: zoomDays === 0 ? `1fr repeat(${numDays}, 1fr) 1fr` : `repeat(${numDays}, 1fr)`, gridTemplateRows: '28px 1fr' }}>
+              <div
+                data-timeline-track
+                className="h-full"
+                style={{
+                  width:
+                    zoomDays === 0
+                      ? '100%'
+                      : `${Math.max(100, Math.round((numDays / zoomDays) * 100))}%`,
+                  display: 'grid',
+                  gridTemplateColumns:
+                    zoomDays === 0 ? `1fr repeat(${numDays}, 1fr) 1fr` : `repeat(${numDays}, 1fr)`,
+                  gridTemplateRows: '28px 1fr',
+                }}
+              >
                 {/* Day labels — buffer before (ALL view only) */}
                 {zoomDays === 0 && (
-                <div className="flex flex-col bg-slate-100/80 border-b border-r border-border-neutral">
-                  <div className="flex-1 flex items-center justify-center gap-1 text-[9px] font-bold text-slate-300 uppercase tracking-tighter border-b border-slate-100">
-                    <span className="text-slate-200">{bufferBefore.weekday}</span>
-                    <span className="text-slate-300">{bufferBefore.date}</span>
+                  <div className="flex flex-col bg-slate-100/80 border-b border-r border-border-neutral">
+                    <div className="flex-1 flex items-center justify-center gap-1 text-[9px] font-bold text-slate-300 uppercase tracking-tighter border-b border-slate-100">
+                      <span className="text-slate-200">{bufferBefore.weekday}</span>
+                      <span className="text-slate-300">{bufferBefore.date}</span>
+                    </div>
+                    <div className="flex h-3 divide-x divide-slate-100">
+                      {['M', 'A', 'E'].map((p) => (
+                        <div
+                          key={p}
+                          className="flex-1 flex items-center justify-center text-[9px] font-semibold text-slate-200"
+                        >
+                          {p}
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                  <div className="flex h-3 divide-x divide-slate-100">
-                    {['M', 'A', 'E'].map((p) => (
-                      <div key={p} className="flex-1 flex items-center justify-center text-[9px] font-semibold text-slate-200">{p}</div>
-                    ))}
-                  </div>
-                </div>
                 )}
                 {/* Day labels — trip days */}
                 {dayLabels.map(({ date, weekday }, i) => (
-                  <div key={i} className="flex flex-col border-b border-r border-border-neutral bg-slate-50/30">
+                  <div
+                    key={i}
+                    className="flex flex-col border-b border-r border-border-neutral bg-slate-50/30"
+                  >
                     <div className="flex-1 flex items-center justify-center gap-1 text-[9px] font-bold text-slate-400 uppercase tracking-tighter border-b border-slate-100">
                       <span className="text-slate-300">{weekday}</span>
                       <span>{date}</span>
                     </div>
                     <div className="flex h-3 divide-x divide-slate-100">
                       {['M', 'A', 'E'].map((p) => (
-                        <div key={p} className="flex-1 flex items-center justify-center text-[9px] font-semibold text-slate-300">{p}</div>
+                        <div
+                          key={p}
+                          className="flex-1 flex items-center justify-center text-[9px] font-semibold text-slate-300"
+                        >
+                          {p}
+                        </div>
                       ))}
                     </div>
                   </div>
                 ))}
                 {/* Day labels — buffer after (ALL view only) */}
                 {zoomDays === 0 && (
-                <div className="flex flex-col bg-slate-100/80 border-b border-border-neutral">
-                  <div className="flex-1 flex items-center justify-center gap-1 text-[9px] font-bold text-slate-300 uppercase tracking-tighter border-b border-slate-100">
-                    <span className="text-slate-200">{bufferAfter.weekday}</span>
-                    <span className="text-slate-300">{bufferAfter.date}</span>
+                  <div className="flex flex-col bg-slate-100/80 border-b border-border-neutral">
+                    <div className="flex-1 flex items-center justify-center gap-1 text-[9px] font-bold text-slate-300 uppercase tracking-tighter border-b border-slate-100">
+                      <span className="text-slate-200">{bufferAfter.weekday}</span>
+                      <span className="text-slate-300">{bufferAfter.date}</span>
+                    </div>
+                    <div className="flex h-3 divide-x divide-slate-100">
+                      {['M', 'A', 'E'].map((p) => (
+                        <div
+                          key={p}
+                          className="flex-1 flex items-center justify-center text-[9px] font-semibold text-slate-200"
+                        >
+                          {p}
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                  <div className="flex h-3 divide-x divide-slate-100">
-                    {['M', 'A', 'E'].map((p) => (
-                      <div key={p} className="flex-1 flex items-center justify-center text-[9px] font-semibold text-slate-200">{p}</div>
-                    ))}
-                  </div>
-                </div>
                 )}
                 {/* Stay zone — buffer before (ALL view only) */}
-                {zoomDays === 0 && <button
-                  onClick={handleExtendBefore}
-                  className="group/buf relative flex items-center justify-center border-r border-border-neutral transition-colors hover:bg-slate-100/60"
-                  style={{
-                    background: 'repeating-linear-gradient(-45deg, transparent, transparent 4px, rgba(148,163,184,0.13) 4px, rgba(148,163,184,0.13) 8px), rgba(241,245,249,0.8)',
-                  }}
-                  title="Extend trip one day earlier"
-                >
-                  <div className="flex flex-col items-center gap-0.5 opacity-0 group-hover/buf:opacity-100 transition-opacity">
-                    <Plus className="w-3.5 h-3.5 text-slate-400" />
-                    <span className="text-[9px] font-bold text-slate-400 uppercase">Extend</span>
-                  </div>
-                </button>}
+                {zoomDays === 0 && (
+                  <button
+                    onClick={handleExtendBefore}
+                    className="group/buf relative flex items-center justify-center border-r border-border-neutral transition-colors hover:bg-slate-100/60"
+                    style={{
+                      background:
+                        'repeating-linear-gradient(-45deg, transparent, transparent 4px, rgba(148,163,184,0.13) 4px, rgba(148,163,184,0.13) 8px), rgba(241,245,249,0.8)',
+                    }}
+                    title="Extend trip one day earlier"
+                  >
+                    <div className="flex flex-col items-center gap-0.5 opacity-0 group-hover/buf:opacity-100 transition-opacity">
+                      <Plus className="w-3.5 h-3.5 text-slate-400" />
+                      <span className="text-[9px] font-bold text-slate-400 uppercase">Extend</span>
+                    </div>
+                  </button>
+                )}
                 {/* Stay zone — main (spans all trip day columns) */}
                 <div
                   ref={timelineZoneRef}
                   className="relative overflow-x-clip"
                   style={{
                     gridColumn: zoomDays === 0 ? `2 / ${numDays + 2}` : `1 / ${numDays + 1}`,
-                    backgroundImage: 'linear-gradient(to right, rgba(0,0,0,0.06) 1px, transparent 1px), linear-gradient(to right, rgba(0,0,0,0.02) 1px, transparent 1px)',
+                    backgroundImage:
+                      'linear-gradient(to right, rgba(0,0,0,0.06) 1px, transparent 1px), linear-gradient(to right, rgba(0,0,0,0.02) 1px, transparent 1px)',
                     backgroundSize: `calc(100% / ${numDays}) 100%, calc(100% / ${numDays * 3}) 100%`,
-                    cursor: (timelineHoverDay !== null || timelineDragCreate) ? 'crosshair' : undefined,
+                    cursor:
+                      timelineHoverDay !== null || timelineDragCreate ? 'crosshair' : undefined,
                   }}
                   onMouseMove={(e) => {
                     if (dragState) return;
                     const slot = getSlotFromClientX(e.clientX);
                     if (timelineDragCreate) {
-                      setTimelineDragCreate((prev) => prev ? { ...prev, currentSlot: slot } : null);
+                      setTimelineDragCreate((prev) =>
+                        prev ? { ...prev, currentSlot: slot } : null,
+                      );
                     } else if (isSlotRangeEmpty(slot, slot + 1)) {
                       setTimelineHoverDay(slot);
                     } else {
@@ -935,7 +1238,7 @@ function ChronosApp() {
                     if (!timelineDragCreate) return;
                     const touch = e.touches[0];
                     const slot = getSlotFromClientX(touch.clientX);
-                    setTimelineDragCreate((prev) => prev ? { ...prev, currentSlot: slot } : null);
+                    setTimelineDragCreate((prev) => (prev ? { ...prev, currentSlot: slot } : null));
                   }}
                   onTouchEnd={() => {
                     if (!timelineDragCreate) return;
@@ -943,7 +1246,10 @@ function ChronosApp() {
                     const minSlot = Math.min(startSlot, currentSlot);
                     const maxSlot = Math.max(startSlot, currentSlot);
                     if (isSlotRangeEmpty(minSlot, maxSlot + 1)) {
-                      setPendingTimelineSlot({ startSlot: minSlot, days: Math.max(1, Math.ceil((maxSlot - minSlot + 1) / 3)) });
+                      setPendingTimelineSlot({
+                        startSlot: minSlot,
+                        days: Math.max(1, Math.ceil((maxSlot - minSlot + 1) / 3)),
+                      });
                       setAddingStay(true);
                     }
                     setTimelineDragCreate(null);
@@ -959,295 +1265,425 @@ function ChronosApp() {
                         <span className="text-[11px] font-bold">Add your first destination</span>
                       </button>
                     ) : (
-                    <div className="relative w-full" style={{ height: 42 }}>
-                      {/* Drag-to-create: hover highlight */}
-                      {timelineHoverDay !== null && !timelineDragCreate && (
-                        <div
-                          className="absolute top-0.5 bottom-0.5 rounded-md pointer-events-none bg-primary/10 border border-dashed border-primary/40 flex items-center justify-center z-20"
-                          style={{ left: `${(timelineHoverDay / numSlots) * 100}%`, width: `${(1 / numSlots) * 100}%` }}
-                        >
-                          <Plus className="w-3 h-3 text-primary/50" />
-                        </div>
-                      )}
-                      {/* Drag-to-create: drag range highlight */}
-                      {timelineDragCreate && (() => {
-                        const minSlot = Math.min(timelineDragCreate.startSlot, timelineDragCreate.currentSlot);
-                        const maxSlot = Math.max(timelineDragCreate.startSlot, timelineDragCreate.currentSlot);
-                        const span = maxSlot - minSlot + 1;
-                        const empty = isSlotRangeEmpty(minSlot, maxSlot + 1);
-                        const days = Math.max(1, Math.ceil(span / 3));
-                        return (
+                      <div className="relative w-full" style={{ height: 42 }}>
+                        {/* Drag-to-create: hover highlight */}
+                        {timelineHoverDay !== null && !timelineDragCreate && (
                           <div
-                            className={`absolute top-0.5 bottom-0.5 rounded-md pointer-events-none border z-20 flex items-center justify-center ${
-                              empty ? 'bg-primary/15 border-primary/60' : 'bg-red-100/60 border-red-400/60'
-                            }`}
-                            style={{ left: `${(minSlot / numSlots) * 100}%`, width: `${(span / numSlots) * 100}%` }}
+                            className="absolute top-0.5 bottom-0.5 rounded-md pointer-events-none bg-primary/10 border border-dashed border-primary/40 flex items-center justify-center z-20"
+                            style={{
+                              left: `${(timelineHoverDay / numSlots) * 100}%`,
+                              width: `${(1 / numSlots) * 100}%`,
+                            }}
                           >
-                            <span className={`text-[9px] font-bold ${empty ? 'text-primary/70' : 'text-red-500/70'}`}>
-                              {empty ? `${days} day${days > 1 ? 's' : ''}` : 'conflict'}
-                            </span>
+                            <Plus className="w-3 h-3 text-primary/50" />
                           </div>
-                        );
-                      })()}
-                      {sortedStays.map((stay, index) => {
-                        const isSelected = selectedStay?.id === stay.id;
-                        const isOverlapping = overlaps.has(stay.id);
-                        const left = (stay.startSlot / (numDays * 3)) * 100;
-                        const width = ((stay.endSlot - stay.startSlot) / (numDays * 3)) * 100;
-                        const nextStay = sortedStays[index + 1];
-
-                        return (
-                          <React.Fragment key={stay.id}>
-                            <div
-                              role="button"
-                              tabIndex={0}
-                              aria-label={`${stay.name}, ${getStayNightCount(stay)} days${isOverlapping ? ', has scheduling conflict' : ''}`}
-                              aria-selected={isSelected}
-                              className={`absolute rounded-lg flex items-center select-none transition-all duration-150 cursor-grab active:cursor-grabbing group border focus-visible:ring-2 focus-visible:ring-offset-2 ${
-                                isSelected
-                                  ? 'z-10'
-                                  : 'z-0 hover:shadow-md'
-                              } ${isOverlapping ? 'ring-2 ring-amber-400' : ''}`}
-                              style={{
-                                left: `calc(${left}% + 6px)`, width: `calc(${Math.max(width, 2)}% - 12px)`, height: 42,
-                                background: isSelected
-                                  ? `linear-gradient(135deg, ${stay.color}, color-mix(in srgb, ${stay.color} 80%, #ffffff))`
-                                  : `color-mix(in srgb, ${stay.color} 8%, white)`,
-                                borderColor: isSelected ? stay.color : `color-mix(in srgb, ${stay.color} 35%, transparent)`,
-                                boxShadow: isSelected ? `0 0 0 2px white, 0 0 0 4px ${stay.color}, 0 4px 12px color-mix(in srgb, ${stay.color} 25%, transparent)` : undefined,
-                              }}
-                              onClick={() => {
-                                if (selectedStay?.id === stay.id) { setSelectedStayId(''); }
-                                else { setSelectedStayId(stay.id); setSidebarTab('overview'); }
-                              }}
-                              onMouseEnter={() => setHoveredStayId(stay.id)}
-                              onMouseLeave={() => setHoveredStayId(null)}
-                              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedStayId(stay.id); setSidebarTab('overview'); } }}
-                              onMouseDown={(e) => {
-                                // Only start move drag from the body (not resize handles)
-                                if ((e.target as HTMLElement).dataset.handle) return;
-                                setDragState({ stayId: stay.id, mode: 'move', originX: e.clientX, originalStart: stay.startSlot, originalEnd: stay.endSlot });
-                              }}
-                            >
-                              {/* Photo background */}
-                              {stay.imageUrl && (
-                                <div className="absolute inset-0 rounded-lg overflow-hidden pointer-events-none">
-                                  <img src={stay.imageUrl} alt="" className="w-full h-full object-cover" style={{ opacity: isSelected ? 0.18 : 0.12 }} />
-                                </div>
-                              )}
-                              {/* Colored left accent bar */}
+                        )}
+                        {/* Drag-to-create: drag range highlight */}
+                        {timelineDragCreate &&
+                          (() => {
+                            const minSlot = Math.min(
+                              timelineDragCreate.startSlot,
+                              timelineDragCreate.currentSlot,
+                            );
+                            const maxSlot = Math.max(
+                              timelineDragCreate.startSlot,
+                              timelineDragCreate.currentSlot,
+                            );
+                            const span = maxSlot - minSlot + 1;
+                            const empty = isSlotRangeEmpty(minSlot, maxSlot + 1);
+                            const days = Math.max(1, Math.ceil(span / 3));
+                            return (
                               <div
-                                className="absolute left-0 top-1.5 bottom-1.5 w-1 rounded-full transition-opacity"
-                                style={{ background: stay.color, opacity: isSelected ? 0 : 1 }}
-                              />
-                              {/* Left resize */}
-                              <div
-                                data-handle="resize-start"
-                                className="absolute -left-1.5 top-0 bottom-0 w-5 cursor-ew-resize z-20 flex items-center justify-center"
-                                onMouseDown={(e) => {
-                                  e.stopPropagation();
-                                  setSelectedStayId(stay.id);
-                                  setDragState({ stayId: stay.id, mode: 'resize-start', originX: e.clientX, originalStart: stay.startSlot, originalEnd: stay.endSlot });
+                                className={`absolute top-0.5 bottom-0.5 rounded-md pointer-events-none border z-20 flex items-center justify-center ${
+                                  empty
+                                    ? 'bg-primary/15 border-primary/60'
+                                    : 'bg-red-100/60 border-red-400/60'
+                                }`}
+                                style={{
+                                  left: `${(minSlot / numSlots) * 100}%`,
+                                  width: `${(span / numSlots) * 100}%`,
                                 }}
                               >
-                                <div className="w-0.5 h-4 rounded-full bg-current opacity-15 group-hover:opacity-40 transition-opacity pointer-events-none"
-                                  style={{ color: isSelected ? 'white' : stay.color }} />
+                                <span
+                                  className={`text-[9px] font-bold ${empty ? 'text-primary/70' : 'text-red-500/70'}`}
+                                >
+                                  {empty ? `${days} day${days > 1 ? 's' : ''}` : 'conflict'}
+                                </span>
                               </div>
-                              {/* Content */}
-                              {(() => {
-                                const staySlots = stay.endSlot - stay.startSlot;
-                                const isNarrow = staySlots < 6; // less than 2 days
-                                const isVeryNarrow = staySlots < 3; // less than 1 day
-                                return (
-                                  <div className="flex flex-col overflow-hidden flex-1 pointer-events-none pl-3.5 pr-2">
-                                    <div className="flex items-center gap-1.5">
-                                      {!isVeryNarrow && <Bed className="w-3 h-3 flex-shrink-0" style={{ color: isSelected ? 'rgba(255,255,255,0.85)' : stay.color }} />}
-                                      <span
-                                        className="text-[11px] font-bold truncate"
-                                        style={{ color: isSelected ? 'white' : stay.color }}
-                                      >{stay.name}</span>
-                                      {isOverlapping && (
-                                        <span className="flex-shrink-0 text-[9px] font-extrabold px-1 py-0.5 rounded-md bg-amber-400 text-white leading-none">!</span>
+                            );
+                          })()}
+                        {sortedStays.map((stay, index) => {
+                          const isSelected = selectedStay?.id === stay.id;
+                          const isOverlapping = overlaps.has(stay.id);
+                          const left = (stay.startSlot / (numDays * 3)) * 100;
+                          const width = ((stay.endSlot - stay.startSlot) / (numDays * 3)) * 100;
+                          const nextStay = sortedStays[index + 1];
+
+                          return (
+                            <React.Fragment key={stay.id}>
+                              <div
+                                role="button"
+                                tabIndex={0}
+                                aria-label={`${stay.name}, ${getStayNightCount(stay)} days${isOverlapping ? ', has scheduling conflict' : ''}`}
+                                aria-selected={isSelected}
+                                className={`absolute rounded-lg flex items-center select-none transition-all duration-150 cursor-grab active:cursor-grabbing group border focus-visible:ring-2 focus-visible:ring-offset-2 ${
+                                  isSelected ? 'z-10' : 'z-0 hover:shadow-md'
+                                } ${isOverlapping ? 'ring-2 ring-amber-400' : ''}`}
+                                style={{
+                                  left: `calc(${left}% + 6px)`,
+                                  width: `calc(${Math.max(width, 2)}% - 12px)`,
+                                  height: 42,
+                                  background: isSelected
+                                    ? `linear-gradient(135deg, ${stay.color}, color-mix(in srgb, ${stay.color} 80%, #ffffff))`
+                                    : `color-mix(in srgb, ${stay.color} 8%, white)`,
+                                  borderColor: isSelected
+                                    ? stay.color
+                                    : `color-mix(in srgb, ${stay.color} 35%, transparent)`,
+                                  boxShadow: isSelected
+                                    ? `0 0 0 2px white, 0 0 0 4px ${stay.color}, 0 4px 12px color-mix(in srgb, ${stay.color} 25%, transparent)`
+                                    : undefined,
+                                }}
+                                onClick={() => {
+                                  if (selectedStay?.id === stay.id) {
+                                    setSelectedStayId('');
+                                  } else {
+                                    setSelectedStayId(stay.id);
+                                    setSidebarTab('overview');
+                                  }
+                                }}
+                                onMouseEnter={() => setHoveredStayId(stay.id)}
+                                onMouseLeave={() => setHoveredStayId(null)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault();
+                                    setSelectedStayId(stay.id);
+                                    setSidebarTab('overview');
+                                  }
+                                }}
+                                onMouseDown={(e) => {
+                                  // Only start move drag from the body (not resize handles)
+                                  if ((e.target as HTMLElement).dataset.handle) return;
+                                  setDragState({
+                                    stayId: stay.id,
+                                    mode: 'move',
+                                    originX: e.clientX,
+                                    originalStart: stay.startSlot,
+                                    originalEnd: stay.endSlot,
+                                  });
+                                }}
+                              >
+                                {/* Photo background */}
+                                {stay.imageUrl && (
+                                  <div className="absolute inset-0 rounded-lg overflow-hidden pointer-events-none">
+                                    <img
+                                      src={stay.imageUrl}
+                                      alt=""
+                                      className="w-full h-full object-cover"
+                                      style={{ opacity: isSelected ? 0.18 : 0.12 }}
+                                    />
+                                  </div>
+                                )}
+                                {/* Colored left accent bar */}
+                                <div
+                                  className="absolute left-0 top-1.5 bottom-1.5 w-1 rounded-full transition-opacity"
+                                  style={{ background: stay.color, opacity: isSelected ? 0 : 1 }}
+                                />
+                                {/* Left resize */}
+                                <div
+                                  data-handle="resize-start"
+                                  className="absolute -left-1.5 top-0 bottom-0 w-5 cursor-ew-resize z-20 flex items-center justify-center"
+                                  onMouseDown={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedStayId(stay.id);
+                                    setDragState({
+                                      stayId: stay.id,
+                                      mode: 'resize-start',
+                                      originX: e.clientX,
+                                      originalStart: stay.startSlot,
+                                      originalEnd: stay.endSlot,
+                                    });
+                                  }}
+                                >
+                                  <div
+                                    className="w-0.5 h-4 rounded-full bg-current opacity-15 group-hover:opacity-40 transition-opacity pointer-events-none"
+                                    style={{ color: isSelected ? 'white' : stay.color }}
+                                  />
+                                </div>
+                                {/* Content */}
+                                {(() => {
+                                  const staySlots = stay.endSlot - stay.startSlot;
+                                  const isNarrow = staySlots < 6; // less than 2 days
+                                  const isVeryNarrow = staySlots < 3; // less than 1 day
+                                  return (
+                                    <div className="flex flex-col overflow-hidden flex-1 pointer-events-none pl-3.5 pr-2">
+                                      <div className="flex items-center gap-1.5">
+                                        {!isVeryNarrow && (
+                                          <Bed
+                                            className="w-3 h-3 flex-shrink-0"
+                                            style={{
+                                              color: isSelected
+                                                ? 'rgba(255,255,255,0.85)'
+                                                : stay.color,
+                                            }}
+                                          />
+                                        )}
+                                        <span
+                                          className="text-[11px] font-bold truncate"
+                                          style={{ color: isSelected ? 'white' : stay.color }}
+                                        >
+                                          {stay.name}
+                                        </span>
+                                        {isOverlapping && (
+                                          <span className="flex-shrink-0 text-[9px] font-extrabold px-1 py-0.5 rounded-md bg-amber-400 text-white leading-none">
+                                            !
+                                          </span>
+                                        )}
+                                      </div>
+                                      {stay.lodging && !isNarrow && (
+                                        <span
+                                          className="text-[9px] font-semibold truncate mt-px"
+                                          style={{
+                                            color: isSelected
+                                              ? 'rgba(255,255,255,0.6)'
+                                              : `color-mix(in srgb, ${stay.color} 60%, #64748b)`,
+                                          }}
+                                        >
+                                          {stay.lodging}
+                                        </span>
                                       )}
                                     </div>
-                                    {stay.lodging && !isNarrow && (
-                                      <span
-                                        className="text-[9px] font-semibold truncate mt-px"
-                                        style={{ color: isSelected ? 'rgba(255,255,255,0.6)' : `color-mix(in srgb, ${stay.color} 60%, #64748b)` }}
-                                      >{stay.lodging}</span>
-                                    )}
-                                  </div>
-                                );
-                              })()}
-                              {/* Drag grip — visible on hover when not selected */}
-                              <SlidersHorizontal
-                                className="w-3 h-3 flex-shrink-0 mr-1 opacity-0 group-hover:opacity-40 transition-opacity pointer-events-none"
-                                style={{ color: isSelected ? 'white' : stay.color }}
-                              />
-                              {/* Edit button */}
-                              <button
-                                aria-label={`Edit ${stay.name}`}
-                                className={`absolute right-4 top-1/2 -translate-y-1/2 z-20 p-1 rounded transition-opacity focus-visible:ring-2 ${
-                                  isSelected ? 'opacity-100 text-white/70 hover:text-white hover:bg-white/15' : 'opacity-0 pointer-events-none'
-                                }`}
-                                onMouseDown={(e) => e.stopPropagation()}
-                                onClick={(e) => { e.stopPropagation(); setEditingStayId(stay.id); }}
-                              >
-                                <SlidersHorizontal className="w-3 h-3" />
-                              </button>
-                              {/* Right resize */}
-                              <div
-                                data-handle="resize-end"
-                                className="absolute -right-1.5 top-0 bottom-0 w-5 cursor-ew-resize z-20 flex items-center justify-center"
-                                onMouseDown={(e) => {
-                                  e.stopPropagation();
-                                  setSelectedStayId(stay.id);
-                                  setDragState({ stayId: stay.id, mode: 'resize-end', originX: e.clientX, originalStart: stay.startSlot, originalEnd: stay.endSlot });
-                                }}
-                              >
-                                <div className="w-0.5 h-4 rounded-full bg-current opacity-15 group-hover:opacity-40 transition-opacity pointer-events-none"
-                                  style={{ color: isSelected ? 'white' : stay.color }} />
-                              </div>
-                            </div>
-
-                            {/* Transit chip — centered in gap between the two stays */}
-                            {nextStay && (() => {
-                              const gapStart = (stay.endSlot / (numDays * 3)) * 100;
-                              const gapEnd = (nextStay.startSlot / (numDays * 3)) * 100;
-                              const chipLeft = (gapStart + gapEnd) / 2;
-                              return (
+                                  );
+                                })()}
+                                {/* Drag grip — visible on hover when not selected */}
+                                <SlidersHorizontal
+                                  className="w-3 h-3 flex-shrink-0 mr-1 opacity-0 group-hover:opacity-40 transition-opacity pointer-events-none"
+                                  style={{ color: isSelected ? 'white' : stay.color }}
+                                />
+                                {/* Edit button */}
                                 <button
-                                  aria-label={`Route: ${TRANSPORT_LABELS[stay.travelModeToNext]}${stay.travelDurationToNext ? `, ${stay.travelDurationToNext}` : ''}`}
-                                  onClick={() => setEditingRouteStayId(stay.id)}
-                                  className="group/chip absolute top-1/2 -translate-y-1/2 -translate-x-1/2 z-30 size-8 bg-white border border-slate-200 rounded-full flex items-center justify-center cursor-pointer hover:border-primary/40 hover:shadow-md transition-all shadow-sm"
-                                  style={{ left: `${chipLeft}%` }}
+                                  aria-label={`Edit ${stay.name}`}
+                                  className={`absolute right-4 top-1/2 -translate-y-1/2 z-20 p-1 rounded transition-opacity focus-visible:ring-2 ${
+                                    isSelected
+                                      ? 'opacity-100 text-white/70 hover:text-white hover:bg-white/15'
+                                      : 'opacity-0 pointer-events-none'
+                                  }`}
+                                  onMouseDown={(e) => e.stopPropagation()}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setEditingStayId(stay.id);
+                                  }}
                                 >
-                                  <TransportIcon mode={stay.travelModeToNext} className="w-3.5 h-3.5 text-slate-400" />
-                                  {stay.travelDurationToNext && (
-                                    <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-slate-800 text-white text-[11px] font-bold rounded-md whitespace-nowrap opacity-0 group-hover/chip:opacity-100 transition-opacity shadow-lg z-40">
-                                      {stay.travelDurationToNext}
-                                    </div>
-                                  )}
+                                  <SlidersHorizontal className="w-3 h-3" />
                                 </button>
-                              );
-                            })()}
-                          </React.Fragment>
-                        );
-                      })}
-                    </div>
+                                {/* Right resize */}
+                                <div
+                                  data-handle="resize-end"
+                                  className="absolute -right-1.5 top-0 bottom-0 w-5 cursor-ew-resize z-20 flex items-center justify-center"
+                                  onMouseDown={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedStayId(stay.id);
+                                    setDragState({
+                                      stayId: stay.id,
+                                      mode: 'resize-end',
+                                      originX: e.clientX,
+                                      originalStart: stay.startSlot,
+                                      originalEnd: stay.endSlot,
+                                    });
+                                  }}
+                                >
+                                  <div
+                                    className="w-0.5 h-4 rounded-full bg-current opacity-15 group-hover:opacity-40 transition-opacity pointer-events-none"
+                                    style={{ color: isSelected ? 'white' : stay.color }}
+                                  />
+                                </div>
+                              </div>
+
+                              {/* Transit chip — centered in gap between the two stays */}
+                              {nextStay &&
+                                (() => {
+                                  const gapStart = (stay.endSlot / (numDays * 3)) * 100;
+                                  const gapEnd = (nextStay.startSlot / (numDays * 3)) * 100;
+                                  const chipLeft = (gapStart + gapEnd) / 2;
+                                  return (
+                                    <button
+                                      aria-label={`Route: ${TRANSPORT_LABELS[stay.travelModeToNext]}${stay.travelDurationToNext ? `, ${stay.travelDurationToNext}` : ''}`}
+                                      onClick={() => setEditingRouteStayId(stay.id)}
+                                      className="group/chip absolute top-1/2 -translate-y-1/2 -translate-x-1/2 z-30 size-8 bg-white border border-slate-200 rounded-full flex items-center justify-center cursor-pointer hover:border-primary/40 hover:shadow-md transition-all shadow-sm"
+                                      style={{ left: `${chipLeft}%` }}
+                                    >
+                                      <TransportIcon
+                                        mode={stay.travelModeToNext}
+                                        className="w-3.5 h-3.5 text-slate-400"
+                                      />
+                                      {stay.travelDurationToNext && (
+                                        <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-slate-800 text-white text-[11px] font-bold rounded-md whitespace-nowrap opacity-0 group-hover/chip:opacity-100 transition-opacity shadow-lg z-40">
+                                          {stay.travelDurationToNext}
+                                        </div>
+                                      )}
+                                    </button>
+                                  );
+                                })()}
+                            </React.Fragment>
+                          );
+                        })}
+                      </div>
                     )}
                   </div>
                   {/* Shrink strip — empty first day (bottom edge) */}
                   {canShrinkBefore && (
                     <button
-                      onClick={(e) => { e.stopPropagation(); handleShrinkBefore(); }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleShrinkBefore();
+                      }}
                       onMouseDown={(e) => e.stopPropagation()}
                       className="absolute bottom-0 left-0 z-30 h-5 flex items-center justify-center gap-1 rounded-tr-md transition-all opacity-0 hover:opacity-100 bg-slate-100/80 hover:bg-red-50 border-t border-r border-slate-200/60"
                       style={{ width: `${(1 / numDays) * 100}%` }}
                       title="Remove empty first day"
                     >
                       <Trash2 className="w-2.5 h-2.5 text-red-400" />
-                      <span className="text-[9px] font-bold text-red-400 uppercase">Remove day</span>
+                      <span className="text-[9px] font-bold text-red-400 uppercase">
+                        Remove day
+                      </span>
                     </button>
                   )}
                   {/* Shrink strip — empty last day (bottom edge) */}
                   {canShrinkAfter && (
                     <button
-                      onClick={(e) => { e.stopPropagation(); handleShrinkAfter(); }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleShrinkAfter();
+                      }}
                       onMouseDown={(e) => e.stopPropagation()}
                       className="absolute bottom-0 right-0 z-30 h-5 flex items-center justify-center gap-1 rounded-tl-md transition-all opacity-0 hover:opacity-100 bg-slate-100/80 hover:bg-red-50 border-t border-l border-slate-200/60"
                       style={{ width: `${(1 / numDays) * 100}%` }}
                       title="Remove empty last day"
                     >
                       <Trash2 className="w-2.5 h-2.5 text-red-400" />
-                      <span className="text-[9px] font-bold text-red-400 uppercase">Remove day</span>
+                      <span className="text-[9px] font-bold text-red-400 uppercase">
+                        Remove day
+                      </span>
                     </button>
                   )}
                 </div>
                 {/* Stay zone — buffer after (ALL view only) */}
-                {zoomDays === 0 && <button
-                  onClick={handleExtendAfter}
-                  className="group/buf relative flex items-center justify-center border-l border-border-neutral transition-colors hover:bg-slate-100/60"
-                  style={{
-                    background: 'repeating-linear-gradient(-45deg, transparent, transparent 4px, rgba(148,163,184,0.13) 4px, rgba(148,163,184,0.13) 8px), rgba(241,245,249,0.8)',
-                  }}
-                  title="Extend trip one day later"
-                >
-                  <div className="flex flex-col items-center gap-0.5 opacity-0 group-hover/buf:opacity-100 transition-opacity">
-                    <Plus className="w-3.5 h-3.5 text-slate-400" />
-                    <span className="text-[9px] font-bold text-slate-400 uppercase">Extend</span>
-                  </div>
-                </button>}
+                {zoomDays === 0 && (
+                  <button
+                    onClick={handleExtendAfter}
+                    className="group/buf relative flex items-center justify-center border-l border-border-neutral transition-colors hover:bg-slate-100/60"
+                    style={{
+                      background:
+                        'repeating-linear-gradient(-45deg, transparent, transparent 4px, rgba(148,163,184,0.13) 4px, rgba(148,163,184,0.13) 8px), rgba(241,245,249,0.8)',
+                    }}
+                    title="Extend trip one day later"
+                  >
+                    <div className="flex flex-col items-center gap-0.5 opacity-0 group-hover/buf:opacity-100 transition-opacity">
+                      <Plus className="w-3.5 h-3.5 text-slate-400" />
+                      <span className="text-[9px] font-bold text-slate-400 uppercase">Extend</span>
+                    </div>
+                  </button>
+                )}
               </div>
             </div>
           </section>
 
           {/* ── Main content ── */}
           <section className="flex-1 flex min-h-0 relative overflow-hidden">
-
             {/* Inventory */}
-            <aside className={`border-r border-border-neutral flex flex-col bg-white transition-all duration-300 ${mapExpanded ? 'w-0 overflow-hidden opacity-0' : 'w-64 hidden md:flex'}`}>
+            <aside
+              className={`border-r border-border-neutral flex flex-col bg-white transition-all duration-300 ${mapExpanded ? 'w-0 overflow-hidden opacity-0' : 'w-64 hidden md:flex'}`}
+            >
               {/* Tab bar */}
-              <div className="flex-shrink-0 bg-slate-50 border-b border-border-neutral">
-                <div className="flex h-9">
-                  <button
-                    onClick={() => setSidebarTab('overview')}
-                    className={`flex-1 flex items-center justify-center gap-1.5 text-[11px] font-semibold whitespace-nowrap -mb-px border-b-2 transition-all duration-150 ${sidebarTab === 'overview' ? 'bg-white text-primary border-primary shadow-[0_1px_0_0_white]' : 'text-slate-400 hover:text-slate-600 border-transparent hover:bg-white/60'}`}
-                  >
-                    Details
-                  </button>
-                  <button
-                    onClick={() => setSidebarTab('unplanned')}
-                    className={`flex-1 flex items-center justify-center gap-1.5 text-[11px] font-semibold whitespace-nowrap -mb-px border-b-2 transition-all duration-150 ${sidebarTab === 'unplanned' ? 'bg-white text-primary border-primary shadow-[0_1px_0_0_white]' : 'text-slate-400 hover:text-slate-600 border-transparent hover:bg-white/60'}`}
-                  >
-                    {inboxVisits.length > 0 ? (
-                      <>Inbox <span className={`inline-flex items-center justify-center w-4 h-4 rounded-full text-[9px] font-bold ${sidebarTab === 'unplanned' ? 'bg-primary/15 text-primary' : 'bg-slate-200 text-slate-500'}`}>{inboxVisits.length}</span></>
-                    ) : 'Inbox'}
-                  </button>
-                  <button
-                    onClick={() => setAddingToInbox(true)}
-                    className={`px-2.5 flex items-center justify-center border-l border-border-neutral text-slate-400 hover:text-primary hover:bg-white transition-colors ${sidebarTab === 'unplanned' ? '' : 'invisible pointer-events-none'}`}
-                    aria-label="Add new place"
-                  >
-                    <Plus className="w-3 h-3" />
-                  </button>
-                </div>
+              <div className="flex-shrink-0 flex items-stretch">
+                <Tabs
+                  value={sidebarTab}
+                  onValueChange={(v) => setSidebarTab(v as 'overview' | 'unplanned')}
+                  className="flex-1 gap-0"
+                >
+                  <TabsList className="h-9 w-full rounded-none border-b border-border-neutral bg-slate-50 p-0">
+                    <TabsTrigger
+                      value="overview"
+                      className="flex-1 h-full rounded-none text-[11px] font-semibold data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-none"
+                    >
+                      Details
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="unplanned"
+                      className="flex-1 h-full rounded-none text-[11px] font-semibold data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-none"
+                    >
+                      {inboxVisits.length > 0 ? (
+                        <>
+                          Inbox{' '}
+                          <Badge
+                            variant="secondary"
+                            className="ml-1 h-4 w-4 rounded-full p-0 text-[9px] font-bold justify-center"
+                          >
+                            {inboxVisits.length}
+                          </Badge>
+                        </>
+                      ) : (
+                        'Inbox'
+                      )}
+                    </TabsTrigger>
+                  </TabsList>
+                </Tabs>
+                <button
+                  onClick={() => setAddingToInbox(true)}
+                  className={`px-2.5 flex items-center justify-center border-b border-l border-border-neutral bg-slate-50 text-slate-400 hover:text-primary hover:bg-white transition-colors ${sidebarTab === 'unplanned' ? '' : 'invisible pointer-events-none'}`}
+                  aria-label="Add new place"
+                >
+                  <Plus className="w-3 h-3" />
+                </button>
               </div>
 
               {/* Overview tab — visit detail or stay overview */}
-              {sidebarTab === 'overview' && selectedStay && selectedVisitId && (() => {
-                const visit = selectedStay.visits.find((v) => v.id === selectedVisitId);
-                if (!visit) return null;
-                const dayLabel = visit.dayOffset !== null
-                  ? `Day ${visit.dayOffset + 1}${visit.dayPart ? ', ' + visit.dayPart.charAt(0).toUpperCase() + visit.dayPart.slice(1) : ''}`
-                  : 'Unplanned';
-                return (
-                  <VisitDetailDrawer
-                    key={visit.id}
-                    visit={visit}
-                    dayLabel={dayLabel}
-                    onClose={() => setSelectedVisitId(null)}
-                    onEdit={() => { setEditingVisit(visit); setSelectedVisitId(null); }}
-                    onUnschedule={() => {
-                      updateSelectedStay((stay) => ({
-                        ...stay,
-                        visits: stay.visits.map((v) => v.id === visit.id ? { ...v, dayOffset: null, dayPart: null } : v),
-                      }));
-                      setSelectedVisitId(null);
-                    }}
-                    onDelete={() => {
-                      updateSelectedStay((stay) => ({ ...stay, visits: stay.visits.filter((v) => v.id !== visit.id) }));
-                      setSelectedVisitId(null);
-                    }}
-                    onUpdateVisit={(updates) => {
-                      updateSelectedStay((stay) => ({
-                        ...stay,
-                        visits: stay.visits.map((v) => v.id === visit.id ? { ...v, ...updates } : v),
-                      }));
-                    }}
-                  />
-                );
-              })()}
+              {sidebarTab === 'overview' &&
+                selectedStay &&
+                selectedVisitId &&
+                (() => {
+                  const visit = selectedStay.visits.find((v) => v.id === selectedVisitId);
+                  if (!visit) return null;
+                  const dayLabel =
+                    visit.dayOffset !== null
+                      ? `Day ${visit.dayOffset + 1}${visit.dayPart ? ', ' + visit.dayPart.charAt(0).toUpperCase() + visit.dayPart.slice(1) : ''}`
+                      : 'Unplanned';
+                  return (
+                    <VisitDetailDrawer
+                      key={visit.id}
+                      visit={visit}
+                      dayLabel={dayLabel}
+                      onClose={() => setSelectedVisitId(null)}
+                      onEdit={() => {
+                        setEditingVisit(visit);
+                        setSelectedVisitId(null);
+                      }}
+                      onUnschedule={() => {
+                        updateSelectedStay((stay) => ({
+                          ...stay,
+                          visits: stay.visits.map((v) =>
+                            v.id === visit.id ? { ...v, dayOffset: null, dayPart: null } : v,
+                          ),
+                        }));
+                        setSelectedVisitId(null);
+                      }}
+                      onDelete={() => {
+                        updateSelectedStay((stay) => ({
+                          ...stay,
+                          visits: stay.visits.filter((v) => v.id !== visit.id),
+                        }));
+                        setSelectedVisitId(null);
+                      }}
+                      onUpdateVisit={(updates) => {
+                        updateSelectedStay((stay) => ({
+                          ...stay,
+                          visits: stay.visits.map((v) =>
+                            v.id === visit.id ? { ...v, ...updates } : v,
+                          ),
+                        }));
+                      }}
+                    />
+                  );
+                })()}
               {sidebarTab === 'overview' && selectedStay && !selectedVisitId && (
                 <StayOverviewPanel
                   key={selectedStay.id}
@@ -1264,9 +1700,14 @@ function ChronosApp() {
                   </div>
                   <div className="text-center">
                     <p className="text-[11px] font-bold text-slate-600">Trip Overview</p>
-                    <p className="text-[11px] text-slate-400 mt-1">{sortedStays.length} destination{sortedStays.length !== 1 ? 's' : ''} · {trip.totalDays} days</p>
+                    <p className="text-[11px] text-slate-400 mt-1">
+                      {sortedStays.length} destination{sortedStays.length !== 1 ? 's' : ''} ·{' '}
+                      {trip.totalDays} days
+                    </p>
                   </div>
-                  <p className="text-[9px] text-slate-400 text-center leading-relaxed">Click a destination on the timeline to see its details and plan activities.</p>
+                  <p className="text-[9px] text-slate-400 text-center leading-relaxed">
+                    Click a destination on the timeline to see its details and plan activities.
+                  </p>
                 </div>
               )}
 
@@ -1274,18 +1715,36 @@ function ChronosApp() {
               {sidebarTab === 'unplanned' && (
                 <div className="flex-1 overflow-y-auto p-4 space-y-3 scroll-hide">
                   {inboxVisits.map((v) => (
-                    <DraggableInventoryCard key={v.id} visit={v} onEdit={() => setEditingVisit(v)} />
+                    <DraggableInventoryCard
+                      key={v.id}
+                      visit={v}
+                      onEdit={() => setEditingVisit(v)}
+                    />
                   ))}
                   {inboxVisits.length === 0 && (
                     <div className="flex flex-col items-center justify-center py-8 gap-2">
                       <div className="size-9 rounded-xl bg-slate-100 flex items-center justify-center">
-                        {searchTerm ? <Search className="w-4 h-4 text-slate-400" /> : selectedStay ? <Check className="w-4 h-4 text-emerald-500" /> : <Compass className="w-4 h-4 text-slate-400" />}
+                        {searchTerm ? (
+                          <Search className="w-4 h-4 text-slate-400" />
+                        ) : selectedStay ? (
+                          <Check className="w-4 h-4 text-emerald-500" />
+                        ) : (
+                          <Compass className="w-4 h-4 text-slate-400" />
+                        )}
                       </div>
                       <p className="text-[11px] font-bold text-slate-500">
-                        {searchTerm ? 'No matching places' : selectedStay ? 'All scheduled!' : 'No stay selected'}
+                        {searchTerm
+                          ? 'No matching places'
+                          : selectedStay
+                            ? 'All scheduled!'
+                            : 'No stay selected'}
                       </p>
                       <p className="text-[9px] text-slate-400 text-center leading-relaxed">
-                        {searchTerm ? 'Try a different search term.' : selectedStay ? 'Add more with the + button above.' : 'Click a destination on the timeline.'}
+                        {searchTerm
+                          ? 'Try a different search term.'
+                          : selectedStay
+                            ? 'Add more with the + button above.'
+                            : 'Click a destination on the timeline.'}
                       </p>
                     </div>
                   )}
@@ -1294,7 +1753,11 @@ function ChronosApp() {
             </aside>
 
             {/* Day columns */}
-            <div data-day-columns className={`flex-1 overflow-x-auto overflow-y-auto flex p-5 gap-5 min-w-0 bg-slate-50/50 scroll-hide transition-all duration-300 max-md:snap-x max-md:snap-mandatory max-md:scroll-pl-5 ${mapExpanded ? 'w-0 overflow-hidden opacity-0 p-0' : ''}`} style={mapExpanded ? undefined : { paddingRight: mapWidth + 20 }}>
+            <div
+              data-day-columns
+              className={`flex-1 overflow-x-auto overflow-y-auto flex p-5 gap-5 min-w-0 bg-slate-50/50 scroll-hide transition-all duration-300 max-md:snap-x max-md:snap-mandatory max-md:scroll-pl-5 ${mapExpanded ? 'w-0 overflow-hidden opacity-0 p-0' : ''}`}
+              style={mapExpanded ? undefined : { paddingRight: mapWidth + 20 }}
+            >
               {sortedStays.length === 0 && (
                 <div className="flex-1 flex items-center justify-center">
                   <div className="text-center space-y-3">
@@ -1304,7 +1767,9 @@ function ChronosApp() {
                     <div>
                       <p className="font-bold text-slate-600 text-sm">No destinations yet</p>
                       <p className="text-slate-400 text-xs mt-1 leading-relaxed">
-                        Add a stay in the timeline above<br />to start planning your days.
+                        Add a stay in the timeline above
+                        <br />
+                        to start planning your days.
                       </p>
                     </div>
                     <button
@@ -1319,51 +1784,80 @@ function ChronosApp() {
               )}
               {stayDays.map((day) => {
                 const dayVisits = selectedStay
-                  ? sortVisits(selectedStay.visits.filter(
-                      (v) => v.dayOffset === day.dayOffset && (!searchTerm || v.name.toLowerCase().includes(searchTerm)),
-                    ))
+                  ? sortVisits(
+                      selectedStay.visits.filter(
+                        (v) =>
+                          v.dayOffset === day.dayOffset &&
+                          (!searchTerm || v.name.toLowerCase().includes(searchTerm)),
+                      ),
+                    )
                   : [];
                 return (
-                  <div key={day.dayOffset} className={`flex-none w-72 max-md:w-[85vw] max-md:snap-start flex flex-col gap-4 rounded-xl transition-colors ${mapMode === 'detail' && mapDayFilter === day.dayOffset ? 'ring-2 ring-primary/40 bg-primary/[0.03] p-2 -m-2' : ''}`}>
+                  <div
+                    key={day.dayOffset}
+                    className={`flex-none w-72 max-md:w-[85vw] max-md:snap-start flex flex-col gap-4 rounded-xl transition-colors ${mapMode === 'detail' && mapDayFilter === day.dayOffset ? 'ring-2 ring-primary/40 bg-primary/[0.03] p-2 -m-2' : ''}`}
+                  >
                     <button
                       className={`flex items-center justify-between w-full cursor-pointer group rounded-lg px-2 py-1 -mx-2 transition-colors ${mapMode === 'detail' && mapDayFilter === day.dayOffset ? 'bg-primary/8' : 'hover:bg-slate-50'}`}
                       onClick={() => {
-                        if (mapDayFilter === day.dayOffset) { setMapDayFilter(null); setMapMode('stay'); }
-                        else { setMapDayFilter(day.dayOffset); setMapMode('detail'); }
+                        if (mapDayFilter === day.dayOffset) {
+                          setMapDayFilter(null);
+                          setMapMode('stay');
+                        } else {
+                          setMapDayFilter(day.dayOffset);
+                          setMapMode('detail');
+                        }
                       }}
                       title="Click to show this day on the map"
                     >
                       <h4 className="font-extrabold text-sm tracking-tight group-hover:text-primary transition-colors">
                         Day {(day.dayOffset + 1).toString().padStart(2, '0')}
-                        <span className="text-slate-400 font-medium ml-1.5">{fmt(day.date, { weekday: 'short', month: 'short', day: 'numeric' })}</span>
+                        <span className="text-slate-400 font-medium ml-1.5">
+                          {fmt(day.date, { weekday: 'short', month: 'short', day: 'numeric' })}
+                        </span>
                       </h4>
-                      <MapPin className={`w-3 h-3 transition-colors ${mapMode === 'detail' && mapDayFilter === day.dayOffset ? 'text-primary' : 'text-slate-300 group-hover:text-primary/50'}`} />
+                      <MapPin
+                        className={`w-3 h-3 transition-colors ${mapMode === 'detail' && mapDayFilter === day.dayOffset ? 'text-primary' : 'text-slate-300 group-hover:text-primary/50'}`}
+                      />
                     </button>
                     {/* Accommodation bar — rendered on the first day of each accommodation group */}
                     {(() => {
-                      const group = accommodationGroups.find((g) => g.startDayOffset === day.dayOffset);
-                      const isNightDay = day.hasNight;
-                      const hasAnyGroup = accommodationGroups.some((g) => day.dayOffset >= g.startDayOffset && day.dayOffset < g.startDayOffset + g.nights);
-                      // Reserve space on days covered by a group but not the start
-                      if (!group && hasAnyGroup) return <div className="h-12 flex-shrink-0 -mb-2" />;
-                      // Day with a night but no accommodation set — show "add" prompt
-                      if (!group && isNightDay) return (
-                        <div className="h-12 flex-shrink-0 -mb-2">
-                          <button
-                            onClick={() => setEditingAccommodation({ dayOffset: day.dayOffset })}
-                            className="h-full w-full border-2 border-dashed border-slate-200 rounded-lg flex items-center justify-center gap-2 text-slate-400 hover:text-primary hover:border-primary/40 hover:bg-primary/5 transition-all"
-                          >
-                            <Hotel className="w-4 h-4" />
-                            <span className="text-[11px] font-bold">Set Accommodation</span>
-                          </button>
-                        </div>
+                      const group = accommodationGroups.find(
+                        (g) => g.startDayOffset === day.dayOffset,
                       );
+                      const isNightDay = day.hasNight;
+                      const hasAnyGroup = accommodationGroups.some(
+                        (g) =>
+                          day.dayOffset >= g.startDayOffset &&
+                          day.dayOffset < g.startDayOffset + g.nights,
+                      );
+                      // Reserve space on days covered by a group but not the start
+                      if (!group && hasAnyGroup)
+                        return <div className="h-12 flex-shrink-0 -mb-2" />;
+                      // Day with a night but no accommodation set — show "add" prompt
+                      if (!group && isNightDay)
+                        return (
+                          <div className="h-12 flex-shrink-0 -mb-2">
+                            <button
+                              onClick={() => setEditingAccommodation({ dayOffset: day.dayOffset })}
+                              className="h-full w-full border-2 border-dashed border-slate-200 rounded-lg flex items-center justify-center gap-2 text-slate-400 hover:text-primary hover:border-primary/40 hover:bg-primary/5 transition-all"
+                            >
+                              <Hotel className="w-4 h-4" />
+                              <span className="text-[11px] font-bold">Set Accommodation</span>
+                            </button>
+                          </div>
+                        );
                       // No night on this day (e.g., checkout morning only) — no bar
                       if (!group) return null;
                       // Render the spanning bar for this group
                       return (
                         <div className="relative h-12 flex-shrink-0 -mb-2">
-                          <div className="absolute inset-y-0 left-0 z-10" style={{ width: `calc(${group.nights} * var(--day-col-width) + ${group.nights - 1} * var(--day-col-gap))` }}>
+                          <div
+                            className="absolute inset-y-0 left-0 z-10"
+                            style={{
+                              width: `calc(${group.nights} * var(--day-col-width) + ${group.nights - 1} * var(--day-col-gap))`,
+                            }}
+                          >
                             <button
                               onClick={() => setEditingAccommodation({ group })}
                               className="group/accom h-full w-full bg-white border border-primary/30 rounded-lg shadow-sm flex items-center px-4 gap-3 hover:border-primary/50 hover:shadow-md transition-all cursor-pointer text-left"
@@ -1380,11 +1874,15 @@ function ChronosApp() {
                                     • {group.nights} {group.nights === 1 ? 'Night' : 'Nights'}
                                   </span>
                                 </div>
-                                <p className="text-xs font-extrabold text-slate-800 truncate">{group.name}</p>
+                                <p className="text-xs font-extrabold text-slate-800 truncate">
+                                  {group.name}
+                                </p>
                               </div>
                               {group.accommodation.notes && (
                                 <span className="text-[11px] font-medium text-slate-500 bg-slate-50 border border-slate-100 px-2.5 py-1 rounded-full flex items-center gap-1.5 flex-shrink-0 max-w-[180px] truncate">
-                                  <span className="material-icons text-slate-400 text-[12px]">#</span>
+                                  <span className="material-icons text-slate-400 text-[12px]">
+                                    #
+                                  </span>
                                   {group.accommodation.notes}
                                 </span>
                               )}
@@ -1398,7 +1896,8 @@ function ChronosApp() {
                       {DAY_PARTS.filter((p) => day.enabledParts.includes(p)).map((period) => (
                         <DroppablePeriodSlot
                           key={period}
-                          dayOffset={day.dayOffset} period={period}
+                          dayOffset={day.dayOffset}
+                          period={period}
                           visits={dayVisits.filter((v) => v.dayPart === period)}
                           selectedVisitId={selectedVisitId}
                           onSelectVisit={(id) => {
@@ -1425,7 +1924,11 @@ function ChronosApp() {
                   </div>
                   <div className="text-center">
                     <p className="text-sm font-extrabold text-slate-600">Select a stay to plan</p>
-                    <p className="text-xs text-slate-400 mt-1"><span className="md:hidden">Tap</span><span className="hidden md:inline">Click</span> any block on the timeline above</p>
+                    <p className="text-xs text-slate-400 mt-1">
+                      <span className="md:hidden">Tap</span>
+                      <span className="hidden md:inline">Click</span> any block on the timeline
+                      above
+                    </p>
                   </div>
                   {sortedStays.length === 0 && (
                     <button
@@ -1439,16 +1942,23 @@ function ChronosApp() {
               )}
             </div>
 
-
             {/* Map — Collapsed tab */}
             {mapCollapsed && !mapExpanded && (
-              <button
-                onClick={() => { setMapCollapsed(false); triggerMapAnim('map-anim-reveal'); }}
-                className="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 z-30 items-center gap-1 px-1.5 py-3 bg-white border border-r-0 border-slate-200 rounded-l-xl shadow-lg hover:bg-slate-50 transition-colors"
-                aria-label="Show map"
-              >
-                <PanelRightOpen className="w-4 h-4 text-slate-500" />
-              </button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => {
+                      setMapCollapsed(false);
+                      triggerMapAnim('map-anim-reveal');
+                    }}
+                    className="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 z-30 items-center gap-1 px-1.5 py-3 bg-white border border-r-0 border-slate-200 rounded-l-xl shadow-lg hover:bg-slate-50 transition-colors"
+                    aria-label="Show map"
+                  >
+                    <PanelRightOpen className="w-4 h-4 text-slate-500" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="left">Show map</TooltipContent>
+              </Tooltip>
             )}
 
             {/* Map — Floating Panel */}
@@ -1467,7 +1977,12 @@ function ChronosApp() {
                   : mapExpanded
                     ? { top: 0, bottom: 0, right: 0, left: 0 }
                     : mapMini
-                      ? { bottom: 16, right: 16, width: 'clamp(320px, 28vw, 480px)', height: 'clamp(240px, 25vh, 360px)' }
+                      ? {
+                          bottom: 16,
+                          right: 16,
+                          width: 'clamp(320px, 28vw, 480px)',
+                          height: 'clamp(240px, 25vh, 360px)',
+                        }
                       : { top: 16, bottom: 16, right: 16, width: mapWidth }
               }
             >
@@ -1482,7 +1997,9 @@ function ChronosApp() {
                 </div>
               )}
               {/* Map panel header */}
-              <div className={`${mapMini ? 'h-9 px-2.5' : 'h-11 px-4'} border-b border-slate-100 flex items-center gap-3 bg-white/80 backdrop-blur-md flex-shrink-0`}>
+              <div
+                className={`${mapMini ? 'h-9 px-2.5' : 'h-11 px-4'} border-b border-slate-100 flex items-center gap-3 bg-white/80 backdrop-blur-md flex-shrink-0`}
+              >
                 {/* Left: mode icon + title */}
                 <div className="flex items-center gap-2 flex-shrink-0">
                   <div className="size-5 bg-primary/10 rounded-md flex items-center justify-center">
@@ -1490,76 +2007,132 @@ function ChronosApp() {
                   </div>
                   {!mapMini && (
                     <span className="text-[11px] font-extrabold text-slate-600 tracking-tight uppercase">
-                      {mapMode === 'overview' ? 'Overview' : mapMode === 'stay' ? 'All spots' : 'Day route'}
+                      {mapMode === 'overview'
+                        ? 'Overview'
+                        : mapMode === 'stay'
+                          ? 'All spots'
+                          : 'Day route'}
                     </span>
                   )}
                 </div>
                 {/* Middle: day filter pills — scrollable, only in detail mode */}
                 <div className="flex-1 overflow-x-auto scroll-hide min-w-0">
-                  {!mapMini && (mapMode === 'stay' || mapMode === 'detail') && dayFilterOptions.length >= 2 && (
-                    <DayFilterPills
-                      options={dayFilterOptions}
-                      selectedDayOffset={mapDayFilter}
-                      onChange={(d) => { setMapDayFilter(d); setMapMode(d !== null ? 'detail' : 'stay'); }}
-                    />
-                  )}
+                  {!mapMini &&
+                    (mapMode === 'stay' || mapMode === 'detail') &&
+                    dayFilterOptions.length >= 2 && (
+                      <DayFilterPills
+                        options={dayFilterOptions}
+                        selectedDayOffset={mapDayFilter}
+                        onChange={(d) => {
+                          setMapDayFilter(d);
+                          setMapMode(d !== null ? 'detail' : 'stay');
+                        }}
+                      />
+                    )}
                 </div>
                 {/* Right: action buttons */}
                 <div className="flex items-center gap-0.5 flex-shrink-0">
                   {!mapMini && (
-                    <button
-                      aria-label={mapMode === 'overview' ? 'Show stay spots' : 'Show trip overview'}
-                      onClick={() => {
-                        if (mapMode === 'overview') {
-                          // Re-select first stay to go back to stay mode
-                          if (sortedStays.length > 0) setSelectedStayId(sortedStays[0].id);
-                          setMapMode('stay');
-                        } else {
-                          setSelectedStayId('');
-                          setMapMode('overview');
-                          setMapDayFilter(null);
-                        }
-                      }}
-                      className={`p-1.5 rounded-lg transition-colors focus-visible:ring-2 focus-visible:ring-primary/50 ${
-                        mapMode === 'overview'
-                          ? 'text-primary bg-primary/10'
-                          : 'text-slate-400 hover:text-primary hover:bg-slate-50'
-                      }`}
-                    >
-                      <Layers className="w-4 h-4" />
-                    </button>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          aria-label={
+                            mapMode === 'overview' ? 'Show stay spots' : 'Show trip overview'
+                          }
+                          onClick={() => {
+                            if (mapMode === 'overview') {
+                              // Re-select first stay to go back to stay mode
+                              if (sortedStays.length > 0) setSelectedStayId(sortedStays[0].id);
+                              setMapMode('stay');
+                            } else {
+                              setSelectedStayId('');
+                              setMapMode('overview');
+                              setMapDayFilter(null);
+                            }
+                          }}
+                          className={`p-1.5 rounded-lg transition-colors focus-visible:ring-2 focus-visible:ring-primary/50 ${
+                            mapMode === 'overview'
+                              ? 'text-primary bg-primary/10'
+                              : 'text-slate-400 hover:text-primary hover:bg-slate-50'
+                          }`}
+                        >
+                          <Layers className="w-4 h-4" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        {mapMode === 'overview' ? 'Show stay spots' : 'Show trip overview'}
+                      </TooltipContent>
+                    </Tooltip>
                   )}
                   {/* Mini / restore toggle */}
                   {!mapExpanded && (
-                    <button
-                      onClick={() => { triggerMapAnim(mapMini ? 'map-anim-restore' : 'map-anim-mini'); setMapMini(m => !m); }}
-                      aria-label={mapMini ? 'Restore map' : 'Shrink map'}
-                      className="p-1.5 rounded-lg text-slate-400 hover:text-primary hover:bg-slate-50 transition-colors focus-visible:ring-2 focus-visible:ring-primary/50"
-                    >
-                      {mapMini ? <Expand className="w-4 h-4" /> : <Shrink className="w-4 h-4" />}
-                    </button>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          onClick={() => {
+                            triggerMapAnim(mapMini ? 'map-anim-restore' : 'map-anim-mini');
+                            setMapMini((m) => !m);
+                          }}
+                          aria-label={mapMini ? 'Restore map' : 'Shrink map'}
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-primary hover:bg-slate-50 transition-colors focus-visible:ring-2 focus-visible:ring-primary/50"
+                        >
+                          {mapMini ? (
+                            <Expand className="w-4 h-4" />
+                          ) : (
+                            <Shrink className="w-4 h-4" />
+                          )}
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent>{mapMini ? 'Restore map' : 'Shrink map'}</TooltipContent>
+                    </Tooltip>
                   )}
-                  <button
-                    onClick={() => { triggerMapAnim(mapExpanded ? 'map-anim-shrink' : 'map-anim-expand'); setMapExpanded(!mapExpanded); if (mapMini) setMapMini(false); }}
-                    aria-label={mapExpanded ? 'Exit fullscreen' : 'Fullscreen map'}
-                    className="p-1.5 rounded-lg text-slate-400 hover:text-primary hover:bg-slate-50 transition-colors focus-visible:ring-2 focus-visible:ring-primary/50"
-                  >
-                    {mapExpanded ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-                  </button>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={() => {
+                          triggerMapAnim(mapExpanded ? 'map-anim-shrink' : 'map-anim-expand');
+                          setMapExpanded(!mapExpanded);
+                          if (mapMini) setMapMini(false);
+                        }}
+                        aria-label={mapExpanded ? 'Exit fullscreen' : 'Fullscreen map'}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-primary hover:bg-slate-50 transition-colors focus-visible:ring-2 focus-visible:ring-primary/50"
+                      >
+                        {mapExpanded ? (
+                          <Minimize2 className="w-4 h-4" />
+                        ) : (
+                          <Maximize2 className="w-4 h-4" />
+                        )}
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      {mapExpanded ? 'Exit fullscreen' : 'Fullscreen map'}
+                    </TooltipContent>
+                  </Tooltip>
                   {!mapExpanded && !mapMini && (
-                    <button
-                      onClick={() => { triggerMapAnim('map-anim-collapse'); setTimeout(() => setMapCollapsed(true), 350); }}
-                      aria-label="Hide map"
-                      className="p-1.5 rounded-lg text-slate-400 hover:text-primary hover:bg-slate-50 transition-colors focus-visible:ring-2 focus-visible:ring-primary/50"
-                    >
-                      <PanelRightClose className="w-4 h-4" />
-                    </button>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          onClick={() => {
+                            triggerMapAnim('map-anim-collapse');
+                            setTimeout(() => setMapCollapsed(true), 350);
+                          }}
+                          aria-label="Hide map"
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-primary hover:bg-slate-50 transition-colors focus-visible:ring-2 focus-visible:ring-primary/50"
+                        >
+                          <PanelRightClose className="w-4 h-4" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent>Hide map</TooltipContent>
+                    </Tooltip>
                   )}
                 </div>
               </div>
 
               <div className="flex-1 overflow-hidden relative">
-                {(mapMode === 'overview' || mapMode === 'stay' || mapVisits.length > 0 || mapDayFilter !== null) ? (
+                {mapMode === 'overview' ||
+                mapMode === 'stay' ||
+                mapVisits.length > 0 ||
+                mapDayFilter !== null ? (
                   <TripMap
                     visits={mapMode !== 'overview' ? mapVisits : []}
                     selectedVisitId={mapMode !== 'overview' ? selectedVisitId : null}
@@ -1568,7 +2141,9 @@ function ChronosApp() {
                     stay={mapMode !== 'overview' ? selectedStay : null}
                     mode={mapMode}
                     overviewStays={overviewStays}
-                    onSelectStay={(stayId) => { setSelectedStayId(stayId); }}
+                    onSelectStay={(stayId) => {
+                      setSelectedStayId(stayId);
+                    }}
                     selectedDayOffset={mapDayFilter}
                     highlightedStayId={mapMode === 'overview' ? hoveredStayId : null}
                   />
@@ -1581,58 +2156,84 @@ function ChronosApp() {
                   </div>
                 )}
 
-                {selectedVisitId && (() => {
-                  const visit = mapVisits.find((v) => v.id === selectedVisitId);
-                  if (!visit) return null;
-                  return (
-                    <div className="absolute bottom-5 left-5 right-5 z-20 pointer-events-none">
-                      <div className="bg-white/95 backdrop-blur-xl p-4 rounded-xl shadow-2xl border border-primary/20 flex gap-3 pointer-events-auto">
-                        <div className={`size-10 rounded-lg flex items-center justify-center flex-shrink-0 border ${getVisitTypeColor(visit.type)}`}>
-                          {getVisitTypeIcon(visit.type)}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex justify-between items-start">
-                            <div>
-                              {visit.dayOffset !== null && visit.dayPart && (
-                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wide mb-0.5">
-                                  {visit.dayPart === 'morning' ? 'Morning' : visit.dayPart === 'afternoon' ? 'Afternoon' : 'Evening'}, Day {(visit.dayOffset ?? 0) + 1}
-                                </p>
-                              )}
-                              <h5 className="text-sm font-extrabold text-slate-800 truncate">{visit.name}</h5>
-                            </div>
-                            <button onClick={() => setSelectedVisitId(null)} className="text-slate-400 hover:text-slate-600 flex-shrink-0 ml-2">
-                              <X className="w-4 h-4" />
-                            </button>
+                {selectedVisitId &&
+                  (() => {
+                    const visit = mapVisits.find((v) => v.id === selectedVisitId);
+                    if (!visit) return null;
+                    return (
+                      <div className="absolute bottom-5 left-5 right-5 z-20 pointer-events-none">
+                        <div className="bg-white/95 backdrop-blur-xl p-4 rounded-xl shadow-2xl border border-primary/20 flex gap-3 pointer-events-auto">
+                          <div
+                            className={`size-10 rounded-lg flex items-center justify-center flex-shrink-0 border ${getVisitTypeColor(visit.type)}`}
+                          >
+                            {getVisitTypeIcon(visit.type)}
                           </div>
-                          <div className="flex gap-2 mt-2 flex-wrap">
-                            <span className={`text-[9px] font-bold px-2 py-0.5 rounded-md border ${getVisitTypeColor(visit.type)}`}>
-                              {getVisitLabel(visit.type).toUpperCase()}
-                            </span>
-                            {selectedStay && (
-                              <span className="text-[9px] font-bold text-slate-500 bg-slate-50 px-2 py-0.5 rounded-md border border-slate-100">
-                                {haversineKm(selectedStay.centerLat, selectedStay.centerLng, visit.lat, visit.lng).toFixed(1)} km from hotel
+                          <div className="flex-1 min-w-0">
+                            <div className="flex justify-between items-start">
+                              <div>
+                                {visit.dayOffset !== null && visit.dayPart && (
+                                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wide mb-0.5">
+                                    {visit.dayPart === 'morning'
+                                      ? 'Morning'
+                                      : visit.dayPart === 'afternoon'
+                                        ? 'Afternoon'
+                                        : 'Evening'}
+                                    , Day {(visit.dayOffset ?? 0) + 1}
+                                  </p>
+                                )}
+                                <h5 className="text-sm font-extrabold text-slate-800 truncate">
+                                  {visit.name}
+                                </h5>
+                              </div>
+                              <button
+                                onClick={() => setSelectedVisitId(null)}
+                                className="text-slate-400 hover:text-slate-600 flex-shrink-0 ml-2"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </div>
+                            <div className="flex gap-2 mt-2 flex-wrap">
+                              <span
+                                className={`text-[9px] font-bold px-2 py-0.5 rounded-md border ${getVisitTypeColor(visit.type)}`}
+                              >
+                                {getVisitLabel(visit.type).toUpperCase()}
                               </span>
-                            )}
-                            {visit.durationHint && (
-                              <span className="text-[9px] font-bold text-slate-500 bg-slate-50 px-2 py-0.5 rounded-md border border-slate-100">
-                                {visit.durationHint}
-                              </span>
-                            )}
-                            <button onClick={() => setEditingVisit(visit)} className="text-[9px] font-bold text-slate-500 bg-slate-50 px-2 py-0.5 rounded-lg border border-slate-100 hover:border-primary/40 hover:text-primary flex items-center gap-1">
-                              <Pencil className="w-2.5 h-2.5" /> Edit
-                            </button>
+                              {selectedStay && (
+                                <span className="text-[9px] font-bold text-slate-500 bg-slate-50 px-2 py-0.5 rounded-md border border-slate-100">
+                                  {haversineKm(
+                                    selectedStay.centerLat,
+                                    selectedStay.centerLng,
+                                    visit.lat,
+                                    visit.lng,
+                                  ).toFixed(1)}{' '}
+                                  km from hotel
+                                </span>
+                              )}
+                              {visit.durationHint && (
+                                <span className="text-[9px] font-bold text-slate-500 bg-slate-50 px-2 py-0.5 rounded-md border border-slate-100">
+                                  {visit.durationHint}
+                                </span>
+                              )}
+                              <button
+                                onClick={() => setEditingVisit(visit)}
+                                className="text-[9px] font-bold text-slate-500 bg-slate-50 px-2 py-0.5 rounded-lg border border-slate-100 hover:border-primary/40 hover:text-primary flex items-center gap-1"
+                              >
+                                <Pencil className="w-2.5 h-2.5" /> Edit
+                              </button>
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  );
-                })()}
+                    );
+                  })()}
               </div>
 
               {/* Map panel footer */}
               <div className="px-5 py-3 bg-white/80 backdrop-blur-md border-t border-slate-100 flex items-center justify-between flex-shrink-0">
                 <div className="flex items-center gap-3">
-                  <div className={`size-8 rounded-full flex items-center justify-center flex-shrink-0 ${mapMode === 'overview' ? 'bg-slate-600' : 'bg-primary'}`}>
+                  <div
+                    className={`size-8 rounded-full flex items-center justify-center flex-shrink-0 ${mapMode === 'overview' ? 'bg-slate-600' : 'bg-primary'}`}
+                  >
                     <Navigation className="text-white w-3.5 h-3.5" />
                   </div>
                   <div>
@@ -1657,25 +2258,41 @@ function ChronosApp() {
                         {(() => {
                           let totalKm = 0;
                           for (let i = 0; i < sortedStays.length - 1; i++) {
-                            totalKm += haversineKm(sortedStays[i].centerLat, sortedStays[i].centerLng, sortedStays[i + 1].centerLat, sortedStays[i + 1].centerLng);
+                            totalKm += haversineKm(
+                              sortedStays[i].centerLat,
+                              sortedStays[i].centerLng,
+                              sortedStays[i + 1].centerLat,
+                              sortedStays[i + 1].centerLng,
+                            );
                           }
                           return `${totalKm.toFixed(0)} km`;
                         })()}
                       </span>
-                      <p className="text-[9px] font-bold text-slate-400">{sortedStays.length} cities</p>
+                      <p className="text-[9px] font-bold text-slate-400">
+                        {sortedStays.length} cities
+                      </p>
                     </>
                   ) : (
                     <>
                       <span className="text-xs font-black text-slate-800">
-                        {selectedStay ? (() => {
-                          let totalKm = 0;
-                          for (let i = 1; i < mapVisits.length; i++) {
-                            totalKm += haversineKm(mapVisits[i - 1].lat, mapVisits[i - 1].lng, mapVisits[i].lat, mapVisits[i].lng);
-                          }
-                          return `${totalKm.toFixed(1)} km`;
-                        })() : '—'}
+                        {selectedStay
+                          ? (() => {
+                              let totalKm = 0;
+                              for (let i = 1; i < mapVisits.length; i++) {
+                                totalKm += haversineKm(
+                                  mapVisits[i - 1].lat,
+                                  mapVisits[i - 1].lng,
+                                  mapVisits[i].lat,
+                                  mapVisits[i].lng,
+                                );
+                              }
+                              return `${totalKm.toFixed(1)} km`;
+                            })()
+                          : '—'}
                       </span>
-                      <p className="text-[9px] font-bold text-slate-400">{mapVisits.length} stops</p>
+                      <p className="text-[9px] font-bold text-slate-400">
+                        {mapVisits.length} stops
+                      </p>
                     </>
                   )}
                 </div>
@@ -1702,112 +2319,154 @@ function ChronosApp() {
         )}
 
         {/* ── Mobile overlay panel ── */}
-        {mobileDrawerOpen && (
-          <div className="md:hidden fixed inset-0 z-50 flex flex-col bg-white animate-fade-in">
-              {/* Header */}
-              <div className="flex items-center justify-between px-4 h-12 border-b border-border-neutral flex-shrink-0 bg-white/80 backdrop-blur-md">
-                <button
-                  onClick={() => { setMobileDrawerOpen(false); if (selectedVisitId) setSelectedVisitId(null); }}
-                  className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-500 hover:text-primary transition-colors"
-                >
-                  <ChevronDown className="w-4 h-4 rotate-90" />
-                  Back
-                </button>
-                <span className="text-[11px] font-bold text-slate-700">
-                  {selectedVisitId ? 'Place Details' : 'Inbox'}
-                </span>
-                <button
-                  onClick={() => { setMobileDrawerOpen(false); if (selectedVisitId) setSelectedVisitId(null); }}
-                  className="size-8 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 transition-colors"
-                  aria-label="Close"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-              {/* Mobile visit detail — shown when a visit is selected */}
-              {selectedVisitId && selectedStay && (() => {
+        <Sheet
+          open={mobileDrawerOpen}
+          onOpenChange={(open) => {
+            setMobileDrawerOpen(open);
+            if (!open && selectedVisitId) setSelectedVisitId(null);
+          }}
+        >
+          <SheetContent
+            side="bottom"
+            className="h-[85dvh] md:hidden flex flex-col p-0"
+            showCloseButton={false}
+          >
+            <SheetHeader className="flex-shrink-0 border-b border-border-neutral px-4 py-3">
+              <SheetTitle className="text-[11px] font-bold text-slate-700">
+                {selectedVisitId ? 'Place Details' : 'Inbox'}
+              </SheetTitle>
+              <SheetDescription className="sr-only">
+                {selectedVisitId
+                  ? 'View and manage place details'
+                  : 'View and manage unplanned items'}
+              </SheetDescription>
+            </SheetHeader>
+            {/* Mobile visit detail — shown when a visit is selected */}
+            {selectedVisitId &&
+              selectedStay &&
+              (() => {
                 const visit = selectedStay.visits.find((v) => v.id === selectedVisitId);
                 if (!visit) return null;
-                const dayLabel = visit.dayOffset !== null
-                  ? `Day ${visit.dayOffset + 1}${visit.dayPart ? ', ' + visit.dayPart.charAt(0).toUpperCase() + visit.dayPart.slice(1) : ''}`
-                  : 'Unplanned';
+                const dayLabel =
+                  visit.dayOffset !== null
+                    ? `Day ${visit.dayOffset + 1}${visit.dayPart ? ', ' + visit.dayPart.charAt(0).toUpperCase() + visit.dayPart.slice(1) : ''}`
+                    : 'Unplanned';
                 return (
                   <VisitDetailDrawer
                     key={visit.id}
                     visit={visit}
                     dayLabel={dayLabel}
-                    onClose={() => { setSelectedVisitId(null); setMobileDrawerOpen(false); }}
-                    onEdit={() => { setEditingVisit(visit); setSelectedVisitId(null); setMobileDrawerOpen(false); }}
+                    onClose={() => {
+                      setSelectedVisitId(null);
+                      setMobileDrawerOpen(false);
+                    }}
+                    onEdit={() => {
+                      setEditingVisit(visit);
+                      setSelectedVisitId(null);
+                      setMobileDrawerOpen(false);
+                    }}
                     onUnschedule={() => {
                       updateSelectedStay((stay) => ({
                         ...stay,
-                        visits: stay.visits.map((v) => v.id === visit.id ? { ...v, dayOffset: null, dayPart: null } : v),
+                        visits: stay.visits.map((v) =>
+                          v.id === visit.id ? { ...v, dayOffset: null, dayPart: null } : v,
+                        ),
                       }));
-                      setSelectedVisitId(null); setMobileDrawerOpen(false);
+                      setSelectedVisitId(null);
+                      setMobileDrawerOpen(false);
                     }}
                     onDelete={() => {
-                      updateSelectedStay((stay) => ({ ...stay, visits: stay.visits.filter((v) => v.id !== visit.id) }));
-                      setSelectedVisitId(null); setMobileDrawerOpen(false);
+                      updateSelectedStay((stay) => ({
+                        ...stay,
+                        visits: stay.visits.filter((v) => v.id !== visit.id),
+                      }));
+                      setSelectedVisitId(null);
+                      setMobileDrawerOpen(false);
                     }}
                     onUpdateVisit={(updates) => {
                       updateSelectedStay((stay) => ({
                         ...stay,
-                        visits: stay.visits.map((v) => v.id === visit.id ? { ...v, ...updates } : v),
+                        visits: stay.visits.map((v) =>
+                          v.id === visit.id ? { ...v, ...updates } : v,
+                        ),
                       }));
                     }}
                   />
                 );
               })()}
-              {/* Unplanned list — shown when no visit is selected */}
-              {!selectedVisitId && (
-                <>
-                  {/* Stay to-do */}
-                  {selectedStay && (
-                    <StayTodoSection
-                      key={selectedStay.id}
-                      stay={selectedStay}
-                      onUpdate={(cl) => updateSelectedStay((s) => ({ ...s, checklist: cl.length > 0 ? cl : undefined }))}
+            {/* Unplanned list — shown when no visit is selected */}
+            {!selectedVisitId && (
+              <>
+                {/* Stay to-do */}
+                {selectedStay && (
+                  <StayTodoSection
+                    key={selectedStay.id}
+                    stay={selectedStay}
+                    onUpdate={(cl) =>
+                      updateSelectedStay((s) => ({
+                        ...s,
+                        checklist: cl.length > 0 ? cl : undefined,
+                      }))
+                    }
+                  />
+                )}
+                {/* Items */}
+                <div className="flex-1 overflow-y-auto p-4 pb-safe space-y-3 scroll-hide">
+                  {inboxVisits.map((v) => (
+                    <DraggableInventoryCard
+                      key={v.id}
+                      visit={v}
+                      onEdit={() => setEditingVisit(v)}
                     />
-                  )}
-                  {/* Items */}
-                  <div className="flex-1 overflow-y-auto p-4 pb-safe space-y-3 scroll-hide">
-                    {inboxVisits.map((v) => (
-                      <DraggableInventoryCard key={v.id} visit={v} onEdit={() => setEditingVisit(v)} />
-                    ))}
-                    {inboxVisits.length === 0 && (
-                      <div className="flex flex-col items-center justify-center py-8 gap-2">
-                        <div className="size-9 rounded-xl bg-slate-100 flex items-center justify-center">
-                          {selectedStay ? <Check className="w-4 h-4 text-emerald-500" /> : <Compass className="w-4 h-4 text-slate-400" />}
-                        </div>
-                        <p className="text-[11px] font-bold text-slate-500">
-                          {selectedStay ? 'All scheduled!' : 'No stay selected'}
-                        </p>
-                        <p className="text-[11px] text-slate-400 text-center">
-                          {selectedStay ? 'Add more with the + button.' : 'Tap a destination on the timeline.'}
-                        </p>
+                  ))}
+                  {inboxVisits.length === 0 && (
+                    <div className="flex flex-col items-center justify-center py-8 gap-2">
+                      <div className="size-9 rounded-xl bg-slate-100 flex items-center justify-center">
+                        {selectedStay ? (
+                          <Check className="w-4 h-4 text-emerald-500" />
+                        ) : (
+                          <Compass className="w-4 h-4 text-slate-400" />
+                        )}
                       </div>
-                    )}
-                  </div>
-                </>
-              )}
-          </div>
-        )}
+                      <p className="text-[11px] font-bold text-slate-500">
+                        {selectedStay ? 'All scheduled!' : 'No stay selected'}
+                      </p>
+                      <p className="text-[11px] text-slate-400 text-center">
+                        {selectedStay
+                          ? 'Add more with the + button.'
+                          : 'Tap a destination on the timeline.'}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+          </SheetContent>
+        </Sheet>
 
         {/* ── Footer ── */}
         <footer className="hidden md:flex bg-white text-slate-500 px-6 py-1.5 text-[11px] font-bold justify-between items-center border-t border-border-neutral flex-shrink-0">
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-2">
-              <div className={`size-1.5 rounded-full ${
-                syncStatus === 'saved' ? 'bg-emerald-500' :
-                syncStatus === 'saving' ? 'bg-amber-400 animate-pulse' :
-                syncStatus === 'error' ? 'bg-red-500' :
-                'bg-slate-400'
-              }`} />
+              <div
+                className={`size-1.5 rounded-full ${
+                  syncStatus === 'saved'
+                    ? 'bg-emerald-500'
+                    : syncStatus === 'saving'
+                      ? 'bg-amber-400 animate-pulse'
+                      : syncStatus === 'error'
+                        ? 'bg-red-500'
+                        : 'bg-slate-400'
+                }`}
+              />
               <span className="uppercase tracking-widest text-slate-400">
-                {syncStatus === 'saved' ? 'Synced' :
-                 syncStatus === 'saving' ? 'Saving…' :
-                 syncStatus === 'error' ? 'Sync error' :
-                 'Local only'}
+                {syncStatus === 'saved'
+                  ? 'Synced'
+                  : syncStatus === 'saving'
+                    ? 'Saving…'
+                    : syncStatus === 'error'
+                      ? 'Sync error'
+                      : 'Local only'}
               </span>
             </div>
             <div className="flex items-center gap-2 text-slate-400">
@@ -1816,20 +2475,23 @@ function ChronosApp() {
             </div>
           </div>
           <div className="flex items-center gap-4 tracking-widest text-slate-400">
-            <span>{trip.totalDays} DAYS · {sortedStays.length} STAYS</span>
+            <span>
+              {trip.totalDays} DAYS · {sortedStays.length} STAYS
+            </span>
           </div>
         </footer>
 
         {/* ── Drag overlay ── */}
         <DragOverlay>
-          {(activeInboxVisit ?? activeScheduledVisit) && (() => {
-            const v = activeInboxVisit ?? activeScheduledVisit!;
-            return (
-              <div className="p-3 bg-white rounded-lg border border-primary shadow-xl opacity-90 w-56 pointer-events-none">
-                <p className="text-xs font-bold text-slate-800">{v.name}</p>
-              </div>
-            );
-          })()}
+          {(activeInboxVisit ?? activeScheduledVisit) &&
+            (() => {
+              const v = activeInboxVisit ?? activeScheduledVisit!;
+              return (
+                <div className="p-3 bg-white rounded-lg border border-primary shadow-xl opacity-90 w-56 pointer-events-none">
+                  <p className="text-xs font-bold text-slate-800">{v.name}</p>
+                </div>
+              );
+            })()}
         </DragOverlay>
 
         {/* ── Modals ── */}
@@ -1837,15 +2499,21 @@ function ChronosApp() {
         {/* Route editor */}
         {editingRouteStay && editingRouteNextStay && (
           <RouteEditorModal
-            stay={editingRouteStay} nextStay={editingRouteNextStay}
+            stay={editingRouteStay}
+            nextStay={editingRouteNextStay}
             onClose={() => setEditingRouteStayId(null)}
             onSave={(mode, duration, notes) => {
               setTrip((t) => ({
                 ...t,
                 stays: t.stays.map((s) =>
                   s.id === editingRouteStay.id
-                    ? { ...s, travelModeToNext: mode, travelDurationToNext: duration, travelNotesToNext: notes }
-                    : s
+                    ? {
+                        ...s,
+                        travelModeToNext: mode,
+                        travelDurationToNext: duration,
+                        travelNotesToNext: notes,
+                      }
+                    : s,
                 ),
               }));
             }}
@@ -1853,39 +2521,52 @@ function ChronosApp() {
         )}
 
         {/* Stay editor */}
-        {editingStayId && (() => {
-          const stay = trip.stays.find((s) => s.id === editingStayId);
-          if (!stay) return null;
-          return (
-            <StayEditorModal
-              stay={stay}
-              onClose={() => setEditingStayId(null)}
-              onSave={(updates) => {
-                setTrip((t) => ({ ...t, stays: t.stays.map((s) => s.id === editingStayId ? { ...s, ...updates } : s) }));
-              }}
-              onDelete={() => {
-                setTrip((t) => ({ ...t, stays: t.stays.filter((s) => s.id !== editingStayId) }));
-                setSelectedStayId(trip.stays[0]?.id ?? '');
-              }}
-            />
-          );
-        })()}
+        {editingStayId &&
+          (() => {
+            const stay = trip.stays.find((s) => s.id === editingStayId);
+            if (!stay) return null;
+            return (
+              <StayEditorModal
+                stay={stay}
+                onClose={() => setEditingStayId(null)}
+                onSave={(updates) => {
+                  setTrip((t) => ({
+                    ...t,
+                    stays: t.stays.map((s) => (s.id === editingStayId ? { ...s, ...updates } : s)),
+                  }));
+                }}
+                onDelete={() => {
+                  setTrip((t) => ({ ...t, stays: t.stays.filter((s) => s.id !== editingStayId) }));
+                  setSelectedStayId(trip.stays[0]?.id ?? '');
+                }}
+              />
+            );
+          })()}
 
         {/* Add stay */}
         {addingStay && (
           <AddStayModal
-            onClose={() => { setAddingStay(false); setPendingTimelineSlot(null); }}
+            onClose={() => {
+              setAddingStay(false);
+              setPendingTimelineSlot(null);
+            }}
             stayColor={STAY_COLORS[trip.stays.length % STAY_COLORS.length]}
             initialDays={pendingTimelineSlot?.days}
             onSave={({ name, days, lat, lng }) => {
-              const startSlot = pendingTimelineSlot?.startSlot
-                ?? (sortedStays.length > 0 ? sortedStays[sortedStays.length - 1].endSlot : 0);
+              const startSlot =
+                pendingTimelineSlot?.startSlot ??
+                (sortedStays.length > 0 ? sortedStays[sortedStays.length - 1].endSlot : 0);
               const newStay: Stay = {
-                id: `stay-${Date.now()}`, name,
+                id: `stay-${Date.now()}`,
+                name,
                 color: STAY_COLORS[trip.stays.length % STAY_COLORS.length],
-                startSlot, endSlot: Math.min(startSlot + days * 3, trip.totalDays * 3),
-                centerLat: lat ?? jitter(35.6762, 5), centerLng: lng ?? jitter(139.6503, 5),
-                lodging: '', travelModeToNext: 'train', visits: [],
+                startSlot,
+                endSlot: Math.min(startSlot + days * 3, trip.totalDays * 3),
+                centerLat: lat ?? jitter(35.6762, 5),
+                centerLng: lng ?? jitter(139.6503, 5),
+                lodging: '',
+                travelModeToNext: 'train',
+                visits: [],
               };
               setTrip((t) => ({ ...t, stays: [...t.stays, newStay] }));
               setSelectedStayId(newStay.id);
@@ -1896,71 +2577,80 @@ function ChronosApp() {
         )}
 
         {/* Edit / Add accommodation */}
-        {editingAccommodation && selectedStay && (() => {
-          const isGroup = 'group' in editingAccommodation;
-          const group = isGroup ? editingAccommodation.group : undefined;
-          const dayOffset = isGroup ? editingAccommodation.group.startDayOffset : editingAccommodation.dayOffset;
-          const nightCount = group ? group.nights : 1;
-          const initial = group ? group.accommodation : undefined;
-          const initialNights = Array.from({ length: nightCount }, (_, i) => dayOffset + i);
-          const allNights = stayDays.filter((d) => d.hasNight).map((d) => ({ dayOffset: d.dayOffset, date: d.date }));
+        {editingAccommodation &&
+          selectedStay &&
+          (() => {
+            const isGroup = 'group' in editingAccommodation;
+            const group = isGroup ? editingAccommodation.group : undefined;
+            const dayOffset = isGroup
+              ? editingAccommodation.group.startDayOffset
+              : editingAccommodation.dayOffset;
+            const nightCount = group ? group.nights : 1;
+            const initial = group ? group.accommodation : undefined;
+            const initialNights = Array.from({ length: nightCount }, (_, i) => dayOffset + i);
+            const allNights = stayDays
+              .filter((d) => d.hasNight)
+              .map((d) => ({ dayOffset: d.dayOffset, date: d.date }));
 
-          const handleSave = (accom: NightAccommodation, newNights: number[]) => {
-            setTrip((curr) => ({
-              ...curr,
-              stays: curr.stays.map((s) => {
-                if (s.id !== selectedStay.id) return s;
-                const updated = { ...s.nightAccommodations };
-                // Remove from nights that were in the old group but not the new selection
-                for (const n of initialNights) {
-                  if (!newNights.includes(n)) delete updated[n];
-                }
-                // Apply to newly selected nights
-                for (const n of newNights) {
-                  updated[n] = accom;
-                }
-                // Clear lodging if it matches — prevents fallback re-appearing
-                const clearLodging = s.lodging === accom.name || (group && s.lodging === group.name);
-                return {
-                  ...s,
-                  lodging: clearLodging ? '' : s.lodging,
-                  nightAccommodations: Object.keys(updated).length > 0 ? updated : undefined,
-                };
-              }),
-            }));
-          };
+            const handleSave = (accom: NightAccommodation, newNights: number[]) => {
+              setTrip((curr) => ({
+                ...curr,
+                stays: curr.stays.map((s) => {
+                  if (s.id !== selectedStay.id) return s;
+                  const updated = { ...s.nightAccommodations };
+                  // Remove from nights that were in the old group but not the new selection
+                  for (const n of initialNights) {
+                    if (!newNights.includes(n)) delete updated[n];
+                  }
+                  // Apply to newly selected nights
+                  for (const n of newNights) {
+                    updated[n] = accom;
+                  }
+                  // Clear lodging if it matches — prevents fallback re-appearing
+                  const clearLodging =
+                    s.lodging === accom.name || (group && s.lodging === group.name);
+                  return {
+                    ...s,
+                    lodging: clearLodging ? '' : s.lodging,
+                    nightAccommodations: Object.keys(updated).length > 0 ? updated : undefined,
+                  };
+                }),
+              }));
+            };
 
-          const handleRemove = group ? () => {
-            setTrip((curr) => ({
-              ...curr,
-              stays: curr.stays.map((s) => {
-                if (s.id !== selectedStay.id) return s;
-                const updated = { ...s.nightAccommodations };
-                for (let i = 0; i < nightCount; i++) {
-                  delete updated[dayOffset + i];
+            const handleRemove = group
+              ? () => {
+                  setTrip((curr) => ({
+                    ...curr,
+                    stays: curr.stays.map((s) => {
+                      if (s.id !== selectedStay.id) return s;
+                      const updated = { ...s.nightAccommodations };
+                      for (let i = 0; i < nightCount; i++) {
+                        delete updated[dayOffset + i];
+                      }
+                      const clearLodging = s.lodging === group.name;
+                      return {
+                        ...s,
+                        lodging: clearLodging ? '' : s.lodging,
+                        nightAccommodations: Object.keys(updated).length > 0 ? updated : undefined,
+                      };
+                    }),
+                  }));
                 }
-                const clearLodging = s.lodging === group.name;
-                return {
-                  ...s,
-                  lodging: clearLodging ? '' : s.lodging,
-                  nightAccommodations: Object.keys(updated).length > 0 ? updated : undefined,
-                };
-              }),
-            }));
-          } : undefined;
+              : undefined;
 
-          return (
-            <AccommodationEditorModal
-              initial={initial}
-              allNights={allNights}
-              initialNights={initialNights}
-              existingNames={existingAccommodationNames}
-              onClose={() => setEditingAccommodation(null)}
-              onSave={handleSave}
-              onRemove={handleRemove}
-            />
-          );
-        })()}
+            return (
+              <AccommodationEditorModal
+                initial={initial}
+                allNights={allNights}
+                initialNights={initialNights}
+                existingNames={existingAccommodationNames}
+                onClose={() => setEditingAccommodation(null)}
+                onSave={handleSave}
+                onRemove={handleRemove}
+              />
+            );
+          })()}
 
         {/* Add visit to inbox */}
         {addingToInbox && selectedStay && (
@@ -1970,13 +2660,21 @@ function ChronosApp() {
             onSave={({ name, type, durationHint, lat, lng }) => {
               updateSelectedStay((stay) => ({
                 ...stay,
-                visits: [...stay.visits, createVisit(
-                  `visit-${Date.now()}`, name, type, '',
-                  lat ?? jitter(stay.centerLat, 0.08), lng ?? jitter(stay.centerLng, 0.08),
-                  null, null,
-                  stay.visits.filter((v) => v.dayOffset === null || v.dayPart === null).length,
-                  durationHint || undefined,
-                )],
+                visits: [
+                  ...stay.visits,
+                  createVisit(
+                    `visit-${Date.now()}`,
+                    name,
+                    type,
+                    '',
+                    lat ?? jitter(stay.centerLat, 0.08),
+                    lng ?? jitter(stay.centerLng, 0.08),
+                    null,
+                    null,
+                    stay.visits.filter((v) => v.dayOffset === null || v.dayPart === null).length,
+                    durationHint || undefined,
+                  ),
+                ],
               }));
             }}
           />
@@ -1994,14 +2692,24 @@ function ChronosApp() {
               ).length;
               updateSelectedStay((stay) => ({
                 ...stay,
-                visits: [...stay.visits, {
-                  ...createVisit(
-                    `visit-${Date.now()}`, name, type, '',
-                    lat ?? jitter(stay.centerLat, 0.05), lng ?? jitter(stay.centerLng, 0.05),
-                    dayOffset, part, bucketSize, durationHint || undefined,
-                  ),
-                  notes,
-                }],
+                visits: [
+                  ...stay.visits,
+                  {
+                    ...createVisit(
+                      `visit-${Date.now()}`,
+                      name,
+                      type,
+                      '',
+                      lat ?? jitter(stay.centerLat, 0.05),
+                      lng ?? jitter(stay.centerLng, 0.05),
+                      dayOffset,
+                      part,
+                      bucketSize,
+                      durationHint || undefined,
+                    ),
+                    notes,
+                  },
+                ],
               }));
             }}
           />
@@ -2017,11 +2725,17 @@ function ChronosApp() {
               updateSelectedStay((stay) => ({
                 ...stay,
                 visits: stay.visits.map((v) =>
-                  v.id === editingVisit.id ? {
-                    ...v, name, type, durationHint: durationHint || undefined, notes,
-                    checklist: checklist.length > 0 ? checklist : undefined,
-                    links: links.length > 0 ? links : undefined,
-                  } : v
+                  v.id === editingVisit.id
+                    ? {
+                        ...v,
+                        name,
+                        type,
+                        durationHint: durationHint || undefined,
+                        notes,
+                        checklist: checklist.length > 0 ? checklist : undefined,
+                        links: links.length > 0 ? links : undefined,
+                      }
+                    : v,
                 ),
               }));
             }}
@@ -2051,7 +2765,8 @@ function ChronosApp() {
                 setStore((s) => {
                   const remaining = s.trips.filter((t) => t.id !== trip.id);
                   const next = { trips: remaining, activeTripId: remaining[0].id };
-                  saveStore(next); return next;
+                  saveStore(next);
+                  return next;
                 });
                 setSelectedStayId('');
               } else {
@@ -2131,7 +2846,9 @@ export default function App() {
   return (
     <ChronosErrorBoundary>
       <AuthProvider>
-        <ChronosApp />
+        <TooltipProvider delayDuration={300}>
+          <ChronosApp />
+        </TooltipProvider>
       </AuthProvider>
     </ChronosErrorBoundary>
   );

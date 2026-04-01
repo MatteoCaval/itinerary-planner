@@ -1,12 +1,26 @@
 import { describe, expect, it } from 'vitest';
-import { deriveAccommodationGroups, deriveStayDays, getOverlapIds, getStayNightCount, isSlotRangeEmpty } from '../stayLogic';
+import {
+  deriveAccommodationGroups,
+  deriveStayDays,
+  getOverlapIds,
+  getStayNightCount,
+  isSlotRangeEmpty,
+} from '../stayLogic';
 import type { HybridTrip, Stay } from '../types';
 
 function makeStay(overrides: Partial<Stay> = {}): Stay {
   return {
-    id: 's1', name: 'Test', color: '#000', startSlot: 0, endSlot: 9,
-    centerLat: 0, centerLng: 0, lodging: 'Hotel', travelModeToNext: 'train',
-    visits: [], ...overrides,
+    id: 's1',
+    name: 'Test',
+    color: '#000',
+    startSlot: 0,
+    endSlot: 9,
+    centerLat: 0,
+    centerLng: 0,
+    lodging: 'Hotel',
+    travelModeToNext: 'train',
+    visits: [],
+    ...overrides,
   };
 }
 
@@ -28,11 +42,17 @@ describe('getStayNightCount', () => {
 
 describe('getOverlapIds', () => {
   it('returns empty set when no overlaps', () => {
-    const stays = [makeStay({ id: 'a', startSlot: 0, endSlot: 3 }), makeStay({ id: 'b', startSlot: 3, endSlot: 6 })];
+    const stays = [
+      makeStay({ id: 'a', startSlot: 0, endSlot: 3 }),
+      makeStay({ id: 'b', startSlot: 3, endSlot: 6 }),
+    ];
     expect(getOverlapIds(stays).size).toBe(0);
   });
   it('detects overlapping stays', () => {
-    const stays = [makeStay({ id: 'a', startSlot: 0, endSlot: 5 }), makeStay({ id: 'b', startSlot: 3, endSlot: 9 })];
+    const stays = [
+      makeStay({ id: 'a', startSlot: 0, endSlot: 5 }),
+      makeStay({ id: 'b', startSlot: 3, endSlot: 9 }),
+    ];
     const overlaps = getOverlapIds(stays);
     expect(overlaps.has('a')).toBe(true);
     expect(overlaps.has('b')).toBe(true);
@@ -93,7 +113,9 @@ describe('deriveStayDays', () => {
   it('uses explicit nightAccommodations when set', () => {
     const trip = makeTrip();
     const stay = makeStay({
-      startSlot: 0, endSlot: 9, lodging: 'Default',
+      startSlot: 0,
+      endSlot: 9,
+      lodging: 'Default',
       nightAccommodations: { 0: { name: 'Night 1 Hotel' }, 1: { name: 'Night 2 Hotel' } },
     });
     const days = deriveStayDays(trip, stay);
@@ -116,7 +138,8 @@ describe('deriveAccommodationGroups', () => {
   it('splits into multiple groups for different accommodations', () => {
     const trip = makeTrip();
     const stay = makeStay({
-      startSlot: 0, endSlot: 9,
+      startSlot: 0,
+      endSlot: 9,
       nightAccommodations: { 0: { name: 'Hotel A' }, 1: { name: 'Hotel B' } },
     });
     const days = deriveStayDays(trip, stay);

@@ -19,6 +19,7 @@ npm run format:check # Prettier check
 ```
 
 To run a single test file:
+
 ```bash
 npx vitest run src/hooks/useImportExport.test.ts
 ```
@@ -28,15 +29,18 @@ Tests use jsdom + Testing Library. Setup file: `src/test/setup.ts`.
 ## Architecture
 
 ### CHRONOS app (`src/App.tsx`)
+
 The main UI component (~4800 lines). Types and business logic are imported from the domain layer.
 
 **Data model:**
+
 - `HybridTrip` → `Stay[]` → `VisitItem[]`
 - Stays = timeline blocks (colored, cover a span of `startSlot`–`endSlot` on the timeline)
 - Visits with `dayOffset !== null` = scheduled activities rendered in day columns
 - Visits with `dayOffset === null` = inbox/unscheduled (left sidebar)
 
 ### Domain layer (`src/domain/`) — pure business logic
+
 ```
 types.ts              # All data model types (HybridTrip, Stay, VisitItem, legacy types)
 constants.ts          # DAY_PARTS, STAY_COLORS, VISIT_TYPES, etc.
@@ -50,9 +54,11 @@ tripMutations.ts      # extendTripBefore/After, applyTimelineDrag, adjustStaysFo
 sampleData.ts         # createSampleTrip (Japan demo)
 __tests__/            # 36 unit tests
 ```
+
 Zero React dependencies. All functions are pure and unit-testable. App.tsx imports from this layer.
 
 ### Supporting files
+
 ```
 src/context/
   AuthContext.tsx       # Firebase auth provider
@@ -95,5 +101,6 @@ When implementing or modifying any UI feature, don't just code what's literally 
 ## Optional Integrations (env vars)
 
 All optional — app works without them:
+
 - `VITE_UNSPLASH_ACCESS_KEY` — destination photos
 - `VITE_FIREBASE_*` — cloud sync (API key, auth domain, database URL, project ID, storage bucket, messaging sender ID, app ID)

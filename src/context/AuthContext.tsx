@@ -1,4 +1,12 @@
-import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import {
+  createContext,
+  ReactNode,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 import type { User } from 'firebase/auth';
 import { getFirebaseAuth } from '../firebase';
 import { trackError } from '../services/telemetry';
@@ -37,9 +45,10 @@ const defaultAuthContext: AuthContextType = {
 const AuthContext = createContext<AuthContextType>(defaultAuthContext);
 
 const formatAuthError = (error: unknown): string => {
-  const firebaseCode = typeof error === 'object' && error !== null && 'code' in error
-    ? String((error as { code?: string }).code || '')
-    : '';
+  const firebaseCode =
+    typeof error === 'object' && error !== null && 'code' in error
+      ? String((error as { code?: string }).code || '')
+      : '';
 
   switch (firebaseCode) {
     case 'auth/invalid-email':
@@ -168,10 +177,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!ENABLE_ACCOUNT_AUTH) return unavailableResult;
 
     try {
-      const [{ signOut }, auth] = await Promise.all([
-        import('firebase/auth'),
-        getFirebaseAuth(),
-      ]);
+      const [{ signOut }, auth] = await Promise.all([import('firebase/auth'), getFirebaseAuth()]);
 
       await signOut(auth);
       return { success: true };
@@ -181,20 +187,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const value = useMemo<AuthContextType>(() => ({
-    user,
-    isLoading,
-    signIn,
-    signInWithGoogle,
-    signUp,
-    signOutUser,
-  }), [user, isLoading, signIn, signInWithGoogle, signUp, signOutUser]);
-
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
+  const value = useMemo<AuthContextType>(
+    () => ({
+      user,
+      isLoading,
+      signIn,
+      signInWithGoogle,
+      signUp,
+      signOutUser,
+    }),
+    [user, isLoading, signIn, signInWithGoogle, signUp, signOutUser],
   );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 // eslint-disable-next-line react-refresh/only-export-components

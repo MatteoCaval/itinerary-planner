@@ -32,9 +32,7 @@ describe('searchPlace', () => {
   });
 
   it('returns results from Nominatim API', async () => {
-    const mockResults = [
-      { place_id: 1, display_name: 'Paris, France', lat: '48.85', lon: '2.35' },
-    ];
+    const mockResults = [{ place_id: 1, display_name: 'Paris, France', lat: '48.85', lon: '2.35' }];
     mockFetchJson.mockResolvedValueOnce(mockResults);
 
     const result = await searchPlace('Paris');

@@ -1,18 +1,36 @@
 import { useState } from 'react';
 import { Download, Check, AlertCircle, Search } from 'lucide-react';
-import { HybridTrip, LegacyStoredTrip, LegacyDay, LegacyLocation, LegacyRoute } from '@/domain/types';
+import {
+  HybridTrip,
+  LegacyStoredTrip,
+  LegacyDay,
+  LegacyLocation,
+  LegacyRoute,
+} from '@/domain/types';
 import { normalizeTrip, legacyTripToHybrid } from '@/domain/migration';
 import { loadItinerary } from '@/firebase';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 
-function ImportFromCodeDialog({ onImport, onClose }: {
+function ImportFromCodeDialog({
+  onImport,
+  onClose,
+}: {
   onImport: (trip: HybridTrip) => void;
   onClose: () => void;
 }) {
   const [code, setCode] = useState(() => localStorage.getItem('last-trip-passcode') ?? '');
-  const [status, setStatus] = useState<{ type: 'success' | 'error' | 'loading'; message: string } | null>(null);
+  const [status, setStatus] = useState<{
+    type: 'success' | 'error' | 'loading';
+    message: string;
+  } | null>(null);
 
   const handleLoad = async () => {
     const trimmed = code.trim();
@@ -72,16 +90,25 @@ function ImportFromCodeDialog({ onImport, onClose }: {
   };
 
   return (
-    <Dialog open onOpenChange={(open) => { if (!open) onClose(); }}>
+    <Dialog
+      open
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+    >
       <DialogContent className="sm:max-w-sm p-5">
-        <DialogDescription className="sr-only">Import a trip by entering a share code</DialogDescription>
+        <DialogDescription className="sr-only">
+          Import a trip by entering a share code
+        </DialogDescription>
         <DialogHeader>
           <div className="flex items-start gap-3">
             <div className="size-9 rounded-xl bg-violet-50 flex items-center justify-center flex-shrink-0 mt-0.5">
               <Download className="w-4 h-4 text-violet-500" />
             </div>
             <div>
-              <DialogTitle className="font-extrabold text-slate-800 text-sm">Import from code</DialogTitle>
+              <DialogTitle className="font-extrabold text-slate-800 text-sm">
+                Import from code
+              </DialogTitle>
               <p className="text-xs text-slate-500 mt-1 leading-relaxed">
                 Enter a share code to import a trip. It will be added as a new trip.
               </p>
@@ -89,25 +116,41 @@ function ImportFromCodeDialog({ onImport, onClose }: {
           </div>
         </DialogHeader>
 
-        <form onSubmit={(e) => { e.preventDefault(); handleLoad(); }}>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleLoad();
+          }}
+        >
           <Input
             type="text"
             value={code}
-            onChange={(e) => { setCode(e.target.value.toUpperCase()); setStatus(null); }}
+            onChange={(e) => {
+              setCode(e.target.value.toUpperCase());
+              setStatus(null);
+            }}
             placeholder="e.g. TRIP-ABCD"
             className="w-full px-3 py-2.5 text-sm font-mono font-bold text-center tracking-widest placeholder:tracking-normal placeholder:font-normal"
             autoFocus
           />
 
           {status && (
-            <div className={`mt-3 flex items-center gap-2 text-xs px-3 py-2 rounded-lg ${
-              status.type === 'success' ? 'bg-emerald-50 text-emerald-700' :
-              status.type === 'error' ? 'bg-red-50 text-red-600' :
-              'bg-blue-50 text-blue-600'
-            }`}>
-              {status.type === 'success' ? <Check className="w-3.5 h-3.5" /> :
-               status.type === 'error' ? <AlertCircle className="w-3.5 h-3.5" /> :
-               <Search className="w-3.5 h-3.5 animate-spin" />}
+            <div
+              className={`mt-3 flex items-center gap-2 text-xs px-3 py-2 rounded-lg ${
+                status.type === 'success'
+                  ? 'bg-emerald-50 text-emerald-700'
+                  : status.type === 'error'
+                    ? 'bg-red-50 text-red-600'
+                    : 'bg-blue-50 text-blue-600'
+              }`}
+            >
+              {status.type === 'success' ? (
+                <Check className="w-3.5 h-3.5" />
+              ) : status.type === 'error' ? (
+                <AlertCircle className="w-3.5 h-3.5" />
+              ) : (
+                <Search className="w-3.5 h-3.5 animate-spin" />
+              )}
               {status.message}
             </div>
           )}

@@ -6,7 +6,12 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { searchPlace, PlaceSearchResult } from '@/utils/geocoding';
 
-function AddStayModal({ onClose, onSave, stayColor, initialDays }: {
+function AddStayModal({
+  onClose,
+  onSave,
+  stayColor,
+  initialDays,
+}: {
   onClose: () => void;
   stayColor: string;
   initialDays?: number;
@@ -21,26 +26,36 @@ function AddStayModal({ onClose, onSave, stayColor, initialDays }: {
   const [searchError, setSearchError] = useState(false);
 
   useEffect(() => {
-    if (!name.trim() || name.trim().length < 3 || pickedCoords) { setSearchResults([]); setSearchError(false); return; }
+    if (!name.trim() || name.trim().length < 3 || pickedCoords) {
+      setSearchResults([]);
+      setSearchError(false);
+      return;
+    }
     const controller = new AbortController();
     const tid = window.setTimeout(async () => {
-      setIsSearching(true); setSearchError(false);
+      setIsSearching(true);
+      setSearchError(false);
       try {
         const results = await searchPlace(name.trim(), { signal: controller.signal });
-        setSearchResults(results.slice(0, 6)); setShowResults(true);
+        setSearchResults(results.slice(0, 6));
+        setShowResults(true);
       } catch {
         if (!controller.signal.aborted) setSearchError(true);
       } finally {
         if (!controller.signal.aborted) setIsSearching(false);
       }
     }, 500);
-    return () => { clearTimeout(tid); controller.abort(); };
+    return () => {
+      clearTimeout(tid);
+      controller.abort();
+    };
   }, [name, pickedCoords]);
 
   const pickResult = (r: PlaceSearchResult) => {
     setName(r.display_name.split(',')[0].trim());
     setPickedCoords({ lat: parseFloat(r.lat), lng: parseFloat(r.lon) });
-    setSearchResults([]); setShowResults(false);
+    setSearchResults([]);
+    setShowResults(false);
   };
 
   const canSave = name.trim().length > 0;
@@ -48,7 +63,6 @@ function AddStayModal({ onClose, onSave, stayColor, initialDays }: {
   return (
     <ModalBase title="Add Destination" onClose={onClose}>
       <div className="space-y-5">
-
         {/* Destination search */}
         <div className="relative">
           <label className="text-[11px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 block">
@@ -60,7 +74,10 @@ function AddStayModal({ onClose, onSave, stayColor, initialDays }: {
               className="pl-9 pr-9 text-xs font-semibold placeholder:font-normal"
               placeholder="e.g. Tokyo, Kyoto, Paris…"
               value={name}
-              onChange={(e) => { setName(e.target.value); setPickedCoords(null); }}
+              onChange={(e) => {
+                setName(e.target.value);
+                setPickedCoords(null);
+              }}
               onFocus={() => searchResults.length > 0 && setShowResults(true)}
               autoFocus
             />
@@ -78,13 +95,19 @@ function AddStayModal({ onClose, onSave, stayColor, initialDays }: {
               {searchResults.map((r) => {
                 const parts = r.display_name.split(',');
                 return (
-                  <button key={r.place_id} onClick={() => pickResult(r)}
+                  <button
+                    key={r.place_id}
+                    onClick={() => pickResult(r)}
                     className="w-full text-left px-3 py-2.5 hover:bg-primary/5 border-b last:border-b-0 border-slate-100 flex items-start gap-2 transition-colors"
                   >
                     <MapPin className="w-3.5 h-3.5 text-slate-400 flex-shrink-0 mt-0.5" />
                     <div className="min-w-0">
-                      <p className="text-xs font-semibold text-slate-800 truncate">{parts[0].trim()}</p>
-                      <p className="text-[11px] text-slate-500 truncate">{parts.slice(1, 4).join(',').trim()}</p>
+                      <p className="text-xs font-semibold text-slate-800 truncate">
+                        {parts[0].trim()}
+                      </p>
+                      <p className="text-[11px] text-slate-500 truncate">
+                        {parts.slice(1, 4).join(',').trim()}
+                      </p>
                     </div>
                   </button>
                 );
@@ -92,7 +115,9 @@ function AddStayModal({ onClose, onSave, stayColor, initialDays }: {
             </div>
           )}
           {searchError && (
-            <p className="text-[11px] text-red-500 font-medium mt-1">Search failed — you can still save with a manual name.</p>
+            <p className="text-[11px] text-red-500 font-medium mt-1">
+              Search failed — you can still save with a manual name.
+            </p>
           )}
         </div>
 
@@ -109,7 +134,9 @@ function AddStayModal({ onClose, onSave, stayColor, initialDays }: {
               >
                 −
               </button>
-              <span className="w-10 text-center font-extrabold text-sm text-slate-800 tabular-nums">{days}</span>
+              <span className="w-10 text-center font-extrabold text-sm text-slate-800 tabular-nums">
+                {days}
+              </span>
               <button
                 onClick={() => setDays((d) => Math.min(90, d + 1))}
                 className="w-11 h-11 flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-50 text-xl font-light transition-colors"
@@ -125,11 +152,18 @@ function AddStayModal({ onClose, onSave, stayColor, initialDays }: {
         <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-slate-100 bg-slate-50/60">
           <div className="w-2 h-8 rounded-full flex-shrink-0" style={{ background: stayColor }} />
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-extrabold text-slate-800 truncate">{name || 'New destination'}</p>
-            <p className="text-[11px] text-slate-400 font-medium mt-0.5">{days} {days === 1 ? 'day' : 'days'} on the timeline</p>
+            <p className="text-xs font-extrabold text-slate-800 truncate">
+              {name || 'New destination'}
+            </p>
+            <p className="text-[11px] text-slate-400 font-medium mt-0.5">
+              {days} {days === 1 ? 'day' : 'days'} on the timeline
+            </p>
           </div>
           {pickedCoords && (
-            <Badge variant="outline" className="text-[9px] font-bold text-emerald-600 bg-emerald-50 border-emerald-100 flex-shrink-0">
+            <Badge
+              variant="outline"
+              className="text-[9px] font-bold text-emerald-600 bg-emerald-50 border-emerald-100 flex-shrink-0"
+            >
               Located
             </Badge>
           )}
@@ -143,7 +177,10 @@ function AddStayModal({ onClose, onSave, stayColor, initialDays }: {
           <Button
             size="sm"
             className="flex-1"
-            onClick={() => canSave && onSave({ name: name.trim(), days, lat: pickedCoords?.lat, lng: pickedCoords?.lng })}
+            onClick={() =>
+              canSave &&
+              onSave({ name: name.trim(), days, lat: pickedCoords?.lat, lng: pickedCoords?.lng })
+            }
             disabled={!canSave}
           >
             Add to Timeline

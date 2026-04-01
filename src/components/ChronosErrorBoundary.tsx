@@ -9,7 +9,9 @@ export default class ChronosErrorBoundary extends Component<
     super(props);
     this.state = { error: null };
   }
-  static getDerivedStateFromError(error: Error) { return { error }; }
+  static getDerivedStateFromError(error: Error) {
+    return { error };
+  }
   componentDidCatch(error: Error, info: ErrorInfo) {
     console.error('[ChronosErrorBoundary]', error, info.componentStack);
   }
@@ -23,7 +25,9 @@ export default class ChronosErrorBoundary extends Component<
             </div>
             <div>
               <h2 className="text-base font-extrabold text-slate-800">Something went wrong</h2>
-              <p className="text-xs text-slate-500 mt-1 leading-relaxed">{this.state.error.message}</p>
+              <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                {this.state.error.message}
+              </p>
             </div>
             <div className="flex gap-3">
               <button

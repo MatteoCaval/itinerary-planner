@@ -64,14 +64,21 @@ const BASEMAPS: Record<BasemapMode, { url: string; attribution: string }> = {
   },
   english: {
     url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
-    attribution:
-      'Tiles &copy; Esri &mdash; Source: Esri, DeLorme, NAVTEQ',
+    attribution: 'Tiles &copy; Esri &mdash; Source: Esri, DeLorme, NAVTEQ',
   },
 };
 
 export default function TripMap({
-  visits, selectedVisitId, onSelectVisit, expanded, stay,
-  mode, overviewStays, onSelectStay, selectedDayOffset, highlightedStayId,
+  visits,
+  selectedVisitId,
+  onSelectVisit,
+  expanded,
+  stay,
+  mode,
+  overviewStays,
+  onSelectStay,
+  selectedDayOffset,
+  highlightedStayId,
 }: TripMapProps) {
   const [basemap, setBasemap] = useBasemapState();
   const [showArrows, setShowArrows] = useState(true);
@@ -141,11 +148,7 @@ export default function TripMap({
         className="w-full h-full"
         style={{ background: '#f1f5f9' }}
       >
-        <TileLayer
-          key={basemap}
-          attribution={activeBasemap.attribution}
-          url={activeBasemap.url}
-        />
+        <TileLayer key={basemap} attribution={activeBasemap.attribution} url={activeBasemap.url} />
         <ZoomControl position="bottomright" />
 
         {mode === 'overview' ? (

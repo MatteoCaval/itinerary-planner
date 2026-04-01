@@ -1,12 +1,40 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // Types inlined after legacy ./types removal — permissive to handle the legacy format
-type Day = { id: string; date: string; label?: string; accommodation?: { name: string; notes?: string } };
+type Day = {
+  id: string;
+  date: string;
+  label?: string;
+  accommodation?: { name: string; notes?: string };
+};
 type Location = any;
-type Route = { id: string; fromLocationId: string; toLocationId: string; transportType: string; duration?: string; cost?: number; notes?: string };
-const TRANSPORT_LABELS: Record<string, string> = { train: 'Train', flight: 'Flight', drive: 'Drive', ferry: 'Ferry', bus: 'Bus', walk: 'Walk', car: 'Car', other: 'Other' };
+type Route = {
+  id: string;
+  fromLocationId: string;
+  toLocationId: string;
+  transportType: string;
+  duration?: string;
+  cost?: number;
+  notes?: string;
+};
+const TRANSPORT_LABELS: Record<string, string> = {
+  train: 'Train',
+  flight: 'Flight',
+  drive: 'Drive',
+  ferry: 'Ferry',
+  bus: 'Bus',
+  walk: 'Walk',
+  car: 'Car',
+  other: 'Other',
+};
 import { getSectionIndex } from './constants/daySection';
 
-export const generateMarkdown = (days: Day[], locations: Location[], routes: Route[], startDate: string, endDate: string) => {
+export const generateMarkdown = (
+  days: Day[],
+  locations: Location[],
+  routes: Route[],
+  startDate: string,
+  endDate: string,
+) => {
   let md = `# Travel Itinerary\n`;
   md += `**Dates:** ${new Date(startDate).toLocaleDateString()} — ${new Date(endDate).toLocaleDateString()}\n\n`;
 
@@ -24,10 +52,10 @@ export const generateMarkdown = (days: Day[], locations: Location[], routes: Rou
     dayItems[dayId].push(item);
   };
 
-  locations.forEach(loc => {
+  locations.forEach((loc) => {
     const hasSubs = !!(loc.subLocations && loc.subLocations.length > 0);
     if (hasSubs) {
-      const parentStartIdx = days.findIndex(d => d.id === loc.startDayId);
+      const parentStartIdx = days.findIndex((d) => d.id === loc.startDayId);
       loc.subLocations!.forEach((sub: any) => {
         if (sub.dayOffset === undefined || parentStartIdx === -1) {
           pushItem(null, { location: sub, parent: loc });
@@ -51,19 +79,19 @@ export const generateMarkdown = (days: Day[], locations: Location[], routes: Rou
   };
 
   const getRouteTo = (toId: string) => {
-    return routes.find(r => r.toLocationId === toId);
+    return routes.find((r) => r.toLocationId === toId);
   };
 
   days.forEach((day, index) => {
     const dayLocs = sortItems(dayItems[day.id] || []);
-    const dateStr = new Date(day.date + 'T00:00:00').toLocaleDateString('en-US', { 
-        weekday: 'long', 
-        month: 'long', 
-        day: 'numeric' 
+    const dateStr = new Date(day.date + 'T00:00:00').toLocaleDateString('en-US', {
+      weekday: 'long',
+      month: 'long',
+      day: 'numeric',
     });
 
     md += `## Day ${index + 1}: ${dateStr}\n`;
-    
+
     if (day.accommodation?.name) {
       md += `🏠 **Staying at:** ${day.accommodation.name}\n`;
       if (day.accommodation.notes) md += `> ${day.accommodation.notes}\n`;
@@ -76,7 +104,7 @@ export const generateMarkdown = (days: Day[], locations: Location[], routes: Rou
     }
 
     const grouped: Record<string, { parent?: Location; items: ExportItem[] }> = {};
-    dayLocs.forEach(item => {
+    dayLocs.forEach((item) => {
       const key = item.parent ? item.parent.id : 'root';
       if (!grouped[key]) grouped[key] = { parent: item.parent, items: [] };
       grouped[key].items.push(item);
@@ -93,13 +121,13 @@ export const generateMarkdown = (days: Day[], locations: Location[], routes: Rou
 
       sortItems(group.items).forEach(({ location }) => {
         const route = getRouteTo(location.id);
-        
+
         if (route) {
           md += `  *Travel via ${TRANSPORT_LABELS[route.transportType]}${route.duration ? ` (${route.duration})` : ''}*\n`;
         }
 
         md += `### ${location.name} (${location.startSlot})\n`;
-        
+
         if (location.notes) {
           md += `${location.notes}\n\n`;
         }
@@ -156,7 +184,7 @@ export const downloadMarkdown = (md: string, filename: string) => {
   link.style.display = 'none';
   document.body.appendChild(link);
   link.click();
-  
+
   // Clean up after a small delay
   setTimeout(() => {
     document.body.removeChild(link);

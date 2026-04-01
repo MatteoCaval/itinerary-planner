@@ -45,13 +45,7 @@ const SingleSegment = React.memo(function SingleSegment({
   const color = isAccommodationSegment ? '#7c3aed' : '#94a3b8';
   return (
     <>
-      <Polyline
-        positions={positions}
-        color={color}
-        weight={3}
-        opacity={0.6}
-        dashArray="5, 10"
-      >
+      <Polyline positions={positions} color={color} weight={3} opacity={0.6} dashArray="5, 10">
         <Tooltip permanent={false} direction="center" className="route-tooltip">
           <div className="route-tooltip-content">
             {isAccommodationSegment ? 'Hotel route' : 'Walking route'}
@@ -161,7 +155,10 @@ export function RouteSegments({ visits, accommodation, showArrows }: RouteSegmen
         const positions: LatLngTuple[] =
           path && path.length > 1
             ? path
-            : [[segment.from.lat, segment.from.lng], [segment.to.lat, segment.to.lng]];
+            : [
+                [segment.from.lat, segment.from.lng],
+                [segment.to.lat, segment.to.lng],
+              ];
         return (
           <SingleSegment
             key={segment.key}

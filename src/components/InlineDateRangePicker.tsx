@@ -2,12 +2,16 @@ import { DayPicker, type DateRange } from 'react-day-picker';
 import { parse as fnsParse, format as fnsFormat } from 'date-fns';
 import { fmt } from '@/domain/dateUtils';
 
-export default function InlineDateRangePicker({ startDate, endDate, onChange }: {
+export default function InlineDateRangePicker({
+  startDate,
+  endDate,
+  onChange,
+}: {
   startDate: string;
   endDate: string;
   onChange: (start: string, end: string) => void;
 }) {
-  const parseDate = (s: string) => s ? fnsParse(s, 'yyyy-MM-dd', new Date()) : undefined;
+  const parseDate = (s: string) => (s ? fnsParse(s, 'yyyy-MM-dd', new Date()) : undefined);
   const formatDate = (d: Date) => fnsFormat(d, 'yyyy-MM-dd');
 
   const from = parseDate(startDate);
@@ -15,7 +19,10 @@ export default function InlineDateRangePicker({ startDate, endDate, onChange }: 
   const defaultMonth = from ?? new Date();
 
   const handleSelect = (range: DateRange | undefined) => {
-    if (!range) { onChange('', ''); return; }
+    if (!range) {
+      onChange('', '');
+      return;
+    }
     const newStart = range.from ? formatDate(range.from) : '';
     const newEnd = range.to ? formatDate(range.to) : '';
     onChange(newStart, newEnd);

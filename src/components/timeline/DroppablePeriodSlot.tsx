@@ -4,8 +4,18 @@ import { Sunrise, Sun, Moon, PlusCircle } from 'lucide-react';
 import type { DayPart, VisitItem } from '@/domain/types';
 import SortableVisitCard from '@/components/cards/SortableVisitCard';
 
-function DroppablePeriodSlot({ dayOffset, period, visits, selectedVisitId, onSelectVisit, onEditVisit, onAddVisit }: {
-  dayOffset: number; period: DayPart; visits: VisitItem[];
+function DroppablePeriodSlot({
+  dayOffset,
+  period,
+  visits,
+  selectedVisitId,
+  onSelectVisit,
+  onEditVisit,
+  onAddVisit,
+}: {
+  dayOffset: number;
+  period: DayPart;
+  visits: VisitItem[];
   selectedVisitId: string | null;
   onSelectVisit: (id: string) => void;
   onEditVisit: (v: VisitItem) => void;
@@ -16,16 +26,26 @@ function DroppablePeriodSlot({ dayOffset, period, visits, selectedVisitId, onSel
   const label = period === 'morning' ? 'Morning' : period === 'afternoon' ? 'Afternoon' : 'Evening';
 
   return (
-    <div ref={setNodeRef} aria-label={`${label} slot, day ${dayOffset + 1}`} className={`p-1.5 rounded-xl border transition-colors ${isOver ? 'bg-primary/5 border-primary/30' : 'bg-slate-200/40 border-slate-200/80'}`}>
+    <div
+      ref={setNodeRef}
+      aria-label={`${label} slot, day ${dayOffset + 1}`}
+      className={`p-1.5 rounded-xl border transition-colors ${isOver ? 'bg-primary/5 border-primary/30' : 'bg-slate-200/40 border-slate-200/80'}`}
+    >
       <div className="flex items-center gap-1.5 px-2 py-1.5 mb-1">
         <PeriodIcon className="w-3 h-3 text-slate-500" />
-        <span className="text-[9px] font-extrabold uppercase tracking-widest text-slate-500">{label}</span>
+        <span className="text-[9px] font-extrabold uppercase tracking-widest text-slate-500">
+          {label}
+        </span>
       </div>
       <div className="space-y-2">
-        <SortableContext items={visits.map((v) => `visit-${v.id}`)} strategy={verticalListSortingStrategy}>
+        <SortableContext
+          items={visits.map((v) => `visit-${v.id}`)}
+          strategy={verticalListSortingStrategy}
+        >
           {visits.map((v) => (
             <SortableVisitCard
-              key={v.id} visit={v}
+              key={v.id}
+              visit={v}
               isSelected={selectedVisitId === v.id}
               onSelect={() => onSelectVisit(v.id)}
               onEdit={() => onEditVisit(v)}

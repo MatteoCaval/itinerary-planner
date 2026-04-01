@@ -1,8 +1,23 @@
 import { Database } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 
-function MergeDialog({ localCount, cloudCount, cloudTripNames, localTripNames, onMerge, onKeepLocal, onUseCloud, onDismiss }: {
+function MergeDialog({
+  localCount,
+  cloudCount,
+  cloudTripNames,
+  localTripNames,
+  onMerge,
+  onKeepLocal,
+  onUseCloud,
+  onDismiss,
+}: {
   localCount: number;
   cloudCount: number;
   cloudTripNames: string[];
@@ -13,20 +28,29 @@ function MergeDialog({ localCount, cloudCount, cloudTripNames, localTripNames, o
   onDismiss: () => void;
 }) {
   return (
-    <Dialog open onOpenChange={(open) => { if (!open) onDismiss(); }}>
+    <Dialog
+      open
+      onOpenChange={(open) => {
+        if (!open) onDismiss();
+      }}
+    >
       <DialogContent className="sm:max-w-sm p-5">
-        <DialogDescription className="sr-only">Choose how to handle local and cloud trip data</DialogDescription>
+        <DialogDescription className="sr-only">
+          Choose how to handle local and cloud trip data
+        </DialogDescription>
         <DialogHeader>
           <div className="flex items-start gap-3">
             <div className="size-9 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
               <Database className="w-4 h-4 text-primary" />
             </div>
             <div>
-              <DialogTitle className="font-extrabold text-slate-800 text-sm">Trips found in your account</DialogTitle>
+              <DialogTitle className="font-extrabold text-slate-800 text-sm">
+                Trips found in your account
+              </DialogTitle>
               <p className="text-xs text-slate-500 mt-1 leading-relaxed">
                 You have <strong className="text-slate-700">{localCount} local</strong> and{' '}
-                <strong className="text-slate-700">{cloudCount} cloud</strong> trips.
-                What would you like to do?
+                <strong className="text-slate-700">{cloudCount} cloud</strong> trips. What would you
+                like to do?
               </p>
             </div>
           </div>
@@ -35,18 +59,26 @@ function MergeDialog({ localCount, cloudCount, cloudTripNames, localTripNames, o
         {/* Trip name lists */}
         <div className="grid grid-cols-2 gap-2 mb-4 text-[11px]">
           <div className="bg-slate-50 rounded-lg px-3 py-2">
-            <span className="font-bold text-slate-500 uppercase tracking-wide text-[11px]">Local</span>
+            <span className="font-bold text-slate-500 uppercase tracking-wide text-[11px]">
+              Local
+            </span>
             <ul className="mt-1 space-y-0.5">
               {localTripNames.map((name, i) => (
-                <li key={i} className="text-slate-700 truncate">{name || 'Untitled trip'}</li>
+                <li key={i} className="text-slate-700 truncate">
+                  {name || 'Untitled trip'}
+                </li>
               ))}
             </ul>
           </div>
           <div className="bg-primary/5 rounded-lg px-3 py-2">
-            <span className="font-bold text-primary/60 uppercase tracking-wide text-[11px]">Cloud</span>
+            <span className="font-bold text-primary/60 uppercase tracking-wide text-[11px]">
+              Cloud
+            </span>
             <ul className="mt-1 space-y-0.5">
               {cloudTripNames.map((name, i) => (
-                <li key={i} className="text-slate-700 truncate">{name || 'Untitled trip'}</li>
+                <li key={i} className="text-slate-700 truncate">
+                  {name || 'Untitled trip'}
+                </li>
               ))}
             </ul>
           </div>

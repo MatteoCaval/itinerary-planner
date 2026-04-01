@@ -11,7 +11,10 @@ vi.mock('./services/httpClient', () => ({
     status: number | null;
     code: string;
     details?: unknown;
-    constructor(message: string, opts?: { status?: number | null; code?: string; details?: unknown }) {
+    constructor(
+      message: string,
+      opts?: { status?: number | null; code?: string; details?: unknown },
+    ) {
       super(message);
       this.name = 'ApiError';
       this.status = opts?.status ?? null;
@@ -33,18 +36,29 @@ describe('generateAIItinerary', () => {
 
   it('parses a valid Gemini JSON response', async () => {
     const geminiResponse = {
-      candidates: [{
-        content: {
-          parts: [{
-            text: JSON.stringify({
-              explanation: 'Here is your plan.',
-              locations: [{ id: 'loc1', name: 'Tower', lat: 48.8, lng: 2.3 }],
-              routes: [{ id: 'rt1', fromLocationId: 'loc1', toLocationId: 'loc1', transportType: 'walk' }],
-              days: [{ id: 'd1', accommodation: { name: 'Hotel', lat: 48.85, lng: 2.35 } }],
-            }),
-          }],
+      candidates: [
+        {
+          content: {
+            parts: [
+              {
+                text: JSON.stringify({
+                  explanation: 'Here is your plan.',
+                  locations: [{ id: 'loc1', name: 'Tower', lat: 48.8, lng: 2.3 }],
+                  routes: [
+                    {
+                      id: 'rt1',
+                      fromLocationId: 'loc1',
+                      toLocationId: 'loc1',
+                      transportType: 'walk',
+                    },
+                  ],
+                  days: [{ id: 'd1', accommodation: { name: 'Hotel', lat: 48.85, lng: 2.35 } }],
+                }),
+              },
+            ],
+          },
         },
-      }],
+      ],
     };
 
     mockFetchJson.mockResolvedValueOnce(geminiResponse);
@@ -72,9 +86,9 @@ describe('generateAIItinerary', () => {
   it('throws on empty candidates', async () => {
     mockFetchJson.mockResolvedValueOnce({ candidates: [] });
 
-    await expect(
-      generateAIItinerary('Plan', settings, days, [], [], 'scratch'),
-    ).rejects.toThrow('AI returned no results.');
+    await expect(generateAIItinerary('Plan', settings, days, [], [], 'scratch')).rejects.toThrow(
+      'AI returned no results.',
+    );
   });
 
   it('throws a friendly message on invalid JSON response', async () => {
@@ -82,45 +96,45 @@ describe('generateAIItinerary', () => {
       candidates: [{ content: { parts: [{ text: 'not valid json' }] } }],
     });
 
-    await expect(
-      generateAIItinerary('Plan', settings, days, [], [], 'scratch'),
-    ).rejects.toThrow('AI returned invalid JSON format.');
+    await expect(generateAIItinerary('Plan', settings, days, [], [], 'scratch')).rejects.toThrow(
+      'AI returned invalid JSON format.',
+    );
   });
 
   it('maps 401 status to auth error message', async () => {
-    const error = new (ApiError as unknown as new (msg: string, opts: Record<string, unknown>) => Error)(
-      'Unauthorized',
-      { status: 401, code: 'http_error' }
-    );
+    const error = new (ApiError as unknown as new (
+      msg: string,
+      opts: Record<string, unknown>,
+    ) => Error)('Unauthorized', { status: 401, code: 'http_error' });
     mockFetchJson.mockRejectedValueOnce(error);
 
-    await expect(
-      generateAIItinerary('Plan', settings, days, [], [], 'scratch'),
-    ).rejects.toThrow(/API key is invalid/);
+    await expect(generateAIItinerary('Plan', settings, days, [], [], 'scratch')).rejects.toThrow(
+      /API key is invalid/,
+    );
   });
 
   it('maps 429 status to rate limit message', async () => {
-    const error = new (ApiError as unknown as new (msg: string, opts: Record<string, unknown>) => Error)(
-      'Too many requests',
-      { status: 429, code: 'http_error' }
-    );
+    const error = new (ApiError as unknown as new (
+      msg: string,
+      opts: Record<string, unknown>,
+    ) => Error)('Too many requests', { status: 429, code: 'http_error' });
     mockFetchJson.mockRejectedValueOnce(error);
 
-    await expect(
-      generateAIItinerary('Plan', settings, days, [], [], 'scratch'),
-    ).rejects.toThrow(/rate limit/);
+    await expect(generateAIItinerary('Plan', settings, days, [], [], 'scratch')).rejects.toThrow(
+      /rate limit/,
+    );
   });
 
   it('maps timeout to friendly message', async () => {
-    const error = new (ApiError as unknown as new (msg: string, opts: Record<string, unknown>) => Error)(
-      'Aborted',
-      { code: 'request_aborted' }
-    );
+    const error = new (ApiError as unknown as new (
+      msg: string,
+      opts: Record<string, unknown>,
+    ) => Error)('Aborted', { code: 'request_aborted' });
     mockFetchJson.mockRejectedValueOnce(error);
 
-    await expect(
-      generateAIItinerary('Plan', settings, days, [], [], 'scratch'),
-    ).rejects.toThrow(/timed out/);
+    await expect(generateAIItinerary('Plan', settings, days, [], [], 'scratch')).rejects.toThrow(
+      /timed out/,
+    );
   });
 
   it('uses default model when settings.model is empty', async () => {

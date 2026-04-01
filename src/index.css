@@ -1,8 +1,8 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
-@import "tw-animate-css";
-@import "shadcn/tailwind.css";
-@import "@fontsource-variable/geist";
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
+@import '@fontsource-variable/geist';
 
 :root {
   --day-col-width: 288px;
@@ -57,20 +57,20 @@
   --color-background-dark: #0f0d0c;
   --color-border-neutral: #e5e7eb;
   --color-border-dark: #27272a;
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
 }
 
 @layer utilities {
   .timeline-grid {
-    background-image: linear-gradient(to right, rgba(0,0,0,0.06) 1px, transparent 1px);
+    background-image: linear-gradient(to right, rgba(0, 0, 0, 0.06) 1px, transparent 1px);
     background-size: calc(100% / 15) 100%;
   }
   .timeline-grid-month {
-    background-image: linear-gradient(to right, rgba(0,0,0,0.06) 1px, transparent 1px);
+    background-image: linear-gradient(to right, rgba(0, 0, 0, 0.06) 1px, transparent 1px);
     background-size: calc(100% / 30) 100%;
   }
   .snap-grid {
-    background-image: linear-gradient(to right, rgba(0,0,0,0.02) 1px, transparent 1px);
+    background-image: linear-gradient(to right, rgba(0, 0, 0, 0.02) 1px, transparent 1px);
     background-size: calc(100% / 45) 100%;
   }
   .scroll-hide::-webkit-scrollbar {
@@ -83,7 +83,7 @@
   .map-panel-container {
     will-change: auto;
   }
-  .map-panel-container[class*="map-anim-"] {
+  .map-panel-container[class*='map-anim-'] {
     will-change: transform, opacity;
   }
 
@@ -108,34 +108,78 @@
   }
 
   @keyframes map-expand {
-    from { transform: scale(0.92); opacity: 0.6; border-radius: 16px; }
-    to   { transform: scale(1);    opacity: 1;   border-radius: 0; }
+    from {
+      transform: scale(0.92);
+      opacity: 0.6;
+      border-radius: 16px;
+    }
+    to {
+      transform: scale(1);
+      opacity: 1;
+      border-radius: 0;
+    }
   }
   @keyframes map-shrink {
-    from { transform: scale(1.04); opacity: 0.6; border-radius: 0; }
-    to   { transform: scale(1);    opacity: 1;   border-radius: 16px; }
+    from {
+      transform: scale(1.04);
+      opacity: 0.6;
+      border-radius: 0;
+    }
+    to {
+      transform: scale(1);
+      opacity: 1;
+      border-radius: 16px;
+    }
   }
   @keyframes map-to-mini {
-    from { transform: scale(1.15) translateX(-8%) translateY(-8%); opacity: 0.5; }
-    to   { transform: scale(1) translateX(0) translateY(0);        opacity: 1; }
+    from {
+      transform: scale(1.15) translateX(-8%) translateY(-8%);
+      opacity: 0.5;
+    }
+    to {
+      transform: scale(1) translateX(0) translateY(0);
+      opacity: 1;
+    }
   }
   @keyframes map-restore {
-    from { transform: scale(0.85) translateX(8%) translateY(8%); opacity: 0.5; }
-    to   { transform: scale(1) translateX(0) translateY(0);      opacity: 1; }
+    from {
+      transform: scale(0.85) translateX(8%) translateY(8%);
+      opacity: 0.5;
+    }
+    to {
+      transform: scale(1) translateX(0) translateY(0);
+      opacity: 1;
+    }
   }
   @keyframes map-collapse {
-    from { transform: translateX(0); opacity: 1; }
-    to   { transform: translateX(40px); opacity: 0; }
+    from {
+      transform: translateX(0);
+      opacity: 1;
+    }
+    to {
+      transform: translateX(40px);
+      opacity: 0;
+    }
   }
   @keyframes map-reveal {
-    from { transform: translateX(40px); opacity: 0; }
-    to   { transform: translateX(0);    opacity: 1; }
+    from {
+      transform: translateX(40px);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
   }
 
   /* ── Mobile bottom drawer slide-up ── */
   @keyframes slide-up {
-    from { transform: translateY(100%); }
-    to   { transform: translateY(0); }
+    from {
+      transform: translateY(100%);
+    }
+    to {
+      transform: translateY(0);
+    }
   }
   .animate-slide-up {
     animation: slide-up 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
@@ -143,8 +187,14 @@
 
   /* ── Mobile search overlay fade-in ── */
   @keyframes search-reveal {
-    from { opacity: 0; transform: translateX(8px); }
-    to   { opacity: 1; transform: translateX(0); }
+    from {
+      opacity: 0;
+      transform: translateX(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
   }
   .animate-search-reveal {
     animation: search-reveal 0.15s ease-out both;
@@ -159,7 +209,9 @@
   }
 }
 
-html, body, #root {
+html,
+body,
+#root {
   height: 100%;
   margin: 0;
   padding: 0;
@@ -167,7 +219,9 @@ html, body, #root {
 }
 
 /* Reduce 300ms tap delay on touch devices */
-button, a, [role="button"] {
+button,
+a,
+[role='button'] {
   touch-action: manipulation;
 }
 
@@ -180,12 +234,14 @@ button, a, [role="button"] {
 
 /* Respect prefers-reduced-motion */
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
+  *,
+  *::before,
+  *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
-  .map-panel-container[class*="map-anim-"] {
+  .map-panel-container[class*='map-anim-'] {
     animation: none !important;
   }
 }
@@ -197,7 +253,7 @@ button, a, [role="button"] {
 
 /* Global focus-visible ring for interactive elements */
 button:focus-visible,
-[role="button"]:focus-visible,
+[role='button']:focus-visible,
 input:focus-visible,
 textarea:focus-visible,
 select:focus-visible,
@@ -213,8 +269,12 @@ a:focus-visible {
 
 /* ─── Mobile overlay fade-in ───────────────────────────────────────────────── */
 @keyframes fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 .animate-fade-in {
   animation: fade-in 0.2s ease-out both;
@@ -222,8 +282,12 @@ a:focus-visible {
 
 /* ─── Visit detail drawer slide-in ─────────────────────────────────────────── */
 @keyframes slide-in-right {
-  from { transform: translateX(100%); }
-  to { transform: translateX(0); }
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
 }
 .animate-slide-in-right {
   animation: slide-in-right 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
@@ -258,7 +322,11 @@ a:focus-visible {
   --rdp-outside-opacity: 0.25;
   --rdp-weekday-padding: 0 0 4px;
   --rdp-weekday-opacity: 1;
-  font: 500 11px/1.4 'Inter', ui-sans-serif, system-ui, sans-serif;
+  font:
+    500 11px/1.4 'Inter',
+    ui-sans-serif,
+    system-ui,
+    sans-serif;
   width: 100%;
 }
 /* Fill container width */
@@ -290,7 +358,9 @@ a:focus-visible {
   height: 32px;
   border-radius: 8px;
   font-weight: 500;
-  transition: background 0.15s, color 0.15s;
+  transition:
+    background 0.15s,
+    color 0.15s;
 }
 .rdp-inline .rdp-day_button:hover:not(:disabled) {
   background: #f1f5f9;
@@ -389,7 +459,7 @@ a:focus-visible {
   font-weight: 600;
   color: #475569;
   white-space: nowrap;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .custom-marker-wrapper {
@@ -412,9 +482,11 @@ a:focus-visible {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   border: 2px solid white;
-  transition: transform 0.15s ease, background-color 0.15s ease;
+  transition:
+    transform 0.15s ease,
+    background-color 0.15s ease;
 }
 
 .map-marker-container.hovered .marker-circle {
@@ -430,7 +502,7 @@ a:focus-visible {
   border-radius: 4px;
   padding: 0 3px;
   line-height: 14px;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
   border: 1px solid #e2e8f0;
 }
 

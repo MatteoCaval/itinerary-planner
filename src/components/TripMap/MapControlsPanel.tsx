@@ -40,7 +40,9 @@ export function MapControlsPanel({
   return (
     <div className="absolute top-3 right-3 z-[1000] w-52 bg-white/95 backdrop-blur-xl rounded-xl border border-slate-200 shadow-xl p-3 space-y-3">
       <div className="flex items-center justify-between">
-        <span className="text-[10px] font-extrabold text-slate-500 uppercase tracking-widest">Map Options</span>
+        <span className="text-[10px] font-extrabold text-slate-500 uppercase tracking-widest">
+          Map Options
+        </span>
         <button
           onClick={() => setOpen(false)}
           className="size-5 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
@@ -52,7 +54,9 @@ export function MapControlsPanel({
 
       {/* Basemap toggle */}
       <div>
-        <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wide block mb-1.5">Basemap</label>
+        <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wide block mb-1.5">
+          Basemap
+        </label>
         <div className="flex rounded-lg border border-slate-200 overflow-hidden">
           <button
             onClick={() => onBasemapChange('local')}
@@ -86,7 +90,9 @@ export function MapControlsPanel({
             onChange={(e) => onShowArrowsChange(e.target.checked)}
             className="size-3.5 rounded border-slate-300 text-primary accent-[var(--color-primary)]"
           />
-          <span className="text-[11px] font-semibold text-slate-600 group-hover:text-slate-800 transition-colors">Route arrows</span>
+          <span className="text-[11px] font-semibold text-slate-600 group-hover:text-slate-800 transition-colors">
+            Route arrows
+          </span>
         </label>
         <label className="flex items-center gap-2 cursor-pointer group">
           <input
@@ -95,7 +101,9 @@ export function MapControlsPanel({
             onChange={(e) => onShowRouteIconsChange(e.target.checked)}
             className="size-3.5 rounded border-slate-300 text-primary accent-[var(--color-primary)]"
           />
-          <span className="text-[11px] font-semibold text-slate-600 group-hover:text-slate-800 transition-colors">Route icons</span>
+          <span className="text-[11px] font-semibold text-slate-600 group-hover:text-slate-800 transition-colors">
+            Route icons
+          </span>
         </label>
         <label className="flex items-center gap-2 cursor-pointer group">
           <input
@@ -104,7 +112,9 @@ export function MapControlsPanel({
             onChange={(e) => onEnableClusteringChange(e.target.checked)}
             className="size-3.5 rounded border-slate-300 text-primary accent-[var(--color-primary)]"
           />
-          <span className="text-[11px] font-semibold text-slate-600 group-hover:text-slate-800 transition-colors">Marker clustering</span>
+          <span className="text-[11px] font-semibold text-slate-600 group-hover:text-slate-800 transition-colors">
+            Marker clustering
+          </span>
         </label>
       </div>
 

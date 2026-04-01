@@ -27,17 +27,17 @@ export default function ModalBase({
   width?: string;
 }) {
   return (
-    <Dialog open onOpenChange={(open) => { if (!open) onClose(); }}>
+    <Dialog
+      open
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+    >
       <DialogContent
-        className={cn(
-          'max-h-[90dvh] flex flex-col gap-0 p-0',
-          widthMap[width] ?? width,
-        )}
+        className={cn('max-h-[90dvh] flex flex-col gap-0 p-0', widthMap[width] ?? width)}
       >
         <DialogHeader className="px-4 py-2.5 border-b border-border flex-shrink-0">
-          <DialogTitle className="font-extrabold text-xs tracking-wide">
-            {title}
-          </DialogTitle>
+          <DialogTitle className="font-extrabold text-xs tracking-wide">{title}</DialogTitle>
           <DialogDescription className="sr-only">{title}</DialogDescription>
         </DialogHeader>
         <div className="overflow-y-auto flex-1 px-4 py-3.5">{children}</div>

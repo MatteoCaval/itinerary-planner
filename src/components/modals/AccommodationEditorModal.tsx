@@ -6,8 +6,17 @@ import { Input } from '@/components/ui/input';
 import { NightAccommodation } from '@/domain/types';
 import { fmt } from '@/domain/dateUtils';
 import { searchPlace, PlaceSearchResult } from '@/utils/geocoding';
+import { Checkbox } from '@/components/ui/checkbox';
 
-function AccommodationEditorModal({ initial, allNights, initialNights, existingNames, onClose, onSave, onRemove }: {
+function AccommodationEditorModal({
+  initial,
+  allNights,
+  initialNights,
+  existingNames,
+  onClose,
+  onSave,
+  onRemove,
+}: {
   initial?: NightAccommodation;
   allNights: { dayOffset: number; date: Date }[];
   initialNights: number[];
@@ -23,7 +32,8 @@ function AccommodationEditorModal({ initial, allNights, initialNights, existingN
   const toggleNight = (dayOffset: number) => {
     setSelectedNights((prev) => {
       const next = new Set(prev);
-      if (next.has(dayOffset)) next.delete(dayOffset); else next.add(dayOffset);
+      if (next.has(dayOffset)) next.delete(dayOffset);
+      else next.add(dayOffset);
       return next;
     });
   };
@@ -40,7 +50,10 @@ function AccommodationEditorModal({ initial, allNights, initialNights, existingN
 
   // Debounced geocoding search
   useEffect(() => {
-    if (!name.trim() || name.trim().length < 3 || lat) { setSearchResults([]); return; }
+    if (!name.trim() || name.trim().length < 3 || lat) {
+      setSearchResults([]);
+      return;
+    }
     const controller = new AbortController();
     const tid = window.setTimeout(async () => {
       setIsSearching(true);
@@ -48,10 +61,16 @@ function AccommodationEditorModal({ initial, allNights, initialNights, existingN
         const results = await searchPlace(name.trim(), { signal: controller.signal });
         setSearchResults(results.slice(0, 5));
         setShowResults(true);
-      } catch { /* ignore abort */ }
-      finally { if (!controller.signal.aborted) setIsSearching(false); }
+      } catch {
+        /* ignore abort */
+      } finally {
+        if (!controller.signal.aborted) setIsSearching(false);
+      }
     }, 500);
-    return () => { clearTimeout(tid); controller.abort(); };
+    return () => {
+      clearTimeout(tid);
+      controller.abort();
+    };
   }, [name, lat]);
 
   const pickResult = (r: PlaceSearchResult) => {
@@ -66,17 +85,25 @@ function AccommodationEditorModal({ initial, allNights, initialNights, existingN
 
   const handleSave = () => {
     if (!name.trim() || nightCount === 0) return;
-    onSave({
-      name: name.trim(),
-      notes: notes.trim() || undefined,
-      cost: cost ? parseFloat(cost) || undefined : undefined,
-      lat, lng,
-    }, Array.from(selectedNights));
+    onSave(
+      {
+        name: name.trim(),
+        notes: notes.trim() || undefined,
+        cost: cost ? parseFloat(cost) || undefined : undefined,
+        lat,
+        lng,
+      },
+      Array.from(selectedNights),
+    );
     onClose();
   };
 
   return (
-    <ModalBase title={initial?.name ? 'Edit Accommodation' : 'Set Accommodation'} onClose={onClose} width="max-w-sm">
+    <ModalBase
+      title={initial?.name ? 'Edit Accommodation' : 'Set Accommodation'}
+      onClose={onClose}
+      width="max-w-sm"
+    >
       <div className="space-y-4">
         {/* Night count badge */}
         <div className="flex items-center gap-2 bg-primary/5 border border-primary/20 rounded-lg px-3 py-2">
@@ -97,15 +124,24 @@ function AccommodationEditorModal({ initial, allNights, initialNights, existingN
               className="pl-9 pr-8 text-xs font-semibold"
               placeholder="Search hotel or address..."
               value={name}
-              onChange={(e) => { setName(e.target.value); setLat(undefined); setLng(undefined); }}
-              onFocus={() => { if (searchResults.length > 0) setShowResults(true); }}
+              onChange={(e) => {
+                setName(e.target.value);
+                setLat(undefined);
+                setLng(undefined);
+              }}
+              onFocus={() => {
+                if (searchResults.length > 0) setShowResults(true);
+              }}
               autoFocus
             />
             {isSearching && (
               <div className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
             )}
             {lat && (
-              <div className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-500" title={`Location: ${lat.toFixed(4)}, ${lng?.toFixed(4)}`}>
+              <div
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-500"
+                title={`Location: ${lat.toFixed(4)}, ${lng?.toFixed(4)}`}
+              >
                 <Check className="w-3.5 h-3.5" />
               </div>
             )}
@@ -117,7 +153,9 @@ function AccommodationEditorModal({ initial, allNights, initialNights, existingN
               {filteredNames.slice(0, 4).map((n) => (
                 <button
                   key={n}
-                  onClick={() => { setName(n); }}
+                  onClick={() => {
+                    setName(n);
+                  }}
                   className="w-full text-left px-3 py-2 hover:bg-primary/5 border-b last:border-b-0 border-slate-100 flex items-center gap-2 transition-colors"
                 >
                   <Hotel className="w-3 h-3 text-slate-400" />
@@ -140,8 +178,12 @@ function AccommodationEditorModal({ initial, allNights, initialNights, existingN
                   >
                     <MapPin className="w-3.5 h-3.5 text-slate-400 flex-shrink-0 mt-0.5" />
                     <div className="min-w-0">
-                      <p className="text-xs font-semibold text-slate-800 truncate">{parts[0].trim()}</p>
-                      <p className="text-[11px] text-slate-500 truncate">{parts.slice(1, 4).join(',').trim()}</p>
+                      <p className="text-xs font-semibold text-slate-800 truncate">
+                        {parts[0].trim()}
+                      </p>
+                      <p className="text-[11px] text-slate-500 truncate">
+                        {parts.slice(1, 4).join(',').trim()}
+                      </p>
                     </div>
                   </button>
                 );
@@ -152,7 +194,9 @@ function AccommodationEditorModal({ initial, allNights, initialNights, existingN
 
         {/* Notes */}
         <div>
-          <label className="text-[11px] font-extrabold uppercase tracking-widest text-slate-500 mb-1.5 block">Notes</label>
+          <label className="text-[11px] font-extrabold uppercase tracking-widest text-slate-500 mb-1.5 block">
+            Notes
+          </label>
           <Input
             className="text-xs"
             placeholder="Address, confirmation #, etc."
@@ -163,7 +207,9 @@ function AccommodationEditorModal({ initial, allNights, initialNights, existingN
 
         {/* Cost */}
         <div>
-          <label className="text-[11px] font-extrabold uppercase tracking-widest text-slate-500 mb-1.5 block">Nightly Cost</label>
+          <label className="text-[11px] font-extrabold uppercase tracking-widest text-slate-500 mb-1.5 block">
+            Nightly Cost
+          </label>
           <Input
             className="text-xs"
             placeholder="0.00"
@@ -187,11 +233,10 @@ function AccommodationEditorModal({ initial, allNights, initialNights, existingN
                   key={dayOffset}
                   className="flex items-center gap-2.5 px-3 py-2.5 hover:bg-slate-50 cursor-pointer border-b last:border-b-0 border-slate-100"
                 >
-                  <input
-                    type="checkbox"
+                  <Checkbox
                     checked={selectedNights.has(dayOffset)}
-                    onChange={() => toggleNight(dayOffset)}
-                    className="accent-primary w-3.5 h-3.5 flex-shrink-0"
+                    onCheckedChange={() => toggleNight(dayOffset)}
+                    className="size-3.5"
                   />
                   <span className="text-xs font-semibold text-slate-700">
                     Night {dayOffset + 1}
@@ -208,19 +253,24 @@ function AccommodationEditorModal({ initial, allNights, initialNights, existingN
         {/* Actions */}
         <div className="flex items-center justify-between pt-2 border-t border-slate-100">
           {onRemove ? (
-            <Button variant="destructive" size="sm" onClick={() => { onRemove(); onClose(); }}>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => {
+                onRemove();
+                onClose();
+              }}
+            >
               <Trash2 data-icon="inline-start" className="w-3.5 h-3.5" /> Remove
             </Button>
-          ) : <div />}
+          ) : (
+            <div />
+          )}
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={onClose}>
               Cancel
             </Button>
-            <Button
-              size="sm"
-              onClick={handleSave}
-              disabled={!name.trim() || nightCount === 0}
-            >
+            <Button size="sm" onClick={handleSave} disabled={!name.trim() || nightCount === 0}>
               Save
             </Button>
           </div>

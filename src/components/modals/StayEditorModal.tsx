@@ -6,8 +6,14 @@ import { Input } from '@/components/ui/input';
 import { Stay } from '@/domain/types';
 import { STAY_COLORS } from '@/domain/constants';
 
-function StayEditorModal({ stay, onClose, onSave, onDelete }: {
-  stay: Stay; onClose: () => void;
+function StayEditorModal({
+  stay,
+  onClose,
+  onSave,
+  onDelete,
+}: {
+  stay: Stay;
+  onClose: () => void;
   onSave: (updates: Partial<Stay>) => void;
   onDelete: () => void;
 }) {
@@ -20,7 +26,9 @@ function StayEditorModal({ stay, onClose, onSave, onDelete }: {
     <ModalBase title="Edit Stay" onClose={onClose}>
       <div className="space-y-4">
         <div>
-          <label className="text-[11px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 block">Destination Name</label>
+          <label className="text-[11px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 block">
+            Destination Name
+          </label>
           <Input
             className="text-xs font-semibold"
             value={name}
@@ -29,7 +37,9 @@ function StayEditorModal({ stay, onClose, onSave, onDelete }: {
           />
         </div>
         <div>
-          <label className="text-[11px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 block">Lodging</label>
+          <label className="text-[11px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 block">
+            Lodging
+          </label>
           <Input
             className="text-xs"
             value={lodging}
@@ -38,7 +48,9 @@ function StayEditorModal({ stay, onClose, onSave, onDelete }: {
           />
         </div>
         <div>
-          <label className="text-[11px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 block">Color</label>
+          <label className="text-[11px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 block">
+            Color
+          </label>
           <div className="flex gap-2 flex-wrap">
             {STAY_COLORS.map((c) => (
               <button
@@ -65,13 +77,27 @@ function StayEditorModal({ stay, onClose, onSave, onDelete }: {
         {confirmDelete ? (
           <div className="bg-red-50 border border-red-200 rounded-lg p-3">
             <p className="text-xs font-semibold text-red-700 mb-2">
-              Delete "{stay.name}"? This removes all {stay.visits.length} scheduled {stay.visits.length === 1 ? 'place' : 'places'}.
+              Delete "{stay.name}"? This removes all {stay.visits.length} scheduled{' '}
+              {stay.visits.length === 1 ? 'place' : 'places'}.
             </p>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" className="flex-1" onClick={() => setConfirmDelete(false)}>
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex-1"
+                onClick={() => setConfirmDelete(false)}
+              >
                 Keep
               </Button>
-              <Button variant="destructive" size="sm" className="flex-1" onClick={() => { onDelete(); onClose(); }}>
+              <Button
+                variant="destructive"
+                size="sm"
+                className="flex-1"
+                onClick={() => {
+                  onDelete();
+                  onClose();
+                }}
+              >
                 Delete Stay
               </Button>
             </div>
@@ -84,7 +110,14 @@ function StayEditorModal({ stay, onClose, onSave, onDelete }: {
             <Button variant="outline" size="sm" className="flex-1" onClick={onClose}>
               Cancel
             </Button>
-            <Button size="sm" className="flex-1" onClick={() => { onSave({ name, lodging, color }); onClose(); }}>
+            <Button
+              size="sm"
+              className="flex-1"
+              onClick={() => {
+                onSave({ name, lodging, color });
+                onClose();
+              }}
+            >
               Save
             </Button>
           </div>

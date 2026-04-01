@@ -11,12 +11,18 @@ export function useHistory(initial: HybridTrip) {
   const [, forceRender] = useState(0);
   const rerender = useCallback(() => forceRender((n) => n + 1), []);
 
-  const push = useCallback((next: HybridTrip) => {
-    const s = stateRef.current;
-    const sliced = [...s.snapshots.slice(0, s.idx + 1), { trip: next, timestamp: Date.now() }].slice(-50);
-    stateRef.current = { snapshots: sliced, idx: Math.min(s.idx + 1, 49) };
-    rerender();
-  }, [rerender]);
+  const push = useCallback(
+    (next: HybridTrip) => {
+      const s = stateRef.current;
+      const sliced = [
+        ...s.snapshots.slice(0, s.idx + 1),
+        { trip: next, timestamp: Date.now() },
+      ].slice(-50);
+      stateRef.current = { snapshots: sliced, idx: Math.min(s.idx + 1, 49) };
+      rerender();
+    },
+    [rerender],
+  );
 
   const undo = useCallback(() => {
     const s = stateRef.current;
@@ -40,8 +46,12 @@ export function useHistory(initial: HybridTrip) {
 
   const { idx, snapshots } = stateRef.current;
   return {
-    push, undo, redo,
-    canUndo: idx > 0, canRedo: idx < snapshots.length - 1,
-    history: snapshots, historyIndex: idx,
+    push,
+    undo,
+    redo,
+    canUndo: idx > 0,
+    canRedo: idx < snapshots.length - 1,
+    history: snapshots,
+    historyIndex: idx,
   };
 }

@@ -29,7 +29,7 @@ let lastRequestTs = 0;
 const searchCache = new Map<string, CacheEntry<PlaceSearchResult[]>>();
 const reverseCache = new Map<string, CacheEntry<string>>();
 
-const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const getCached = <T>(cache: Map<string, CacheEntry<T>>, key: string): T | null => {
   const entry = cache.get(key);
@@ -57,7 +57,10 @@ const withRateLimit = async <T>(fn: () => Promise<T>): Promise<T> => {
   };
 
   const next = requestQueue.then(run, run);
-  requestQueue = next.then(() => undefined, () => undefined);
+  requestQueue = next.then(
+    () => undefined,
+    () => undefined,
+  );
   return next;
 };
 
@@ -68,7 +71,10 @@ const withContact = (url: URL) => {
   return url;
 };
 
-export const searchPlace = async (query: string, options?: { signal?: AbortSignal }): Promise<PlaceSearchResult[]> => {
+export const searchPlace = async (
+  query: string,
+  options?: { signal?: AbortSignal },
+): Promise<PlaceSearchResult[]> => {
   const cleanedQuery = query.trim();
   if (!cleanedQuery) return [];
 
@@ -82,13 +88,15 @@ export const searchPlace = async (query: string, options?: { signal?: AbortSigna
     url.searchParams.set('q', cleanedQuery);
     url.searchParams.set('addressdetails', '0');
 
-    const data = await withRateLimit(() => fetchJson<PlaceSearchResult[]>(url.toString(), {
-      signal: options?.signal,
-      headers: { Accept: 'application/json', 'Accept-Language': 'en-US,en;q=0.9' },
-      retries: 2,
-      retryDelayMs: 600,
-      timeoutMs: 10000,
-    }));
+    const data = await withRateLimit(() =>
+      fetchJson<PlaceSearchResult[]>(url.toString(), {
+        signal: options?.signal,
+        headers: { Accept: 'application/json', 'Accept-Language': 'en-US,en;q=0.9' },
+        retries: 2,
+        retryDelayMs: 600,
+        timeoutMs: 10000,
+      }),
+    );
 
     setCached(searchCache, cacheKey, data);
     return data;
@@ -98,7 +106,11 @@ export const searchPlace = async (query: string, options?: { signal?: AbortSigna
   }
 };
 
-export const reverseGeocode = async (lat: number, lng: number, options?: { signal?: AbortSignal }): Promise<string> => {
+export const reverseGeocode = async (
+  lat: number,
+  lng: number,
+  options?: { signal?: AbortSignal },
+): Promise<string> => {
   const cacheKey = `${lat.toFixed(5)}:${lng.toFixed(5)}`;
   const cached = getCached(reverseCache, cacheKey);
   if (cached) return cached;
@@ -109,13 +121,15 @@ export const reverseGeocode = async (lat: number, lng: number, options?: { signa
     url.searchParams.set('lat', String(lat));
     url.searchParams.set('lon', String(lng));
 
-    const data = await withRateLimit(() => fetchJson<ReverseGeocodeResponse>(url.toString(), {
-      signal: options?.signal,
-      headers: { Accept: 'application/json', 'Accept-Language': 'en-US,en;q=0.9' },
-      retries: 2,
-      retryDelayMs: 600,
-      timeoutMs: 10000,
-    }));
+    const data = await withRateLimit(() =>
+      fetchJson<ReverseGeocodeResponse>(url.toString(), {
+        signal: options?.signal,
+        headers: { Accept: 'application/json', 'Accept-Language': 'en-US,en;q=0.9' },
+        retries: 2,
+        retryDelayMs: 600,
+        timeoutMs: 10000,
+      }),
+    );
 
     const resolved = data.display_name || `Location at ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
     setCached(reverseCache, cacheKey, resolved);
