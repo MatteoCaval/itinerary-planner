@@ -1,5 +1,6 @@
-import { createPortal } from 'react-dom';
 import { Database } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 
 function MergeDialog({ localCount, cloudCount, cloudTripNames, localTripNames, onMerge, onKeepLocal, onUseCloud, onDismiss }: {
   localCount: number;
@@ -11,22 +12,25 @@ function MergeDialog({ localCount, cloudCount, cloudTripNames, localTripNames, o
   onUseCloud: () => void;
   onDismiss: () => void;
 }) {
-  return createPortal(
-    <div className="fixed inset-0 bg-black/30 z-[200] flex items-end sm:items-center justify-center p-4 sm:p-6">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-5">
-        <div className="flex items-start gap-3 mb-4">
-          <div className="size-9 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-            <Database className="w-4 h-4 text-primary" />
+  return (
+    <Dialog open onOpenChange={(open) => { if (!open) onDismiss(); }}>
+      <DialogContent className="sm:max-w-sm p-5">
+        <DialogDescription className="sr-only">Choose how to handle local and cloud trip data</DialogDescription>
+        <DialogHeader>
+          <div className="flex items-start gap-3">
+            <div className="size-9 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+              <Database className="w-4 h-4 text-primary" />
+            </div>
+            <div>
+              <DialogTitle className="font-extrabold text-slate-800 text-sm">Trips found in your account</DialogTitle>
+              <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                You have <strong className="text-slate-700">{localCount} local</strong> and{' '}
+                <strong className="text-slate-700">{cloudCount} cloud</strong> trips.
+                What would you like to do?
+              </p>
+            </div>
           </div>
-          <div>
-            <h3 className="font-extrabold text-slate-800 text-sm">Trips found in your account</h3>
-            <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-              You have <strong className="text-slate-700">{localCount} local</strong> and{' '}
-              <strong className="text-slate-700">{cloudCount} cloud</strong> trips.
-              What would you like to do?
-            </p>
-          </div>
-        </div>
+        </DialogHeader>
 
         {/* Trip name lists */}
         <div className="grid grid-cols-2 gap-2 mb-4 text-[11px]">
@@ -49,27 +53,29 @@ function MergeDialog({ localCount, cloudCount, cloudTripNames, localTripNames, o
         </div>
 
         <div className="space-y-2">
-          <button
+          <Button
             onClick={onMerge}
-            className="w-full flex items-center justify-between px-4 py-2.5 bg-primary text-white rounded-lg text-xs font-bold hover:bg-primary/90 transition-colors"
+            className="w-full flex items-center justify-between px-4 py-2.5 text-xs font-bold"
           >
             <span>Merge everything</span>
             <span className="opacity-70 font-normal">{localCount + cloudCount} trips total</span>
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="outline"
             onClick={onKeepLocal}
-            className="w-full flex items-center justify-between px-4 py-2.5 border border-slate-200 text-slate-700 rounded-lg text-xs font-semibold hover:bg-slate-50 transition-colors"
+            className="w-full flex items-center justify-between px-4 py-2.5 text-xs font-semibold"
           >
             <span>Keep local only</span>
             <span className="text-slate-400 font-normal">overwrite cloud</span>
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="outline"
             onClick={onUseCloud}
-            className="w-full flex items-center justify-between px-4 py-2.5 border border-slate-200 text-slate-700 rounded-lg text-xs font-semibold hover:bg-slate-50 transition-colors"
+            className="w-full flex items-center justify-between px-4 py-2.5 text-xs font-semibold"
           >
             <span>Use cloud only</span>
             <span className="text-slate-400 font-normal">discard local</span>
-          </button>
+          </Button>
         </div>
 
         <button
@@ -78,9 +84,8 @@ function MergeDialog({ localCount, cloudCount, cloudTripNames, localTripNames, o
         >
           Decide later
         </button>
-      </div>
-    </div>,
-    document.body,
+      </DialogContent>
+    </Dialog>
   );
 }
 

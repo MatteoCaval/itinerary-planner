@@ -1,8 +1,9 @@
 import type React from 'react';
 import { useState } from 'react';
-import { createPortal } from 'react-dom';
-import { X, Mail, Lock, Navigation, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { Mail, Lock, Navigation, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 
 function AuthModalSimple({ onClose }: { onClose: () => void }) {
   const { signIn, signUp, signInWithGoogle } = useAuth();
@@ -31,40 +32,29 @@ function AuthModalSimple({ onClose }: { onClose: () => void }) {
     else setError(result.error || 'Google sign-in failed.');
   };
 
-  return createPortal(
-    <div
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
-      onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
-    >
-      <div className="relative w-full max-w-sm bg-white rounded-xl overflow-hidden"
-        style={{ boxShadow: '0 24px 60px -8px rgba(0,0,0,0.18), 0 0 0 1px rgba(0,0,0,0.06)' }}
-      >
+  return (
+    <Dialog open onOpenChange={(open) => { if (!open) onClose(); }}>
+      <DialogContent className="sm:max-w-sm p-0 overflow-hidden">
+        <DialogDescription className="sr-only">Authentication dialog for signing in or creating an account</DialogDescription>
         {/* Top accent bar */}
         <div className="h-1 w-full" style={{ background: 'linear-gradient(90deg, #ec5b13, #f5844a)' }} />
 
         <div className="px-8 pt-7 pb-6">
           {/* Header */}
-          <div className="flex items-start justify-between mb-6">
-            <div>
-              <div className="flex items-center gap-2 mb-2">
-                <div className="size-6 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <Navigation className="w-3 h-3 text-primary" />
-                </div>
-                <span className="text-[11px] font-extrabold tracking-[0.18em] uppercase text-slate-400">Itinerary</span>
+          <DialogHeader className="mb-6">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="size-6 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Navigation className="w-3 h-3 text-primary" />
               </div>
-              <h2 className="text-[22px] font-extrabold text-slate-900 tracking-tight leading-none">
-                {mode === 'signin' ? 'Welcome back' : 'Get started'}
-              </h2>
-              <p className="text-[11px] text-slate-400 mt-1.5 font-medium">
-                {mode === 'signin' ? 'Sign in to sync your trips' : 'Create your free account'}
-              </p>
+              <span className="text-[11px] font-extrabold tracking-[0.18em] uppercase text-slate-400">Itinerary</span>
             </div>
-            <button onClick={onClose} aria-label="Close dialog"
-              className="size-9 flex items-center justify-center rounded-lg text-slate-300 hover:text-slate-500 hover:bg-slate-100 transition-all -mt-1 -mr-2"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
+            <DialogTitle className="text-[22px] font-extrabold text-slate-900 tracking-tight leading-none">
+              {mode === 'signin' ? 'Welcome back' : 'Get started'}
+            </DialogTitle>
+            <p className="text-[11px] text-slate-400 mt-1.5 font-medium">
+              {mode === 'signin' ? 'Sign in to sync your trips' : 'Create your free account'}
+            </p>
+          </DialogHeader>
 
           {/* Mode tabs */}
           <div className="flex gap-4 mb-5 border-b border-slate-100">
@@ -83,18 +73,18 @@ function AuthModalSimple({ onClose }: { onClose: () => void }) {
           <form onSubmit={handleSubmit} className="space-y-3">
             <div className="relative">
               <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-300 pointer-events-none" />
-              <input
+              <Input
                 type="email" placeholder="Email address" value={email}
                 onChange={(e) => setEmail(e.target.value)} autoFocus
-                className="w-full pl-10 pr-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl outline-none transition-all focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/10 placeholder:text-slate-300 font-medium text-slate-800"
+                className="pl-10 pr-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/10 placeholder:text-slate-300 font-medium text-slate-800"
               />
             </div>
             <div className="relative">
               <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-300 pointer-events-none" />
-              <input
+              <Input
                 type={showPassword ? 'text' : 'password'} placeholder="Password" value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-10 pr-10 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl outline-none transition-all focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/10 placeholder:text-slate-300 font-medium text-slate-800"
+                className="pl-10 pr-10 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/10 placeholder:text-slate-300 font-medium text-slate-800"
               />
               <button
                 type="button"
@@ -152,9 +142,8 @@ function AuthModalSimple({ onClose }: { onClose: () => void }) {
             >{mode === 'signin' ? 'Sign up free' : 'Sign in'}</button>
           </p>
         </div>
-      </div>
-    </div>,
-    document.body
+      </DialogContent>
+    </Dialog>
   );
 }
 

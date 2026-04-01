@@ -1,9 +1,11 @@
 import { useState } from 'react';
-import { createPortal } from 'react-dom';
 import { Download, Check, AlertCircle, Search } from 'lucide-react';
 import { HybridTrip, LegacyStoredTrip, LegacyDay, LegacyLocation, LegacyRoute } from '@/domain/types';
 import { normalizeTrip, legacyTripToHybrid } from '@/domain/migration';
 import { loadItinerary } from '@/firebase';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 
 function ImportFromCodeDialog({ onImport, onClose }: {
   onImport: (trip: HybridTrip) => void;
@@ -69,28 +71,31 @@ function ImportFromCodeDialog({ onImport, onClose }: {
     }, 800);
   };
 
-  return createPortal(
-    <div className="fixed inset-0 bg-black/30 z-[200] flex items-end sm:items-center justify-center p-4 sm:p-6" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-5">
-        <div className="flex items-start gap-3 mb-4">
-          <div className="size-9 rounded-xl bg-violet-50 flex items-center justify-center flex-shrink-0 mt-0.5">
-            <Download className="w-4 h-4 text-violet-500" />
+  return (
+    <Dialog open onOpenChange={(open) => { if (!open) onClose(); }}>
+      <DialogContent className="sm:max-w-sm p-5">
+        <DialogDescription className="sr-only">Import a trip by entering a share code</DialogDescription>
+        <DialogHeader>
+          <div className="flex items-start gap-3">
+            <div className="size-9 rounded-xl bg-violet-50 flex items-center justify-center flex-shrink-0 mt-0.5">
+              <Download className="w-4 h-4 text-violet-500" />
+            </div>
+            <div>
+              <DialogTitle className="font-extrabold text-slate-800 text-sm">Import from code</DialogTitle>
+              <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                Enter a share code to import a trip. It will be added as a new trip.
+              </p>
+            </div>
           </div>
-          <div>
-            <h3 className="font-extrabold text-slate-800 text-sm">Import from code</h3>
-            <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-              Enter a share code to import a trip. It will be added as a new trip.
-            </p>
-          </div>
-        </div>
+        </DialogHeader>
 
         <form onSubmit={(e) => { e.preventDefault(); handleLoad(); }}>
-          <input
+          <Input
             type="text"
             value={code}
             onChange={(e) => { setCode(e.target.value.toUpperCase()); setStatus(null); }}
             placeholder="e.g. TRIP-ABCD"
-            className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm font-mono font-bold text-center tracking-widest placeholder:tracking-normal placeholder:font-normal focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+            className="w-full px-3 py-2.5 text-sm font-mono font-bold text-center tracking-widest placeholder:tracking-normal placeholder:font-normal"
             autoFocus
           />
 
@@ -108,25 +113,25 @@ function ImportFromCodeDialog({ onImport, onClose }: {
           )}
 
           <div className="flex gap-2 mt-4">
-            <button
+            <Button
               type="button"
+              variant="outline"
               onClick={onClose}
-              className="flex-1 px-4 py-2.5 border border-slate-200 text-slate-600 rounded-lg text-xs font-semibold hover:bg-slate-50 transition-colors"
+              className="flex-1 px-4 py-2.5 text-xs font-semibold"
             >
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
               type="submit"
               disabled={status?.type === 'loading' || status?.type === 'success'}
-              className="flex-1 px-4 py-2.5 bg-primary text-white rounded-lg text-xs font-bold hover:bg-primary/90 transition-colors disabled:opacity-50"
+              className="flex-1 px-4 py-2.5 text-xs font-bold"
             >
               Import
-            </button>
+            </Button>
           </div>
         </form>
-      </div>
-    </div>,
-    document.body,
+      </DialogContent>
+    </Dialog>
   );
 }
 

@@ -1,5 +1,6 @@
 import { Compass, Plus, LogIn } from 'lucide-react';
 import TransportIcon from '@/components/ui/TransportIcon';
+import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
 
 function WelcomeScreen({ onCreateTrip, onLoadDemo }: { onCreateTrip: () => void; onLoadDemo: () => void }) {
@@ -22,13 +23,15 @@ function WelcomeScreen({ onCreateTrip, onLoadDemo }: { onCreateTrip: () => void;
           <span className="text-sm font-extrabold tracking-tight">Itinerary</span>
         </div>
         {!user && (
-          <button
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={signInWithGoogle}
-            className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-primary transition-colors"
+            className="text-slate-500 hover:text-primary"
           >
             <LogIn className="w-3.5 h-3.5" />
             Sign in
-          </button>
+          </Button>
         )}
       </header>
 
@@ -81,27 +84,27 @@ function WelcomeScreen({ onCreateTrip, onLoadDemo }: { onCreateTrip: () => void;
           </p>
 
           <div className="flex items-center gap-3">
-            <button
+            <Button
               onClick={onCreateTrip}
-              className="flex items-center gap-2 px-5 py-2.5 text-sm font-bold text-white bg-primary hover:bg-primary/90 rounded-lg transition-all shadow-sm shadow-primary/20 active:scale-95"
+              className="shadow-sm shadow-primary/20 active:scale-95"
             >
               <Plus className="w-4 h-4" />
               Plan a trip
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="outline"
               onClick={onLoadDemo}
-              className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-slate-600 border border-slate-200 bg-white rounded-lg hover:shadow-sm hover:border-slate-300 transition-all"
             >
               See a demo
-            </button>
+            </Button>
           </div>
 
           {!user && (
             <p className="mt-6 text-[11px] text-slate-400">
               Trips are saved locally.{' '}
-              <button onClick={signInWithGoogle} className="text-primary font-semibold hover:underline">
+              <Button variant="link" size="sm" onClick={signInWithGoogle} className="p-0 h-auto text-[11px]">
                 Sign in
-              </button>{' '}
+              </Button>{' '}
               to sync across devices.
             </p>
           )}
