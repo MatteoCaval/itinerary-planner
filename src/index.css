@@ -302,6 +302,13 @@ a:focus-visible {
   color: #1e293b;
   padding-bottom: 4px;
 }
+/* Nav bar — force horizontal layout (shadcn Dialog grid can break it) */
+.rdp-inline .rdp-nav {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+}
 /* Nav buttons */
 .rdp-inline .rdp-button_previous,
 .rdp-inline .rdp-button_next {
@@ -338,6 +345,8 @@ a:focus-visible {
 /* Selected start/end — solid pill */
 .rdp-inline .rdp-range_start .rdp-day_button,
 .rdp-inline .rdp-range_end .rdp-day_button {
+  background: #ec5b13 !important;
+  color: #fff !important;
   border-radius: 8px;
   font-weight: 700;
 }
