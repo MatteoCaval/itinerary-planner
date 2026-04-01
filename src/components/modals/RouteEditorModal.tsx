@@ -5,6 +5,7 @@ import TransportIcon from '@/components/ui/TransportIcon';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Stay, TravelMode } from '@/domain/types';
 import { TRAVEL_MODES } from '@/domain/constants';
 
@@ -47,28 +48,33 @@ function RouteEditorModal({
           <label className="text-[11px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 block">
             Transport Mode
           </label>
-          <div className="grid grid-cols-3 gap-2">
+          <ToggleGroup
+            type="single"
+            value={mode}
+            onValueChange={(v) => {
+              if (v) setMode(v as TravelMode);
+            }}
+            spacing={1}
+            className="grid grid-cols-3 gap-2 w-full"
+          >
             {TRAVEL_MODES.map((m) => (
-              <button
+              <ToggleGroupItem
                 key={m}
-                onClick={() => setMode(m)}
-                aria-pressed={mode === m}
-                className={`flex flex-col items-center gap-1.5 py-3 rounded-lg border-2 transition-all focus-visible:ring-2 focus-visible:ring-primary/50 ${
-                  mode === m
-                    ? 'border-current shadow-sm scale-[1.02]'
-                    : 'border-slate-200 hover:border-slate-300 text-slate-500'
-                }`}
+                value={m}
+                className="flex flex-col items-center gap-1.5 py-3 h-auto rounded-lg border-2 border-slate-200 bg-transparent transition-all hover:border-slate-300 hover:bg-transparent data-[state=on]:border-current data-[state=on]:bg-transparent data-[state=on]:shadow-sm data-[state=on]:scale-[1.02]"
                 style={
-                  mode === m ? { borderColor: modeConfig[m].color, color: modeConfig[m].color } : {}
+                  mode === m
+                    ? { borderColor: modeConfig[m].color, color: modeConfig[m].color }
+                    : {}
                 }
               >
                 <TransportIcon mode={m} className="w-5 h-5" />
                 <span className="text-[11px] font-bold uppercase tracking-tight">
                   {modeConfig[m].label}
                 </span>
-              </button>
+              </ToggleGroupItem>
             ))}
-          </div>
+          </ToggleGroup>
         </div>
 
         {/* Duration */}

@@ -3,6 +3,17 @@ import { Calendar, Trash2, AlertTriangle } from 'lucide-react';
 import ModalBase from '@/components/ui/ModalBase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import {
+  AlertDialog,
+  AlertDialogTrigger,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from '@/components/ui/alert-dialog';
 import InlineDateRangePicker from '@/components/InlineDateRangePicker';
 import { HybridTrip } from '@/domain/types';
 import { fmt, addDaysTo } from '@/domain/dateUtils';
@@ -23,7 +34,6 @@ function TripEditorModal({
   const [name, setName] = useState(trip.name);
   const [startDate, setStartDate] = useState(trip.startDate);
   const [totalDays, setTotalDays] = useState(trip.totalDays);
-  const [confirmDelete, setConfirmDelete] = useState(false);
   const [confirmShrink, setConfirmShrink] = useState(false);
 
   const endDateStr =
@@ -180,39 +190,39 @@ function TripEditorModal({
               </Button>
             </div>
           </div>
-        ) : confirmDelete && onDelete ? (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-            <p className="text-xs font-semibold text-red-700 mb-2">
-              Delete &ldquo;{trip.name}&rdquo;? This cannot be undone.
-            </p>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                className="flex-1"
-                onClick={() => setConfirmDelete(false)}
-              >
-                Keep
-              </Button>
-              <Button
-                variant="destructive"
-                size="sm"
-                className="flex-1 bg-red-500 text-white hover:bg-red-600"
-                onClick={() => {
-                  onDelete();
-                  onClose();
-                }}
-              >
-                Delete Trip
-              </Button>
-            </div>
-          </div>
         ) : (
           <div className="flex gap-3 pt-2">
             {onDelete && (
-              <Button variant="destructive" size="sm" onClick={() => setConfirmDelete(true)}>
-                <Trash2 data-icon="inline-start" className="w-3 h-3" /> Delete
-              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive" size="sm">
+                    <Trash2 data-icon="inline-start" className="w-3 h-3" /> Delete
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>
+                      Delete &ldquo;{trip.name}&rdquo;?
+                    </AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will permanently delete the trip and all its stays and places. This action
+                      cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Keep</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() => {
+                        onDelete();
+                        onClose();
+                      }}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      Delete Trip
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             )}
             <Button variant="outline" className="flex-1" onClick={onClose}>
               Cancel

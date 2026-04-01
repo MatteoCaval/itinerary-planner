@@ -14,6 +14,18 @@ import ModalBase from '@/components/ui/ModalBase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  AlertDialog,
+  AlertDialogTrigger,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from '@/components/ui/alert-dialog';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { getVisitTypeIcon } from '@/components/ui/TransportIcon';
 import { ChecklistItem, VisitItem, VisitLink, VisitType } from '@/domain/types';
 import { VISIT_TYPES } from '@/domain/constants';
@@ -59,7 +71,6 @@ function VisitFormModal({
   const [showResults, setShowResults] = useState(false);
   const [searchError, setSearchError] = useState(false);
   const isEditing = !!initial?.id;
-  const [confirmDelete, setConfirmDelete] = useState(false);
 
   // Checklist
   const [checklist, setChecklist] = useState<ChecklistItem[]>(initial?.checklist ?? []);
@@ -189,26 +200,29 @@ function VisitFormModal({
           <label className="text-[11px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 block">
             Category
           </label>
-          <div className="grid grid-cols-5 gap-1.5">
-            {VISIT_TYPES.map((t) => {
-              const selected = type === t;
-              return (
-                <button
-                  key={t}
-                  onClick={() => setType(t)}
-                  aria-pressed={selected}
-                  className={`flex flex-col items-center gap-1.5 py-2.5 px-1 rounded-xl border text-[9px] font-bold transition-all focus-visible:ring-2 focus-visible:ring-primary/50 ${
-                    selected
-                      ? `${getVisitTypeColor(t)} border-current shadow-sm`
-                      : 'border-slate-200 text-slate-400 hover:border-slate-300 hover:text-slate-600 hover:bg-slate-50'
-                  }`}
-                >
-                  {getVisitTypeIcon(t, 'w-3.5 h-3.5')}
-                  <span className="leading-none">{getVisitLabel(t)}</span>
-                </button>
-              );
-            })}
-          </div>
+          <ToggleGroup
+            type="single"
+            value={type}
+            onValueChange={(v) => {
+              if (v) setType(v as VisitType);
+            }}
+            className="grid grid-cols-5 gap-1.5 w-full"
+          >
+            {VISIT_TYPES.map((t) => (
+              <ToggleGroupItem
+                key={t}
+                value={t}
+                className={`flex flex-col items-center gap-1.5 py-2.5 px-1 h-auto rounded-xl border text-[9px] font-bold transition-all ${
+                  type === t
+                    ? `${getVisitTypeColor(t)} border-current shadow-sm`
+                    : 'border-slate-200 text-slate-400 hover:border-slate-300 hover:text-slate-600 hover:bg-slate-50'
+                }`}
+              >
+                {getVisitTypeIcon(t, 'w-3.5 h-3.5')}
+                <span className="leading-none">{getVisitLabel(t)}</span>
+              </ToggleGroupItem>
+            ))}
+          </ToggleGroup>
         </div>
 
         {/* Duration */}
@@ -366,7 +380,7 @@ function VisitFormModal({
         </details>
 
         {/* Delete / unschedule */}
-        {(onDelete || onUnschedule) && !confirmDelete && (
+        {(onDelete || onUnschedule) && (
           <div className="flex gap-2">
             {onUnschedule && (
               <Button
@@ -382,43 +396,36 @@ function VisitFormModal({
               </Button>
             )}
             {onDelete && (
-              <Button
-                variant="destructive"
-                size="sm"
-                className="flex-1"
-                onClick={() => setConfirmDelete(true)}
-              >
-                <Trash2 data-icon="inline-start" className="w-3 h-3" /> Delete
-              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive" size="sm" className="flex-1">
+                    <Trash2 data-icon="inline-start" className="w-3 h-3" /> Delete
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>
+                      Delete &ldquo;{name || initial?.name}&rdquo;?
+                    </AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This place will be permanently removed. This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Keep</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() => {
+                        onDelete();
+                        onClose();
+                      }}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      Delete
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             )}
-          </div>
-        )}
-        {confirmDelete && onDelete && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-            <p className="text-xs font-semibold text-red-700 mb-2">
-              Delete &ldquo;{name || initial?.name}&rdquo;?
-            </p>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                className="flex-1"
-                onClick={() => setConfirmDelete(false)}
-              >
-                Keep
-              </Button>
-              <Button
-                variant="destructive"
-                size="sm"
-                className="flex-1 bg-red-500 text-white hover:bg-red-600"
-                onClick={() => {
-                  onDelete();
-                  onClose();
-                }}
-              >
-                Delete
-              </Button>
-            </div>
           </div>
         )}
 

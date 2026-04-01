@@ -3,6 +3,17 @@ import { Trash2 } from 'lucide-react';
 import ModalBase from '@/components/ui/ModalBase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import {
+  AlertDialog,
+  AlertDialogTrigger,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from '@/components/ui/alert-dialog';
 import { Stay } from '@/domain/types';
 import { STAY_COLORS } from '@/domain/constants';
 
@@ -20,7 +31,6 @@ function StayEditorModal({
   const [name, setName] = useState(stay.name);
   const [lodging, setLodging] = useState(stay.lodging);
   const [color, setColor] = useState(stay.color);
-  const [confirmDelete, setConfirmDelete] = useState(false);
 
   return (
     <ModalBase title="Edit Stay" onClose={onClose}>
@@ -74,54 +84,49 @@ function StayEditorModal({
             </div>
           </div>
         </div>
-        {confirmDelete ? (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-            <p className="text-xs font-semibold text-red-700 mb-2">
-              Delete "{stay.name}"? This removes all {stay.visits.length} scheduled{' '}
-              {stay.visits.length === 1 ? 'place' : 'places'}.
-            </p>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                className="flex-1"
-                onClick={() => setConfirmDelete(false)}
-              >
-                Keep
+        <div className="flex gap-3 pt-2">
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive" size="sm">
+                <Trash2 data-icon="inline-start" className="w-3.5 h-3.5" /> Delete
               </Button>
-              <Button
-                variant="destructive"
-                size="sm"
-                className="flex-1"
-                onClick={() => {
-                  onDelete();
-                  onClose();
-                }}
-              >
-                Delete Stay
-              </Button>
-            </div>
-          </div>
-        ) : (
-          <div className="flex gap-3 pt-2">
-            <Button variant="destructive" size="sm" onClick={() => setConfirmDelete(true)}>
-              <Trash2 data-icon="inline-start" className="w-3.5 h-3.5" /> Delete
-            </Button>
-            <Button variant="outline" size="sm" className="flex-1" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button
-              size="sm"
-              className="flex-1"
-              onClick={() => {
-                onSave({ name, lodging, color });
-                onClose();
-              }}
-            >
-              Save
-            </Button>
-          </div>
-        )}
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete &ldquo;{stay.name}&rdquo;?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This removes all {stay.visits.length} scheduled{' '}
+                  {stay.visits.length === 1 ? 'place' : 'places'}. This action cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Keep</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => {
+                    onDelete();
+                    onClose();
+                  }}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  Delete Stay
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+          <Button variant="outline" size="sm" className="flex-1" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button
+            size="sm"
+            className="flex-1"
+            onClick={() => {
+              onSave({ name, lodging, color });
+              onClose();
+            }}
+          >
+            Save
+          </Button>
+        </div>
       </div>
     </ModalBase>
   );

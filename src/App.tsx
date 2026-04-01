@@ -84,6 +84,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import {
   Sheet,
   SheetContent,
@@ -1078,22 +1079,32 @@ function ChronosApp() {
                 <span className="text-[11px] font-extrabold uppercase tracking-[0.15em] text-slate-500">
                   Timeline
                 </span>
-                <div className="flex bg-white rounded-lg border border-border-neutral p-0.5 overflow-x-auto scroll-hide">
+                <ToggleGroup
+                  type="single"
+                  value={String(zoomDays)}
+                  onValueChange={(v) => {
+                    if (v) {
+                      const d = Number(v);
+                      setZoomDays(d);
+                      localStorage.setItem('itinerary-timeline-zoom', String(d));
+                    }
+                  }}
+                  variant="outline"
+                  size="sm"
+                  className="overflow-x-auto scroll-hide"
+                >
                   {([5, 10, 15, 30, 0] as const)
                     .filter((d) => d === 0 || d <= trip.totalDays)
                     .map((d) => (
-                      <button
+                      <ToggleGroupItem
                         key={d}
-                        onClick={() => {
-                          setZoomDays(d);
-                          localStorage.setItem('itinerary-timeline-zoom', String(d));
-                        }}
-                        className={`px-3 py-1.5 text-[9px] font-bold rounded-md transition-colors whitespace-nowrap ${zoomDays === d ? 'bg-primary text-white shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}
+                        value={String(d)}
+                        className="px-3 text-[9px] font-bold whitespace-nowrap data-[state=on]:bg-primary data-[state=on]:text-white"
                       >
                         {d === 0 ? 'ALL' : `${d} DAYS`}
-                      </button>
+                      </ToggleGroupItem>
                     ))}
-                </div>
+                </ToggleGroup>
               </div>
               <Button size="icon-sm" onClick={() => setAddingStay(true)} aria-label="Add stay">
                 <Plus className="w-3.5 h-3.5" />
