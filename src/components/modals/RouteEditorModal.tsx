@@ -2,6 +2,9 @@ import { useState } from 'react';
 import { ArrowLeftRight } from 'lucide-react';
 import ModalBase from '@/components/ui/ModalBase';
 import TransportIcon from '@/components/ui/TransportIcon';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Stay, TravelMode } from '@/domain/types';
 import { TRAVEL_MODES } from '@/domain/constants';
 
@@ -58,8 +61,8 @@ function RouteEditorModal({ stay, nextStay, onClose, onSave }: {
         {/* Duration */}
         <div>
           <label className="text-[11px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 block">Duration</label>
-          <input
-            className="w-full border border-slate-200 rounded-lg px-3 py-2 text-xs focus:ring-1 focus:ring-primary focus:border-primary outline-none"
+          <Input
+            className="text-xs"
             placeholder="e.g. 2h 30m"
             value={duration}
             onChange={(e) => setDuration(e.target.value)}
@@ -69,8 +72,8 @@ function RouteEditorModal({ stay, nextStay, onClose, onSave }: {
         {/* Notes */}
         <div>
           <label className="text-[11px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 block">Notes</label>
-          <textarea
-            className="w-full border border-slate-200 rounded-lg px-3 py-2 text-xs focus:ring-1 focus:ring-primary focus:border-primary outline-none resize-none"
+          <Textarea
+            className="text-xs resize-none"
             rows={3}
             placeholder="Booking reference, platform, tips..."
             value={notes}
@@ -79,15 +82,12 @@ function RouteEditorModal({ stay, nextStay, onClose, onSave }: {
         </div>
 
         <div className="flex gap-3 pt-1">
-          <button onClick={onClose} className="flex-1 py-2 border border-slate-200 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-50 transition-colors">
+          <Button variant="outline" size="sm" className="flex-1" onClick={onClose}>
             Cancel
-          </button>
-          <button
-            onClick={() => { onSave(mode, duration, notes); onClose(); }}
-            className="flex-1 py-2 bg-primary text-white rounded-lg text-xs font-bold hover:bg-primary/90 transition-colors"
-          >
+          </Button>
+          <Button size="sm" className="flex-1" onClick={() => { onSave(mode, duration, notes); onClose(); }}>
             Save Route
-          </button>
+          </Button>
         </div>
       </div>
     </ModalBase>

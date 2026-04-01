@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import { Sparkles, SlidersHorizontal, Check, X } from 'lucide-react';
 import ModalBase from '@/components/ui/ModalBase';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { HybridTrip, Stay, NightAccommodation } from '@/domain/types';
 import { generateHybridItinerary, AIHybridStay } from '@/aiService';
 
@@ -143,8 +146,8 @@ function AIPlannerModal({
               <label className="text-[11px] font-extrabold uppercase tracking-widest text-slate-400 mb-2 block">
                 What should I plan? <span className="text-slate-300 normal-case font-medium">({trip.totalDays} days available)</span>
               </label>
-              <textarea
-                className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:ring-1 focus:ring-primary focus:border-primary outline-none resize-none"
+              <Textarea
+                className="text-sm resize-none"
                 rows={4}
                 placeholder={`e.g. ${trip.totalDays} days in Japan — Tokyo, Kyoto, Osaka. Culture, food, and nature. Mid-budget, late May 2026.`}
                 value={prompt}
@@ -181,28 +184,25 @@ function AIPlannerModal({
           )}
 
           <div className="flex gap-3 pt-1">
-            <button onClick={onClose} disabled={loading} className="flex-1 py-2.5 border border-slate-200 rounded-lg text-sm font-bold text-slate-600 hover:bg-slate-50 transition-colors disabled:opacity-40">
+            <Button variant="outline" className="flex-1" onClick={onClose} disabled={loading}>
               Cancel
-            </button>
+            </Button>
             {explanation ? (
-              <button
-                onClick={handleApply}
-                className="flex-1 py-2.5 bg-primary text-white rounded-lg text-xs font-bold hover:bg-primary/90 transition-colors flex items-center justify-center gap-2"
-              >
-                <Check className="w-4 h-4" /> Apply to Timeline
-              </button>
+              <Button className="flex-1" onClick={handleApply}>
+                <Check data-icon="inline-start" className="w-4 h-4" /> Apply to Timeline
+              </Button>
             ) : (
-              <button
+              <Button
+                className="flex-1"
                 onClick={handleGenerate}
                 disabled={loading || !prompt.trim()}
-                className="flex-1 py-2.5 bg-primary text-white rounded-lg text-xs font-bold hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 {loading ? (
                   <span className="flex items-center gap-2"><span className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" /> Generating…</span>
                 ) : (
-                  <><Sparkles className="w-4 h-4" /> Generate</>
+                  <><Sparkles data-icon="inline-start" className="w-4 h-4" /> Generate</>
                 )}
-              </button>
+              </Button>
             )}
           </div>
         </div>
@@ -212,9 +212,9 @@ function AIPlannerModal({
         <div className="space-y-4">
           <div>
             <label className="text-[11px] font-extrabold uppercase tracking-widest text-slate-400 mb-2 block">Gemini API Key</label>
-            <input
+            <Input
               type="password"
-              className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:ring-1 focus:ring-primary focus:border-primary outline-none font-mono"
+              className="text-sm font-mono"
               placeholder="AIza…"
               value={settings.apiKey}
               onChange={(e) => onSettingsChange({ ...settings, apiKey: e.target.value })}
@@ -246,9 +246,9 @@ function AIPlannerModal({
                 </button>
               ))}
             </div>
-            <input
+            <Input
               type="text"
-              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-primary focus:border-primary outline-none font-mono"
+              className="text-sm font-mono"
               placeholder="or type a custom model ID"
               value={settings.model}
               onChange={(e) => onSettingsChange({ ...settings, model: e.target.value })}

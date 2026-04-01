@@ -2,6 +2,7 @@ import { Redo2 } from 'lucide-react';
 import ModalBase from '@/components/ui/ModalBase';
 import type { HistorySnapshot } from '@/hooks/useHistory';
 import { formatRelativeTime } from '@/domain/dateUtils';
+import { Badge } from '@/components/ui/badge';
 
 function HistoryPanel({ history, index, onNavigate, onClose }: {
   history: HistorySnapshot[]; index: number; onNavigate: (i: number) => void; onClose: () => void;
@@ -44,14 +45,14 @@ function HistoryPanel({ history, index, onNavigate, onClose }: {
                       {snap.trip.stays.length} stays · {snap.trip.stays.reduce((s, st) => s + st.visits.length, 0)} places
                     </p>
                     {staysDiff !== null && staysDiff !== 0 && (
-                      <span className={`text-[9px] font-bold px-1.5 py-px rounded ${staysDiff > 0 ? 'text-emerald-600 bg-emerald-50' : 'text-red-500 bg-red-50'}`}>
+                      <Badge variant="secondary" className={`text-[9px] font-bold h-auto px-1.5 py-px ${staysDiff > 0 ? 'text-emerald-600 bg-emerald-50' : 'text-red-500 bg-red-50'}`}>
                         {staysDiff > 0 ? `+${staysDiff}` : staysDiff} stay{Math.abs(staysDiff) !== 1 ? 's' : ''}
-                      </span>
+                      </Badge>
                     )}
                     {placesDiff !== null && placesDiff !== 0 && (
-                      <span className={`text-[9px] font-bold px-1.5 py-px rounded ${placesDiff > 0 ? 'text-emerald-600 bg-emerald-50' : 'text-red-500 bg-red-50'}`}>
+                      <Badge variant="secondary" className={`text-[9px] font-bold h-auto px-1.5 py-px ${placesDiff > 0 ? 'text-emerald-600 bg-emerald-50' : 'text-red-500 bg-red-50'}`}>
                         {placesDiff > 0 ? `+${placesDiff}` : placesDiff} place{Math.abs(placesDiff) !== 1 ? 's' : ''}
-                      </span>
+                      </Badge>
                     )}
                   </div>
                 </div>
@@ -59,7 +60,7 @@ function HistoryPanel({ history, index, onNavigate, onClose }: {
               <div className="flex items-center gap-2 shrink-0">
                 <span className="text-[9px] text-slate-300 tabular-nums">{formatRelativeTime(snap.timestamp)}</span>
                 {isCurrent && (
-                  <span className="text-[9px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">NOW</span>
+                  <Badge variant="secondary" className="text-[9px] font-bold text-primary bg-primary/10 h-auto px-2 py-0.5">NOW</Badge>
                 )}
                 {isFuture && <Redo2 className="w-3 h-3 text-slate-300" />}
               </div>

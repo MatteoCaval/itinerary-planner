@@ -3,6 +3,10 @@ import { MapPin, Hotel, ExternalLink, X, ChevronDown, Plus } from 'lucide-react'
 import type { Stay, AccommodationGroup, ChecklistItem, VisitLink } from '@/domain/types';
 import { fmt } from '@/domain/dateUtils';
 import { deriveStayDays } from '@/domain/stayLogic';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
 
 function StayOverviewPanel({ stay, stayDays, accommodationGroups, onUpdate }: {
   stay: Stay;
@@ -97,8 +101,8 @@ function StayOverviewPanel({ stay, stayDays, accommodationGroups, onUpdate }: {
       {/* Notes */}
       <div className="px-4 py-2 border-b border-border-neutral">
         <label className="text-[11px] font-extrabold uppercase tracking-widest text-slate-400 mb-1.5 block">Notes</label>
-        <textarea
-          className="w-full border border-slate-200 rounded-lg px-3 py-2 text-xs focus:ring-1 focus:ring-primary focus:border-primary outline-none resize-none text-slate-700 placeholder:text-slate-300"
+        <Textarea
+          className="text-xs resize-none text-slate-700 placeholder:text-slate-300"
           rows={3}
           placeholder="Travel tips, booking info, things to know…"
           value={notes}
@@ -118,37 +122,41 @@ function StayOverviewPanel({ stay, stayDays, accommodationGroups, onUpdate }: {
                 className="flex-1 text-xs text-primary hover:underline truncate" onClick={(e) => e.stopPropagation()}>
                 {link.label || link.url}
               </a>
-              <button
+              <Button
+                variant="ghost"
+                size="icon-xs"
                 onClick={() => { const next = links.filter((_, idx) => idx !== i); setLinks(next); onUpdate({ links: next.length > 0 ? next : undefined }); }}
-                className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-50 text-slate-400 hover:text-red-500 transition-all"
+                className="opacity-0 group-hover:opacity-100 hover:bg-red-50 text-slate-400 hover:text-red-500"
               >
                 <X className="w-3 h-3" />
-              </button>
+              </Button>
             </div>
           ))}
           <div className="space-y-1.5 mt-1">
-            <input
-              className="w-full border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-primary focus:border-primary outline-none"
+            <Input
+              className="text-xs h-7"
               placeholder="https://…"
               value={newLinkUrl}
               onChange={(e) => setNewLinkUrl(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addLink(); } }}
             />
             <div className="flex gap-1.5">
-              <input
-                className="flex-1 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-primary focus:border-primary outline-none"
+              <Input
+                className="flex-1 text-xs h-7"
                 placeholder="Label (optional)"
                 value={newLinkLabel}
                 onChange={(e) => setNewLinkLabel(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addLink(); } }}
               />
-              <button
+              <Button
+                variant="secondary"
+                size="sm"
                 onClick={addLink}
                 disabled={!newLinkUrl.trim()}
-                className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-primary/10 text-slate-500 hover:text-primary text-xs font-bold transition-colors disabled:opacity-40"
+                className="text-xs font-bold"
               >
                 Add
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -190,9 +198,9 @@ export function StayTodoSection({ stay, onUpdate }: {
         <div className="flex items-center gap-2">
           <span className="text-[11px] font-extrabold uppercase tracking-widest text-slate-400">To-Do</span>
           {checklist.length > 0 && (
-            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${doneCount === checklist.length ? 'bg-emerald-50 text-emerald-600' : 'bg-primary/10 text-primary'}`}>
+            <Badge variant="secondary" className={`text-[9px] font-bold h-auto px-1.5 py-0.5 ${doneCount === checklist.length ? 'bg-emerald-50 text-emerald-600' : 'bg-primary/10 text-primary'}`}>
               {doneCount}/{checklist.length}
-            </span>
+            </Badge>
           )}
         </div>
         <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-all duration-200 ${open ? 'rotate-180' : ''}`} />
@@ -210,29 +218,32 @@ export function StayTodoSection({ stay, onUpdate }: {
               <span className={`flex-1 text-xs ${item.done ? 'line-through text-slate-400' : 'text-slate-700'}`}>
                 {item.text}
               </span>
-              <button
+              <Button
+                variant="ghost"
+                size="icon-xs"
                 onClick={() => onUpdate(checklist.filter((i) => i.id !== item.id))}
-                className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-50 text-slate-400 hover:text-red-500 transition-all"
+                className="opacity-0 group-hover:opacity-100 hover:bg-red-50 text-slate-400 hover:text-red-500"
               >
                 <X className="w-3 h-3" />
-              </button>
+              </Button>
             </div>
           ))}
           <div className="flex items-center gap-1.5 mt-1">
-            <input
-              className="flex-1 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-primary focus:border-primary outline-none placeholder:text-slate-400"
+            <Input
+              className="flex-1 text-xs h-7"
               placeholder="Add to-do…"
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addItem(); } }}
             />
-            <button
+            <Button
+              variant="secondary"
+              size="icon-sm"
               onClick={addItem}
               disabled={!inputText.trim()}
-              className="p-1.5 rounded-lg bg-slate-100 hover:bg-primary/10 text-slate-500 hover:text-primary transition-colors disabled:opacity-40"
             >
               <Plus className="w-3.5 h-3.5" />
-            </button>
+            </Button>
           </div>
         </div>
       )}

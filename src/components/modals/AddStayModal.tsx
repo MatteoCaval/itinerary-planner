@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Search, MapPin, Check } from 'lucide-react';
 import ModalBase from '@/components/ui/ModalBase';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
 import { searchPlace, PlaceSearchResult } from '@/utils/geocoding';
 
 function AddStayModal({ onClose, onSave, stayColor, initialDays }: {
@@ -53,8 +56,8 @@ function AddStayModal({ onClose, onSave, stayColor, initialDays }: {
           </label>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
-            <input
-              className="w-full border border-slate-200 rounded-lg pl-9 pr-9 py-2 text-xs focus:ring-1 focus:ring-primary focus:border-primary outline-none font-semibold placeholder:font-normal"
+            <Input
+              className="pl-9 pr-9 text-xs font-semibold placeholder:font-normal"
               placeholder="e.g. Tokyo, Kyoto, Paris…"
               value={name}
               onChange={(e) => { setName(e.target.value); setPickedCoords(null); }}
@@ -126,26 +129,25 @@ function AddStayModal({ onClose, onSave, stayColor, initialDays }: {
             <p className="text-[11px] text-slate-400 font-medium mt-0.5">{days} {days === 1 ? 'day' : 'days'} on the timeline</p>
           </div>
           {pickedCoords && (
-            <span className="text-[9px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-full flex-shrink-0">
+            <Badge variant="outline" className="text-[9px] font-bold text-emerald-600 bg-emerald-50 border-emerald-100 flex-shrink-0">
               Located
-            </span>
+            </Badge>
           )}
         </div>
 
         {/* Actions */}
         <div className="flex gap-2.5 pt-1">
-          <button onClick={onClose}
-            className="flex-1 py-2 text-xs font-bold text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
-          >
+          <Button variant="outline" size="sm" className="flex-1" onClick={onClose}>
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
+            size="sm"
+            className="flex-1"
             onClick={() => canSave && onSave({ name: name.trim(), days, lat: pickedCoords?.lat, lng: pickedCoords?.lng })}
             disabled={!canSave}
-            className="flex-1 py-2 text-xs font-bold text-white bg-primary rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-40"
           >
             Add to Timeline
-          </button>
+          </Button>
         </div>
       </div>
     </ModalBase>

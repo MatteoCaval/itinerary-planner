@@ -2,6 +2,7 @@ import { Plus, Check } from 'lucide-react';
 import ModalBase from '@/components/ui/ModalBase';
 import type { TripStore } from '@/domain/types';
 import { fmt } from '@/domain/dateUtils';
+import { Button } from '@/components/ui/button';
 
 function TripSwitcherPanel({ store, onSwitch, onNew, onClose }: {
   store: TripStore; onSwitch: (id: string) => void;
@@ -30,12 +31,13 @@ function TripSwitcherPanel({ store, onSwitch, onNew, onClose }: {
           </button>
         ))}
       </div>
-      <button
+      <Button
+        variant="outline"
         onClick={() => { onNew(); onClose(); }}
-        className="w-full py-2.5 border-2 border-dashed border-slate-300 rounded-lg text-sm font-bold text-slate-500 hover:border-primary/50 hover:text-primary transition-all flex items-center justify-center gap-2"
+        className="w-full py-2.5 border-2 border-dashed border-slate-300 text-sm font-bold text-slate-500 hover:border-primary/50 hover:text-primary gap-2"
       >
         <Plus className="w-4 h-4" /> New Trip
-      </button>
+      </Button>
     </ModalBase>
   );
 }

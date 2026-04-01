@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Hotel, Search, MapPin, Check, Trash2 } from 'lucide-react';
 import ModalBase from '@/components/ui/ModalBase';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { NightAccommodation } from '@/domain/types';
 import { fmt } from '@/domain/dateUtils';
 import { searchPlace, PlaceSearchResult } from '@/utils/geocoding';
@@ -91,8 +93,8 @@ function AccommodationEditorModal({ initial, allNights, initialNights, existingN
           </label>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
-            <input
-              className="w-full border border-slate-200 rounded-lg pl-9 pr-8 py-2 text-xs focus:ring-1 focus:ring-primary focus:border-primary outline-none font-semibold"
+            <Input
+              className="pl-9 pr-8 text-xs font-semibold"
               placeholder="Search hotel or address..."
               value={name}
               onChange={(e) => { setName(e.target.value); setLat(undefined); setLng(undefined); }}
@@ -151,8 +153,8 @@ function AccommodationEditorModal({ initial, allNights, initialNights, existingN
         {/* Notes */}
         <div>
           <label className="text-[11px] font-extrabold uppercase tracking-widest text-slate-500 mb-1.5 block">Notes</label>
-          <input
-            className="w-full border border-slate-200 rounded-lg px-3 py-2 text-xs focus:ring-1 focus:ring-primary focus:border-primary outline-none"
+          <Input
+            className="text-xs"
             placeholder="Address, confirmation #, etc."
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
@@ -162,8 +164,8 @@ function AccommodationEditorModal({ initial, allNights, initialNights, existingN
         {/* Cost */}
         <div>
           <label className="text-[11px] font-extrabold uppercase tracking-widest text-slate-500 mb-1.5 block">Nightly Cost</label>
-          <input
-            className="w-full border border-slate-200 rounded-lg px-3 py-2 text-xs focus:ring-1 focus:ring-primary focus:border-primary outline-none"
+          <Input
+            className="text-xs"
             placeholder="0.00"
             type="number"
             min="0"
@@ -206,27 +208,21 @@ function AccommodationEditorModal({ initial, allNights, initialNights, existingN
         {/* Actions */}
         <div className="flex items-center justify-between pt-2 border-t border-slate-100">
           {onRemove ? (
-            <button
-              onClick={() => { onRemove(); onClose(); }}
-              className="text-xs font-bold text-red-500 hover:text-red-600 flex items-center gap-1.5 px-2 py-1.5 rounded-md hover:bg-red-50 transition-colors"
-            >
-              <Trash2 className="w-3.5 h-3.5" /> Remove
-            </button>
+            <Button variant="destructive" size="sm" onClick={() => { onRemove(); onClose(); }}>
+              <Trash2 data-icon="inline-start" className="w-3.5 h-3.5" /> Remove
+            </Button>
           ) : <div />}
           <div className="flex gap-2">
-            <button
-              onClick={onClose}
-              className="px-4 py-2 text-xs font-bold text-slate-500 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
-            >
+            <Button variant="outline" size="sm" onClick={onClose}>
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
+              size="sm"
               onClick={handleSave}
               disabled={!name.trim() || nightCount === 0}
-              className="px-4 py-2 text-xs font-bold text-white bg-primary rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
               Save
-            </button>
+            </Button>
           </div>
         </div>
       </div>

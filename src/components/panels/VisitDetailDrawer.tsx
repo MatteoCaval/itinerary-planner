@@ -2,6 +2,10 @@ import { useState, useEffect } from 'react';
 import { Calendar, Pencil, ArrowLeftRight, Trash2, ChevronDown, ExternalLink, X, Plus } from 'lucide-react';
 import type { VisitItem, ChecklistItem } from '@/domain/types';
 import { getVisitTypeBg, getVisitTypeColor, getVisitLabel } from '@/domain/visitTypeDisplay';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
 
 function VisitDetailDrawer({ visit, dayLabel, onClose, onEdit, onUnschedule, onDelete, onUpdateVisit }: {
   visit: VisitItem;
@@ -76,9 +80,9 @@ function VisitDetailDrawer({ visit, dayLabel, onClose, onEdit, onUnschedule, onD
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
         <div className="absolute bottom-2.5 left-3.5 right-3.5">
-          <span className={`inline-flex text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-tighter border ${getVisitTypeColor(visit.type)} bg-white/90`}>
+          <Badge variant="outline" className={`text-[9px] font-bold uppercase tracking-tighter ${getVisitTypeColor(visit.type)} bg-white/90`}>
             {getVisitLabel(visit.type)}
-          </span>
+          </Badge>
           <h3 className="text-white font-bold text-sm leading-tight mt-1 truncate">{visit.name}</h3>
           {visit.area && <p className="text-white/60 text-[11px] truncate">{visit.area}</p>}
         </div>
@@ -103,8 +107,8 @@ function VisitDetailDrawer({ visit, dayLabel, onClose, onEdit, onUnschedule, onD
         {/* Notes */}
         <div className="px-4 py-3 border-b border-border-neutral">
           <label className="text-[9px] font-extrabold uppercase tracking-widest text-slate-400 mb-1.5 block">Notes</label>
-          <textarea
-            className="w-full border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-700 resize-none focus:ring-1 focus:ring-primary focus:border-primary outline-none placeholder:text-slate-400"
+          <Textarea
+            className="text-xs text-slate-700 resize-none placeholder:text-slate-400"
             rows={3}
             placeholder="Add notes about this place..."
             value={notes}
@@ -120,7 +124,7 @@ function VisitDetailDrawer({ visit, dayLabel, onClose, onEdit, onUnschedule, onD
               <ChevronDown className="w-3 h-3 transition-transform [details:not([open])_&]:-rotate-90" />
               Checklist
               {checklist.length > 0 && (
-                <span className="text-[9px] font-bold text-primary bg-primary/10 px-1.5 rounded-full">{doneCount}/{checklist.length}</span>
+                <Badge variant="secondary" className="text-[9px] font-bold text-primary bg-primary/10 h-auto px-1.5">{doneCount}/{checklist.length}</Badge>
               )}
             </summary>
             <div className="space-y-1 mt-1">
@@ -132,22 +136,22 @@ function VisitDetailDrawer({ visit, dayLabel, onClose, onEdit, onUnschedule, onD
                     className="accent-primary w-3.5 h-3.5 flex-shrink-0 cursor-pointer"
                   />
                   <span className={`flex-1 text-xs ${item.done ? 'line-through text-slate-400' : 'text-slate-700'}`}>{item.text}</span>
-                  <button onClick={() => removeChecklistItem(item.id)} className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-red-50 text-slate-400 hover:text-red-500 transition-all">
+                  <Button variant="ghost" size="icon-xs" onClick={() => removeChecklistItem(item.id)} className="opacity-0 group-hover:opacity-100 hover:bg-red-50 text-slate-400 hover:text-red-500">
                     <X className="w-3 h-3" />
-                  </button>
+                  </Button>
                 </div>
               ))}
               <div className="flex items-center gap-1.5 mt-1">
-                <input
-                  className="flex-1 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-primary focus:border-primary outline-none placeholder:text-slate-400"
+                <Input
+                  className="flex-1 text-xs h-7"
                   placeholder="Add item..."
                   value={newChecklistText}
                   onChange={(e) => setNewChecklistText(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addChecklistItem(); } }}
                 />
-                <button onClick={addChecklistItem} disabled={!newChecklistText.trim()} className="p-1.5 rounded-lg bg-slate-100 hover:bg-primary/10 text-slate-500 hover:text-primary transition-colors disabled:opacity-40">
+                <Button variant="secondary" size="icon-sm" onClick={addChecklistItem} disabled={!newChecklistText.trim()}>
                   <Plus className="w-3.5 h-3.5" />
-                </button>
+                </Button>
               </div>
             </div>
           </details>
@@ -173,26 +177,30 @@ function VisitDetailDrawer({ visit, dayLabel, onClose, onEdit, onUnschedule, onD
 
       {/* Action bar */}
       <div className="flex items-center gap-2 px-4 py-3 border-t border-border-neutral bg-white flex-shrink-0">
-        <button
+        <Button
           onClick={onEdit}
-          className="flex-1 py-2 bg-primary text-white rounded-lg text-xs font-bold hover:bg-primary/90 transition-colors flex items-center justify-center gap-1.5"
+          size="sm"
+          className="flex-1 text-xs font-bold gap-1.5"
         >
           <Pencil className="w-3 h-3" /> Edit Details
-        </button>
-        <button
+        </Button>
+        <Button
+          variant="outline"
+          size="icon-sm"
           onClick={onUnschedule}
-          className="py-2 px-3 border border-blue-200 text-blue-500 rounded-lg text-xs font-bold hover:bg-blue-50 transition-colors"
+          className="border-blue-200 text-blue-500 hover:bg-blue-50"
           title="Move to Inbox"
         >
           <ArrowLeftRight className="w-3.5 h-3.5" />
-        </button>
-        <button
+        </Button>
+        <Button
+          variant="destructive"
+          size="icon-sm"
           onClick={() => { onDelete(); onClose(); }}
-          className="py-2 px-3 border border-red-200 text-red-500 rounded-lg text-xs font-bold hover:bg-red-50 transition-colors"
           title="Delete"
         >
           <Trash2 className="w-3.5 h-3.5" />
-        </button>
+        </Button>
       </div>
     </div>
   );

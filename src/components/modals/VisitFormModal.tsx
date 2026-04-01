@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Search, MapPin, Check, ChevronDown, ExternalLink, X, Plus, Trash2, ArrowLeftRight } from 'lucide-react';
 import ModalBase from '@/components/ui/ModalBase';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { getVisitTypeIcon } from '@/components/ui/TransportIcon';
 import { ChecklistItem, VisitItem, VisitLink, VisitType } from '@/domain/types';
 import { VISIT_TYPES } from '@/domain/constants';
@@ -93,8 +96,8 @@ function VisitFormModal({ initial, title, onClose, onSave, onDelete, onUnschedul
           </label>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
-            <input
-              className="w-full border border-slate-200 rounded-lg pl-9 pr-9 py-2 text-xs focus:ring-1 focus:ring-primary focus:border-primary outline-none font-semibold placeholder:font-normal"
+            <Input
+              className="pl-9 pr-9 text-xs font-semibold placeholder:font-normal"
               placeholder="e.g. Senso-ji Temple, Nishiki Market…"
               value={name}
               onChange={(e) => { setName(e.target.value); setPickedCoords(null); }}
@@ -163,8 +166,8 @@ function VisitFormModal({ initial, title, onClose, onSave, onDelete, onUnschedul
           <label className="text-[11px] font-extrabold uppercase tracking-widest text-slate-500 mb-1.5 block">
             Duration
           </label>
-          <input
-            className="w-full border border-slate-200 rounded-lg px-3 py-2 text-xs focus:ring-1 focus:ring-primary focus:border-primary outline-none"
+          <Input
+            className="text-xs"
             placeholder="e.g. 2h, 90m, half day"
             value={duration}
             onChange={(e) => setDuration(e.target.value)}
@@ -174,8 +177,8 @@ function VisitFormModal({ initial, title, onClose, onSave, onDelete, onUnschedul
         {/* Notes */}
         <div>
           <label className="text-[11px] font-extrabold uppercase tracking-widest text-slate-500 mb-1.5 block">Notes</label>
-          <textarea
-            className="w-full border border-slate-200 rounded-lg px-3 py-2 text-xs focus:ring-1 focus:ring-primary focus:border-primary outline-none resize-none"
+          <Textarea
+            className="text-xs resize-none"
             rows={2}
             placeholder="Booking info, tips, opening hours…"
             value={notes}
@@ -201,29 +204,32 @@ function VisitFormModal({ initial, title, onClose, onSave, onDelete, onUnschedul
                 <span className={`flex-1 text-xs ${item.done ? 'line-through text-slate-400' : 'text-slate-700'}`}>
                   {item.text}
                 </span>
-                <button
+                <Button
+                  variant="ghost"
+                  size="icon-xs"
                   onClick={() => removeChecklistItem(item.id)}
-                  className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-50 text-slate-400 hover:text-red-500 transition-all"
+                  className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-500 hover:bg-red-50"
                 >
-                  <X className="w-3 h-3" />
-                </button>
+                  <X data-icon="inline-start" className="w-3 h-3" />
+                </Button>
               </div>
             ))}
             <div className="flex items-center gap-1.5 mt-1">
-              <input
-                className="flex-1 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-primary focus:border-primary outline-none placeholder:text-slate-400"
+              <Input
+                className="flex-1 text-xs"
                 placeholder="Add item…"
                 value={newChecklistText}
                 onChange={(e) => setNewChecklistText(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addChecklistItem(); } }}
               />
-              <button
+              <Button
+                variant="ghost"
+                size="icon-sm"
                 onClick={addChecklistItem}
                 disabled={!newChecklistText.trim()}
-                className="p-1.5 rounded-lg bg-slate-100 hover:bg-primary/10 text-slate-500 hover:text-primary transition-colors disabled:opacity-40"
               >
-                <Plus className="w-3.5 h-3.5" />
-              </button>
+                <Plus data-icon="inline-start" className="w-3.5 h-3.5" />
+              </Button>
             </div>
           </div>
         </details>
@@ -247,37 +253,40 @@ function VisitFormModal({ initial, title, onClose, onSave, onDelete, onUnschedul
                 >
                   {link.label || link.url}
                 </a>
-                <button
+                <Button
+                  variant="ghost"
+                  size="icon-xs"
                   onClick={() => setLinks((l) => l.filter((_, idx) => idx !== i))}
-                  className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-50 text-slate-400 hover:text-red-500 transition-all"
+                  className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-500 hover:bg-red-50"
                 >
-                  <X className="w-3 h-3" />
-                </button>
+                  <X data-icon="inline-start" className="w-3 h-3" />
+                </Button>
               </div>
             ))}
             <div className="space-y-1.5 mt-1">
-              <input
-                className="w-full border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-primary focus:border-primary outline-none"
+              <Input
+                className="text-xs"
                 placeholder="https://…"
                 value={newLinkUrl}
                 onChange={(e) => setNewLinkUrl(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addLink(); } }}
               />
               <div className="flex gap-1.5">
-                <input
-                  className="flex-1 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-primary focus:border-primary outline-none"
+                <Input
+                  className="flex-1 text-xs"
                   placeholder="Label (optional)"
                   value={newLinkLabel}
                   onChange={(e) => setNewLinkLabel(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addLink(); } }}
                 />
-                <button
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={addLink}
                   disabled={!newLinkUrl.trim()}
-                  className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-primary/10 text-slate-500 hover:text-primary text-xs font-bold transition-colors disabled:opacity-40"
                 >
                   Add
-                </button>
+                </Button>
               </div>
             </div>
           </div>
@@ -287,18 +296,14 @@ function VisitFormModal({ initial, title, onClose, onSave, onDelete, onUnschedul
         {(onDelete || onUnschedule) && !confirmDelete && (
           <div className="flex gap-2">
             {onUnschedule && (
-              <button onClick={() => { onUnschedule(); onClose(); }}
-                className="flex-1 py-1.5 border border-blue-200 rounded-lg text-xs font-bold text-blue-500 hover:bg-blue-50 transition-colors flex items-center justify-center gap-1.5"
-              >
-                <ArrowLeftRight className="w-3 h-3" /> Move to Unplanned
-              </button>
+              <Button variant="outline" size="sm" className="flex-1 border-blue-200 text-blue-500 hover:bg-blue-50" onClick={() => { onUnschedule(); onClose(); }}>
+                <ArrowLeftRight data-icon="inline-start" className="w-3 h-3" /> Move to Unplanned
+              </Button>
             )}
             {onDelete && (
-              <button onClick={() => setConfirmDelete(true)}
-                className="flex-1 py-1.5 border border-red-200 text-red-500 rounded-lg text-xs font-bold hover:bg-red-50 transition-colors flex items-center justify-center gap-1.5"
-              >
-                <Trash2 className="w-3 h-3" /> Delete
-              </button>
+              <Button variant="destructive" size="sm" className="flex-1" onClick={() => setConfirmDelete(true)}>
+                <Trash2 data-icon="inline-start" className="w-3 h-3" /> Delete
+              </Button>
             )}
           </div>
         )}
@@ -306,24 +311,23 @@ function VisitFormModal({ initial, title, onClose, onSave, onDelete, onUnschedul
           <div className="bg-red-50 border border-red-200 rounded-lg p-3">
             <p className="text-xs font-semibold text-red-700 mb-2">Delete &ldquo;{name || initial?.name}&rdquo;?</p>
             <div className="flex gap-2">
-              <button onClick={() => setConfirmDelete(false)} className="flex-1 py-1.5 border border-slate-200 rounded-lg text-xs font-bold text-slate-600 hover:bg-white transition-colors">
+              <Button variant="outline" size="sm" className="flex-1" onClick={() => setConfirmDelete(false)}>
                 Keep
-              </button>
-              <button onClick={() => { onDelete(); onClose(); }} className="flex-1 py-1.5 bg-red-500 text-white rounded-lg text-xs font-bold hover:bg-red-600 transition-colors">
+              </Button>
+              <Button variant="destructive" size="sm" className="flex-1 bg-red-500 text-white hover:bg-red-600" onClick={() => { onDelete(); onClose(); }}>
                 Delete
-              </button>
+              </Button>
             </div>
           </div>
         )}
 
         {/* Save / cancel */}
         <div className="flex gap-2.5 pt-1">
-          <button onClick={onClose}
-            className="flex-1 py-2.5 border border-slate-200 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-50 transition-colors"
-          >
+          <Button variant="outline" className="flex-1" onClick={onClose}>
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
+            className="flex-1"
             disabled={!name.trim()}
             onClick={() => {
               if (name.trim()) {
@@ -331,10 +335,9 @@ function VisitFormModal({ initial, title, onClose, onSave, onDelete, onUnschedul
                 onClose();
               }
             }}
-            className="flex-1 py-2.5 bg-primary text-white rounded-lg text-xs font-bold hover:bg-primary/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {isEditing ? 'Save changes' : 'Add place'}
-          </button>
+          </Button>
         </div>
       </div>
     </ModalBase>

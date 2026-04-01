@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Trash2 } from 'lucide-react';
 import ModalBase from '@/components/ui/ModalBase';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Stay } from '@/domain/types';
 import { STAY_COLORS } from '@/domain/constants';
 
@@ -19,8 +21,8 @@ function StayEditorModal({ stay, onClose, onSave, onDelete }: {
       <div className="space-y-4">
         <div>
           <label className="text-[11px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 block">Destination Name</label>
-          <input
-            className="w-full border border-slate-200 rounded-lg px-3 py-2 text-xs focus:ring-1 focus:ring-primary focus:border-primary outline-none font-semibold"
+          <Input
+            className="text-xs font-semibold"
             value={name}
             onChange={(e) => setName(e.target.value)}
             autoFocus
@@ -28,8 +30,8 @@ function StayEditorModal({ stay, onClose, onSave, onDelete }: {
         </div>
         <div>
           <label className="text-[11px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 block">Lodging</label>
-          <input
-            className="w-full border border-slate-200 rounded-lg px-3 py-2 text-xs focus:ring-1 focus:ring-primary focus:border-primary outline-none"
+          <Input
+            className="text-xs"
             value={lodging}
             onChange={(e) => setLodging(e.target.value)}
             placeholder="Hotel name or area"
@@ -66,28 +68,25 @@ function StayEditorModal({ stay, onClose, onSave, onDelete }: {
               Delete "{stay.name}"? This removes all {stay.visits.length} scheduled {stay.visits.length === 1 ? 'place' : 'places'}.
             </p>
             <div className="flex gap-2">
-              <button onClick={() => setConfirmDelete(false)} className="flex-1 py-2 border border-slate-200 rounded-lg text-xs font-bold text-slate-600 hover:bg-white transition-colors">
+              <Button variant="outline" size="sm" className="flex-1" onClick={() => setConfirmDelete(false)}>
                 Keep
-              </button>
-              <button onClick={() => { onDelete(); onClose(); }} className="flex-1 py-2 bg-red-500 text-white rounded-lg text-xs font-bold hover:bg-red-600 transition-colors">
+              </Button>
+              <Button variant="destructive" size="sm" className="flex-1" onClick={() => { onDelete(); onClose(); }}>
                 Delete Stay
-              </button>
+              </Button>
             </div>
           </div>
         ) : (
           <div className="flex gap-3 pt-2">
-            <button onClick={() => setConfirmDelete(true)} className="py-2 px-3 border border-red-200 text-red-500 rounded-lg text-xs font-bold hover:bg-red-50 transition-colors flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-red-300">
-              <Trash2 className="w-3.5 h-3.5" /> Delete
-            </button>
-            <button onClick={onClose} className="flex-1 py-2 border border-slate-200 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-50 transition-colors focus-visible:ring-2 focus-visible:ring-primary/50">
+            <Button variant="destructive" size="sm" onClick={() => setConfirmDelete(true)}>
+              <Trash2 data-icon="inline-start" className="w-3.5 h-3.5" /> Delete
+            </Button>
+            <Button variant="outline" size="sm" className="flex-1" onClick={onClose}>
               Cancel
-            </button>
-            <button
-              onClick={() => { onSave({ name, lodging, color }); onClose(); }}
-              className="flex-1 py-2 bg-primary text-white rounded-lg text-xs font-bold hover:bg-primary/90 transition-colors focus-visible:ring-2 focus-visible:ring-primary/50"
-            >
+            </Button>
+            <Button size="sm" className="flex-1" onClick={() => { onSave({ name, lodging, color }); onClose(); }}>
               Save
-            </button>
+            </Button>
           </div>
         )}
       </div>

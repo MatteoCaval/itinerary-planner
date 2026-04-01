@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Calendar, Trash2, AlertTriangle } from 'lucide-react';
 import ModalBase from '@/components/ui/ModalBase';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import InlineDateRangePicker from '@/components/InlineDateRangePicker';
 import { HybridTrip } from '@/domain/types';
 import { fmt, addDaysTo } from '@/domain/dateUtils';
@@ -79,15 +81,13 @@ function TripEditorModal({ trip, onClose, onSave, onDelete }: {
     }
   };
 
-  const inputClass = 'w-full border border-slate-200 rounded-lg px-3 py-2 text-xs focus:ring-1 focus:ring-primary focus:border-primary outline-none';
-
   return (
     <ModalBase title="Edit Trip" onClose={onClose}>
       <div className="space-y-4">
         <div>
           <label className="text-[11px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 block">Trip Name</label>
-          <input
-            className={`${inputClass} font-semibold`}
+          <Input
+            className="text-xs font-semibold"
             value={name}
             onChange={(e) => setName(e.target.value)}
             autoFocus
@@ -134,43 +134,43 @@ function TripEditorModal({ trip, onClose, onSave, onDelete }: {
               </div>
             </div>
             <div className="flex gap-2">
-              <button onClick={() => setConfirmShrink(false)} className="flex-1 py-2 border border-slate-200 rounded-lg text-xs font-bold text-slate-600 hover:bg-white transition-colors">
+              <Button variant="outline" size="sm" className="flex-1" onClick={() => setConfirmShrink(false)}>
                 Go Back
-              </button>
-              <button onClick={() => doSave(true)} className={`flex-1 py-2 text-white rounded-lg text-xs font-bold transition-colors ${fullyOutsideStays.length > 0 ? 'bg-red-500 hover:bg-red-600' : 'bg-amber-500 hover:bg-amber-600'}`}>
+              </Button>
+              <Button variant="destructive" size="sm" className={`flex-1 text-white ${fullyOutsideStays.length > 0 ? 'bg-red-500 hover:bg-red-600' : 'bg-amber-500 hover:bg-amber-600'}`} onClick={() => doSave(true)}>
                 {fullyOutsideStays.length > 0 ? 'Remove & Shorten' : 'Confirm & Shorten'}
-              </button>
+              </Button>
             </div>
           </div>
         ) : confirmDelete && onDelete ? (
           <div className="bg-red-50 border border-red-200 rounded-lg p-3">
             <p className="text-xs font-semibold text-red-700 mb-2">Delete &ldquo;{trip.name}&rdquo;? This cannot be undone.</p>
             <div className="flex gap-2">
-              <button onClick={() => setConfirmDelete(false)} className="flex-1 py-2 border border-slate-200 rounded-lg text-xs font-bold text-slate-600 hover:bg-white transition-colors">
+              <Button variant="outline" size="sm" className="flex-1" onClick={() => setConfirmDelete(false)}>
                 Keep
-              </button>
-              <button onClick={() => { onDelete(); onClose(); }} className="flex-1 py-2 bg-red-500 text-white rounded-lg text-xs font-bold hover:bg-red-600 transition-colors">
+              </Button>
+              <Button variant="destructive" size="sm" className="flex-1 bg-red-500 text-white hover:bg-red-600" onClick={() => { onDelete(); onClose(); }}>
                 Delete Trip
-              </button>
+              </Button>
             </div>
           </div>
         ) : (
           <div className="flex gap-3 pt-2">
             {onDelete && (
-              <button onClick={() => setConfirmDelete(true)} className="py-2 px-3 border border-red-200 text-red-500 rounded-lg text-xs font-bold hover:bg-red-50 transition-colors flex items-center gap-1.5">
-                <Trash2 className="w-3 h-3" /> Delete
-              </button>
+              <Button variant="destructive" size="sm" onClick={() => setConfirmDelete(true)}>
+                <Trash2 data-icon="inline-start" className="w-3 h-3" /> Delete
+              </Button>
             )}
-            <button onClick={onClose} className="flex-1 py-2 border border-slate-200 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-50 transition-colors">
+            <Button variant="outline" className="flex-1" onClick={onClose}>
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
+              className="flex-1"
               onClick={handleSave}
               disabled={!startDate || totalDays < 1}
-              className="flex-1 py-2 bg-primary text-white rounded-lg text-xs font-bold hover:bg-primary/90 transition-colors disabled:opacity-40"
             >
               Save
-            </button>
+            </Button>
           </div>
         )}
       </div>
