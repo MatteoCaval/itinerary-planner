@@ -3,6 +3,7 @@ import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { Sunrise, Sun, Moon, PlusCircle } from 'lucide-react';
 import type { DayPart, VisitItem } from '@/domain/types';
 import SortableVisitCard from '@/components/cards/SortableVisitCard';
+import { Button } from '@/components/ui/button';
 
 function DroppablePeriodSlot({
   dayOffset,
@@ -52,13 +53,14 @@ function DroppablePeriodSlot({
             />
           ))}
         </SortableContext>
-        <button
+        <Button
+          variant="outline"
           onClick={() => onAddVisit(dayOffset, period)}
-          className="w-full h-10 border-2 border-dashed border-slate-300 rounded-lg flex items-center justify-center gap-1.5 text-slate-400 hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all group"
+          className="w-full h-10 border-2 border-dashed border-slate-300 text-slate-400 hover:text-primary hover:border-primary/50 hover:bg-primary/5 gap-1.5 group"
         >
           <PlusCircle className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
           <span className="text-[11px] font-bold uppercase tracking-tight">Drop or add</span>
-        </button>
+        </Button>
       </div>
     </div>
   );

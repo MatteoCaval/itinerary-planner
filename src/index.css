@@ -249,6 +249,14 @@ a,
 /* Leaflet map fix for Tailwind preflight */
 .leaflet-container img {
   max-width: none !important;
+  max-height: none !important;
+  width: auto;
+  height: auto;
+}
+.leaflet-tile-pane img {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
 }
 
 /* Global focus-visible ring for interactive elements */

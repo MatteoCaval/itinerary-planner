@@ -158,7 +158,7 @@ export default function TripMap({
         className="w-full h-full"
         style={{ background: '#f1f5f9' }}
       >
-        <TileLayer key={basemap} attribution={activeBasemap.attribution} url={activeBasemap.url} maxZoom={activeBasemap.maxZoom} />
+        <TileLayer key={basemap} attribution={activeBasemap.attribution} url={activeBasemap.url} {...(activeBasemap.maxZoom ? { maxZoom: activeBasemap.maxZoom } : {})} />
         <ZoomControl position="bottomright" />
 
         {mode === 'overview' ? (

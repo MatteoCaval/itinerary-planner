@@ -160,6 +160,7 @@ function ImportFromCodeDialog({
               type="button"
               variant="outline"
               onClick={onClose}
+              disabled={status?.type === 'loading'}
               className="flex-1 px-4 py-2.5 text-xs font-semibold"
             >
               Cancel

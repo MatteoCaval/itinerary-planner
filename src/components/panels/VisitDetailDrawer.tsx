@@ -84,13 +84,15 @@ function VisitDetailDrawer({
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       {/* Back to stay */}
-      <button
+      <Button
+        variant="ghost"
+        size="sm"
         onClick={onClose}
-        className="flex items-center gap-1.5 px-3 py-2 text-[11px] font-semibold text-slate-500 hover:text-primary hover:bg-slate-50 transition-colors border-b border-border-neutral flex-shrink-0"
+        className="gap-1.5 justify-start rounded-none text-[11px] font-semibold text-slate-500 hover:text-primary border-b border-border-neutral flex-shrink-0"
       >
         <ChevronDown className="w-3.5 h-3.5 rotate-90" />
         Back to stay
-      </button>
+      </Button>
       {/* Hero */}
       <div className="relative h-28 flex-shrink-0">
         {visit.imageUrl ? (

@@ -110,12 +110,14 @@ function MergeDialog({
           </Button>
         </div>
 
-        <button
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={onDismiss}
-          className="mt-3 w-full text-center text-[11px] text-slate-400 hover:text-slate-600 transition-colors py-1"
+          className="mt-3 w-full text-[11px] text-slate-400 hover:text-slate-600"
         >
           Decide later
-        </button>
+        </Button>
       </DialogContent>
     </Dialog>
   );

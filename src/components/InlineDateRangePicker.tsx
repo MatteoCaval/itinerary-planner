@@ -1,6 +1,7 @@
 import { DayPicker, type DateRange } from 'react-day-picker';
 import { parse as fnsParse, format as fnsFormat } from 'date-fns';
 import { fmt } from '@/domain/dateUtils';
+import { Button } from '@/components/ui/button';
 
 export default function InlineDateRangePicker({
   startDate,
@@ -48,13 +49,15 @@ export default function InlineDateRangePicker({
                 ? `${fmt(new Date(startDate + 'T12:00:00'), { month: 'short', day: 'numeric' })} → pick end`
                 : ''}
           </span>
-          <button
+          <Button
+            variant="link"
+            size="sm"
             type="button"
             onClick={() => onChange('', '')}
-            className="text-[11px] font-bold text-red-400 hover:text-red-600 transition-colors"
+            className="text-red-400 hover:text-red-600 h-auto p-0 text-[11px] font-bold"
           >
             Clear
-          </button>
+          </Button>
         </div>
       )}
     </div>

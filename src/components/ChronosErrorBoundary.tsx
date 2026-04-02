@@ -1,5 +1,6 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 export default class ChronosErrorBoundary extends Component<
   { children: ReactNode },
@@ -30,18 +31,16 @@ export default class ChronosErrorBoundary extends Component<
               </p>
             </div>
             <div className="flex gap-3">
-              <button
+              <Button
+                variant="outline"
+                className="flex-1"
                 onClick={() => this.setState({ error: null })}
-                className="flex-1 py-2.5 border border-slate-200 rounded-lg text-sm font-bold text-slate-600 hover:bg-slate-50 transition-colors"
               >
                 Try Again
-              </button>
-              <button
-                onClick={() => window.location.reload()}
-                className="flex-1 py-2.5 bg-primary text-white rounded-lg text-xs font-bold hover:bg-primary/90 transition-colors"
-              >
+              </Button>
+              <Button className="flex-1" onClick={() => window.location.reload()}>
                 Reload App
-              </button>
+              </Button>
             </div>
           </div>
         </div>
