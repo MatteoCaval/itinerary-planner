@@ -8,7 +8,7 @@
 
 CHRONOS is a browser-based trip planner with three linked views: a **Gantt timeline** of destinations, a **kanban activity board** per destination, and a **Leaflet map**. Trips are stored locally (localStorage) and optionally synced to Firebase. AI generation via Gemini (user API key). Single-user, desktop-first.
 
-**Stack:** React 18 + TypeScript, Tailwind v4, @dnd-kit, react-leaflet, react-day-picker + date-fns, Firebase Auth + Realtime DB, Gemini REST API.
+**Stack:** React 18 + TypeScript, Tailwind v4, shadcn/ui (nova preset), @dnd-kit, react-leaflet, react-day-picker + date-fns, Firebase Auth + Realtime DB, Gemini REST API.
 
 ---
 
@@ -53,7 +53,7 @@ Two modes:
 - **Overview** — all stays as labeled markers, connected by route lines with transport icons.
 - **Detail** — visits for the selected stay, colored by type, optional clustering, accommodation pins, route arrows between visits.
 
-Day-filter pills narrow markers to a single day. Basemap toggle (CartoDB / ArcGIS English). Panel is resizable and collapsible.
+Day-filter pills narrow markers to a single day. 4-option basemap picker: Voyager (Carto, default), OSM Classic, Satellite (Esri), Minimal (Carto Positron). Panel is resizable and collapsible.
 
 ### AI Planner
 
@@ -141,7 +141,7 @@ VisitLink       { url, label?: string }
 | JSON import                 | ✅     | Zod validation                                                                                                                                                                                                                                                                                   |
 | Undo/redo + history browser | ✅     | 50-step, keyboard shortcuts                                                                                                                                                                                                                                                                      |
 | Multi-trip + welcome screen | ✅     | Demo mode                                                                                                                                                                                                                                                                                        |
-| Mobile layout               | ✅     | Adaptive layout: map hidden <768px, sidebar → bottom drawer FAB (with swipe-to-dismiss), snap-scroll day columns (85vw) with correct scroll-padding-left, footer hidden, touch DnD (long-press), responsive header; safe-area insets on FAB + drawer; conflict/demo banners visible on all sizes |
+| Mobile layout               | ✅     | Adaptive layout: map hidden <768px, sidebar → Sheet bottom drawer via FAB, snap-scroll day columns (85vw), footer hidden (sync dot in header), touch DnD (long-press), responsive header; safe-area insets on FAB + drawer; conflict/demo banners visible on all sizes |
 | Passcode sharing            | ⚠️     | Firebase functions exist; not exposed in UI                                                                                                                                                                                                                                                      |
 | Cost/budget dashboard       | ❌     | `cost` field exists, no aggregate display                                                                                                                                                                                                                                                        |
 | Markdown import             | ❌     |                                                                                                                                                                                                                                                                                                  |
@@ -157,8 +157,6 @@ VisitLink       { url, label?: string }
 - **AI coords are Gemini-generated** — not verified against a map DB; can be inaccurate.
 - **AI refine mode doesn't see existing visits** — may generate duplicates.
 - **Merge is all-or-nothing** — same trip edited on two devices: last write wins.
-- **No sync indicator** — no "saving…" / "saved" / "offline" status visible.
 - **History is in-memory** — page reload resets the undo stack.
-- **`src/App.tsx` is still large** (~4800 lines). Domain logic has been extracted to `src/domain/` (10 modules, 36 tests). Service layer, hooks, and UI component extraction are planned (Phases 2-4).
 - **Legacy app removed** — the old Mantine-based UI has been fully deleted. Only the CHRONOS app remains.
 - **Dark mode not implemented** — light mode only for now.
