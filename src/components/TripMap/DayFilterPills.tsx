@@ -4,7 +4,11 @@ type DayFilterPillsProps = {
   onChange: (dayOffset: number | null) => void;
 };
 
-export default function DayFilterPills({ options, selectedDayOffset, onChange }: DayFilterPillsProps) {
+export default function DayFilterPills({
+  options,
+  selectedDayOffset,
+  onChange,
+}: DayFilterPillsProps) {
   if (options.length < 2) return null;
 
   const pillClass = (active: boolean) =>

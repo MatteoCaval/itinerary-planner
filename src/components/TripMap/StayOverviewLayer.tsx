@@ -52,16 +52,24 @@ type StayOverviewLayerProps = {
   showRouteIcons?: boolean;
 };
 
-export default function StayOverviewLayer({ stays, onSelectStay, expanded = false, highlightedStayId, showRouteIcons = false }: StayOverviewLayerProps) {
-  const segments = useMemo(() =>
-    stays.slice(0, -1)
-      .map((stay, i) => ({
-        key: `${stay.id}|${stays[i + 1].id}`,
-        from: { lat: stay.centerLat, lng: stay.centerLng },
-        to: { lat: stays[i + 1].centerLat, lng: stays[i + 1].centerLng },
-        transportType: toTransportType(stay.travelModeToNext),
-      }))
-      .filter((_, i) => !STRAIGHT_LINE_MODES.has(stays[i].travelModeToNext)),
+export default function StayOverviewLayer({
+  stays,
+  onSelectStay,
+  expanded = false,
+  highlightedStayId,
+  showRouteIcons = false,
+}: StayOverviewLayerProps) {
+  const segments = useMemo(
+    () =>
+      stays
+        .slice(0, -1)
+        .map((stay, i) => ({
+          key: `${stay.id}|${stays[i + 1].id}`,
+          from: { lat: stay.centerLat, lng: stay.centerLng },
+          to: { lat: stays[i + 1].centerLat, lng: stays[i + 1].centerLng },
+          transportType: toTransportType(stay.travelModeToNext),
+        }))
+        .filter((_, i) => !STRAIGHT_LINE_MODES.has(stays[i].travelModeToNext)),
     [stays],
   );
 
@@ -77,15 +85,13 @@ export default function StayOverviewLayer({ stays, onSelectStay, expanded = fals
           [stay.centerLat, stay.centerLng],
           [next.centerLat, next.centerLng],
         ];
-        const positions: [number, number][] =
-          STRAIGHT_LINE_MODES.has(stay.travelModeToNext)
-            ? straight
-            : (routeShapes[segKey] ?? straight);
+        const positions: [number, number][] = STRAIGHT_LINE_MODES.has(stay.travelModeToNext)
+          ? straight
+          : (routeShapes[segKey] ?? straight);
 
         const emoji = TRAVEL_EMOJI[stay.travelModeToNext];
-        const chipLabel = expanded && stay.travelDurationToNext
-          ? `${emoji} ${stay.travelDurationToNext}`
-          : emoji;
+        const chipLabel =
+          expanded && stay.travelDurationToNext ? `${emoji} ${stay.travelDurationToNext}` : emoji;
 
         return (
           <Polyline
@@ -100,7 +106,9 @@ export default function StayOverviewLayer({ stays, onSelectStay, expanded = fals
           >
             {stay.travelDurationToNext && (
               <Tooltip sticky className="route-tooltip">
-                <div className="route-tooltip-content">{emoji} {stay.travelDurationToNext}</div>
+                <div className="route-tooltip-content">
+                  {emoji} {stay.travelDurationToNext}
+                </div>
               </Tooltip>
             )}
             {[0.25, 0.75].map((t) => {

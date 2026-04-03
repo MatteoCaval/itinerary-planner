@@ -3,7 +3,10 @@ export class ApiError extends Error {
   code: string;
   details?: unknown;
 
-  constructor(message: string, options?: { status?: number | null; code?: string; details?: unknown }) {
+  constructor(
+    message: string,
+    options?: { status?: number | null; code?: string; details?: unknown },
+  ) {
     super(message);
     this.name = 'ApiError';
     this.status = options?.status ?? null;
@@ -20,7 +23,7 @@ export interface FetchJsonOptions extends RequestInit {
 
 const isRetriableStatus = (status: number) => status === 429 || status >= 500;
 
-const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const parseErrorBody = async (response: Response): Promise<unknown> => {
   try {
@@ -50,13 +53,7 @@ const mergeSignals = (signalA?: AbortSignal | null, signalB?: AbortSignal | null
 };
 
 export const fetchJson = async <T>(url: string, options: FetchJsonOptions = {}): Promise<T> => {
-  const {
-    retries = 1,
-    retryDelayMs = 500,
-    timeoutMs = 15000,
-    signal,
-    ...init
-  } = options;
+  const { retries = 1, retryDelayMs = 500, timeoutMs = 15000, signal, ...init } = options;
 
   let attempt = 0;
 
@@ -93,7 +90,7 @@ export const fetchJson = async <T>(url: string, options: FetchJsonOptions = {}):
         });
       }
 
-      return await response.json() as T;
+      return (await response.json()) as T;
     } catch (error) {
       const aborted = error instanceof DOMException && error.name === 'AbortError';
       const retriable = !aborted && !(error instanceof ApiError);

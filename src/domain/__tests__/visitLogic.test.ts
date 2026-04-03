@@ -4,15 +4,33 @@ import type { VisitItem } from '../types';
 
 function makeVisit(overrides: Partial<VisitItem> = {}): VisitItem {
   return {
-    id: 'v1', name: 'Test', type: 'landmark', area: '',
-    lat: 0, lng: 0, dayOffset: null, dayPart: null, order: 0,
+    id: 'v1',
+    name: 'Test',
+    type: 'landmark',
+    area: '',
+    lat: 0,
+    lng: 0,
+    dayOffset: null,
+    dayPart: null,
+    order: 0,
     ...overrides,
   };
 }
 
 describe('createVisit', () => {
   it('creates a visit with all fields', () => {
-    const v = createVisit('id1', 'Colosseum', 'landmark', 'Rome', 41.89, 12.49, 0, 'morning', 0, '2h');
+    const v = createVisit(
+      'id1',
+      'Colosseum',
+      'landmark',
+      'Rome',
+      41.89,
+      12.49,
+      0,
+      'morning',
+      0,
+      '2h',
+    );
     expect(v.id).toBe('id1');
     expect(v.name).toBe('Colosseum');
     expect(v.durationHint).toBe('2h');

@@ -103,6 +103,7 @@ npx vitest run src/domain/   # Run domain logic tests only
 ## Optional Environment Variables
 
 These are only required if you want to enable the related integrations:
+
 - `VITE_UNSPLASH_ACCESS_KEY`
 - `VITE_FIREBASE_API_KEY`
 - `VITE_FIREBASE_AUTH_DOMAIN`

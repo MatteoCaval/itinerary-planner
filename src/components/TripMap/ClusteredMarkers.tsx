@@ -84,9 +84,7 @@ export function ClusteredMarkers({
 
     indexedVisits.forEach((entry) => {
       const point = map.project([entry.visit.lat, entry.visit.lng], zoom);
-      const hit = nextClusters.find(
-        (cluster) => cluster.projected.distanceTo(point) < thresholdPx,
-      );
+      const hit = nextClusters.find((cluster) => cluster.projected.distanceTo(point) < thresholdPx);
 
       if (!hit) {
         nextClusters.push({
@@ -122,10 +120,7 @@ export function ClusteredMarkers({
     const angle = (2 * Math.PI * meta.indexInGroup) / meta.count;
     const radiusPx = 11 + Math.min(8, meta.count * 1.5);
     const projected = map.project([entry.visit.lat, entry.visit.lng], zoom);
-    const jittered = projected.add([
-      Math.cos(angle) * radiusPx,
-      Math.sin(angle) * radiusPx,
-    ]);
+    const jittered = projected.add([Math.cos(angle) * radiusPx, Math.sin(angle) * radiusPx]);
     const latLng = map.unproject(jittered, zoom);
     return [latLng.lat, latLng.lng];
   };

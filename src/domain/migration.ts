@@ -1,7 +1,19 @@
 import type {
-  DayPart, HybridTrip, LegacyAccommodation, LegacyDay, LegacyDaySection,
-  LegacyLocation, LegacyLocationCategory, LegacyRoute, LegacyStoredTrip,
-  LegacyTransportType, NightAccommodation, Stay, TravelMode, VisitItem, VisitType,
+  DayPart,
+  HybridTrip,
+  LegacyAccommodation,
+  LegacyDay,
+  LegacyDaySection,
+  LegacyLocation,
+  LegacyLocationCategory,
+  LegacyRoute,
+  LegacyStoredTrip,
+  LegacyTransportType,
+  NightAccommodation,
+  Stay,
+  TravelMode,
+  VisitItem,
+  VisitType,
 } from './types';
 import { STAY_COLORS, VISIT_TYPES } from './constants';
 import { addDaysTo } from './dateUtils';
@@ -61,7 +73,9 @@ export function legacyTripToHybrid(leg: LegacyStoredTrip, colorOffset = 0): Hybr
   const routes = leg.routes ?? [];
 
   const dayIdxById: Record<string, number> = {};
-  days.forEach((d, i) => { dayIdxById[d.id] = i; });
+  days.forEach((d, i) => {
+    dayIdxById[d.id] = i;
+  });
 
   const stays: Stay[] = (leg.locations ?? []).map((loc, locIdx) => {
     const startDayIdx = loc.startDayId ? (dayIdxById[loc.startDayId] ?? 0) : 0;
@@ -71,9 +85,10 @@ export function legacyTripToHybrid(leg: LegacyStoredTrip, colorOffset = 0): Hybr
 
     const nextLoc = leg.locations?.[locIdx + 1];
     const routeToNext = nextLoc
-      ? routes.find((r) =>
-          (r.fromLocationId === loc.id && r.toLocationId === nextLoc.id) ||
-          (r.fromLocationId === nextLoc.id && r.toLocationId === loc.id),
+      ? routes.find(
+          (r) =>
+            (r.fromLocationId === loc.id && r.toLocationId === nextLoc.id) ||
+            (r.fromLocationId === nextLoc.id && r.toLocationId === loc.id),
         )
       : undefined;
 
@@ -89,7 +104,12 @@ export function legacyTripToHybrid(leg: LegacyStoredTrip, colorOffset = 0): Hybr
         if (legDay?.accommodation?.name) {
           const a = legDay.accommodation;
           nightAccommodations[absDay - startDayIdx] = {
-            name: a.name, lat: a.lat, lng: a.lng, cost: a.cost, notes: a.notes, link: a.link,
+            name: a.name,
+            lat: a.lat,
+            lng: a.lng,
+            cost: a.cost,
+            notes: a.notes,
+            link: a.link,
           };
         }
       }
@@ -115,11 +135,16 @@ export function legacyTripToHybrid(leg: LegacyStoredTrip, colorOffset = 0): Hybr
     });
 
     return {
-      id: loc.id, name: loc.name, color,
-      startSlot, endSlot,
-      centerLat: loc.lat, centerLng: loc.lng,
+      id: loc.id,
+      name: loc.name,
+      color,
+      startSlot,
+      endSlot,
+      centerLat: loc.lat,
+      centerLng: loc.lng,
       lodging,
-      nightAccommodations: Object.keys(nightAccommodations).length > 0 ? nightAccommodations : undefined,
+      nightAccommodations:
+        Object.keys(nightAccommodations).length > 0 ? nightAccommodations : undefined,
       travelModeToNext: legacyTransportToMode(routeToNext?.transportType),
       travelDurationToNext: routeToNext?.duration,
       travelNotesToNext: routeToNext?.notes,
@@ -133,7 +158,9 @@ export function legacyTripToHybrid(leg: LegacyStoredTrip, colorOffset = 0): Hybr
 export function hybridTripToLegacy(trip: HybridTrip): LegacyStoredTrip {
   const startDate = trip.startDate || '2025-01-01';
   const totalDays = Number.isFinite(trip.totalDays) && trip.totalDays >= 1 ? trip.totalDays : 1;
-  const endDate = addDaysTo(new Date(startDate), totalDays - 1).toISOString().split('T')[0];
+  const endDate = addDaysTo(new Date(startDate), totalDays - 1)
+    .toISOString()
+    .split('T')[0];
 
   const days: LegacyDay[] = Array.from({ length: totalDays }, (_, i) => {
     const date = addDaysTo(new Date(startDate), i).toISOString().split('T')[0];
@@ -156,7 +183,9 @@ export function hybridTripToLegacy(trip: HybridTrip): LegacyStoredTrip {
   });
 
   const dayIdByIdx: Record<number, string> = {};
-  days.forEach((d, i) => { dayIdByIdx[i] = d.id; });
+  days.forEach((d, i) => {
+    dayIdByIdx[i] = d.id;
+  });
 
   const routes: LegacyRoute[] = [];
   const sortedStays = [...trip.stays].sort((a, b) => a.startSlot - b.startSlot);
@@ -187,8 +216,10 @@ export function hybridTripToLegacy(trip: HybridTrip): LegacyStoredTrip {
         if (m) durationNum = parseFloat(m[1]);
       }
       return {
-        id: v.id, name: v.name,
-        lat: v.lat, lng: v.lng,
+        id: v.id,
+        name: v.name,
+        lat: v.lat,
+        lng: v.lng,
         notes: v.notes,
         category: visitTypeToLegacyCategory(v.type),
         dayIds: subDayId ? [subDayId] : [],
@@ -197,40 +228,50 @@ export function hybridTripToLegacy(trip: HybridTrip): LegacyStoredTrip {
         dayOffset: v.dayOffset ?? undefined,
         duration: durationNum,
         order: v.order,
-        checklist: [], links: [],
+        checklist: [],
+        links: [],
         _area: v.area,
         _visitType: v.type,
       };
     });
 
     return {
-      id: stay.id, name: stay.name,
-      lat: stay.centerLat, lng: stay.centerLng,
-      notes: '', category: 'hotel' as const,
+      id: stay.id,
+      name: stay.name,
+      lat: stay.centerLat,
+      lng: stay.centerLng,
+      notes: '',
+      category: 'hotel' as const,
       dayIds: [],
       startDayId,
       startSlot: indexToLegacySlot(stay.startSlot),
       duration,
       order: stayIdx,
       subLocations,
-      checklist: [], links: [],
+      checklist: [],
+      links: [],
       _color: stay.color,
       _lodging: stay.lodging,
     };
   });
 
   return {
-    id: trip.id, name: trip.name,
-    createdAt: Date.now(), updatedAt: Date.now(),
-    startDate, endDate,
-    days, locations, routes,
+    id: trip.id,
+    name: trip.name,
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+    startDate,
+    endDate,
+    days,
+    locations,
+    routes,
     version: '2.0',
   };
 }
 
 /** Ensure all array fields on a HybridTrip are actual arrays (Firebase may return objects with numeric keys). */
 export function normalizeTrip(t: HybridTrip): HybridTrip {
-  const toArr = <T,>(v: T[] | Record<string, T> | undefined): T[] => {
+  const toArr = <T>(v: T[] | Record<string, T> | undefined): T[] => {
     if (Array.isArray(v)) return v;
     if (v && typeof v === 'object') return Object.values(v);
     return [];

@@ -10,11 +10,14 @@ export function getStayNightCount(stay: Stay) {
 /** Detects overlapping stays and returns a Set of their IDs. */
 export function getOverlapIds(stays: Stay[]) {
   const overlaps = new Set<string>();
-  stays.forEach((a, i) => stays.slice(i + 1).forEach((b) => {
-    if (a.startSlot < b.endSlot && b.startSlot < a.endSlot) {
-      overlaps.add(a.id); overlaps.add(b.id);
-    }
-  }));
+  stays.forEach((a, i) =>
+    stays.slice(i + 1).forEach((b) => {
+      if (a.startSlot < b.endSlot && b.startSlot < a.endSlot) {
+        overlaps.add(a.id);
+        overlaps.add(b.id);
+      }
+    }),
+  );
   return overlaps;
 }
 
@@ -29,9 +32,12 @@ export function deriveStayDays(trip: HybridTrip, stay: Stay) {
       return slot >= stay.startSlot && slot < stay.endSlot;
     });
     const hasNight = enabledParts.includes('evening');
-    const nightAccom = hasNight ? (stay.nightAccommodations?.[i] ?? (stay.lodging ? { name: stay.lodging } : undefined)) : undefined;
+    const nightAccom = hasNight
+      ? (stay.nightAccommodations?.[i] ?? (stay.lodging ? { name: stay.lodging } : undefined))
+      : undefined;
     return {
-      dayOffset: i, absoluteDay,
+      dayOffset: i,
+      absoluteDay,
       date: addDaysTo(safeDate(trip.startDate), absoluteDay),
       enabledParts,
       hasNight,
@@ -41,12 +47,17 @@ export function deriveStayDays(trip: HybridTrip, stay: Stay) {
 }
 
 /** Groups consecutive nights with the same accommodation into spans. */
-export function deriveAccommodationGroups(stayDays: ReturnType<typeof deriveStayDays>): AccommodationGroup[] {
+export function deriveAccommodationGroups(
+  stayDays: ReturnType<typeof deriveStayDays>,
+): AccommodationGroup[] {
   const groups: AccommodationGroup[] = [];
   let current: AccommodationGroup | null = null;
   for (const day of stayDays) {
     if (!day.hasNight || !day.nightAccommodation) {
-      if (current) { groups.push(current); current = null; }
+      if (current) {
+        groups.push(current);
+        current = null;
+      }
       continue;
     }
     if (current && current.name === day.nightAccommodation.name) {

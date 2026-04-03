@@ -10,7 +10,7 @@ const firebaseConfig = {
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
   storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
 let appPromise: Promise<FirebaseApp> | null = null;
@@ -82,9 +82,7 @@ const restoreArrays = (obj: unknown): unknown => {
   const keys = Object.keys(record);
 
   // Check if all keys are sequential integers starting at 0
-  const isNumericArray =
-    keys.length > 0 &&
-    keys.every((k, i) => String(i) === k);
+  const isNumericArray = keys.length > 0 && keys.every((k, i) => String(i) === k);
 
   if (isNumericArray) {
     return keys.map((k) => restoreArrays(record[k]));
@@ -102,7 +100,10 @@ const formatErrorMessage = (error: unknown) => {
   return 'Unknown cloud sync error';
 };
 
-export const saveItinerary = async (passcode: string, data: unknown): Promise<{ success: boolean; error?: string }> => {
+export const saveItinerary = async (
+  passcode: string,
+  data: unknown,
+): Promise<{ success: boolean; error?: string }> => {
   try {
     const { ref, set } = await import('firebase/database');
     const db = await getDb();
@@ -115,7 +116,9 @@ export const saveItinerary = async (passcode: string, data: unknown): Promise<{ 
   }
 };
 
-export const loadItinerary = async (passcode: string): Promise<{ success: boolean; data?: unknown; error?: string }> => {
+export const loadItinerary = async (
+  passcode: string,
+): Promise<{ success: boolean; data?: unknown; error?: string }> => {
   try {
     const { ref, get, child } = await import('firebase/database');
     const db = await getDb();
@@ -124,7 +127,7 @@ export const loadItinerary = async (passcode: string): Promise<{ success: boolea
     if (snapshot.exists()) {
       return { success: true, data: restoreArrays(snapshot.val()) };
     }
-    return { success: false, error: "No itinerary found with this passcode" };
+    return { success: false, error: 'No itinerary found with this passcode' };
   } catch (error) {
     trackError('cloud_load_failed', error, { passcode });
     return { success: false, error: formatErrorMessage(error) };

@@ -45,5 +45,5 @@ export default tseslint.config(
       '@typescript-eslint/no-explicit-any': 'off',
     },
   },
-  prettierConfig
+  prettierConfig,
 );

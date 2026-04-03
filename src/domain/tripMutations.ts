@@ -47,7 +47,10 @@ export function shrinkTripAfter(trip: HybridTrip): HybridTrip | null {
 
 /** Apply a slot delta to a stay during timeline drag (move/resize). Returns updated stays array. */
 export function applyTimelineDrag(
-  stays: Stay[], dragState: NonNullable<DragState>, delta: number, totalSlots: number,
+  stays: Stay[],
+  dragState: NonNullable<DragState>,
+  delta: number,
+  totalSlots: number,
 ): Stay[] {
   return stays.map((s) => {
     if (s.id !== dragState.stayId) return s;
@@ -57,9 +60,15 @@ export function applyTimelineDrag(
       return { ...s, startSlot: next, endSlot: next + len };
     }
     if (dragState.mode === 'resize-start') {
-      return { ...s, startSlot: clamp(dragState.originalStart + delta, 0, dragState.originalEnd - 1) };
+      return {
+        ...s,
+        startSlot: clamp(dragState.originalStart + delta, 0, dragState.originalEnd - 1),
+      };
     }
-    return { ...s, endSlot: clamp(dragState.originalEnd + delta, dragState.originalStart + 1, totalSlots) };
+    return {
+      ...s,
+      endSlot: clamp(dragState.originalEnd + delta, dragState.originalStart + 1, totalSlots),
+    };
   });
 }
 
@@ -71,7 +80,11 @@ export function applyTimelineDrag(
  * - Removes stays fully outside the new range.
  * - Clamps partially outside stays and unschedules overflowing visits.
  */
-export function adjustStaysForDateChange(stays: Stay[], slotShift: number, newMaxSlot: number): Stay[] {
+export function adjustStaysForDateChange(
+  stays: Stay[],
+  slotShift: number,
+  newMaxSlot: number,
+): Stay[] {
   return stays
     .map((s) => ({
       ...s,
@@ -80,7 +93,11 @@ export function adjustStaysForDateChange(stays: Stay[], slotShift: number, newMa
     }))
     .filter((s) => s.endSlot > 0 && s.startSlot < newMaxSlot)
     .map((s) => {
-      const clamped = { ...s, startSlot: Math.max(0, s.startSlot), endSlot: Math.min(newMaxSlot, s.endSlot) };
+      const clamped = {
+        ...s,
+        startSlot: Math.max(0, s.startSlot),
+        endSlot: Math.min(newMaxSlot, s.endSlot),
+      };
       if (clamped.startSlot === s.startSlot && clamped.endSlot === s.endSlot) return clamped;
       const newDayCount = Math.ceil((clamped.endSlot - clamped.startSlot) / 3);
       const dayShiftWithinStay = Math.max(0, Math.floor((clamped.startSlot - s.startSlot) / 3));

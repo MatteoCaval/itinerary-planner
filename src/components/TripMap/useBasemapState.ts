@@ -1,14 +1,15 @@
 import { useState, useEffect } from 'react';
 
-export type BasemapMode = 'local' | 'english';
+export type BasemapMode = 'voyager' | 'osm' | 'satellite' | 'minimal';
 
 const MAP_BASEMAP_STORAGE_KEY = 'itinerary-map-basemap';
+const VALID: BasemapMode[] = ['voyager', 'osm', 'satellite', 'minimal'];
 
 export function useBasemapState() {
   const [basemap, setBasemap] = useState<BasemapMode>(() => {
-    if (typeof window === 'undefined') return 'local';
+    if (typeof window === 'undefined') return 'voyager';
     const saved = window.localStorage.getItem(MAP_BASEMAP_STORAGE_KEY);
-    return saved === 'english' ? 'english' : 'local';
+    return VALID.includes(saved as BasemapMode) ? (saved as BasemapMode) : 'voyager';
   });
 
   useEffect(() => {

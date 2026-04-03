@@ -1,6 +1,13 @@
 // AISettings was previously in ./types — inlined here since the legacy types file was removed
 type AISettings = { apiKey: string; model: string };
-type Location = { id: string; name: string; lat: number; lng: number; subLocations?: Location[]; [key: string]: unknown };
+type Location = {
+  id: string;
+  name: string;
+  lat: number;
+  lng: number;
+  subLocations?: Location[];
+  [key: string]: unknown;
+};
 type Route = { id: string; fromLocationId: string; toLocationId: string; [key: string]: unknown };
 type Day = { id: string; date: string; [key: string]: unknown };
 import { ApiError, fetchJson } from './services/httpClient';
@@ -17,14 +24,9 @@ interface GeminiResponse {
 
 const getGeminiErrorMessage = (error: unknown, model: string): string => {
   if (error instanceof ApiError) {
-    const details = error.details as
-      | { error?: { message?: string } }
-      | string
-      | undefined;
+    const details = error.details as { error?: { message?: string } } | string | undefined;
 
-    const detailMessage = typeof details === 'string'
-      ? details
-      : details?.error?.message;
+    const detailMessage = typeof details === 'string' ? details : details?.error?.message;
 
     if (error.code === 'request_aborted') {
       return 'Gemini request timed out. Try again, shorten the prompt, or use a faster model.';
@@ -56,18 +58,18 @@ const getGeminiErrorMessage = (error: unknown, model: string): string => {
 export const generateAIItinerary = async (
   prompt: string,
   settings: AISettings,
-  days: { id: string, date: string }[],
+  days: { id: string; date: string }[],
   currentLocations: Location[],
   currentRoutes: Route[],
-  mode: 'scratch' | 'refactor'
-): Promise<{ 
-  locations: Partial<Location>[], 
-  routes: Partial<Route>[], 
-  days?: Partial<Day>[],
-  explanation?: string 
+  mode: 'scratch' | 'refactor',
+): Promise<{
+  locations: Partial<Location>[];
+  routes: Partial<Route>[];
+  days?: Partial<Day>[];
+  explanation?: string;
 }> => {
   const selectedModel = settings.model?.trim() || DEFAULT_AI_MODEL;
-  
+
   const systemPrompt = `
     You are a professional travel planner. 
     Generate a detailed itinerary in JSON format.
@@ -102,32 +104,36 @@ export const generateAIItinerary = async (
     Days available (ID and Date): ${JSON.stringify(days)}
     
     Current Data (if refactoring):
-    Locations: ${JSON.stringify(currentLocations.map(l => ({ 
-      id: l.id, 
-      name: l.name, 
-      category: l.category,
-      notes: l.notes,
-      cost: l.cost,
-      startDayId: l.startDayId, 
-      startSlot: l.startSlot,
-      duration: l.duration,
-      subLocations: l.subLocations?.map(s => ({ 
-        name: s.name, 
-        category: s.category,
-        notes: s.notes,
-        cost: s.cost,
-        dayOffset: s.dayOffset, 
-        startSlot: s.startSlot 
-      }))
-    })))}
-    Routes: ${JSON.stringify(currentRoutes.map(r => ({
-      transportType: r.transportType,
-      duration: r.duration,
-      cost: r.cost,
-      notes: r.notes,
-      fromLocationId: r.fromLocationId,
-      toLocationId: r.toLocationId
-    })))}
+    Locations: ${JSON.stringify(
+      currentLocations.map((l) => ({
+        id: l.id,
+        name: l.name,
+        category: l.category,
+        notes: l.notes,
+        cost: l.cost,
+        startDayId: l.startDayId,
+        startSlot: l.startSlot,
+        duration: l.duration,
+        subLocations: l.subLocations?.map((s) => ({
+          name: s.name,
+          category: s.category,
+          notes: s.notes,
+          cost: s.cost,
+          dayOffset: s.dayOffset,
+          startSlot: s.startSlot,
+        })),
+      })),
+    )}
+    Routes: ${JSON.stringify(
+      currentRoutes.map((r) => ({
+        transportType: r.transportType,
+        duration: r.duration,
+        cost: r.cost,
+        notes: r.notes,
+        fromLocationId: r.fromLocationId,
+        toLocationId: r.toLocationId,
+      })),
+    )}
 
     OUTPUT JSON STRUCTURE (Strict):
     {
@@ -200,14 +206,16 @@ export const generateAIItinerary = async (
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          contents: [{
-            parts: [{ text: `${systemPrompt}\n\nMode: ${mode}\nUser Request: ${prompt}` }]
-          }]
+          contents: [
+            {
+              parts: [{ text: `${systemPrompt}\n\nMode: ${mode}\nUser Request: ${prompt}` }],
+            },
+          ],
         }),
         retries: 1,
         retryDelayMs: 500,
         timeoutMs: 60000,
-      }
+      },
     );
   } catch (error) {
     trackError('ai_generate_failed', error, { mode, promptLength: prompt.length });
@@ -215,23 +223,26 @@ export const generateAIItinerary = async (
   }
 
   if (!data.candidates || data.candidates.length === 0) {
-      throw new Error('AI returned no results.');
+    throw new Error('AI returned no results.');
   }
 
   let content = data.candidates[0].content?.parts?.[0]?.text || '';
-  content = content.replace(/```json/g, '').replace(/```/g, '').trim();
-  
-      try {
-          const parsed = JSON.parse(content);
-          return {
-              explanation: parsed.explanation,
-              locations: parsed.locations || [],
-              routes: parsed.routes || [],
-              days: parsed.days || []
-          };
-      } catch (error) {
-      trackError('ai_invalid_json', error, { responsePreview: content.slice(0, 300) });
-      throw new Error("AI returned invalid JSON format.");
+  content = content
+    .replace(/```json/g, '')
+    .replace(/```/g, '')
+    .trim();
+
+  try {
+    const parsed = JSON.parse(content);
+    return {
+      explanation: parsed.explanation,
+      locations: parsed.locations || [],
+      routes: parsed.routes || [],
+      days: parsed.days || [],
+    };
+  } catch (error) {
+    trackError('ai_invalid_json', error, { responsePreview: content.slice(0, 300) });
+    throw new Error('AI returned invalid JSON format.');
   }
 };
 
@@ -274,7 +285,16 @@ export interface AIHybridResult {
   stays: AIHybridStay[];
 }
 
-const STAY_COLORS = ['#2167d7', '#615cf6', '#2db6ab', '#d78035', '#20b5a8', '#3b6dd8', '#c45c99', '#4c9463'];
+const STAY_COLORS = [
+  '#2167d7',
+  '#615cf6',
+  '#2db6ab',
+  '#d78035',
+  '#20b5a8',
+  '#3b6dd8',
+  '#c45c99',
+  '#4c9463',
+];
 
 export const generateHybridItinerary = async (
   prompt: string,
@@ -283,7 +303,12 @@ export const generateHybridItinerary = async (
   startDate: string,
   tripName: string,
   mode: 'scratch' | 'refine',
-  currentStays?: Array<{ name: string; startSlot: number; endSlot: number; visits: Array<{ name: string; dayOffset: number | null; dayPart: string | null }> }>,
+  currentStays?: Array<{
+    name: string;
+    startSlot: number;
+    endSlot: number;
+    visits: Array<{ name: string; dayOffset: number | null; dayPart: string | null }>;
+  }>,
 ): Promise<AIHybridResult> => {
   const selectedModel = settings.model?.trim() || DEFAULT_AI_MODEL;
   const totalSlots = totalDays * 3;
@@ -327,8 +352,12 @@ NIGHT ACCOMMODATIONS:
 - Include accommodation for each night the traveler sleeps in that stay.
 - The last day of a stay typically doesn't need accommodation (they travel to next destination).
 
-${mode === 'refine' && currentStays?.length ? `EXISTING STAYS (refine, improve, or fill gaps — keep what works):
-${JSON.stringify(currentStays, null, 2)}` : ''}
+${
+  mode === 'refine' && currentStays?.length
+    ? `EXISTING STAYS (refine, improve, or fill gaps — keep what works):
+${JSON.stringify(currentStays, null, 2)}`
+    : ''
+}
 
 Pick stay colors from this palette (cycle through): ${STAY_COLORS.join(', ')}
 
@@ -382,7 +411,9 @@ Valid dayPart: morning, afternoon, evening`;
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: `${systemPrompt}\n\nMode: ${mode}\nUser Request: ${prompt}` }] }],
+          contents: [
+            { parts: [{ text: `${systemPrompt}\n\nMode: ${mode}\nUser Request: ${prompt}` }] },
+          ],
         }),
         retries: 1,
         retryDelayMs: 500,
@@ -399,7 +430,10 @@ Valid dayPart: morning, afternoon, evening`;
   }
 
   let content = data.candidates[0].content?.parts?.[0]?.text || '';
-  content = content.replace(/```json/g, '').replace(/```/g, '').trim();
+  content = content
+    .replace(/```json/g, '')
+    .replace(/```/g, '')
+    .trim();
 
   try {
     const parsed = JSON.parse(content);

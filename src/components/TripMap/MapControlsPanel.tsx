@@ -1,6 +1,14 @@
 import { useState } from 'react';
-import { Settings, X } from 'lucide-react';
+import { Map, Globe, Satellite, Sun, Settings, X } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
 import type { BasemapMode } from './useBasemapState';
+
+const BASEMAP_OPTIONS: { value: BasemapMode; label: string; icon: typeof Map; desc: string }[] = [
+  { value: 'voyager', label: 'Voyager', icon: Map, desc: 'Clean & colorful' },
+  { value: 'osm', label: 'OSM', icon: Globe, desc: 'Classic detail' },
+  { value: 'satellite', label: 'Satellite', icon: Satellite, desc: 'Aerial imagery' },
+  { value: 'minimal', label: 'Minimal', icon: Sun, desc: 'Light & subtle' },
+];
 
 interface MapControlsPanelProps {
   basemap: BasemapMode;
@@ -38,9 +46,11 @@ export function MapControlsPanel({
   }
 
   return (
-    <div className="absolute top-3 right-3 z-[1000] w-52 bg-white/95 backdrop-blur-xl rounded-xl border border-slate-200 shadow-xl p-3 space-y-3">
+    <div className="absolute top-3 right-3 z-[1000] w-56 bg-white/95 backdrop-blur-xl rounded-xl border border-slate-200 shadow-xl p-3 space-y-3">
       <div className="flex items-center justify-between">
-        <span className="text-[10px] font-extrabold text-slate-500 uppercase tracking-widest">Map Options</span>
+        <span className="text-[10px] font-extrabold text-slate-500 uppercase tracking-widest">
+          Map Options
+        </span>
         <button
           onClick={() => setOpen(false)}
           className="size-5 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
@@ -50,61 +60,66 @@ export function MapControlsPanel({
         </button>
       </div>
 
-      {/* Basemap toggle */}
+      {/* Basemap picker — 2x2 grid */}
       <div>
-        <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wide block mb-1.5">Basemap</label>
-        <div className="flex rounded-lg border border-slate-200 overflow-hidden">
-          <button
-            onClick={() => onBasemapChange('local')}
-            className={`flex-1 text-[10px] font-bold py-1.5 transition-colors ${
-              basemap === 'local'
-                ? 'bg-primary text-white'
-                : 'bg-white text-slate-500 hover:bg-slate-50'
-            }`}
-          >
-            Local
-          </button>
-          <button
-            onClick={() => onBasemapChange('english')}
-            className={`flex-1 text-[10px] font-bold py-1.5 transition-colors ${
-              basemap === 'english'
-                ? 'bg-primary text-white'
-                : 'bg-white text-slate-500 hover:bg-slate-50'
-            }`}
-          >
-            English
-          </button>
+        <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wide block mb-1.5">
+          Basemap
+        </label>
+        <div className="grid grid-cols-2 gap-1.5">
+          {BASEMAP_OPTIONS.map(({ value, label, icon: Icon, desc }) => {
+            const active = basemap === value;
+            return (
+              <button
+                key={value}
+                onClick={() => onBasemapChange(value)}
+                className={`flex flex-col items-center gap-1 py-2 px-1.5 rounded-lg border text-center transition-all ${
+                  active
+                    ? 'bg-primary/10 border-primary/40 text-primary shadow-sm'
+                    : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300 hover:bg-slate-50'
+                }`}
+              >
+                <Icon className="w-4 h-4" />
+                <span className="text-[10px] font-bold leading-none">{label}</span>
+                <span className={`text-[8px] leading-none ${active ? 'text-primary/60' : 'text-slate-400'}`}>
+                  {desc}
+                </span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
       {/* Toggles */}
       <div className="space-y-2">
         <label className="flex items-center gap-2 cursor-pointer group">
-          <input
-            type="checkbox"
+          <Checkbox
             checked={showArrows}
-            onChange={(e) => onShowArrowsChange(e.target.checked)}
-            className="size-3.5 rounded border-slate-300 text-primary accent-[var(--color-primary)]"
+            onCheckedChange={(v) => onShowArrowsChange(v === true)}
+            className="size-3.5"
           />
-          <span className="text-[11px] font-semibold text-slate-600 group-hover:text-slate-800 transition-colors">Route arrows</span>
+          <span className="text-[11px] font-semibold text-slate-600 group-hover:text-slate-800 transition-colors">
+            Route arrows
+          </span>
         </label>
         <label className="flex items-center gap-2 cursor-pointer group">
-          <input
-            type="checkbox"
+          <Checkbox
             checked={showRouteIcons}
-            onChange={(e) => onShowRouteIconsChange(e.target.checked)}
-            className="size-3.5 rounded border-slate-300 text-primary accent-[var(--color-primary)]"
+            onCheckedChange={(v) => onShowRouteIconsChange(v === true)}
+            className="size-3.5"
           />
-          <span className="text-[11px] font-semibold text-slate-600 group-hover:text-slate-800 transition-colors">Route icons</span>
+          <span className="text-[11px] font-semibold text-slate-600 group-hover:text-slate-800 transition-colors">
+            Route icons
+          </span>
         </label>
         <label className="flex items-center gap-2 cursor-pointer group">
-          <input
-            type="checkbox"
+          <Checkbox
             checked={enableClustering}
-            onChange={(e) => onEnableClusteringChange(e.target.checked)}
-            className="size-3.5 rounded border-slate-300 text-primary accent-[var(--color-primary)]"
+            onCheckedChange={(v) => onEnableClusteringChange(v === true)}
+            className="size-3.5"
           />
-          <span className="text-[11px] font-semibold text-slate-600 group-hover:text-slate-800 transition-colors">Marker clustering</span>
+          <span className="text-[11px] font-semibold text-slate-600 group-hover:text-slate-800 transition-colors">
+            Marker clustering
+          </span>
         </label>
       </div>
 

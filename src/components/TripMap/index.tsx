@@ -57,21 +57,38 @@ interface TripMapProps {
   highlightedStayId?: string | null;
 }
 
-const BASEMAPS: Record<BasemapMode, { url: string; attribution: string }> = {
-  local: {
+const BASEMAPS: Record<BasemapMode, { url: string; attribution: string; maxZoom?: number }> = {
+  voyager: {
     url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>',
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>',
   },
-  english: {
-    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
-    attribution:
-      'Tiles &copy; Esri &mdash; Source: Esri, DeLorme, NAVTEQ',
+  osm: {
+    url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    maxZoom: 19,
+  },
+  satellite: {
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    attribution: 'Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics',
+    maxZoom: 18,
+  },
+  minimal: {
+    url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>',
   },
 };
 
 export default function TripMap({
-  visits, selectedVisitId, onSelectVisit, expanded, stay,
-  mode, overviewStays, onSelectStay, selectedDayOffset, highlightedStayId,
+  visits,
+  selectedVisitId,
+  onSelectVisit,
+  expanded,
+  stay,
+  mode,
+  overviewStays,
+  onSelectStay,
+  selectedDayOffset,
+  highlightedStayId,
 }: TripMapProps) {
   const [basemap, setBasemap] = useBasemapState();
   const [showArrows, setShowArrows] = useState(true);
@@ -141,11 +158,7 @@ export default function TripMap({
         className="w-full h-full"
         style={{ background: '#f1f5f9' }}
       >
-        <TileLayer
-          key={basemap}
-          attribution={activeBasemap.attribution}
-          url={activeBasemap.url}
-        />
+        <TileLayer key={basemap} attribution={activeBasemap.attribution} url={activeBasemap.url} {...(activeBasemap.maxZoom ? { maxZoom: activeBasemap.maxZoom } : {})} />
         <ZoomControl position="bottomright" />
 
         {mode === 'overview' ? (

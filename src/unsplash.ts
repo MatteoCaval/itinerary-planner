@@ -23,12 +23,12 @@ export const searchPhoto = async (query: string): Promise<string | null> => {
       `https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&per_page=1&orientation=landscape`,
       {
         headers: {
-          Authorization: `Client-ID ${ACCESS_KEY}`
+          Authorization: `Client-ID ${ACCESS_KEY}`,
         },
         retries: 1,
         retryDelayMs: 500,
         timeoutMs: 12000,
-      }
+      },
     );
     return data.results?.[0]?.urls?.regular || null;
   } catch (error) {
