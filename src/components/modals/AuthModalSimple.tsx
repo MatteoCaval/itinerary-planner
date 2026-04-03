@@ -50,7 +50,7 @@ function AuthModalSimple({ onClose }: { onClose: () => void }) {
     <Dialog
       open
       onOpenChange={(open) => {
-        if (!open) onClose();
+        if (!open && !loading) onClose();
       }}
     >
       <DialogContent className="sm:max-w-sm p-0 overflow-hidden">
@@ -70,20 +70,20 @@ function AuthModalSimple({ onClose }: { onClose: () => void }) {
               <div className="size-6 rounded-lg bg-primary/10 flex items-center justify-center">
                 <Navigation className="w-3 h-3 text-primary" />
               </div>
-              <span className="text-[11px] font-extrabold tracking-[0.18em] uppercase text-slate-400">
+              <span className="text-[11px] font-extrabold tracking-[0.18em] uppercase text-muted-foreground">
                 Itinerary
               </span>
             </div>
             <DialogTitle className="text-[22px] font-extrabold text-slate-900 tracking-tight leading-none">
               {mode === 'signin' ? 'Welcome back' : 'Get started'}
             </DialogTitle>
-            <p className="text-[11px] text-slate-400 mt-1.5 font-medium">
+            <p className="text-[11px] text-muted-foreground mt-1.5 font-medium">
               {mode === 'signin' ? 'Sign in to sync your trips' : 'Create your free account'}
             </p>
           </DialogHeader>
 
           {/* Mode tabs */}
-          <div className="flex gap-4 mb-5 border-b border-slate-100">
+          <div className="flex gap-4 mb-5 border-b border-border">
             {(['signin', 'signup'] as const).map((m) => (
               <button
                 key={m}
@@ -95,7 +95,7 @@ function AuthModalSimple({ onClose }: { onClose: () => void }) {
                 className={`pb-3 text-[11px] font-extrabold tracking-wider uppercase transition-all border-b-2 -mb-px ${
                   mode === m
                     ? 'border-primary text-primary'
-                    : 'border-transparent text-slate-400 hover:text-slate-600'
+                    : 'border-transparent text-muted-foreground hover:text-foreground'
                 }`}
               >
                 {m === 'signin' ? 'Sign In' : 'Sign Up'}
@@ -112,7 +112,7 @@ function AuthModalSimple({ onClose }: { onClose: () => void }) {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 autoFocus
-                className="pl-10 pr-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/10 placeholder:text-slate-300 font-medium text-slate-800"
+                className="pl-10 pr-4 py-2.5 text-sm bg-muted border border-border rounded-xl focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/10 placeholder:text-slate-300 font-medium text-foreground"
               />
             </div>
             <div className="relative">
@@ -122,13 +122,13 @@ function AuthModalSimple({ onClose }: { onClose: () => void }) {
                 placeholder="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="pl-10 pr-10 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/10 placeholder:text-slate-300 font-medium text-slate-800"
+                className="pl-10 pr-10 py-2.5 text-sm bg-muted border border-border rounded-xl focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/10 placeholder:text-slate-300 font-medium text-foreground"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword((v) => !v)}
                 aria-label={showPassword ? 'Hide password' : 'Show password'}
-                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-300 hover:text-slate-500 transition-colors"
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-300 hover:text-muted-foreground transition-colors"
               >
                 {showPassword ? (
                   <EyeOff className="w-3.5 h-3.5" />
@@ -139,8 +139,8 @@ function AuthModalSimple({ onClose }: { onClose: () => void }) {
             </div>
 
             {error && (
-              <div className="flex items-start gap-2 bg-red-50 border border-red-100 rounded-xl px-3.5 py-2.5">
-                <AlertCircle className="w-3.5 h-3.5 text-red-400 flex-shrink-0 mt-0.5" />
+              <div className="flex items-start gap-2 bg-destructive/10 border border-destructive/30 rounded-xl px-3.5 py-2.5">
+                <AlertCircle className="w-3.5 h-3.5 text-destructive flex-shrink-0 mt-0.5" />
                 <p className="text-[11px] text-red-600 font-semibold leading-relaxed">{error}</p>
               </div>
             )}
@@ -171,18 +171,18 @@ function AuthModalSimple({ onClose }: { onClose: () => void }) {
           </form>
 
           <div className="flex items-center gap-3 my-4">
-            <div className="flex-1 h-px bg-slate-100" />
+            <div className="flex-1 h-px bg-border" />
             <span className="text-[11px] font-bold text-slate-300 uppercase tracking-widest">
               or
             </span>
-            <div className="flex-1 h-px bg-slate-100" />
+            <div className="flex-1 h-px bg-border" />
           </div>
 
           <button
             type="button"
             onClick={handleGoogle}
             disabled={loading}
-            className="w-full py-2.5 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition-all disabled:opacity-50 flex items-center justify-center gap-2.5"
+            className="w-full py-2.5 border border-border rounded-xl text-sm font-semibold text-foreground hover:bg-muted hover:border-border transition-all disabled:opacity-50 flex items-center justify-center gap-2.5"
           >
             <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24">
               <path
@@ -205,7 +205,7 @@ function AuthModalSimple({ onClose }: { onClose: () => void }) {
             Continue with Google
           </button>
 
-          <p className="text-[11px] text-center text-slate-400 mt-4">
+          <p className="text-[11px] text-center text-muted-foreground mt-4">
             {mode === 'signin' ? "Don't have an account? " : 'Already have an account? '}
             <button
               type="button"

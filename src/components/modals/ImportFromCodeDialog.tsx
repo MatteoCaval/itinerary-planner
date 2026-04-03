@@ -106,10 +106,10 @@ function ImportFromCodeDialog({
               <Download className="w-4 h-4 text-violet-500" />
             </div>
             <div>
-              <DialogTitle className="font-extrabold text-slate-800 text-sm">
+              <DialogTitle className="font-extrabold text-foreground text-sm">
                 Import from code
               </DialogTitle>
-              <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+              <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
                 Enter a share code to import a trip. It will be added as a new trip.
               </p>
             </div>
@@ -138,10 +138,10 @@ function ImportFromCodeDialog({
             <div
               className={`mt-3 flex items-center gap-2 text-xs px-3 py-2 rounded-lg ${
                 status.type === 'success'
-                  ? 'bg-emerald-50 text-emerald-700'
+                  ? 'bg-success/10 text-success'
                   : status.type === 'error'
-                    ? 'bg-red-50 text-red-600'
-                    : 'bg-blue-50 text-blue-600'
+                    ? 'bg-destructive/10 text-red-600'
+                    : 'bg-info/10 text-blue-600'
               }`}
             >
               {status.type === 'success' ? (

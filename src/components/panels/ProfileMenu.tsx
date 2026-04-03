@@ -117,9 +117,9 @@ function ProfileMenu({
             )}
           </button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-60">
+        <DropdownMenuContent align="end" className="w-60 max-w-[calc(100vw-2rem)]">
           {/* Header */}
-          <div className={`px-4 pt-4 pb-3 ${user ? 'bg-emerald-50/60' : 'bg-slate-50/80'}`}>
+          <div className={`px-4 pt-4 pb-3 ${user ? 'bg-success/10' : 'bg-muted/80'}`}>
             <div className="flex items-center gap-3">
               <div
                 className={`size-9 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 ${user ? 'bg-emerald-500 text-white' : 'bg-primary/10 text-primary'}`}
@@ -127,17 +127,17 @@ function ProfileMenu({
                 {user ? (user.email?.[0] ?? 'U').toUpperCase() : <User className="w-4 h-4" />}
               </div>
               <div className="min-w-0">
-                <p className="text-xs font-extrabold text-slate-800 truncate leading-tight">
+                <p className="text-xs font-extrabold text-foreground truncate leading-tight">
                   {user ? user.email : 'Guest User'}
                 </p>
                 <div className="flex items-center gap-1.5 mt-0.5">
                   {user ? (
-                    <Check className="w-3 h-3 text-emerald-500 flex-shrink-0" />
+                    <Check className="w-3 h-3 text-success flex-shrink-0" />
                   ) : (
                     <Lock className="w-3 h-3 text-slate-300 flex-shrink-0" />
                   )}
                   <p
-                    className={`text-[11px] font-semibold ${user ? 'text-emerald-600' : 'text-slate-400'}`}
+                    className={`text-[11px] font-semibold ${user ? 'text-success' : 'text-muted-foreground'}`}
                   >
                     {user ? 'Synced to cloud' : 'Local storage only'}
                   </p>
@@ -148,18 +148,18 @@ function ProfileMenu({
 
           {/* Trip data section */}
           <DropdownMenuSeparator />
-          <DropdownMenuLabel className="text-[9px] font-extrabold uppercase tracking-widest text-slate-400">
+          <DropdownMenuLabel className="text-[9px] font-extrabold uppercase tracking-widest text-muted-foreground">
             Trip data
           </DropdownMenuLabel>
           <DropdownMenuItem onClick={handleExport}>
-            <div className="size-6 rounded-md bg-blue-50 flex items-center justify-center flex-shrink-0">
-              <Download className="w-3 h-3 text-blue-500" />
+            <div className="size-6 rounded-md bg-info/10 flex items-center justify-center flex-shrink-0">
+              <Download className="w-3 h-3 text-info" />
             </div>
             Export JSON
           </DropdownMenuItem>
           <DropdownMenuItem onClick={handleExportMarkdown}>
-            <div className="size-6 rounded-md bg-blue-50 flex items-center justify-center flex-shrink-0">
-              <Download className="w-3 h-3 text-blue-500" />
+            <div className="size-6 rounded-md bg-info/10 flex items-center justify-center flex-shrink-0">
+              <Download className="w-3 h-3 text-info" />
             </div>
             Export Markdown
           </DropdownMenuItem>
@@ -179,8 +179,8 @@ function ProfileMenu({
           {/* Navigation section */}
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={onGoHome}>
-            <div className="size-6 rounded-md bg-slate-100 flex items-center justify-center flex-shrink-0">
-              <Compass className="w-3 h-3 text-slate-500" />
+            <div className="size-6 rounded-md bg-muted flex items-center justify-center flex-shrink-0">
+              <Compass className="w-3 h-3 text-muted-foreground" />
             </div>
             Back to start
           </DropdownMenuItem>

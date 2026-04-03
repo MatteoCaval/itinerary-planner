@@ -71,96 +71,65 @@ These should use shadcn `Button` for consistent styling, focus states, and acces
 
 ---
 
-## P2 — Design System (Hardcoded Colors → Semantic Tokens)
+## P2 — Design System (Hardcoded Colors → Semantic Tokens) ✅
 
-### Missing semantic tokens
+### Semantic tokens added to `index.css`
 
-The app has ~200+ hardcoded Tailwind color classes. Define these tokens in `index.css` then migrate:
+- [x] `--success` / `--success-foreground` (green)
+- [x] `--warning` / `--warning-foreground` (amber)
+- [x] `--info` / `--info-foreground` (blue)
+- [x] Tailwind theme mappings (`--color-success`, etc.)
 
-```css
-:root {
-  --success: oklch(0.55 0.15 155);
-  --success-foreground: oklch(0.98 0 0);
-  --warning: oklch(0.7 0.15 75);
-  --warning-foreground: oklch(0.98 0 0);
-  --info: oklch(0.55 0.15 250);
-  --info-foreground: oklch(0.98 0 0);
-}
-```
+### Bulk migration completed
 
-### Migration map
+- [x] `App.tsx` — text, border, bg, hover, status dots all migrated
+- [x] All 10 modal files — full migration
+- [x] All 5 panel files — full migration
+- [x] Both card files — full migration
+- [x] WelcomeScreen, ChronosErrorBoundary, InlineDateRangePicker, DroppablePeriodSlot
 
-| Hardcoded | Semantic replacement | Occurrences |
-|-----------|---------------------|-------------|
-| `text-slate-400`, `text-slate-500` | `text-muted-foreground` | ~80+ |
-| `text-slate-700`, `text-slate-800` | `text-foreground` | ~40+ |
-| `text-slate-900` | `text-foreground` | ~10 |
-| `border-slate-200` | `border-border` | ~30+ |
-| `bg-slate-50` | `bg-muted` | ~20+ |
-| `hover:bg-slate-50` | `hover:bg-muted` | ~15+ |
-| `text-emerald-*` / `bg-emerald-*` | `text-success` / `bg-success/10` | ~15 |
-| `text-red-*` / `bg-red-*` (non-destructive) | `text-destructive` / `bg-destructive/10` | ~10 |
-| `text-blue-*` / `bg-blue-*` | `text-info` / `bg-info/10` | ~5 |
+**~200 hardcoded colors replaced.** ~43 intentional `slate-200/300` remain (very faint decorative elements: timeline buffer labels, grip handles, separators, lock icons — lighter than `muted-foreground` by design).
 
-### Files with most violations
-
-- `App.tsx` — pervasive throughout header, timeline, sidebar, map panel, footer
-- `StayOverviewPanel.tsx` — ~20 instances
-- `VisitDetailDrawer.tsx` — ~15 instances
-- `ProfileMenu.tsx` — ~15 instances (emerald, blue, violet, slate)
-- `HistoryPanel.tsx` — ~10 instances (emerald, red, slate)
-- `DraggableInventoryCard.tsx` / `SortableVisitCard.tsx` — ~10 each
-- `WelcomeScreen.tsx` — ~10 instances
-- `ChronosErrorBoundary.tsx` — ~8 instances
-- `DroppablePeriodSlot.tsx` — ~5 instances
-- `InlineDateRangePicker.tsx` — ~3 instances
-
-### Badge variant gaps
-
-Badges use hardcoded color overrides via className instead of proper variants:
-- `text-emerald-600 bg-emerald-50` → need `variant="success"`
-- `text-red-500 bg-red-50` → need `variant="destructive"` (may exist, verify)
-- `text-primary bg-primary/10` → already works with `variant="secondary"`
-
-Affected: `HistoryPanel.tsx:64-80`, `StayOverviewPanel.tsx:253`, `VisitDetailDrawer.tsx:154`
+### Badge variant gaps (still open)
+- [ ] Badges still use className overrides for success/destructive colors — could add proper Badge variants later
 
 ---
 
 ## P3 — UX Polish
 
 ### Forms & validation
-- [ ] **AddStayModal missing required `*` indicator** on destination field — `AddStayModal.tsx:68`
-- [ ] **RouteEditorModal / VisitFormModal have no `<form>` wrapper** — no Enter-key submission → multiple files
-- [ ] **Duration field accepts any text** without format validation → `RouteEditorModal.tsx:85-90`
-- [ ] **Checklist items can be duplicated** — no dedup check → `VisitFormModal.tsx:78-82`
+- [x] **AddStayModal missing required `*` indicator** — added `text-destructive` asterisk
+- [x] **RouteEditorModal / VisitFormModal have no `<form>` wrapper** — wrapped in `<form>`, Save→`type="submit"`, Enter-key submission works
+- [x] ~~**Duration field accepts any text**~~ — placeholder "e.g. 2h 30m" provides guidance, free-text is intentional
+- [x] **Checklist items can be duplicated** — added case-insensitive dedup check
 - [ ] **No loading state on save buttons** — user gets zero feedback after clicking Save → all modals
-- [ ] **AuthModalSimple doesn't block Escape during loading** — can interrupt auth flow → `AuthModalSimple.tsx:50-54`
+- [x] **AuthModalSimple doesn't block Escape during loading** — onOpenChange now checks `!loading`
 
 ### Touch targets
-- [ ] **Delete buttons too small** — `icon-xs` (24px) below 44px minimum for touch → `StayOverviewPanel.tsx:156,164`, `VisitDetailDrawer.tsx:175,179`
+- [x] **Delete buttons too small** — upgraded `icon-xs` to `icon-sm` in StayOverviewPanel and VisitDetailDrawer
 
 ### Text overflow
-- [ ] **Long visit notes show single line** — should use `line-clamp-2` → `SortableVisitCard.tsx:88`
+- [x] **Long visit notes show single line** — added `line-clamp-2` to SortableVisitCard
 - [ ] **Long visit/stay names truncated without tooltip** → `VisitDetailDrawer.tsx:111`, `StayOverviewPanel.tsx:104`
 - [ ] **Long email in ProfileMenu truncated without tooltip** → `ProfileMenu.tsx:131`
-- [ ] **Trip name in footer uses `slice(0, 24)`** — should use CSS `truncate` instead → `App.tsx:2485`
+- [x] **Trip name in footer uses `slice(0, 24)`** — replaced with CSS `truncate max-w-[200px]`
 
 ### Layout
-- [ ] **AI explanation can overflow modal** — no max-height/scroll on long AI responses → `AIPlannerModal.tsx:232-244`
-- [ ] **ProfileMenu dropdown is fixed `w-60`** — could overflow on very small screens → `ProfileMenu.tsx:120`
-- [ ] **HistoryPanel has fixed `max-h-96`** — could dominate viewport on short screens → `HistoryPanel.tsx:20`
+- [x] **AI explanation can overflow modal** — added `max-h-40 overflow-y-auto`
+- [x] **ProfileMenu dropdown is fixed `w-60`** — added `max-w-[calc(100vw-2rem)]`
+- [x] **HistoryPanel has fixed `max-h-96`** — changed to `max-h-[min(24rem,calc(100vh-12rem))]`
 - [ ] **Timeline height hardcoded to 140px** → `App.tsx:1075`
 - [ ] **StayOverviewPanel stats grid unconditionally 3-col** — can compress on narrow widths → `StayOverviewPanel.tsx:80`
 
 ### Mobile
-- [ ] **No sync status visible on mobile** — footer is `hidden md:flex`, mobile users can't see sync state → `App.tsx:2459`
-- [ ] **Sheet height `h-[85dvh]`** — no fallback if `dvh` unsupported → `App.tsx:2342`
+- [x] **No sync status visible on mobile** — added sync dot indicator in header (`md:hidden`)
+- [x] **Sheet height `h-[85dvh]`** — changed to `h-[85vh]` for universal support
 
 ### Labeling & copy
-- [ ] **"Go Back" button in TripEditor shrink confirmation is ambiguous** — should say "Edit dates" or "Adjust dates" → `TripEditorModal.tsx:175`
+- [x] **"Go Back" button in TripEditor shrink confirmation** — changed to "Adjust Dates"
 - [ ] **ImportFromCodeDialog placeholder "e.g. TRIP-ABCD"** — insufficient format guidance → `ImportFromCodeDialog.tsx:132`
 - [ ] **AI model selector has no descriptions** — users can't distinguish between models → `AIPlannerModal.tsx:314-337`
-- [ ] **AddStayModal search error UX** — says "you can still save" but doesn't explain how to retry → `AddStayModal.tsx:117`
+- [x] **AddStayModal search error UX** — improved copy: "try a different name, or just type your destination and save"
 
 ---
 

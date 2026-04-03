@@ -50,11 +50,11 @@ function StayOverviewPanel({
   return (
     <div className="flex-1 overflow-y-auto scroll-hide">
       {/* Hero */}
-      <div className="relative h-24 bg-slate-100 flex-shrink-0">
+      <div className="relative h-24 bg-muted flex-shrink-0">
         {stay.imageUrl ? (
           <img src={stay.imageUrl} alt={stay.name} className="w-full h-full object-cover" />
         ) : (
-          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200">
+          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-muted to-muted">
             <MapPin className="w-7 h-7 text-slate-300" />
           </div>
         )}
@@ -87,8 +87,8 @@ function StayOverviewPanel({
             key={label}
             className={`px-3 py-2 text-center ${i < 2 ? 'border-r border-border-neutral' : ''}`}
           >
-            <p className="text-base font-extrabold text-slate-800">{value}</p>
-            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
+            <p className="text-base font-extrabold text-foreground">{value}</p>
+            <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest mt-0.5">
               {label}
             </p>
           </div>
@@ -98,7 +98,7 @@ function StayOverviewPanel({
       {/* Accommodation */}
       {accommodationGroups.length > 0 && (
         <div className="px-4 py-2 border-b border-border-neutral">
-          <p className="text-[11px] font-extrabold uppercase tracking-widest text-slate-400 mb-1.5">
+          <p className="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground mb-1.5">
             Sleeping
           </p>
           <div className="space-y-1">
@@ -109,8 +109,8 @@ function StayOverviewPanel({
               >
                 <Hotel className="w-3 h-3 text-primary flex-shrink-0" />
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-bold text-slate-800 truncate">{g.name}</p>
-                  <p className="text-[9px] text-slate-400">
+                  <p className="text-xs font-bold text-foreground truncate">{g.name}</p>
+                  <p className="text-[9px] text-muted-foreground">
                     {g.nights} {g.nights === 1 ? 'night' : 'nights'}
                   </p>
                 </div>
@@ -122,11 +122,11 @@ function StayOverviewPanel({
 
       {/* Notes */}
       <div className="px-4 py-2 border-b border-border-neutral">
-        <label className="text-[11px] font-extrabold uppercase tracking-widest text-slate-400 mb-1.5 block">
+        <label className="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground mb-1.5 block">
           Notes
         </label>
         <Textarea
-          className="text-xs resize-none text-slate-700 placeholder:text-slate-300"
+          className="text-xs resize-none text-foreground placeholder:text-muted-foreground"
           rows={3}
           placeholder="Travel tips, booking info, things to know…"
           value={notes}
@@ -137,13 +137,13 @@ function StayOverviewPanel({
 
       {/* Links */}
       <div className="px-4 py-2 border-b border-border-neutral">
-        <label className="text-[11px] font-extrabold uppercase tracking-widest text-slate-400 mb-1.5 block">
+        <label className="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground mb-1.5 block">
           Links
         </label>
         <div className="space-y-1.5">
           {links.map((link, i) => (
             <div key={i} className="flex items-center gap-2 group">
-              <ExternalLink className="w-3 h-3 text-slate-400 flex-shrink-0" />
+              <ExternalLink className="w-3 h-3 text-muted-foreground flex-shrink-0" />
               <a
                 href={link.url}
                 target="_blank"
@@ -155,13 +155,13 @@ function StayOverviewPanel({
               </a>
               <Button
                 variant="ghost"
-                size="icon-xs"
+                size="icon-sm"
                 onClick={() => {
                   const next = links.filter((_, idx) => idx !== i);
                   setLinks(next);
                   onUpdate({ links: next.length > 0 ? next : undefined });
                 }}
-                className="opacity-0 group-hover:opacity-100 hover:bg-red-50 text-slate-400 hover:text-red-500"
+                className="opacity-0 group-hover:opacity-100 hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
               >
                 <X className="w-3 h-3" />
               </Button>
@@ -241,23 +241,23 @@ export function StayTodoSection({
     <div className="border-b border-border-neutral flex-shrink-0">
       <button
         onClick={() => setOpen((o) => !o)}
-        className="w-full px-4 py-2 flex items-center justify-between hover:bg-slate-50 transition-colors"
+        className="w-full px-4 py-2 flex items-center justify-between hover:bg-muted transition-colors"
       >
         <div className="flex items-center gap-2">
-          <span className="text-[11px] font-extrabold uppercase tracking-widest text-slate-400">
+          <span className="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground">
             To-Do
           </span>
           {checklist.length > 0 && (
             <Badge
               variant="secondary"
-              className={`text-[9px] font-bold h-auto px-1.5 py-0.5 ${doneCount === checklist.length ? 'bg-emerald-50 text-emerald-600' : 'bg-primary/10 text-primary'}`}
+              className={`text-[9px] font-bold h-auto px-1.5 py-0.5 ${doneCount === checklist.length ? 'bg-success/10 text-success' : 'bg-primary/10 text-primary'}`}
             >
               {doneCount}/{checklist.length}
             </Badge>
           )}
         </div>
         <ChevronDown
-          className={`w-3.5 h-3.5 text-slate-400 transition-all duration-200 ${open ? 'rotate-180' : ''}`}
+          className={`w-3.5 h-3.5 text-muted-foreground transition-all duration-200 ${open ? 'rotate-180' : ''}`}
         />
       </button>
       {open && (
@@ -272,15 +272,15 @@ export function StayTodoSection({
                 className="size-3.5"
               />
               <span
-                className={`flex-1 text-xs ${item.done ? 'line-through text-slate-400' : 'text-slate-700'}`}
+                className={`flex-1 text-xs ${item.done ? 'line-through text-muted-foreground' : 'text-foreground'}`}
               >
                 {item.text}
               </span>
               <Button
                 variant="ghost"
-                size="icon-xs"
+                size="icon-sm"
                 onClick={() => onUpdate(checklist.filter((i) => i.id !== item.id))}
-                className="opacity-0 group-hover:opacity-100 hover:bg-red-50 text-slate-400 hover:text-red-500"
+                className="opacity-0 group-hover:opacity-100 hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
               >
                 <X className="w-3 h-3" />
               </Button>

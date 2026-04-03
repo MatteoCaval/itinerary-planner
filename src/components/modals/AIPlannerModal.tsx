@@ -148,7 +148,7 @@ function AIPlannerModal({
   return (
     <ModalBase title="AI Planner" onClose={onClose} width="max-w-lg">
       {/* Tabs */}
-      <div className="flex border-b border-slate-100 -mx-6 px-6 mb-5 gap-4">
+      <div className="flex border-b border-border -mx-6 px-6 mb-5 gap-4">
         {(['generate', 'settings'] as const).map((t) => (
           <button
             key={t}
@@ -156,7 +156,7 @@ function AIPlannerModal({
             className={`pb-2.5 text-[11px] font-extrabold uppercase tracking-widest border-b-2 transition-colors -mb-px ${
               tab === t
                 ? 'border-primary text-primary'
-                : 'border-transparent text-slate-400 hover:text-slate-600'
+                : 'border-transparent text-muted-foreground hover:text-foreground'
             }`}
           >
             {t === 'generate' ? (
@@ -178,7 +178,7 @@ function AIPlannerModal({
         <div className="space-y-4">
           {/* Mode toggle */}
           <div>
-            <span className="text-[11px] font-extrabold uppercase tracking-widest text-slate-400 mb-2 block">
+            <span className="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground mb-2 block">
               Mode
             </span>
             <ToggleGroup
@@ -202,7 +202,7 @@ function AIPlannerModal({
           {/* Prompt */}
           {!explanation ? (
             <div>
-              <label className="text-[11px] font-extrabold uppercase tracking-widest text-slate-400 mb-2 block">
+              <label className="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground mb-2 block">
                 What should I plan?{' '}
                 <span className="text-slate-300 normal-case font-medium">
                   ({trip.totalDays} days available)
@@ -222,32 +222,32 @@ function AIPlannerModal({
               />
               {loading && (
                 <div className="mt-3 space-y-2 animate-pulse">
-                  <div className="h-2.5 bg-slate-100 rounded-full w-3/4" />
-                  <div className="h-2.5 bg-slate-100 rounded-full w-1/2" />
-                  <div className="h-2.5 bg-slate-100 rounded-full w-5/6" />
-                  <p className="text-[11px] text-slate-400 font-medium pt-1">
+                  <div className="h-2.5 bg-border rounded-full w-3/4" />
+                  <div className="h-2.5 bg-border rounded-full w-1/2" />
+                  <div className="h-2.5 bg-border rounded-full w-5/6" />
+                  <p className="text-[11px] text-muted-foreground font-medium pt-1">
                     Generating your itinerary…
                   </p>
                 </div>
               )}
             </div>
           ) : (
-            <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-2">
+            <div className="bg-muted border border-border rounded-xl p-4 space-y-2">
               <div className="flex items-center gap-2 mb-1">
                 <Sparkles className="w-3.5 h-3.5 text-primary flex-shrink-0" />
                 <span className="text-[11px] font-extrabold uppercase tracking-widest text-primary">
                   AI Plan Ready
                 </span>
               </div>
-              <p className="text-xs text-slate-700 leading-relaxed italic">{explanation}</p>
-              <p className="text-[11px] text-slate-400 pt-1">
+              <p className="text-xs text-foreground leading-relaxed italic max-h-40 overflow-y-auto">{explanation}</p>
+              <p className="text-[11px] text-muted-foreground pt-1">
                 Review the summary above, then apply to your timeline.
               </p>
             </div>
           )}
 
           {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-xs text-red-700 flex gap-2 items-start">
+            <div className="bg-destructive/10 border border-destructive/30 rounded-lg px-4 py-3 text-xs text-destructive flex gap-2 items-start">
               <X className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
               <span>{error}</span>
             </div>
@@ -286,7 +286,7 @@ function AIPlannerModal({
       {tab === 'settings' && (
         <div className="space-y-4">
           <div>
-            <label className="text-[11px] font-extrabold uppercase tracking-widest text-slate-400 mb-2 block">
+            <label className="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground mb-2 block">
               Gemini API Key
             </label>
             <Input
@@ -296,7 +296,7 @@ function AIPlannerModal({
               value={settings.apiKey}
               onChange={(e) => onSettingsChange({ ...settings, apiKey: e.target.value })}
             />
-            <p className="text-[11px] text-slate-400 mt-1.5">
+            <p className="text-[11px] text-muted-foreground mt-1.5">
               Stored locally in your browser.{' '}
               <a
                 href="https://aistudio.google.com/app/apikey"
@@ -309,7 +309,7 @@ function AIPlannerModal({
             </p>
           </div>
           <div>
-            <label className="text-[11px] font-extrabold uppercase tracking-widest text-slate-400 mb-2 block">
+            <label className="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground mb-2 block">
               Model
             </label>
             <ToggleGroup
@@ -333,7 +333,7 @@ function AIPlannerModal({
                 >
                   {label}
                   {badge && settings.model !== id ? (
-                    <span className="ml-1 text-slate-400 font-medium">★</span>
+                    <span className="ml-1 text-muted-foreground font-medium">★</span>
                   ) : (
                     ''
                   )}

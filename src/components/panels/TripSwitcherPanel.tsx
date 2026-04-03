@@ -28,12 +28,12 @@ function TripSwitcherPanel({
             className={`w-full text-left px-4 py-3 rounded-lg border transition-all flex items-center justify-between ${
               t.id === store.activeTripId
                 ? 'border-primary/40 bg-primary/5 ring-1 ring-primary/10'
-                : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                : 'border-border hover:border-border hover:bg-muted'
             }`}
           >
             <div>
-              <p className="text-sm font-bold text-slate-800">{t.name}</p>
-              <p className="text-[11px] text-slate-500 mt-0.5">
+              <p className="text-sm font-bold text-foreground">{t.name}</p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">
                 {fmt(new Date(t.startDate), { month: 'short', day: 'numeric', year: 'numeric' })} ·{' '}
                 {t.totalDays} days · {t.stays.length} stays
               </p>
@@ -50,7 +50,7 @@ function TripSwitcherPanel({
           onNew();
           onClose();
         }}
-        className="w-full py-2.5 border-2 border-dashed border-slate-300 text-sm font-bold text-slate-500 hover:border-primary/50 hover:text-primary gap-2"
+        className="w-full py-2.5 border-2 border-dashed border-border text-sm font-bold text-muted-foreground hover:border-primary/50 hover:text-primary gap-2"
       >
         <Plus className="w-4 h-4" /> New Trip
       </Button>

@@ -17,7 +17,7 @@ function DraggableInventoryCard({ visit, onEdit }: { visit: VisitItem; onEdit: (
       {...listeners}
       {...attributes}
       style={{ transform: CSS.Translate.toString(transform), opacity: isDragging ? 0.4 : 1 }}
-      className="p-3 bg-white rounded-lg border border-slate-200 hover:border-slate-300 hover:shadow-md transition-all group select-none touch-none cursor-grab active:cursor-grabbing"
+      className="p-3 bg-white rounded-lg border border-border hover:border-border hover:shadow-md transition-all group select-none touch-none cursor-grab active:cursor-grabbing"
       aria-label={`Drag ${visit.name} to schedule`}
     >
       <div className="flex justify-between items-start mb-1.5">
@@ -35,7 +35,7 @@ function DraggableInventoryCard({ visit, onEdit }: { visit: VisitItem; onEdit: (
               e.stopPropagation();
               onEdit();
             }}
-            className="opacity-60 group-hover:opacity-100 transition-opacity text-slate-400 hover:text-slate-600 touch-auto"
+            className="opacity-60 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground touch-auto"
             aria-label={`Edit ${visit.name}`}
           >
             <Pencil className="w-3.5 h-3.5" />
@@ -47,20 +47,20 @@ function DraggableInventoryCard({ visit, onEdit }: { visit: VisitItem; onEdit: (
       </div>
       <div className="flex items-start gap-2">
         <div className="flex-1 min-w-0">
-          <p className="text-xs font-bold text-slate-800">{visit.name}</p>
+          <p className="text-xs font-bold text-foreground">{visit.name}</p>
           {visit.durationHint && (
-            <p className="text-[11px] text-slate-400 mt-0.5">{visit.durationHint}</p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">{visit.durationHint}</p>
           )}
           {visit.checklist?.length || visit.links?.length ? (
             <div className="flex items-center gap-1.5 mt-1.5">
               {visit.checklist?.length ? (
-                <Badge variant="secondary" className="text-[9px] font-bold text-slate-500 gap-1.5">
+                <Badge variant="secondary" className="text-[9px] font-bold text-muted-foreground gap-1.5">
                   <Check className="w-2.5 h-2.5" />
                   {visit.checklist.filter((i) => i.done).length}/{visit.checklist.length}
                 </Badge>
               ) : null}
               {visit.links?.length ? (
-                <Badge variant="secondary" className="text-[9px] font-bold text-slate-500 gap-1.5">
+                <Badge variant="secondary" className="text-[9px] font-bold text-muted-foreground gap-1.5">
                   <Link2 className="w-2.5 h-2.5" />
                   {visit.links.length}
                 </Badge>
@@ -69,7 +69,7 @@ function DraggableInventoryCard({ visit, onEdit }: { visit: VisitItem; onEdit: (
           ) : null}
         </div>
         {visit.imageUrl && (
-          <div className="size-9 rounded-md overflow-hidden flex-shrink-0 border border-slate-100 shadow-sm">
+          <div className="size-9 rounded-md overflow-hidden flex-shrink-0 border border-border shadow-sm">
             <img
               src={visit.imageUrl}
               alt=""

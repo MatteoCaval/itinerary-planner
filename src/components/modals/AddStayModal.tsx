@@ -65,11 +65,11 @@ function AddStayModal({
       <div className="space-y-5">
         {/* Destination search */}
         <div className="relative">
-          <label className="text-[11px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 block">
-            City or destination
+          <label className="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground mb-2 block">
+            City or destination <span className="text-destructive">*</span>
           </label>
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
             <Input
               className="pl-9 pr-9 text-xs font-semibold placeholder:font-normal"
               placeholder="e.g. Tokyo, Kyoto, Paris…"
@@ -85,27 +85,27 @@ function AddStayModal({
               <div className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
             )}
             {pickedCoords && !isSearching && (
-              <div className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-500">
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 text-success">
                 <Check className="w-3.5 h-3.5" />
               </div>
             )}
           </div>
           {showResults && searchResults.length > 0 && (
-            <div className="absolute z-50 left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-lg shadow-xl overflow-hidden">
+            <div className="absolute z-50 left-0 right-0 top-full mt-1 bg-white border border-border rounded-lg shadow-xl overflow-hidden">
               {searchResults.map((r) => {
                 const parts = r.display_name.split(',');
                 return (
                   <button
                     key={r.place_id}
                     onClick={() => pickResult(r)}
-                    className="w-full text-left px-3 py-2.5 hover:bg-primary/5 border-b last:border-b-0 border-slate-100 flex items-start gap-2 transition-colors"
+                    className="w-full text-left px-3 py-2.5 hover:bg-primary/5 border-b last:border-b-0 border-border flex items-start gap-2 transition-colors"
                   >
-                    <MapPin className="w-3.5 h-3.5 text-slate-400 flex-shrink-0 mt-0.5" />
+                    <MapPin className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0 mt-0.5" />
                     <div className="min-w-0">
-                      <p className="text-xs font-semibold text-slate-800 truncate">
+                      <p className="text-xs font-semibold text-foreground truncate">
                         {parts[0].trim()}
                       </p>
-                      <p className="text-[11px] text-slate-500 truncate">
+                      <p className="text-[11px] text-muted-foreground truncate">
                         {parts.slice(1, 4).join(',').trim()}
                       </p>
                     </div>
@@ -115,54 +115,54 @@ function AddStayModal({
             </div>
           )}
           {searchError && (
-            <p className="text-[11px] text-red-500 font-medium mt-1">
-              Search failed — you can still save with a manual name.
+            <p className="text-[11px] text-destructive font-medium mt-1">
+              Search failed — try a different name, or just type your destination and save.
             </p>
           )}
         </div>
 
         {/* Days stepper */}
         <div>
-          <label className="text-[11px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 block">
+          <label className="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground mb-2 block">
             Duration
           </label>
           <div className="flex items-center gap-3">
-            <div className="flex items-center border border-slate-200 rounded-lg overflow-hidden bg-white">
+            <div className="flex items-center border border-border rounded-lg overflow-hidden bg-white">
               <button
                 onClick={() => setDays((d) => Math.max(1, d - 1))}
-                className="w-11 h-11 flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-50 text-xl font-light transition-colors"
+                className="w-11 h-11 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted text-xl font-light transition-colors"
               >
                 −
               </button>
-              <span className="w-10 text-center font-extrabold text-sm text-slate-800 tabular-nums">
+              <span className="w-10 text-center font-extrabold text-sm text-foreground tabular-nums">
                 {days}
               </span>
               <button
                 onClick={() => setDays((d) => Math.min(90, d + 1))}
-                className="w-11 h-11 flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-50 text-xl font-light transition-colors"
+                className="w-11 h-11 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted text-xl font-light transition-colors"
               >
                 +
               </button>
             </div>
-            <span className="text-sm text-slate-500">{days === 1 ? 'day' : 'days'}</span>
+            <span className="text-sm text-muted-foreground">{days === 1 ? 'day' : 'days'}</span>
           </div>
         </div>
 
         {/* Preview */}
-        <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-slate-100 bg-slate-50/60">
+        <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-border bg-muted/60">
           <div className="w-2 h-8 rounded-full flex-shrink-0" style={{ background: stayColor }} />
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-extrabold text-slate-800 truncate">
+            <p className="text-xs font-extrabold text-foreground truncate">
               {name || 'New destination'}
             </p>
-            <p className="text-[11px] text-slate-400 font-medium mt-0.5">
+            <p className="text-[11px] text-muted-foreground font-medium mt-0.5">
               {days} {days === 1 ? 'day' : 'days'} on the timeline
             </p>
           </div>
           {pickedCoords && (
             <Badge
               variant="outline"
-              className="text-[9px] font-bold text-emerald-600 bg-emerald-50 border-emerald-100 flex-shrink-0"
+              className="text-[9px] font-bold text-success bg-success/10 border-emerald-100 flex-shrink-0"
             >
               Located
             </Badge>

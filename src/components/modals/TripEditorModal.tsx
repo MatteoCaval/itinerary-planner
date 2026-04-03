@@ -105,7 +105,7 @@ function TripEditorModal({
     <ModalBase title="Edit Trip" onClose={onClose}>
       <div className="space-y-4">
         <div>
-          <label className="text-[11px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 block">
+          <label className="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground mb-2 block">
             Trip Name
           </label>
           <Input
@@ -118,10 +118,10 @@ function TripEditorModal({
 
         {/* Date range picker */}
         <div>
-          <label className="text-[11px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 block">
+          <label className="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground mb-2 block">
             Dates
           </label>
-          <div className="border border-slate-200 rounded-xl p-3">
+          <div className="border border-border rounded-xl p-3">
             <InlineDateRangePicker
               startDate={startDate}
               endDate={endDateStr}
@@ -131,8 +131,8 @@ function TripEditorModal({
         </div>
 
         {startDate && totalDays > 0 && (
-          <div className="flex items-center gap-2 text-[11px] text-slate-500 bg-slate-50 rounded-lg px-3 py-2">
-            <Calendar className="w-3 h-3 text-slate-400 flex-shrink-0" />
+          <div className="flex items-center gap-2 text-[11px] text-muted-foreground bg-muted rounded-lg px-3 py-2">
+            <Calendar className="w-3 h-3 text-muted-foreground flex-shrink-0" />
             <span>
               {fmt(new Date(startDate), { month: 'short', day: 'numeric' })} —{' '}
               {fmt(addDaysTo(new Date(startDate), totalDays - 1), {
@@ -140,7 +140,7 @@ function TripEditorModal({
                 day: 'numeric',
                 year: 'numeric',
               })}
-              <span className="ml-1.5 text-slate-400">
+              <span className="ml-1.5 text-muted-foreground">
                 ({totalDays} day{totalDays !== 1 ? 's' : ''})
               </span>
             </span>
@@ -149,22 +149,22 @@ function TripEditorModal({
 
         {confirmShrink ? (
           <div
-            className={`${fullyOutsideStays.length > 0 ? 'bg-red-50 border-red-200' : 'bg-amber-50 border-amber-200'} border rounded-lg p-3`}
+            className={`${fullyOutsideStays.length > 0 ? 'bg-destructive/10 border-destructive/30' : 'bg-warning/10 border-warning/30'} border rounded-lg p-3`}
           >
             <div className="flex items-start gap-2 mb-3">
               <AlertTriangle
-                className={`w-4 h-4 flex-shrink-0 mt-0.5 ${fullyOutsideStays.length > 0 ? 'text-red-500' : 'text-amber-500'}`}
+                className={`w-4 h-4 flex-shrink-0 mt-0.5 ${fullyOutsideStays.length > 0 ? 'text-destructive' : 'text-warning'}`}
               />
               <div className="text-xs">
                 {fullyOutsideStays.length > 0 && (
-                  <p className="text-red-700 mb-1">
+                  <p className="text-destructive mb-1">
                     <strong>{fullyOutsideStays.map((s) => s.name).join(', ')}</strong>{' '}
                     {fullyOutsideStays.length > 1 ? 'are' : 'is'} fully outside the new date range
                     and will be <strong>removed</strong>.
                   </p>
                 )}
                 {partiallyCutStays.length > 0 && (
-                  <p className="text-amber-700 mb-1">
+                  <p className="text-warning mb-1">
                     <strong>{partiallyCutStays.map((s) => s.name).join(', ')}</strong> will be
                     shortened to fit. Activities outside the new range will be unplanned.
                   </p>
@@ -178,12 +178,12 @@ function TripEditorModal({
                 className="flex-1"
                 onClick={() => setConfirmShrink(false)}
               >
-                Go Back
+                Adjust Dates
               </Button>
               <Button
                 variant="destructive"
                 size="sm"
-                className={`flex-1 text-white ${fullyOutsideStays.length > 0 ? 'bg-red-500 hover:bg-red-600' : 'bg-amber-500 hover:bg-amber-600'}`}
+                className={`flex-1 text-white ${fullyOutsideStays.length > 0 ? 'bg-destructive hover:bg-destructive/90' : 'bg-warning hover:bg-warning/90'}`}
                 onClick={() => doSave(true)}
               >
                 {fullyOutsideStays.length > 0 ? 'Remove & Shorten' : 'Confirm & Shorten'}

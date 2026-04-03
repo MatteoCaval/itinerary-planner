@@ -30,11 +30,11 @@ function DroppablePeriodSlot({
     <div
       ref={setNodeRef}
       aria-label={`${label} slot, day ${dayOffset + 1}`}
-      className={`p-1.5 rounded-xl border transition-colors ${isOver ? 'bg-primary/5 border-primary/30' : 'bg-slate-200/40 border-slate-200/80'}`}
+      className={`p-1.5 rounded-xl border transition-colors ${isOver ? 'bg-primary/5 border-primary/30' : 'bg-border/40 border-border/80'}`}
     >
       <div className="flex items-center gap-1.5 px-2 py-1.5 mb-1">
-        <PeriodIcon className="w-3 h-3 text-slate-500" />
-        <span className="text-[9px] font-extrabold uppercase tracking-widest text-slate-500">
+        <PeriodIcon className="w-3 h-3 text-muted-foreground" />
+        <span className="text-[9px] font-extrabold uppercase tracking-widest text-muted-foreground">
           {label}
         </span>
       </div>
@@ -56,7 +56,7 @@ function DroppablePeriodSlot({
         <Button
           variant="outline"
           onClick={() => onAddVisit(dayOffset, period)}
-          className="w-full h-10 border-2 border-dashed border-slate-300 text-slate-400 hover:text-primary hover:border-primary/50 hover:bg-primary/5 gap-1.5 group"
+          className="w-full h-10 border-2 border-dashed border-border text-muted-foreground hover:text-primary hover:border-primary/50 hover:bg-primary/5 gap-1.5 group"
         >
           <PlusCircle className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
           <span className="text-[11px] font-bold uppercase tracking-tight">Drop or add</span>

@@ -19,14 +19,14 @@ export default class ChronosErrorBoundary extends Component<
   render() {
     if (this.state.error) {
       return (
-        <div className="h-screen flex items-center justify-center bg-slate-50 p-8">
-          <div className="max-w-md w-full bg-white rounded-2xl border border-red-100 shadow-xl p-8 text-center space-y-4">
-            <div className="size-12 rounded-full bg-red-50 flex items-center justify-center mx-auto">
-              <X className="w-6 h-6 text-red-500" />
+        <div className="h-screen flex items-center justify-center bg-muted p-8">
+          <div className="max-w-md w-full bg-white rounded-2xl border border-destructive/30 shadow-xl p-8 text-center space-y-4">
+            <div className="size-12 rounded-full bg-destructive/10 flex items-center justify-center mx-auto">
+              <X className="w-6 h-6 text-destructive" />
             </div>
             <div>
-              <h2 className="text-base font-extrabold text-slate-800">Something went wrong</h2>
-              <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+              <h2 className="text-base font-extrabold text-foreground">Something went wrong</h2>
+              <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
                 {this.state.error.message}
               </p>
             </div>

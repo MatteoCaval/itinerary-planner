@@ -19,9 +19,9 @@ function WelcomeScreen({
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
+    <div className="min-h-screen bg-muted flex flex-col">
       {/* Header */}
-      <header className="flex h-14 items-center justify-between border-b border-slate-100 px-6 bg-white/80 backdrop-blur-sm flex-shrink-0">
+      <header className="flex h-14 items-center justify-between border-b border-border px-6 bg-white/80 backdrop-blur-sm flex-shrink-0">
         <div className="flex items-center gap-2.5 text-primary">
           <div className="size-7 rounded-lg bg-primary/10 flex items-center justify-center">
             <Compass className="w-4 h-4 text-primary" />
@@ -33,7 +33,7 @@ function WelcomeScreen({
             variant="ghost"
             size="sm"
             onClick={signInWithGoogle}
-            className="text-slate-500 hover:text-primary"
+            className="text-muted-foreground hover:text-primary"
           >
             <LogIn className="w-3.5 h-3.5" />
             Sign in
@@ -48,7 +48,7 @@ function WelcomeScreen({
           <div className="mb-10 relative h-16 w-full select-none">
             {/* Track line */}
             <div className="absolute inset-y-0 left-0 right-0 flex items-center pointer-events-none">
-              <div className="h-px w-full bg-slate-200" />
+              <div className="h-px w-full bg-border" />
             </div>
             {/* Stay blocks */}
             {stayPreviews.map((s, i) => (
@@ -83,19 +83,19 @@ function WelcomeScreen({
                 className="absolute flex items-center justify-center"
                 style={{ left: chip.left, top: '50%', transform: 'translate(-50%, -50%)' }}
               >
-                <div className="bg-white border border-slate-200 rounded-full p-1.5 shadow-sm z-10">
-                  <TransportIcon mode={chip.mode} className="w-3 h-3 text-slate-400" />
+                <div className="bg-white border border-border rounded-full p-1.5 shadow-sm z-10">
+                  <TransportIcon mode={chip.mode} className="w-3 h-3 text-muted-foreground" />
                 </div>
               </div>
             ))}
           </div>
 
-          <h1 className="text-[2.6rem] font-black text-slate-900 tracking-tight leading-none mb-3">
+          <h1 className="text-[2.6rem] font-black text-foreground tracking-tight leading-none mb-3">
             Plan your next
             <br />
             <span className="text-primary">adventure.</span>
           </h1>
-          <p className="text-slate-500 text-sm leading-relaxed mb-8 max-w-sm">
+          <p className="text-muted-foreground text-sm leading-relaxed mb-8 max-w-sm">
             A visual day-by-day planner with a timeline, interactive map, and AI-powered
             suggestions.
           </p>
@@ -111,7 +111,7 @@ function WelcomeScreen({
           </div>
 
           {!user && (
-            <p className="mt-6 text-[11px] text-slate-400">
+            <p className="mt-6 text-[11px] text-muted-foreground">
               Trips are saved locally.{' '}
               <Button
                 variant="link"

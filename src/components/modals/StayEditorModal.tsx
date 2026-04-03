@@ -36,7 +36,7 @@ function StayEditorModal({
     <ModalBase title="Edit Stay" onClose={onClose}>
       <div className="space-y-4">
         <div>
-          <label className="text-[11px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 block">
+          <label className="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground mb-2 block">
             Destination Name
           </label>
           <Input
@@ -47,7 +47,7 @@ function StayEditorModal({
           />
         </div>
         <div>
-          <label className="text-[11px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 block">
+          <label className="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground mb-2 block">
             Lodging
           </label>
           <Input
@@ -58,7 +58,7 @@ function StayEditorModal({
           />
         </div>
         <div>
-          <label className="text-[11px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 block">
+          <label className="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground mb-2 block">
             Color
           </label>
           <div className="flex gap-2 flex-wrap">
@@ -68,7 +68,7 @@ function StayEditorModal({
                 onClick={() => setColor(c)}
                 aria-label={`Color ${c}`}
                 aria-pressed={color === c}
-                className={`size-9 rounded-full border-2 transition-all focus-visible:ring-2 focus-visible:ring-primary/50 ${color === c ? 'ring-2 ring-offset-2 ring-slate-400 scale-110' : 'border-white hover:scale-110'}`}
+                className={`size-9 rounded-full border-2 transition-all focus-visible:ring-2 focus-visible:ring-primary/50 ${color === c ? 'ring-2 ring-offset-2 ring-muted-foreground scale-110' : 'border-white hover:scale-110'}`}
                 style={{ background: c }}
               />
             ))}
@@ -77,7 +77,7 @@ function StayEditorModal({
                 type="color"
                 value={color}
                 onChange={(e) => setColor(e.target.value)}
-                className="size-9 rounded-full border-2 border-slate-200 cursor-pointer"
+                className="size-9 rounded-full border-2 border-border cursor-pointer"
                 aria-label="Pick custom color"
                 title="Custom color"
               />

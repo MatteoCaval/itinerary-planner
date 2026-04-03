@@ -41,8 +41,8 @@ export default function InlineDateRangePicker({
         fixedWeeks
       />
       {(startDate || endDate) && (
-        <div className="flex items-center justify-between mt-1 pt-2 border-t border-slate-100">
-          <span className="text-[11px] text-slate-500">
+        <div className="flex items-center justify-between mt-1 pt-2 border-t border-border">
+          <span className="text-[11px] text-muted-foreground">
             {startDate && endDate
               ? `${fmt(new Date(startDate + 'T12:00:00'), { month: 'short', day: 'numeric' })} → ${fmt(new Date(endDate + 'T12:00:00'), { month: 'short', day: 'numeric' })}`
               : startDate
@@ -54,7 +54,7 @@ export default function InlineDateRangePicker({
             size="sm"
             type="button"
             onClick={() => onChange('', '')}
-            className="text-red-400 hover:text-red-600 h-auto p-0 text-[11px] font-bold"
+            className="text-destructive hover:text-destructive h-auto p-0 text-[11px] font-bold"
           >
             Clear
           </Button>

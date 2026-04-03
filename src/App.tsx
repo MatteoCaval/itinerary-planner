@@ -829,7 +829,7 @@ function ChronosApp() {
   // ── JSX ───────────────────────────────────────────────────────────────────
   return (
     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-      <div className="flex h-dvh w-full flex-col overflow-hidden bg-background-light text-slate-900 font-sans">
+      <div className="flex h-dvh w-full flex-col overflow-hidden bg-background-light text-foreground font-sans">
         {/* ── Header ── */}
         <header className="relative flex h-11 items-center justify-between border-b border-border-neutral px-4 bg-white/80 backdrop-blur-md z-50 flex-shrink-0 gap-2">
           {/* ── Mobile search overlay ── */}
@@ -852,7 +852,7 @@ function ChronosApp() {
                   setMobileSearchOpen(false);
                   setSearchQuery('');
                 }}
-                className="text-slate-400 hover:text-slate-700 flex-shrink-0"
+                className="text-muted-foreground hover:text-foreground flex-shrink-0"
                 aria-label="Close search"
               >
                 <X className="w-4 h-4" />
@@ -869,25 +869,25 @@ function ChronosApp() {
                 Itinerary
               </span>
             </div>
-            <div className="h-5 w-px bg-slate-200 flex-shrink-0" />
+            <div className="h-5 w-px bg-border flex-shrink-0" />
             {/* Trip selector */}
             <button
               onClick={() => setShowTripSwitcher(true)}
-              className="flex items-center gap-2 min-w-0 hover:bg-slate-50 rounded-lg px-2.5 py-1.5 -ml-1 transition-colors group"
+              className="flex items-center gap-2 min-w-0 hover:bg-muted rounded-lg px-2.5 py-1.5 -ml-1 transition-colors group"
             >
-              <span className="text-xs font-bold text-slate-800 truncate max-w-[120px] sm:max-w-none">
+              <span className="text-xs font-bold text-foreground truncate max-w-[120px] sm:max-w-none">
                 {trip.name}
               </span>
-              <ChevronDown className="w-3.5 h-3.5 text-slate-400 flex-shrink-0 group-hover:text-slate-600 transition-colors" />
+              <ChevronDown className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0 group-hover:text-foreground transition-colors" />
             </button>
             {/* Date range — full on desktop, compact on mobile */}
             <button
               onClick={() => setShowTripEditor(true)}
-              className="hidden md:flex items-center gap-1.5 text-[11px] font-semibold text-slate-500 hover:text-slate-700 hover:bg-slate-50 border border-slate-200/60 px-2.5 py-1 rounded-lg transition-colors flex-shrink-0"
+              className="hidden md:flex items-center gap-1.5 text-[11px] font-semibold text-muted-foreground hover:text-foreground hover:bg-muted border border-border/60 px-2.5 py-1 rounded-lg transition-colors flex-shrink-0"
             >
-              <span className="font-bold text-slate-700">{tripStartLabel}</span>
+              <span className="font-bold text-foreground">{tripStartLabel}</span>
               <span className="text-slate-300">–</span>
-              <span className="font-bold text-slate-700">
+              <span className="font-bold text-foreground">
                 {fmt(addDaysTo(safeDate(trip.startDate), trip.totalDays - 1), {
                   month: 'short',
                   day: 'numeric',
@@ -911,7 +911,7 @@ function ChronosApp() {
 
           <div className="flex items-center gap-1 flex-shrink-0">
             {isDemoMode && (
-              <div className="flex items-center gap-1.5 bg-slate-100 border border-slate-200 rounded-lg pl-2.5 pr-1 py-1 text-[11px] font-bold text-slate-500 mr-1">
+              <div className="flex items-center gap-1.5 bg-muted border border-border rounded-lg pl-2.5 pr-1 py-1 text-[11px] font-bold text-muted-foreground mr-1">
                 <span className="hidden sm:inline">Demo</span>
                 <button
                   onClick={handleMakeMine}
@@ -924,7 +924,7 @@ function ChronosApp() {
                 <button
                   onClick={handleGoHome}
                   aria-label="Discard demo and start fresh"
-                  className="hidden sm:block px-2 py-0.5 rounded-md text-[11px] font-semibold hover:bg-slate-200 transition-colors"
+                  className="hidden sm:block px-2 py-0.5 rounded-md text-[11px] font-semibold hover:bg-muted transition-colors"
                 >
                   Start fresh
                 </button>
@@ -933,7 +933,7 @@ function ChronosApp() {
             {overlaps.size > 0 && (
               <Badge
                 variant="outline"
-                className="text-amber-600 bg-amber-50 border-amber-200 gap-1.5 px-2 py-1 text-[11px] font-bold"
+                className="text-warning bg-warning/10 border-warning/30 gap-1.5 px-2 py-1 text-[11px] font-bold"
               >
                 <X className="w-3 h-3 flex-shrink-0" />
                 <span className="hidden sm:inline">
@@ -947,15 +947,15 @@ function ChronosApp() {
               variant="ghost"
               size="icon-sm"
               onClick={() => setMobileSearchOpen(true)}
-              className="md:hidden text-slate-400 hover:text-primary"
+              className="md:hidden text-muted-foreground hover:text-primary"
               aria-label="Search"
             >
               <Search className="w-4 h-4" />
             </Button>
             <div className="hidden md:flex relative items-center group">
-              <Search className="absolute left-2.5 text-slate-400 w-3.5 h-3.5 group-focus-within:text-primary transition-colors" />
+              <Search className="absolute left-2.5 text-muted-foreground w-3.5 h-3.5 group-focus-within:text-primary transition-colors" />
               <Input
-                className="bg-slate-50 pl-8 pr-3 py-1.5 text-xs w-48"
+                className="bg-muted pl-8 pr-3 py-1.5 text-xs w-48"
                 placeholder="Search places, flights..."
                 aria-label="Search places"
                 value={searchQuery}
@@ -966,7 +966,7 @@ function ChronosApp() {
                   variant="ghost"
                   size="icon-xs"
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-1.5 text-slate-400 hover:text-slate-600"
+                  className="absolute right-1.5 text-muted-foreground hover:text-foreground"
                   aria-label="Clear search"
                 >
                   <X className="w-3 h-3" />
@@ -974,7 +974,7 @@ function ChronosApp() {
               )}
             </div>
 
-            <div className="h-5 w-px bg-slate-200 mx-1" />
+            <div className="h-5 w-px bg-border mx-1" />
 
             {/* Undo/Redo cluster */}
             <div className="flex items-center">
@@ -989,7 +989,7 @@ function ChronosApp() {
                     }}
                     disabled={!hist.canUndo}
                     aria-label="Undo"
-                    className="text-slate-400 hover:text-slate-600"
+                    className="text-muted-foreground hover:text-foreground"
                   >
                     <Undo2 className="w-4 h-4" />
                   </Button>
@@ -1007,7 +1007,7 @@ function ChronosApp() {
                     }}
                     disabled={!hist.canRedo}
                     aria-label="Redo"
-                    className="text-slate-400 hover:text-slate-600"
+                    className="text-muted-foreground hover:text-foreground"
                   >
                     <Redo2 className="w-4 h-4" />
                   </Button>
@@ -1021,7 +1021,7 @@ function ChronosApp() {
                     size="icon-sm"
                     onClick={() => setShowHistory(true)}
                     disabled={!hist.canUndo && !hist.canRedo}
-                    className="hidden sm:flex text-slate-400 hover:text-slate-600"
+                    className="hidden sm:flex text-muted-foreground hover:text-foreground"
                   >
                     <History className="w-4 h-4" />
                   </Button>
@@ -1030,7 +1030,7 @@ function ChronosApp() {
               </Tooltip>
             </div>
 
-            <div className="hidden sm:block h-5 w-px bg-slate-200 mx-1" />
+            <div className="hidden sm:block h-5 w-px bg-border mx-1" />
 
             {/* AI Planner */}
             <Tooltip>
@@ -1046,6 +1046,13 @@ function ChronosApp() {
               </TooltipTrigger>
               <TooltipContent>AI Planner</TooltipContent>
             </Tooltip>
+            {/* Mobile sync dot — md:hidden */}
+            <div className={`md:hidden size-1.5 rounded-full ${
+              syncStatus === 'saved' ? 'bg-success' :
+              syncStatus === 'saving' ? 'bg-warning animate-pulse' :
+              syncStatus === 'error' ? 'bg-destructive' :
+              'bg-muted-foreground'
+            }`} title={syncStatus === 'saved' ? 'Synced' : syncStatus === 'saving' ? 'Saving...' : syncStatus === 'error' ? 'Sync error' : 'Local only'} />
             {/* Profile menu */}
             <ProfileMenu
               trip={trip}
@@ -1081,7 +1088,7 @@ function ChronosApp() {
           >
             <div className="flex items-center justify-between px-6 border-b border-border-neutral bg-slate-50/50 py-1.5">
               <div className="flex items-center gap-4">
-                <span className="text-[11px] font-extrabold uppercase tracking-[0.15em] text-slate-500">
+                <span className="text-[11px] font-extrabold uppercase tracking-[0.15em] text-muted-foreground">
                   Timeline
                 </span>
                 <ToggleGroup
@@ -1133,12 +1140,12 @@ function ChronosApp() {
               >
                 {/* Day labels — buffer before (ALL view only) */}
                 {zoomDays === 0 && (
-                  <div className="flex flex-col bg-slate-100/80 border-b border-r border-border-neutral">
-                    <div className="flex-1 flex items-center justify-center gap-1 text-[9px] font-bold text-slate-300 uppercase tracking-tighter border-b border-slate-100">
+                  <div className="flex flex-col bg-muted/80 border-b border-r border-border-neutral">
+                    <div className="flex-1 flex items-center justify-center gap-1 text-[9px] font-bold text-slate-300 uppercase tracking-tighter border-b border-border">
                       <span className="text-slate-200">{bufferBefore.weekday}</span>
                       <span className="text-slate-300">{bufferBefore.date}</span>
                     </div>
-                    <div className="flex h-3 divide-x divide-slate-100">
+                    <div className="flex h-3 divide-x divide-border">
                       {['M', 'A', 'E'].map((p) => (
                         <div
                           key={p}
@@ -1156,11 +1163,11 @@ function ChronosApp() {
                     key={i}
                     className="flex flex-col border-b border-r border-border-neutral bg-slate-50/30"
                   >
-                    <div className="flex-1 flex items-center justify-center gap-1 text-[9px] font-bold text-slate-400 uppercase tracking-tighter border-b border-slate-100">
+                    <div className="flex-1 flex items-center justify-center gap-1 text-[9px] font-bold text-muted-foreground uppercase tracking-tighter border-b border-border">
                       <span className="text-slate-300">{weekday}</span>
                       <span>{date}</span>
                     </div>
-                    <div className="flex h-3 divide-x divide-slate-100">
+                    <div className="flex h-3 divide-x divide-border">
                       {['M', 'A', 'E'].map((p) => (
                         <div
                           key={p}
@@ -1174,12 +1181,12 @@ function ChronosApp() {
                 ))}
                 {/* Day labels — buffer after (ALL view only) */}
                 {zoomDays === 0 && (
-                  <div className="flex flex-col bg-slate-100/80 border-b border-border-neutral">
-                    <div className="flex-1 flex items-center justify-center gap-1 text-[9px] font-bold text-slate-300 uppercase tracking-tighter border-b border-slate-100">
+                  <div className="flex flex-col bg-muted/80 border-b border-border-neutral">
+                    <div className="flex-1 flex items-center justify-center gap-1 text-[9px] font-bold text-slate-300 uppercase tracking-tighter border-b border-border">
                       <span className="text-slate-200">{bufferAfter.weekday}</span>
                       <span className="text-slate-300">{bufferAfter.date}</span>
                     </div>
-                    <div className="flex h-3 divide-x divide-slate-100">
+                    <div className="flex h-3 divide-x divide-border">
                       {['M', 'A', 'E'].map((p) => (
                         <div
                           key={p}
@@ -1203,8 +1210,8 @@ function ChronosApp() {
                     title="Extend trip one day earlier"
                   >
                     <div className="flex flex-col items-center gap-0.5 opacity-0 group-hover/buf:opacity-100 transition-opacity">
-                      <Plus className="w-3.5 h-3.5 text-slate-400" />
-                      <span className="text-[9px] font-bold text-slate-400 uppercase">Extend</span>
+                      <Plus className="w-3.5 h-3.5 text-muted-foreground" />
+                      <span className="text-[9px] font-bold text-muted-foreground uppercase">Extend</span>
                     </div>
                   </button>
                 )}
@@ -1276,7 +1283,7 @@ function ChronosApp() {
                       <Button
                         variant="outline"
                         onClick={() => setAddingStay(true)}
-                        className="w-full h-10 border-2 border-dashed border-slate-200 text-slate-400 hover:text-primary hover:border-primary/40 hover:bg-primary/5"
+                        className="w-full h-10 border-2 border-dashed border-border text-muted-foreground hover:text-primary hover:border-primary/40 hover:bg-primary/5"
                       >
                         <Plus className="w-3.5 h-3.5" />
                         <span className="text-[11px] font-bold">Add your first destination</span>
@@ -1521,15 +1528,15 @@ function ChronosApp() {
                                     <button
                                       aria-label={`Route: ${TRANSPORT_LABELS[stay.travelModeToNext]}${stay.travelDurationToNext ? `, ${stay.travelDurationToNext}` : ''}`}
                                       onClick={() => setEditingRouteStayId(stay.id)}
-                                      className="group/chip absolute top-1/2 -translate-y-1/2 -translate-x-1/2 z-30 size-8 bg-white border border-slate-200 rounded-full flex items-center justify-center cursor-pointer hover:border-primary/40 hover:shadow-md transition-all shadow-sm"
+                                      className="group/chip absolute top-1/2 -translate-y-1/2 -translate-x-1/2 z-30 size-8 bg-white border border-border rounded-full flex items-center justify-center cursor-pointer hover:border-primary/40 hover:shadow-md transition-all shadow-sm"
                                       style={{ left: `${chipLeft}%` }}
                                     >
                                       <TransportIcon
                                         mode={stay.travelModeToNext}
-                                        className="w-3.5 h-3.5 text-slate-400"
+                                        className="w-3.5 h-3.5 text-muted-foreground"
                                       />
                                       {stay.travelDurationToNext && (
-                                        <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-slate-800 text-white text-[11px] font-bold rounded-md whitespace-nowrap opacity-0 group-hover/chip:opacity-100 transition-opacity shadow-lg z-40">
+                                        <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-foreground text-white text-[11px] font-bold rounded-md whitespace-nowrap opacity-0 group-hover/chip:opacity-100 transition-opacity shadow-lg z-40">
                                           {stay.travelDurationToNext}
                                         </div>
                                       )}
@@ -1550,7 +1557,7 @@ function ChronosApp() {
                         handleShrinkBefore();
                       }}
                       onMouseDown={(e) => e.stopPropagation()}
-                      className="absolute bottom-0 left-0 z-30 h-5 flex items-center justify-center gap-1 rounded-tr-md transition-all opacity-0 hover:opacity-100 bg-slate-100/80 hover:bg-red-50 border-t border-r border-slate-200/60"
+                      className="absolute bottom-0 left-0 z-30 h-5 flex items-center justify-center gap-1 rounded-tr-md transition-all opacity-0 hover:opacity-100 bg-muted/80 hover:bg-red-50 border-t border-r border-border/60"
                       style={{ width: `${(1 / numDays) * 100}%` }}
                       title="Remove empty first day"
                     >
@@ -1568,7 +1575,7 @@ function ChronosApp() {
                         handleShrinkAfter();
                       }}
                       onMouseDown={(e) => e.stopPropagation()}
-                      className="absolute bottom-0 right-0 z-30 h-5 flex items-center justify-center gap-1 rounded-tl-md transition-all opacity-0 hover:opacity-100 bg-slate-100/80 hover:bg-red-50 border-t border-l border-slate-200/60"
+                      className="absolute bottom-0 right-0 z-30 h-5 flex items-center justify-center gap-1 rounded-tl-md transition-all opacity-0 hover:opacity-100 bg-muted/80 hover:bg-red-50 border-t border-l border-border/60"
                       style={{ width: `${(1 / numDays) * 100}%` }}
                       title="Remove empty last day"
                     >
@@ -1591,8 +1598,8 @@ function ChronosApp() {
                     title="Extend trip one day later"
                   >
                     <div className="flex flex-col items-center gap-0.5 opacity-0 group-hover/buf:opacity-100 transition-opacity">
-                      <Plus className="w-3.5 h-3.5 text-slate-400" />
-                      <span className="text-[9px] font-bold text-slate-400 uppercase">Extend</span>
+                      <Plus className="w-3.5 h-3.5 text-muted-foreground" />
+                      <span className="text-[9px] font-bold text-muted-foreground uppercase">Extend</span>
                     </div>
                   </button>
                 )}
@@ -1613,7 +1620,7 @@ function ChronosApp() {
                   onValueChange={(v) => setSidebarTab(v as 'overview' | 'unplanned')}
                   className="flex-1 gap-0"
                 >
-                  <TabsList className="h-9 w-full rounded-none border-b border-border-neutral bg-slate-50 p-0">
+                  <TabsList className="h-9 w-full rounded-none border-b border-border-neutral bg-muted p-0">
                     <TabsTrigger
                       value="overview"
                       className="flex-1 h-full rounded-none text-[11px] font-semibold data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-none"
@@ -1642,7 +1649,7 @@ function ChronosApp() {
                 </Tabs>
                 <button
                   onClick={() => setAddingToInbox(true)}
-                  className={`px-2.5 flex items-center justify-center border-b border-l border-border-neutral bg-slate-50 text-slate-400 hover:text-primary hover:bg-white transition-colors ${sidebarTab === 'unplanned' ? '' : 'invisible pointer-events-none'}`}
+                  className={`px-2.5 flex items-center justify-center border-b border-l border-border-neutral bg-muted text-muted-foreground hover:text-primary hover:bg-white transition-colors ${sidebarTab === 'unplanned' ? '' : 'invisible pointer-events-none'}`}
                   aria-label="Add new place"
                 >
                   <Plus className="w-3 h-3" />
@@ -1712,13 +1719,13 @@ function ChronosApp() {
                     <Navigation className="w-5 h-5 text-primary/40" />
                   </div>
                   <div className="text-center">
-                    <p className="text-[11px] font-bold text-slate-600">Trip Overview</p>
-                    <p className="text-[11px] text-slate-400 mt-1">
+                    <p className="text-[11px] font-bold text-foreground">Trip Overview</p>
+                    <p className="text-[11px] text-muted-foreground mt-1">
                       {sortedStays.length} destination{sortedStays.length !== 1 ? 's' : ''} ·{' '}
                       {trip.totalDays} days
                     </p>
                   </div>
-                  <p className="text-[9px] text-slate-400 text-center leading-relaxed">
+                  <p className="text-[9px] text-muted-foreground text-center leading-relaxed">
                     Click a destination on the timeline to see its details and plan activities.
                   </p>
                 </div>
@@ -1736,23 +1743,23 @@ function ChronosApp() {
                   ))}
                   {inboxVisits.length === 0 && (
                     <div className="flex flex-col items-center justify-center py-8 gap-2">
-                      <div className="size-9 rounded-xl bg-slate-100 flex items-center justify-center">
+                      <div className="size-9 rounded-xl bg-muted flex items-center justify-center">
                         {searchTerm ? (
-                          <Search className="w-4 h-4 text-slate-400" />
+                          <Search className="w-4 h-4 text-muted-foreground" />
                         ) : selectedStay ? (
-                          <Check className="w-4 h-4 text-emerald-500" />
+                          <Check className="w-4 h-4 text-success" />
                         ) : (
-                          <Compass className="w-4 h-4 text-slate-400" />
+                          <Compass className="w-4 h-4 text-muted-foreground" />
                         )}
                       </div>
-                      <p className="text-[11px] font-bold text-slate-500">
+                      <p className="text-[11px] font-bold text-muted-foreground">
                         {searchTerm
                           ? 'No matching places'
                           : selectedStay
                             ? 'All scheduled!'
                             : 'No stay selected'}
                       </p>
-                      <p className="text-[9px] text-slate-400 text-center leading-relaxed">
+                      <p className="text-[9px] text-muted-foreground text-center leading-relaxed">
                         {searchTerm
                           ? 'Try a different search term.'
                           : selectedStay
@@ -1774,12 +1781,12 @@ function ChronosApp() {
               {sortedStays.length === 0 && (
                 <div className="flex-1 flex items-center justify-center">
                   <div className="text-center space-y-3">
-                    <div className="size-12 rounded-xl bg-slate-100 flex items-center justify-center mx-auto">
-                      <MapPin className="w-5 h-5 text-slate-400" />
+                    <div className="size-12 rounded-xl bg-muted flex items-center justify-center mx-auto">
+                      <MapPin className="w-5 h-5 text-muted-foreground" />
                     </div>
                     <div>
-                      <p className="font-bold text-slate-600 text-sm">No destinations yet</p>
-                      <p className="text-slate-400 text-xs mt-1 leading-relaxed">
+                      <p className="font-bold text-foreground text-sm">No destinations yet</p>
+                      <p className="text-muted-foreground text-xs mt-1 leading-relaxed">
                         Add a stay in the timeline above
                         <br />
                         to start planning your days.
@@ -1812,7 +1819,7 @@ function ChronosApp() {
                     className={`flex-none w-72 max-md:w-[85vw] max-md:snap-start flex flex-col gap-4 rounded-xl transition-colors ${mapMode === 'detail' && mapDayFilter === day.dayOffset ? 'ring-2 ring-primary/40 bg-primary/[0.03] p-2 -m-2' : ''}`}
                   >
                     <button
-                      className={`flex items-center justify-between w-full cursor-pointer group rounded-lg px-2 py-1 -mx-2 transition-colors ${mapMode === 'detail' && mapDayFilter === day.dayOffset ? 'bg-primary/8' : 'hover:bg-slate-50'}`}
+                      className={`flex items-center justify-between w-full cursor-pointer group rounded-lg px-2 py-1 -mx-2 transition-colors ${mapMode === 'detail' && mapDayFilter === day.dayOffset ? 'bg-primary/8' : 'hover:bg-muted'}`}
                       onClick={() => {
                         if (mapDayFilter === day.dayOffset) {
                           setMapDayFilter(null);
@@ -1826,7 +1833,7 @@ function ChronosApp() {
                     >
                       <h4 className="font-extrabold text-sm tracking-tight group-hover:text-primary transition-colors">
                         Day {(day.dayOffset + 1).toString().padStart(2, '0')}
-                        <span className="text-slate-400 font-medium ml-1.5">
+                        <span className="text-muted-foreground font-medium ml-1.5">
                           {fmt(day.date, { weekday: 'short', month: 'short', day: 'numeric' })}
                         </span>
                       </h4>
@@ -1854,7 +1861,7 @@ function ChronosApp() {
                           <div className="h-12 flex-shrink-0 -mb-2">
                             <button
                               onClick={() => setEditingAccommodation({ dayOffset: day.dayOffset })}
-                              className="h-full w-full border-2 border-dashed border-slate-200 rounded-lg flex items-center justify-center gap-2 text-slate-400 hover:text-primary hover:border-primary/40 hover:bg-primary/5 transition-all"
+                              className="h-full w-full border-2 border-dashed border-border rounded-lg flex items-center justify-center gap-2 text-muted-foreground hover:text-primary hover:border-primary/40 hover:bg-primary/5 transition-all"
                             >
                               <Hotel className="w-4 h-4" />
                               <span className="text-[11px] font-bold">Set Accommodation</span>
@@ -1884,21 +1891,21 @@ function ChronosApp() {
                                   <span className="text-[11px] font-extrabold text-primary uppercase tracking-tighter">
                                     {group.nights > 1 ? 'Continuous Stay' : 'Overnight'}
                                   </span>
-                                  <span className="text-[11px] font-medium text-slate-400 tracking-tight">
+                                  <span className="text-[11px] font-medium text-muted-foreground tracking-tight">
                                     • {group.nights} {group.nights === 1 ? 'Night' : 'Nights'}
                                   </span>
                                 </div>
-                                <p className="text-xs font-extrabold text-slate-800 truncate">
+                                <p className="text-xs font-extrabold text-foreground truncate">
                                   {group.name}
                                 </p>
                               </div>
                               {group.accommodation.notes && (
-                                <span className="text-[11px] font-medium text-slate-500 bg-slate-50 border border-slate-100 px-2.5 py-1 rounded-full flex items-center gap-1.5 flex-shrink-0 max-w-[180px] truncate">
-                                  <Hash className="w-3 h-3 text-slate-400 flex-shrink-0" />
+                                <span className="text-[11px] font-medium text-muted-foreground bg-muted border border-border px-2.5 py-1 rounded-full flex items-center gap-1.5 flex-shrink-0 max-w-[180px] truncate">
+                                  <Hash className="w-3 h-3 text-muted-foreground flex-shrink-0" />
                                   {group.accommodation.notes}
                                 </span>
                               )}
-                              <Pencil className="w-3.5 h-3.5 text-slate-300 group-hover/accom:text-primary/60 transition-colors flex-shrink-0" />
+                              <Pencil className="w-3.5 h-3.5 text-border group-hover/accom:text-primary/60 transition-colors flex-shrink-0" />
                             </button>
                           </div>
                         </div>
@@ -1935,8 +1942,8 @@ function ChronosApp() {
                     <Compass className="w-7 h-7 text-primary/40" />
                   </div>
                   <div className="text-center">
-                    <p className="text-sm font-extrabold text-slate-600">Select a stay to plan</p>
-                    <p className="text-xs text-slate-400 mt-1">
+                    <p className="text-sm font-extrabold text-foreground">Select a stay to plan</p>
+                    <p className="text-xs text-muted-foreground mt-1">
                       <span className="md:hidden">Tap</span>
                       <span className="hidden md:inline">Click</span> any block on the timeline
                       above
@@ -1963,10 +1970,10 @@ function ChronosApp() {
                       setMapCollapsed(false);
                       triggerMapAnim('map-anim-reveal');
                     }}
-                    className="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 z-30 items-center gap-1 px-1.5 py-3 bg-white border border-r-0 border-slate-200 rounded-l-xl shadow-lg hover:bg-slate-50 transition-colors"
+                    className="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 z-30 items-center gap-1 px-1.5 py-3 bg-white border border-r-0 border-border rounded-l-xl shadow-lg hover:bg-muted transition-colors"
                     aria-label="Show map"
                   >
-                    <PanelRightOpen className="w-4 h-4 text-slate-500" />
+                    <PanelRightOpen className="w-4 h-4 text-muted-foreground" />
                   </button>
                 </TooltipTrigger>
                 <TooltipContent side="left">Show map</TooltipContent>
@@ -1981,7 +1988,7 @@ function ChronosApp() {
                   ? 'absolute pointer-events-none'
                   : mapExpanded
                     ? 'absolute rounded-none'
-                    : 'absolute rounded-2xl shadow-[0_0_50px_-12px_rgba(0,0,0,0.25)] border border-slate-200/60'
+                    : 'absolute rounded-2xl shadow-[0_0_50px_-12px_rgba(0,0,0,0.25)] border border-border/60'
               }`}
               style={
                 mapCollapsed && !mapExpanded
@@ -2010,7 +2017,7 @@ function ChronosApp() {
               )}
               {/* Map panel header */}
               <div
-                className={`${mapMini ? 'h-9 px-2.5' : 'h-11 px-4'} border-b border-slate-100 flex items-center gap-3 bg-white/80 backdrop-blur-md flex-shrink-0`}
+                className={`${mapMini ? 'h-9 px-2.5' : 'h-11 px-4'} border-b border-border flex items-center gap-3 bg-white/80 backdrop-blur-md flex-shrink-0`}
               >
                 {/* Left: mode icon + title */}
                 <div className="flex items-center gap-2 flex-shrink-0">
@@ -2018,7 +2025,7 @@ function ChronosApp() {
                     <MapPin className="w-3 h-3 text-primary" />
                   </div>
                   {!mapMini && (
-                    <span className="text-[11px] font-extrabold text-slate-600 tracking-tight uppercase">
+                    <span className="text-[11px] font-extrabold text-foreground tracking-tight uppercase">
                       {mapMode === 'overview'
                         ? 'Overview'
                         : mapMode === 'stay'
@@ -2065,7 +2072,7 @@ function ChronosApp() {
                           className={`p-1.5 rounded-lg transition-colors focus-visible:ring-2 focus-visible:ring-primary/50 ${
                             mapMode === 'overview'
                               ? 'text-primary bg-primary/10'
-                              : 'text-slate-400 hover:text-primary hover:bg-slate-50'
+                              : 'text-muted-foreground hover:text-primary hover:bg-muted'
                           }`}
                         >
                           <Layers className="w-4 h-4" />
@@ -2086,7 +2093,7 @@ function ChronosApp() {
                             setMapMini((m) => !m);
                           }}
                           aria-label={mapMini ? 'Restore map' : 'Shrink map'}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-primary hover:bg-slate-50 transition-colors focus-visible:ring-2 focus-visible:ring-primary/50"
+                          className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-muted transition-colors focus-visible:ring-2 focus-visible:ring-primary/50"
                         >
                           {mapMini ? (
                             <Expand className="w-4 h-4" />
@@ -2107,7 +2114,7 @@ function ChronosApp() {
                           if (mapMini) setMapMini(false);
                         }}
                         aria-label={mapExpanded ? 'Exit fullscreen' : 'Fullscreen map'}
-                        className="p-1.5 rounded-lg text-slate-400 hover:text-primary hover:bg-slate-50 transition-colors focus-visible:ring-2 focus-visible:ring-primary/50"
+                        className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-muted transition-colors focus-visible:ring-2 focus-visible:ring-primary/50"
                       >
                         {mapExpanded ? (
                           <Minimize2 className="w-4 h-4" />
@@ -2129,7 +2136,7 @@ function ChronosApp() {
                             setTimeout(() => setMapCollapsed(true), 350);
                           }}
                           aria-label="Hide map"
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-primary hover:bg-slate-50 transition-colors focus-visible:ring-2 focus-visible:ring-primary/50"
+                          className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-muted transition-colors focus-visible:ring-2 focus-visible:ring-primary/50"
                         >
                           <PanelRightClose className="w-4 h-4" />
                         </button>
@@ -2160,8 +2167,8 @@ function ChronosApp() {
                     highlightedStayId={mapMode === 'overview' ? hoveredStayId : null}
                   />
                 ) : (
-                  <div className="absolute inset-0 flex items-center justify-center bg-slate-50">
-                    <div className="text-center text-slate-400">
+                  <div className="absolute inset-0 flex items-center justify-center bg-muted">
+                    <div className="text-center text-muted-foreground">
                       <MapPin className="w-10 h-10 mx-auto mb-2 opacity-20" />
                       <p className="text-xs font-medium">Schedule activities to see the map</p>
                     </div>
@@ -2184,7 +2191,7 @@ function ChronosApp() {
                             <div className="flex justify-between items-start">
                               <div>
                                 {visit.dayOffset !== null && visit.dayPart && (
-                                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wide mb-0.5">
+                                  <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-wide mb-0.5">
                                     {visit.dayPart === 'morning'
                                       ? 'Morning'
                                       : visit.dayPart === 'afternoon'
@@ -2193,7 +2200,7 @@ function ChronosApp() {
                                     , Day {(visit.dayOffset ?? 0) + 1}
                                   </p>
                                 )}
-                                <h5 className="text-sm font-extrabold text-slate-800 truncate">
+                                <h5 className="text-sm font-extrabold text-foreground truncate">
                                   {visit.name}
                                 </h5>
                               </div>
@@ -2201,7 +2208,7 @@ function ChronosApp() {
                                 variant="ghost"
                                 size="icon-sm"
                                 onClick={() => setSelectedVisitId(null)}
-                                className="text-slate-400 hover:text-slate-600 flex-shrink-0 ml-2"
+                                className="text-muted-foreground hover:text-foreground flex-shrink-0 ml-2"
                               >
                                 <X className="w-4 h-4" />
                               </Button>
@@ -2213,7 +2220,7 @@ function ChronosApp() {
                                 {getVisitLabel(visit.type).toUpperCase()}
                               </span>
                               {selectedStay && (
-                                <span className="text-[9px] font-bold text-slate-500 bg-slate-50 px-2 py-0.5 rounded-md border border-slate-100">
+                                <span className="text-[9px] font-bold text-muted-foreground bg-muted px-2 py-0.5 rounded-md border border-border">
                                   {haversineKm(
                                     selectedStay.centerLat,
                                     selectedStay.centerLng,
@@ -2224,7 +2231,7 @@ function ChronosApp() {
                                 </span>
                               )}
                               {visit.durationHint && (
-                                <span className="text-[9px] font-bold text-slate-500 bg-slate-50 px-2 py-0.5 rounded-md border border-slate-100">
+                                <span className="text-[9px] font-bold text-muted-foreground bg-muted px-2 py-0.5 rounded-md border border-border">
                                   {visit.durationHint}
                                 </span>
                               )}
@@ -2232,7 +2239,7 @@ function ChronosApp() {
                                 variant="outline"
                                 size="xs"
                                 onClick={() => setEditingVisit(visit)}
-                                className="text-[9px] font-bold text-slate-500 bg-slate-50 border-slate-100 hover:border-primary/40 hover:text-primary"
+                                className="text-[9px] font-bold text-muted-foreground bg-muted border-border hover:border-primary/40 hover:text-primary"
                               >
                                 <Pencil className="w-2.5 h-2.5" /> Edit
                               </Button>
@@ -2245,18 +2252,18 @@ function ChronosApp() {
               </div>
 
               {/* Map panel footer */}
-              <div className="px-5 py-3 bg-white/80 backdrop-blur-md border-t border-slate-100 flex items-center justify-between flex-shrink-0">
+              <div className="px-5 py-3 bg-white/80 backdrop-blur-md border-t border-border flex items-center justify-between flex-shrink-0">
                 <div className="flex items-center gap-3">
                   <div
-                    className={`size-8 rounded-full flex items-center justify-center flex-shrink-0 ${mapMode === 'overview' ? 'bg-slate-600' : 'bg-primary'}`}
+                    className={`size-8 rounded-full flex items-center justify-center flex-shrink-0 ${mapMode === 'overview' ? 'bg-foreground' : 'bg-primary'}`}
                   >
                     <Navigation className="text-white w-3.5 h-3.5" />
                   </div>
                   <div>
-                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">
+                    <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest block">
                       {mapMode === 'overview' ? 'Trip Route' : 'Active Route'}
                     </span>
-                    <span className="text-xs font-extrabold text-slate-800">
+                    <span className="text-xs font-extrabold text-foreground">
                       {mapMode === 'overview'
                         ? `${sortedStays.length} destinations`
                         : selectedStay
@@ -2270,7 +2277,7 @@ function ChronosApp() {
                 <div className="text-right tabular-nums">
                   {mapMode === 'overview' ? (
                     <>
-                      <span className="text-xs font-black text-slate-800">
+                      <span className="text-xs font-black text-foreground">
                         {(() => {
                           let totalKm = 0;
                           for (let i = 0; i < sortedStays.length - 1; i++) {
@@ -2284,13 +2291,13 @@ function ChronosApp() {
                           return `${totalKm.toFixed(0)} km`;
                         })()}
                       </span>
-                      <p className="text-[9px] font-bold text-slate-400">
+                      <p className="text-[9px] font-bold text-muted-foreground">
                         {sortedStays.length} cities
                       </p>
                     </>
                   ) : (
                     <>
-                      <span className="text-xs font-black text-slate-800">
+                      <span className="text-xs font-black text-foreground">
                         {selectedStay
                           ? (() => {
                               let totalKm = 0;
@@ -2306,7 +2313,7 @@ function ChronosApp() {
                             })()
                           : '—'}
                       </span>
-                      <p className="text-[9px] font-bold text-slate-400">
+                      <p className="text-[9px] font-bold text-muted-foreground">
                         {mapVisits.length} stops
                       </p>
                     </>
@@ -2344,11 +2351,11 @@ function ChronosApp() {
         >
           <SheetContent
             side="bottom"
-            className="h-[85dvh] md:hidden flex flex-col p-0"
+            className="h-[85vh] md:hidden flex flex-col p-0"
             showCloseButton={false}
           >
             <SheetHeader className="flex-shrink-0 border-b border-border-neutral px-4 py-3">
-              <SheetTitle className="text-[11px] font-bold text-slate-700">
+              <SheetTitle className="text-[11px] font-bold text-foreground">
                 {selectedVisitId ? 'Place Details' : 'Inbox'}
               </SheetTitle>
               <SheetDescription className="sr-only">
@@ -2437,17 +2444,17 @@ function ChronosApp() {
                   ))}
                   {inboxVisits.length === 0 && (
                     <div className="flex flex-col items-center justify-center py-8 gap-2">
-                      <div className="size-9 rounded-xl bg-slate-100 flex items-center justify-center">
+                      <div className="size-9 rounded-xl bg-muted flex items-center justify-center">
                         {selectedStay ? (
-                          <Check className="w-4 h-4 text-emerald-500" />
+                          <Check className="w-4 h-4 text-success" />
                         ) : (
-                          <Compass className="w-4 h-4 text-slate-400" />
+                          <Compass className="w-4 h-4 text-muted-foreground" />
                         )}
                       </div>
-                      <p className="text-[11px] font-bold text-slate-500">
+                      <p className="text-[11px] font-bold text-muted-foreground">
                         {selectedStay ? 'All scheduled!' : 'No stay selected'}
                       </p>
-                      <p className="text-[11px] text-slate-400 text-center">
+                      <p className="text-[11px] text-muted-foreground text-center">
                         {selectedStay
                           ? 'Add more with the + button.'
                           : 'Tap a destination on the timeline.'}
@@ -2461,21 +2468,21 @@ function ChronosApp() {
         </Sheet>
 
         {/* ── Footer ── */}
-        <footer className="hidden md:flex bg-white text-slate-500 px-6 py-1.5 text-[11px] font-bold justify-between items-center border-t border-border-neutral flex-shrink-0">
+        <footer className="hidden md:flex bg-white text-muted-foreground px-6 py-1.5 text-[11px] font-bold justify-between items-center border-t border-border-neutral flex-shrink-0">
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-2">
               <div
                 className={`size-1.5 rounded-full ${
                   syncStatus === 'saved'
-                    ? 'bg-emerald-500'
+                    ? 'bg-success'
                     : syncStatus === 'saving'
-                      ? 'bg-amber-400 animate-pulse'
+                      ? 'bg-warning animate-pulse'
                       : syncStatus === 'error'
-                        ? 'bg-red-500'
-                        : 'bg-slate-400'
+                        ? 'bg-destructive'
+                        : 'bg-muted-foreground'
                 }`}
               />
-              <span className="uppercase tracking-widest text-slate-400">
+              <span className="uppercase tracking-widest text-muted-foreground">
                 {syncStatus === 'saved'
                   ? 'Synced'
                   : syncStatus === 'saving'
@@ -2485,12 +2492,12 @@ function ChronosApp() {
                       : 'Local only'}
               </span>
             </div>
-            <div className="flex items-center gap-2 text-slate-400">
+            <div className="flex items-center gap-2 text-muted-foreground">
               <Database className="w-3 h-3" />
-              <span className="uppercase tracking-widest">{trip.name.slice(0, 24)}</span>
+              <span className="uppercase tracking-widest truncate max-w-[200px]">{trip.name}</span>
             </div>
           </div>
-          <div className="flex items-center gap-4 tracking-widest text-slate-400">
+          <div className="flex items-center gap-4 tracking-widest text-muted-foreground">
             <span>
               {trip.totalDays} DAYS · {sortedStays.length} STAYS
             </span>
@@ -2504,7 +2511,7 @@ function ChronosApp() {
               const v = activeInboxVisit ?? activeScheduledVisit!;
               return (
                 <div className="p-3 bg-white rounded-lg border border-primary shadow-xl opacity-90 w-56 pointer-events-none">
-                  <p className="text-xs font-bold text-slate-800">{v.name}</p>
+                  <p className="text-xs font-bold text-foreground">{v.name}</p>
                 </div>
               );
             })()}

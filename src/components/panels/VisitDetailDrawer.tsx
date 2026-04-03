@@ -5,6 +5,7 @@ import {
   ArrowLeftRight,
   Trash2,
   ChevronDown,
+  ChevronLeft,
   ExternalLink,
   X,
   Plus,
@@ -88,9 +89,9 @@ function VisitDetailDrawer({
         variant="ghost"
         size="sm"
         onClick={onClose}
-        className="gap-1.5 justify-start rounded-none text-[11px] font-semibold text-slate-500 hover:text-primary border-b border-border-neutral flex-shrink-0"
+        className="gap-1.5 justify-start rounded-none text-[11px] font-semibold text-muted-foreground hover:text-primary border-b border-border-neutral flex-shrink-0"
       >
-        <ChevronDown className="w-3.5 h-3.5 rotate-90" />
+        <ChevronLeft className="w-3.5 h-3.5" />
         Back to stay
       </Button>
       {/* Hero */}
@@ -116,15 +117,15 @@ function VisitDetailDrawer({
       </div>
 
       {/* Schedule + duration bar */}
-      <div className="flex items-center gap-3 px-4 py-2.5 border-b border-border-neutral bg-slate-50/50 text-[11px]">
-        <div className="flex items-center gap-1.5 text-slate-600">
-          <Calendar className="w-3.5 h-3.5 text-slate-400" />
+      <div className="flex items-center gap-3 px-4 py-2.5 border-b border-border-neutral bg-muted/50 text-[11px]">
+        <div className="flex items-center gap-1.5 text-foreground">
+          <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
           <span className="font-semibold">{dayLabel}</span>
         </div>
         {visit.durationHint && (
           <>
             <span className="text-slate-300">·</span>
-            <span className="font-medium text-slate-500">{visit.durationHint}</span>
+            <span className="font-medium text-muted-foreground">{visit.durationHint}</span>
           </>
         )}
       </div>
@@ -133,11 +134,11 @@ function VisitDetailDrawer({
       <div className="flex-1 overflow-y-auto scroll-hide">
         {/* Notes */}
         <div className="px-4 py-3 border-b border-border-neutral">
-          <label className="text-[9px] font-extrabold uppercase tracking-widest text-slate-400 mb-1.5 block">
+          <label className="text-[9px] font-extrabold uppercase tracking-widest text-muted-foreground mb-1.5 block">
             Notes
           </label>
           <Textarea
-            className="text-xs text-slate-700 resize-none placeholder:text-slate-400"
+            className="text-xs text-foreground resize-none placeholder:text-muted-foreground"
             rows={3}
             placeholder="Add notes about this place..."
             value={notes}
@@ -149,7 +150,7 @@ function VisitDetailDrawer({
         {/* Checklist */}
         <div className="px-4 py-3 border-b border-border-neutral">
           <details open={checklist.length > 0 || undefined}>
-            <summary className="text-[9px] font-extrabold uppercase tracking-widest text-slate-400 mb-1.5 cursor-pointer select-none flex items-center gap-1.5 hover:text-slate-600 transition-colors">
+            <summary className="text-[9px] font-extrabold uppercase tracking-widest text-muted-foreground mb-1.5 cursor-pointer select-none flex items-center gap-1.5 hover:text-foreground transition-colors">
               <ChevronDown className="w-3 h-3 transition-transform [details:not([open])_&]:-rotate-90" />
               Checklist
               {checklist.length > 0 && (
@@ -170,15 +171,15 @@ function VisitDetailDrawer({
                     className="size-3.5"
                   />
                   <span
-                    className={`flex-1 text-xs ${item.done ? 'line-through text-slate-400' : 'text-slate-700'}`}
+                    className={`flex-1 text-xs ${item.done ? 'line-through text-muted-foreground' : 'text-foreground'}`}
                   >
                     {item.text}
                   </span>
                   <Button
                     variant="ghost"
-                    size="icon-xs"
+                    size="icon-sm"
                     onClick={() => removeChecklistItem(item.id)}
-                    className="opacity-0 group-hover:opacity-100 hover:bg-red-50 text-slate-400 hover:text-red-500"
+                    className="opacity-0 group-hover:opacity-100 hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
                   >
                     <X className="w-3 h-3" />
                   </Button>
@@ -213,7 +214,7 @@ function VisitDetailDrawer({
         {/* Links */}
         {visit.links && visit.links.length > 0 && (
           <div className="px-4 py-3 border-b border-border-neutral">
-            <p className="text-[9px] font-extrabold uppercase tracking-widest text-slate-400 mb-1.5">
+            <p className="text-[9px] font-extrabold uppercase tracking-widest text-muted-foreground mb-1.5">
               Links
             </p>
             <div className="space-y-1.5">
@@ -243,7 +244,7 @@ function VisitDetailDrawer({
           variant="outline"
           size="icon-sm"
           onClick={onUnschedule}
-          className="border-blue-200 text-blue-500 hover:bg-blue-50"
+          className="border-info/30 text-info hover:bg-info/10"
           title="Move to Inbox"
         >
           <ArrowLeftRight className="w-3.5 h-3.5" />

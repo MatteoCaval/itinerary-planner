@@ -78,6 +78,7 @@ function VisitFormModal({
   const addChecklistItem = () => {
     const text = newChecklistText.trim();
     if (!text) return;
+    if (checklist.some((c) => c.text.toLowerCase() === text.toLowerCase())) return;
     setChecklist((c) => [...c, { id: `cl-${Date.now()}`, text, done: false }]);
     setNewChecklistText('');
   };
@@ -136,14 +137,32 @@ function VisitFormModal({
 
   return (
     <ModalBase title={title} onClose={onClose}>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (name.trim()) {
+            onSave({
+              name: name.trim(),
+              type,
+              durationHint: duration,
+              notes,
+              lat: pickedCoords?.lat,
+              lng: pickedCoords?.lng,
+              checklist,
+              links,
+            });
+            onClose();
+          }
+        }}
+      >
       <div className="space-y-4">
         {/* Place search */}
         <div className="relative">
-          <label className="text-[11px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 block">
+          <label className="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground mb-2 block">
             Place name
           </label>
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
             <Input
               className="pl-9 pr-9 text-xs font-semibold placeholder:font-normal"
               placeholder="e.g. Senso-ji Temple, Nishiki Market…"
@@ -159,27 +178,27 @@ function VisitFormModal({
               <div className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
             )}
             {pickedCoords && !isSearching && (
-              <div className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-500">
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 text-success">
                 <Check className="w-3.5 h-3.5" />
               </div>
             )}
           </div>
           {showResults && searchResults.length > 0 && (
-            <div className="absolute z-50 left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-lg shadow-xl overflow-hidden">
+            <div className="absolute z-50 left-0 right-0 top-full mt-1 bg-white border border-border rounded-lg shadow-xl overflow-hidden">
               {searchResults.map((r) => {
                 const parts = r.display_name.split(',');
                 return (
                   <button
                     key={r.place_id}
                     onClick={() => pickResult(r)}
-                    className="w-full text-left px-3 py-2.5 hover:bg-primary/5 border-b last:border-b-0 border-slate-100 flex items-start gap-2 transition-colors"
+                    className="w-full text-left px-3 py-2.5 hover:bg-primary/5 border-b last:border-b-0 border-border flex items-start gap-2 transition-colors"
                   >
-                    <MapPin className="w-3.5 h-3.5 text-slate-400 flex-shrink-0 mt-0.5" />
+                    <MapPin className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0 mt-0.5" />
                     <div className="min-w-0">
-                      <p className="text-xs font-semibold text-slate-800 truncate">
+                      <p className="text-xs font-semibold text-foreground truncate">
                         {parts[0].trim()}
                       </p>
-                      <p className="text-[11px] text-slate-500 truncate">
+                      <p className="text-[11px] text-muted-foreground truncate">
                         {parts.slice(1, 4).join(',').trim()}
                       </p>
                     </div>
@@ -189,7 +208,7 @@ function VisitFormModal({
             </div>
           )}
           {searchError && (
-            <p className="text-[11px] text-red-500 font-medium mt-1">
+            <p className="text-[11px] text-destructive font-medium mt-1">
               Search failed — you can still save with a manual name.
             </p>
           )}
@@ -197,7 +216,7 @@ function VisitFormModal({
 
         {/* Type grid */}
         <div>
-          <label className="text-[11px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 block">
+          <label className="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground mb-2 block">
             Category
           </label>
           <ToggleGroup
@@ -215,7 +234,7 @@ function VisitFormModal({
                 className={`flex flex-col items-center gap-1.5 py-2.5 px-1 h-auto rounded-xl border text-[9px] font-bold transition-all ${
                   type === t
                     ? `${getVisitTypeColor(t)} border-current shadow-sm`
-                    : 'border-slate-200 text-slate-400 hover:border-slate-300 hover:text-slate-600 hover:bg-slate-50'
+                    : 'border-border text-muted-foreground hover:border-border hover:text-foreground hover:bg-muted'
                 }`}
               >
                 {getVisitTypeIcon(t, 'w-3.5 h-3.5')}
@@ -227,7 +246,7 @@ function VisitFormModal({
 
         {/* Duration */}
         <div>
-          <label className="text-[11px] font-extrabold uppercase tracking-widest text-slate-500 mb-1.5 block">
+          <label className="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground mb-1.5 block">
             Duration
           </label>
           <Input
@@ -240,7 +259,7 @@ function VisitFormModal({
 
         {/* Notes */}
         <div>
-          <label className="text-[11px] font-extrabold uppercase tracking-widest text-slate-500 mb-1.5 block">
+          <label className="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground mb-1.5 block">
             Notes
           </label>
           <Textarea
@@ -254,7 +273,7 @@ function VisitFormModal({
 
         {/* Checklist (collapsible) */}
         <details open={checklist.length > 0 || undefined}>
-          <summary className="text-[11px] font-extrabold uppercase tracking-widest text-slate-500 mb-1.5 cursor-pointer select-none flex items-center gap-1.5 hover:text-slate-700 transition-colors">
+          <summary className="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground mb-1.5 cursor-pointer select-none flex items-center gap-1.5 hover:text-foreground transition-colors">
             <ChevronDown className="w-3 h-3 transition-transform [details:not([open])_&]:-rotate-90" />
             Checklist{' '}
             {checklist.length > 0 && (
@@ -272,7 +291,7 @@ function VisitFormModal({
                   className="size-3.5"
                 />
                 <span
-                  className={`flex-1 text-xs ${item.done ? 'line-through text-slate-400' : 'text-slate-700'}`}
+                  className={`flex-1 text-xs ${item.done ? 'line-through text-muted-foreground' : 'text-foreground'}`}
                 >
                   {item.text}
                 </span>
@@ -280,7 +299,7 @@ function VisitFormModal({
                   variant="ghost"
                   size="icon-xs"
                   onClick={() => removeChecklistItem(item.id)}
-                  className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-500 hover:bg-red-50"
+                  className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                 >
                   <X data-icon="inline-start" className="w-3 h-3" />
                 </Button>
@@ -313,7 +332,7 @@ function VisitFormModal({
 
         {/* Links (collapsible) */}
         <details open={links.length > 0 || undefined}>
-          <summary className="text-[11px] font-extrabold uppercase tracking-widest text-slate-500 mb-1.5 cursor-pointer select-none flex items-center gap-1.5 hover:text-slate-700 transition-colors">
+          <summary className="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground mb-1.5 cursor-pointer select-none flex items-center gap-1.5 hover:text-foreground transition-colors">
             <ChevronDown className="w-3 h-3 transition-transform [details:not([open])_&]:-rotate-90" />
             Links{' '}
             {links.length > 0 && (
@@ -325,7 +344,7 @@ function VisitFormModal({
           <div className="space-y-1 mt-1">
             {links.map((link, i) => (
               <div key={i} className="flex items-center gap-2 group px-2">
-                <ExternalLink className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+                <ExternalLink className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
                 <a
                   href={link.url}
                   target="_blank"
@@ -339,7 +358,7 @@ function VisitFormModal({
                   variant="ghost"
                   size="icon-xs"
                   onClick={() => setLinks((l) => l.filter((_, idx) => idx !== i))}
-                  className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-500 hover:bg-red-50"
+                  className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                 >
                   <X data-icon="inline-start" className="w-3 h-3" />
                 </Button>
@@ -384,9 +403,10 @@ function VisitFormModal({
           <div className="flex gap-2">
             {onUnschedule && (
               <Button
+                type="button"
                 variant="outline"
                 size="sm"
-                className="flex-1 border-blue-200 text-blue-500 hover:bg-blue-50"
+                className="flex-1 border-info/30 text-info hover:bg-info/10"
                 onClick={() => {
                   onUnschedule();
                   onClose();
@@ -431,32 +451,15 @@ function VisitFormModal({
 
         {/* Save / cancel */}
         <div className="flex gap-2.5 pt-1">
-          <Button variant="outline" className="flex-1" onClick={onClose}>
+          <Button type="button" variant="outline" className="flex-1" onClick={onClose}>
             Cancel
           </Button>
-          <Button
-            className="flex-1"
-            disabled={!name.trim()}
-            onClick={() => {
-              if (name.trim()) {
-                onSave({
-                  name: name.trim(),
-                  type,
-                  durationHint: duration,
-                  notes,
-                  lat: pickedCoords?.lat,
-                  lng: pickedCoords?.lng,
-                  checklist,
-                  links,
-                });
-                onClose();
-              }
-            }}
-          >
+          <Button type="submit" className="flex-1" disabled={!name.trim()}>
             {isEditing ? 'Save changes' : 'Add place'}
           </Button>
         </div>
       </div>
+      </form>
     </ModalBase>
   );
 }

@@ -44,12 +44,12 @@ function MergeDialog({
               <Database className="w-4 h-4 text-primary" />
             </div>
             <div>
-              <DialogTitle className="font-extrabold text-slate-800 text-sm">
+              <DialogTitle className="font-extrabold text-foreground text-sm">
                 Trips found in your account
               </DialogTitle>
-              <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                You have <strong className="text-slate-700">{localCount} local</strong> and{' '}
-                <strong className="text-slate-700">{cloudCount} cloud</strong> trips. What would you
+              <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                You have <strong className="text-foreground">{localCount} local</strong> and{' '}
+                <strong className="text-foreground">{cloudCount} cloud</strong> trips. What would you
                 like to do?
               </p>
             </div>
@@ -58,13 +58,13 @@ function MergeDialog({
 
         {/* Trip name lists */}
         <div className="grid grid-cols-2 gap-2 mb-4 text-[11px]">
-          <div className="bg-slate-50 rounded-lg px-3 py-2">
-            <span className="font-bold text-slate-500 uppercase tracking-wide text-[11px]">
+          <div className="bg-muted rounded-lg px-3 py-2">
+            <span className="font-bold text-muted-foreground uppercase tracking-wide text-[11px]">
               Local
             </span>
             <ul className="mt-1 space-y-0.5">
               {localTripNames.map((name, i) => (
-                <li key={i} className="text-slate-700 truncate">
+                <li key={i} className="text-foreground truncate">
                   {name || 'Untitled trip'}
                 </li>
               ))}
@@ -76,7 +76,7 @@ function MergeDialog({
             </span>
             <ul className="mt-1 space-y-0.5">
               {cloudTripNames.map((name, i) => (
-                <li key={i} className="text-slate-700 truncate">
+                <li key={i} className="text-foreground truncate">
                   {name || 'Untitled trip'}
                 </li>
               ))}
@@ -98,7 +98,7 @@ function MergeDialog({
             className="w-full flex items-center justify-between px-4 py-2.5 text-xs font-semibold"
           >
             <span>Keep local only</span>
-            <span className="text-slate-400 font-normal">overwrite cloud</span>
+            <span className="text-muted-foreground font-normal">overwrite cloud</span>
           </Button>
           <Button
             variant="outline"
@@ -106,7 +106,7 @@ function MergeDialog({
             className="w-full flex items-center justify-between px-4 py-2.5 text-xs font-semibold"
           >
             <span>Use cloud only</span>
-            <span className="text-slate-400 font-normal">discard local</span>
+            <span className="text-muted-foreground font-normal">discard local</span>
           </Button>
         </div>
 
@@ -114,7 +114,7 @@ function MergeDialog({
           variant="ghost"
           size="sm"
           onClick={onDismiss}
-          className="mt-3 w-full text-[11px] text-slate-400 hover:text-slate-600"
+          className="mt-3 w-full text-[11px] text-muted-foreground hover:text-foreground"
         >
           Decide later
         </Button>
