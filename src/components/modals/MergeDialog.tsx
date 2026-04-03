@@ -58,7 +58,7 @@ function MergeDialog({
 
         {/* Trip name lists */}
         <div className="grid grid-cols-2 gap-2 mb-4 text-[11px]">
-          <div className="bg-muted rounded-lg px-3 py-2">
+          <div className="bg-muted rounded-lg px-3 py-2" aria-label="Local trips">
             <span className="font-bold text-muted-foreground uppercase tracking-wide text-[11px]">
               Local
             </span>
@@ -70,7 +70,7 @@ function MergeDialog({
               ))}
             </ul>
           </div>
-          <div className="bg-primary/5 rounded-lg px-3 py-2">
+          <div className="bg-primary/5 rounded-lg px-3 py-2" aria-label="Cloud trips">
             <span className="font-bold text-primary/60 uppercase tracking-wide text-[11px]">
               Cloud
             </span>

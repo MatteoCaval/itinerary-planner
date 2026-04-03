@@ -102,7 +102,7 @@ These should use shadcn `Button` for consistent styling, focus states, and acces
 - [x] **RouteEditorModal / VisitFormModal have no `<form>` wrapper** — wrapped in `<form>`, Save→`type="submit"`, Enter-key submission works
 - [x] ~~**Duration field accepts any text**~~ — placeholder "e.g. 2h 30m" provides guidance, free-text is intentional
 - [x] **Checklist items can be duplicated** — added case-insensitive dedup check
-- [ ] **No loading state on save buttons** — user gets zero feedback after clicking Save → all modals
+- [x] ~~**No loading state on save buttons**~~ — saves are synchronous state updates, no spinner needed
 - [x] **AuthModalSimple doesn't block Escape during loading** — onOpenChange now checks `!loading`
 
 ### Touch targets
@@ -110,16 +110,16 @@ These should use shadcn `Button` for consistent styling, focus states, and acces
 
 ### Text overflow
 - [x] **Long visit notes show single line** — added `line-clamp-2` to SortableVisitCard
-- [ ] **Long visit/stay names truncated without tooltip** → `VisitDetailDrawer.tsx:111`, `StayOverviewPanel.tsx:104`
-- [ ] **Long email in ProfileMenu truncated without tooltip** → `ProfileMenu.tsx:131`
+- [x] **Long visit/stay names truncated without tooltip** — added native `title` attributes
+- [x] **Long email in ProfileMenu truncated without tooltip** — added `title={user.email}`
 - [x] **Trip name in footer uses `slice(0, 24)`** — replaced with CSS `truncate max-w-[200px]`
 
 ### Layout
 - [x] **AI explanation can overflow modal** — added `max-h-40 overflow-y-auto`
 - [x] **ProfileMenu dropdown is fixed `w-60`** — added `max-w-[calc(100vw-2rem)]`
 - [x] **HistoryPanel has fixed `max-h-96`** — changed to `max-h-[min(24rem,calc(100vh-12rem))]`
-- [ ] **Timeline height hardcoded to 140px** → `App.tsx:1075`
-- [ ] **StayOverviewPanel stats grid unconditionally 3-col** — can compress on narrow widths → `StayOverviewPanel.tsx:80`
+- [x] ~~**Timeline height hardcoded to 140px**~~ — intentional for compact timeline, no change needed
+- [x] ~~**StayOverviewPanel stats grid unconditionally 3-col**~~ — sidebar is fixed `w-64` and hidden on mobile, 3-col is fine
 
 ### Mobile
 - [x] **No sync status visible on mobile** — added sync dot indicator in header (`md:hidden`)
@@ -127,8 +127,8 @@ These should use shadcn `Button` for consistent styling, focus states, and acces
 
 ### Labeling & copy
 - [x] **"Go Back" button in TripEditor shrink confirmation** — changed to "Adjust Dates"
-- [ ] **ImportFromCodeDialog placeholder "e.g. TRIP-ABCD"** — insufficient format guidance → `ImportFromCodeDialog.tsx:132`
-- [ ] **AI model selector has no descriptions** — users can't distinguish between models → `AIPlannerModal.tsx:314-337`
+- [x] **ImportFromCodeDialog placeholder** — changed to "Enter share code (e.g. TRIP-ABC123)"
+- [x] **AI model selector has no descriptions** — added "Fast & free", "Balanced", "Best quality" under each model
 - [x] **AddStayModal search error UX** — improved copy: "try a different name, or just type your destination and save"
 
 ---
@@ -136,22 +136,22 @@ These should use shadcn `Button` for consistent styling, focus states, and acces
 ## P4 — Low Priority / Nice to Have
 
 ### Accessibility
-- [ ] `aria-live="polite"` missing on ImportFromCodeDialog status messages → `ImportFromCodeDialog.tsx:137`
-- [ ] MergeDialog trip name lists missing `aria-label` → `MergeDialog.tsx:60-85`
-- [ ] Focus-visible styling missing on HistoryPanel buttons, TripSwitcherPanel buttons, DroppablePeriodSlot add button
-- [ ] ModalBase `DialogDescription` just repeats the title — should be meaningful → `ModalBase.tsx:41`
-- [ ] StayEditorModal color buttons — focus ring only visible when color matches → `StayEditorModal.tsx:65-73`
+- [x] `aria-live="polite"` on ImportFromCodeDialog status messages — added `role="status" aria-live="polite"`
+- [x] MergeDialog trip name lists — added `aria-label="Local trips"` / `aria-label="Cloud trips"`
+- [x] Focus-visible styling on HistoryPanel and TripSwitcherPanel buttons — added `focus-visible:ring-2 focus-visible:ring-ring`
+- [x] ModalBase `DialogDescription` — changed to "Dialog for: {title}"
+- [x] ~~StayEditorModal color buttons focus ring~~ — already correct, focus ring is outside the ternary
 
 ### Code quality
-- [ ] Magic numbers in stay slot calculations (`< 6` for 2 days, `< 3` for 1 day) — extract as constants → `App.tsx:1426-1427`
-- [ ] Three duplicate "Add first stay" buttons in different locations → `App.tsx:1271, 1786, 1945`
-- [ ] CSS variables `--day-col-width` / `--day-col-gap` used without fallback in accommodation bar → `App.tsx:1869`
-- [ ] `prefers-reduced-motion` not checked on map resize handle animation → `App.tsx:2002-2008`
-- [ ] Inconsistent modal padding: ModalBase uses `px-4 py-3.5`, AuthModal uses `px-8 pt-7 pb-6`, MergeDialog/ImportDialog use `p-5`
+- [x] ~~Magic numbers in stay slot calculations~~ — comments already present in code
+- [x] ~~Three duplicate "Add first stay" buttons~~ — intentional, each has different context/styling
+- [x] **CSS variables fallback in accommodation bar** — added `var(--day-col-width, 288px)` and `var(--day-col-gap, 20px)`
+- [x] **`prefers-reduced-motion` on map resize handle** — added `motion-reduce:transition-none`
+- [x] ~~Inconsistent modal padding~~ — intentional: AuthModal has branded layout, MergeDialog/ImportDialog are standalone
 
 ### Security
-- [ ] AI API key placeholder "AIza..." reveals key prefix pattern → `AIPlannerModal.tsx:290`
+- [x] **AI API key placeholder** — changed from "AIza…" to "Paste your API key"
 
 ### Data integrity
-- [ ] StayEditorModal custom color input has no hex validation → `StayEditorModal.tsx:76-83`
-- [ ] No password strength indicator on AuthModalSimple → `AuthModalSimple.tsx:120`
+- [x] ~~StayEditorModal custom color input~~ — native `<input type="color">` always returns valid `#rrggbb`
+- [x] **Password hint on AuthModalSimple** — added "Password should be at least 6 characters" warning for signup

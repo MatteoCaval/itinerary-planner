@@ -138,6 +138,10 @@ function AuthModalSimple({ onClose }: { onClose: () => void }) {
               </button>
             </div>
 
+            {mode === 'signup' && password.length > 0 && password.length < 6 && (
+              <p className="text-[11px] text-warning font-medium">Password should be at least 6 characters</p>
+            )}
+
             {error && (
               <div className="flex items-start gap-2 bg-destructive/10 border border-destructive/30 rounded-xl px-3.5 py-2.5">
                 <AlertCircle className="w-3.5 h-3.5 text-destructive flex-shrink-0 mt-0.5" />

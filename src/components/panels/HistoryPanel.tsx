@@ -35,7 +35,7 @@ function HistoryPanel({
                 onNavigate(i);
                 onClose();
               }}
-              className={`w-full text-left px-3 py-2.5 rounded-lg transition-all flex items-center justify-between gap-3 ${
+              className={`w-full text-left px-3 py-2.5 rounded-lg transition-all flex items-center justify-between gap-3 focus-visible:ring-2 focus-visible:ring-ring ${
                 isCurrent
                   ? 'bg-primary/5 border border-primary/20'
                   : isFuture

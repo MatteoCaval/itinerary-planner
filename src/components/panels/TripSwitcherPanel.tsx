@@ -25,7 +25,7 @@ function TripSwitcherPanel({
               onSwitch(t.id);
               onClose();
             }}
-            className={`w-full text-left px-4 py-3 rounded-lg border transition-all flex items-center justify-between ${
+            className={`w-full text-left px-4 py-3 rounded-lg border transition-all flex items-center justify-between focus-visible:ring-2 focus-visible:ring-ring ${
               t.id === store.activeTripId
                 ? 'border-primary/40 bg-primary/5 ring-1 ring-primary/10'
                 : 'border-border hover:border-border hover:bg-muted'

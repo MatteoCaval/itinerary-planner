@@ -292,7 +292,7 @@ function AIPlannerModal({
             <Input
               type="password"
               className="text-sm font-mono"
-              placeholder="AIza…"
+              placeholder="Paste your API key"
               value={settings.apiKey}
               onChange={(e) => onSettingsChange({ ...settings, apiKey: e.target.value })}
             />
@@ -322,21 +322,26 @@ function AIPlannerModal({
               className="flex flex-wrap gap-1.5 mb-2"
             >
               {[
-                { id: 'gemini-3.1-flash-lite-preview', label: '3.1 Lite', badge: 'recommended' },
-                { id: 'gemini-3-flash-preview', label: '3 Flash' },
-                { id: 'gemini-3.1-pro-preview', label: '3.1 Pro' },
-              ].map(({ id, label, badge }) => (
+                { id: 'gemini-3.1-flash-lite-preview', label: '3.1 Lite', desc: 'Fast & free', badge: 'recommended' },
+                { id: 'gemini-3-flash-preview', label: '3 Flash', desc: 'Balanced' },
+                { id: 'gemini-3.1-pro-preview', label: '3.1 Pro', desc: 'Best quality' },
+              ].map(({ id, label, desc, badge }) => (
                 <ToggleGroupItem
                   key={id}
                   value={id}
-                  className="px-2.5 py-1 text-[11px] font-bold"
+                  className="px-2.5 py-1.5"
                 >
-                  {label}
-                  {badge && settings.model !== id ? (
-                    <span className="ml-1 text-muted-foreground font-medium">★</span>
-                  ) : (
-                    ''
-                  )}
+                  <div className="text-center">
+                    <span className="text-[11px] font-bold">
+                      {label}
+                      {badge && settings.model !== id ? (
+                        <span className="ml-1 text-muted-foreground font-medium">★</span>
+                      ) : (
+                        ''
+                      )}
+                    </span>
+                    <span className="text-[8px] text-muted-foreground block">{desc}</span>
+                  </div>
                 </ToggleGroupItem>
               ))}
             </ToggleGroup>

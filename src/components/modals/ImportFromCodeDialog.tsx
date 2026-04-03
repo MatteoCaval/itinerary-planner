@@ -129,13 +129,15 @@ function ImportFromCodeDialog({
               setCode(e.target.value.toUpperCase());
               setStatus(null);
             }}
-            placeholder="e.g. TRIP-ABCD"
+            placeholder="Enter share code (e.g. TRIP-ABC123)"
             className="w-full px-3 py-2.5 text-sm font-mono font-bold text-center tracking-widest placeholder:tracking-normal placeholder:font-normal"
             autoFocus
           />
 
           {status && (
             <div
+              role="status"
+              aria-live="polite"
               className={`mt-3 flex items-center gap-2 text-xs px-3 py-2 rounded-lg ${
                 status.type === 'success'
                   ? 'bg-success/10 text-success'

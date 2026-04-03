@@ -65,7 +65,7 @@ function StayOverviewPanel({
               className="w-2 h-2 rounded-full flex-shrink-0 ring-1 ring-white/40"
               style={{ backgroundColor: stay.color }}
             />
-            <h2 className="text-white font-bold text-sm leading-tight truncate">{stay.name}</h2>
+            <h2 className="text-white font-bold text-sm leading-tight truncate" title={stay.name}>{stay.name}</h2>
           </div>
           {startDate && endDate && (
             <p className="text-white/70 text-[11px] mt-0.5">

@@ -127,7 +127,7 @@ function ProfileMenu({
                 {user ? (user.email?.[0] ?? 'U').toUpperCase() : <User className="w-4 h-4" />}
               </div>
               <div className="min-w-0">
-                <p className="text-xs font-extrabold text-foreground truncate leading-tight">
+                <p className="text-xs font-extrabold text-foreground truncate leading-tight" title={user ? user.email ?? undefined : undefined}>
                   {user ? user.email : 'Guest User'}
                 </p>
                 <div className="flex items-center gap-1.5 mt-0.5">

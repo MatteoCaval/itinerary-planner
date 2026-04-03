@@ -1876,7 +1876,7 @@ function ChronosApp() {
                           <div
                             className="absolute inset-y-0 left-0 z-10"
                             style={{
-                              width: `calc(${group.nights} * var(--day-col-width) + ${group.nights - 1} * var(--day-col-gap))`,
+                              width: `calc(${group.nights} * var(--day-col-width, 288px) + ${group.nights - 1} * var(--day-col-gap, 20px))`,
                             }}
                           >
                             <button
@@ -2012,7 +2012,7 @@ function ChronosApp() {
                   className="absolute left-0 top-0 bottom-0 w-3 -ml-1.5 cursor-col-resize z-50 group flex items-center justify-center"
                   title="Drag to resize"
                 >
-                  <div className="w-1 h-8 rounded-full bg-slate-300/60 group-hover:bg-primary/50 group-hover:h-12 transition-all" />
+                  <div className="w-1 h-8 rounded-full bg-slate-300/60 group-hover:bg-primary/50 group-hover:h-12 transition-all motion-reduce:transition-none" />
                 </div>
               )}
               {/* Map panel header */}
