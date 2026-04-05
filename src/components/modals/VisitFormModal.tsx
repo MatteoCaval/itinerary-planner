@@ -40,6 +40,9 @@ function VisitFormModal({
   onSave,
   onDelete,
   onUnschedule,
+  onMoveToStay,
+  availableStays,
+  currentStayId,
 }: {
   initial?: Partial<VisitItem>;
   title: string;
@@ -56,6 +59,9 @@ function VisitFormModal({
   }) => void;
   onDelete?: () => void;
   onUnschedule?: () => void;
+  onMoveToStay?: (targetStayId: string) => void;
+  availableStays?: { id: string; name: string; color: string }[];
+  currentStayId?: string;
 }) {
   const [name, setName] = useState(initial?.name ?? '');
   const [type, setType] = useState<VisitType>(
@@ -397,6 +403,38 @@ function VisitFormModal({
             </div>
           </div>
         </details>
+
+        {/* Move to another stay */}
+        {onMoveToStay && availableStays && availableStays.length > 1 && (
+          <div>
+            <label className="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground mb-1.5 block">
+              Move to another stay
+            </label>
+            <div className="flex flex-wrap gap-1.5">
+              {availableStays
+                .filter((s) => s.id !== currentStayId)
+                .map((s) => (
+                  <Button
+                    key={s.id}
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      onMoveToStay(s.id);
+                      onClose();
+                    }}
+                    className="gap-1.5"
+                  >
+                    <div
+                      className="w-2 h-2 rounded-full flex-shrink-0"
+                      style={{ background: s.color }}
+                    />
+                    {s.name}
+                  </Button>
+                ))}
+            </div>
+          </div>
+        )}
 
         {/* Delete / unschedule */}
         {(onDelete || onUnschedule) && (

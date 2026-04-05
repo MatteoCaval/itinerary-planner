@@ -11,11 +11,15 @@ function SortableVisitCard({
   isSelected,
   onSelect,
   onEdit,
+  onHover,
+  onHoverEnd,
 }: {
   visit: VisitItem;
   isSelected: boolean;
   onSelect: () => void;
   onEdit: () => void;
+  onHover?: () => void;
+  onHoverEnd?: () => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging, isOver } =
     useSortable({
@@ -32,6 +36,8 @@ function SortableVisitCard({
         transition,
         opacity: isDragging ? 0.3 : 1,
       }}
+      onMouseEnter={onHover}
+      onMouseLeave={onHoverEnd}
       className={`relative pl-[18px] pr-3.5 py-3.5 bg-white rounded-lg border transition-all group select-none touch-none cursor-grab active:cursor-grabbing ${
         isOver
           ? 'border-primary shadow-md ring-2 ring-primary/25 bg-primary/[0.02]'

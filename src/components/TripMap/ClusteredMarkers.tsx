@@ -25,6 +25,7 @@ type VisitCluster = {
 interface ClusteredMarkersProps {
   visits: VisitMarkerItem[];
   selectedVisitId: string | null;
+  highlightedVisitId?: string | null;
   onSelectVisit: (id: string | null) => void;
   enableClustering?: boolean;
 }
@@ -32,6 +33,7 @@ interface ClusteredMarkersProps {
 export function ClusteredMarkers({
   visits,
   selectedVisitId,
+  highlightedVisitId,
   onSelectVisit,
   enableClustering = true,
 }: ClusteredMarkersProps) {
@@ -155,7 +157,7 @@ export function ClusteredMarkers({
           <Marker
             key={v.id}
             position={getJitteredPosition(entry)}
-            icon={createIcon(v.type, entry.index, selectedVisitId === v.id)}
+            icon={createIcon(v.type, entry.index, selectedVisitId === v.id || highlightedVisitId === v.id)}
             eventHandlers={{
               click: () => onSelectVisit(selectedVisitId === v.id ? null : v.id),
             }}

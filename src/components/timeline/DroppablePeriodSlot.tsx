@@ -13,6 +13,8 @@ function DroppablePeriodSlot({
   onSelectVisit,
   onEditVisit,
   onAddVisit,
+  onHoverVisit,
+  onHoverVisitEnd,
 }: {
   dayOffset: number;
   period: DayPart;
@@ -21,6 +23,8 @@ function DroppablePeriodSlot({
   onSelectVisit: (id: string) => void;
   onEditVisit: (v: VisitItem) => void;
   onAddVisit: (dayOffset: number, part: DayPart) => void;
+  onHoverVisit?: (id: string) => void;
+  onHoverVisitEnd?: () => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: `slot-${dayOffset}-${period}` });
   const PeriodIcon = period === 'morning' ? Sunrise : period === 'afternoon' ? Sun : Moon;
@@ -50,6 +54,8 @@ function DroppablePeriodSlot({
               isSelected={selectedVisitId === v.id}
               onSelect={() => onSelectVisit(v.id)}
               onEdit={() => onEditVisit(v)}
+              onHover={() => onHoverVisit?.(v.id)}
+              onHoverEnd={onHoverVisitEnd}
             />
           ))}
         </SortableContext>

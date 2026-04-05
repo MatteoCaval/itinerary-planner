@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Marker, Polyline, Tooltip } from 'react-leaflet';
+import { Marker, Polyline, Tooltip, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { ChevronRight } from 'lucide-react';
 import { renderToStaticMarkup } from 'react-dom/server';
@@ -59,6 +59,7 @@ export default function StayOverviewLayer({
   highlightedStayId,
   showRouteIcons = false,
 }: StayOverviewLayerProps) {
+  const map = useMap();
   const segments = useMemo(
     () =>
       stays
@@ -149,7 +150,12 @@ export default function StayOverviewLayer({
           key={stay.id}
           position={[stay.centerLat, stay.centerLng]}
           icon={createStayMarkerIcon(stay.name, stay.color, highlightedStayId === stay.id)}
-          eventHandlers={{ click: () => onSelectStay(stay.id) }}
+          eventHandlers={{
+            click: () => {
+              map.flyTo([stay.centerLat, stay.centerLng], 11, { duration: 0.5 });
+              onSelectStay(stay.id);
+            },
+          }}
         />
       ))}
     </>

@@ -24,12 +24,15 @@ import {
   MapPin,
   Maximize2,
   Minimize2,
+  Moon,
   Navigation,
   Pencil,
   Plus,
   Redo2,
   Search,
   Sparkles,
+  Sun,
+  Sunrise,
   PanelRightOpen,
   PanelRightClose,
   Shrink,
@@ -65,7 +68,7 @@ import {
   getStayNightCount,
 } from './domain/stayLogic';
 import { createVisit, normalizeVisitOrders, sortVisits } from './domain/visitLogic';
-import { getVisitTypeColor, getVisitLabel } from './domain/visitTypeDisplay';
+import { getVisitTypeBg, getVisitTypeColor, getVisitLabel } from './domain/visitTypeDisplay';
 import { normalizeTrip } from './domain/migration';
 import { createSampleTrip } from './domain/sampleData';
 import {
@@ -193,6 +196,7 @@ function ChronosApp() {
   const [sidebarTab, setSidebarTab] = useState<'overview' | 'unplanned'>('unplanned');
   const [hoveredStayId, setHoveredStayId] = useState<string | null>(null);
   const [selectedVisitId, setSelectedVisitId] = useState<string | null>(null);
+  const [hoveredVisitId, setHoveredVisitId] = useState<string | null>(null);
   const [dragState, setDragState] = useState<DragState>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [mapExpanded, setMapExpanded] = useState(
@@ -1930,34 +1934,171 @@ function ChronosApp() {
                           }}
                           onEditVisit={(v) => setEditingVisit(v)}
                           onAddVisit={(d, p) => setAddingVisitToSlot({ dayOffset: d, part: p })}
+                          onHoverVisit={(id) => setHoveredVisitId(id)}
+                          onHoverVisitEnd={() => setHoveredVisitId(null)}
                         />
                       ))}
                     </div>
                   </div>
                 );
               })}
-              {stayDays.length === 0 && (
-                <div className="flex-1 flex flex-col items-center justify-center gap-3">
-                  <div className="size-14 rounded-2xl bg-primary/8 flex items-center justify-center">
-                    <Compass className="w-7 h-7 text-primary/40" />
-                  </div>
-                  <div className="text-center">
-                    <p className="text-sm font-extrabold text-foreground">Select a stay to plan</p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      <span className="md:hidden">Tap</span>
-                      <span className="hidden md:inline">Click</span> any block on the timeline
-                      above
-                    </p>
-                  </div>
-                  {sortedStays.length === 0 && (
-                    <Button
-                      onClick={() => setAddingStay(true)}
-                      className="mt-1"
-                    >
-                      <Plus className="w-3.5 h-3.5" /> Add your first stay
-                    </Button>
-                  )}
-                </div>
+              {!selectedStay && sortedStays.length > 0 && (
+                <>
+                  {sortedStays.map((stay) => {
+                    const days = deriveStayDays(trip, stay);
+                    if (days.length === 0) return null;
+                    return (
+                      <React.Fragment key={stay.id}>
+                        {/* Stay header */}
+                        <div className="flex-none flex flex-col items-center justify-center gap-2 py-4 px-2 min-w-[60px]">
+                          <div
+                            className="w-1 h-8 rounded-full"
+                            style={{ background: stay.color }}
+                          />
+                          <button
+                            onClick={() => {
+                              setSelectedStayId(stay.id);
+                              setSidebarTab('overview');
+                            }}
+                            className="text-[11px] font-extrabold text-foreground hover:text-primary transition-colors writing-mode-vertical"
+                            style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}
+                          >
+                            {stay.name}
+                          </button>
+                        </div>
+                        {/* Days for this stay */}
+                        {days.map((day) => {
+                          const dayVisits = sortVisits(
+                            stay.visits.filter((v) => v.dayOffset === day.dayOffset),
+                          );
+                          return (
+                            <div
+                              key={`${stay.id}-${day.dayOffset}`}
+                              className="flex-none w-72 max-md:w-[85vw] max-md:snap-start flex flex-col gap-4 rounded-xl"
+                            >
+                              <button
+                                className="flex items-center justify-between w-full cursor-pointer group rounded-lg px-2 py-1 -mx-2 transition-colors hover:bg-muted"
+                                onClick={() => {
+                                  setSelectedStayId(stay.id);
+                                  setSidebarTab('overview');
+                                }}
+                                title="Click to view this stay"
+                              >
+                                <h4 className="font-extrabold text-sm tracking-tight group-hover:text-primary transition-colors">
+                                  Day {(day.dayOffset + 1).toString().padStart(2, '0')}
+                                  <span className="text-muted-foreground font-medium ml-1.5">
+                                    {fmt(day.date, {
+                                      weekday: 'short',
+                                      month: 'short',
+                                      day: 'numeric',
+                                    })}
+                                  </span>
+                                </h4>
+                                <div
+                                  className="w-2 h-2 rounded-full"
+                                  style={{ background: stay.color }}
+                                />
+                              </button>
+                              <div className="space-y-4 pt-2">
+                                {DAY_PARTS.filter((p) => day.enabledParts.includes(p)).map(
+                                  (period) => {
+                                    const periodVisits = dayVisits.filter(
+                                      (v) => v.dayPart === period,
+                                    );
+                                    const PeriodIcon =
+                                      period === 'morning'
+                                        ? Sunrise
+                                        : period === 'afternoon'
+                                          ? Sun
+                                          : Moon;
+                                    const label =
+                                      period === 'morning'
+                                        ? 'Morning'
+                                        : period === 'afternoon'
+                                          ? 'Afternoon'
+                                          : 'Evening';
+                                    return (
+                                      <div
+                                        key={period}
+                                        className="p-1.5 rounded-xl border bg-muted/40 border-muted/80"
+                                      >
+                                        <div className="flex items-center gap-1.5 px-2 py-1.5 mb-1">
+                                          <PeriodIcon className="w-3 h-3 text-muted-foreground" />
+                                          <span className="text-[9px] font-extrabold uppercase tracking-widest text-muted-foreground">
+                                            {label}
+                                          </span>
+                                        </div>
+                                        <div className="space-y-2">
+                                          {periodVisits.map((v) => (
+                                            <button
+                                              key={v.id}
+                                              onClick={() => {
+                                                setSelectedStayId(stay.id);
+                                                setSidebarTab('overview');
+                                                setSelectedVisitId(v.id);
+                                              }}
+                                              className="relative w-full text-left pl-[18px] pr-3.5 py-2.5 bg-white rounded-lg border border-border hover:border-primary/30 hover:shadow-sm transition-all group/visit"
+                                            >
+                                              <div
+                                                className={`absolute left-0 top-0 bottom-0 w-1 rounded-l-lg ${getVisitTypeBg(v.type)}`}
+                                              />
+                                              <div className="flex items-start justify-between gap-2">
+                                                <div className="min-w-0 flex-1">
+                                                  <div className="flex items-center gap-2 mb-1">
+                                                    <Badge
+                                                      variant="outline"
+                                                      className={`text-[9px] h-auto px-1.5 py-0 font-bold uppercase tracking-tighter ${getVisitTypeColor(v.type)}`}
+                                                    >
+                                                      {getVisitLabel(v.type)}
+                                                    </Badge>
+                                                    {v.durationHint && (
+                                                      <span className="text-[11px] text-muted-foreground">
+                                                        {v.durationHint}
+                                                      </span>
+                                                    )}
+                                                  </div>
+                                                  <p className="text-xs font-bold text-foreground truncate group-hover/visit:text-primary transition-colors">
+                                                    {v.name}
+                                                  </p>
+                                                  {v.notes && (
+                                                    <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1 italic">
+                                                      {v.notes}
+                                                    </p>
+                                                  )}
+                                                </div>
+                                                {v.imageUrl && (
+                                                  <div className="size-9 rounded-md overflow-hidden flex-shrink-0 border border-border">
+                                                    <img
+                                                      src={v.imageUrl}
+                                                      alt=""
+                                                      className="w-full h-full object-cover"
+                                                      loading="lazy"
+                                                    />
+                                                  </div>
+                                                )}
+                                              </div>
+                                            </button>
+                                          ))}
+                                          {periodVisits.length === 0 && (
+                                            <div className="h-8 border-2 border-dashed border-border rounded-lg flex items-center justify-center">
+                                              <span className="text-[9px] text-muted-foreground">
+                                                Empty
+                                              </span>
+                                            </div>
+                                          )}
+                                        </div>
+                                      </div>
+                                    );
+                                  },
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </React.Fragment>
+                    );
+                  })}
+                </>
               )}
             </div>
 
@@ -2155,6 +2296,7 @@ function ChronosApp() {
                   <TripMap
                     visits={mapMode !== 'overview' ? mapVisits : []}
                     selectedVisitId={mapMode !== 'overview' ? selectedVisitId : null}
+                    highlightedVisitId={mapMode !== 'overview' ? hoveredVisitId : null}
                     onSelectVisit={(id) => setSelectedVisitId(id)}
                     expanded={mapExpanded}
                     stay={mapMode !== 'overview' ? selectedStay : null}
@@ -2774,6 +2916,34 @@ function ChronosApp() {
                 ? () => scheduleVisit(editingVisit.id, null, null)
                 : undefined
             }
+            currentStayId={selectedStay.id}
+            availableStays={sortedStays.map((s) => ({ id: s.id, name: s.name, color: s.color }))}
+            onMoveToStay={(targetStayId) => {
+              setTrip((t) => ({
+                ...t,
+                stays: t.stays.map((s) => {
+                  if (s.id === selectedStay!.id) {
+                    return {
+                      ...s,
+                      visits: normalizeVisitOrders(
+                        s.visits.filter((v) => v.id !== editingVisit!.id),
+                      ),
+                    };
+                  }
+                  if (s.id === targetStayId) {
+                    return {
+                      ...s,
+                      visits: [
+                        ...s.visits,
+                        { ...editingVisit!, dayOffset: null, dayPart: null, order: s.visits.length },
+                      ],
+                    };
+                  }
+                  return s;
+                }),
+              }));
+              setEditingVisit(null);
+            }}
           />
         )}
 

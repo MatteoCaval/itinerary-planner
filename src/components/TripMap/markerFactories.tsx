@@ -64,11 +64,12 @@ export const createAccommodationIcon = () =>
 export const createStayMarkerIcon = (name: string, color: string, highlighted = false) =>
   L.divIcon({
     className: 'custom-marker-wrapper',
-    html: `<div style="display:flex;flex-direction:column;align-items:center;transform:${highlighted ? 'scale(1.25)' : 'scale(1)'};transition:transform 0.15s ease;">
-      <div style="width:26px;height:26px;border-radius:50%;background:${color};border:${highlighted ? '3px solid white' : '2.5px solid white'};box-shadow:${highlighted ? `0 0 0 2px ${color}, 0 4px 12px rgba(0,0,0,0.3)` : '0 2px 6px rgba(0,0,0,0.25)'};display:flex;align-items:center;justify-content:center;">
+    html: `<div style="display:flex;flex-direction:column;align-items:center;transform:${highlighted ? 'scale(1.35)' : 'scale(1)'};transition:transform 0.18s ease;z-index:${highlighted ? 1000 : 1};">
+      ${highlighted ? `<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-55%);width:40px;height:40px;border-radius:50%;background:${color};opacity:0.18;animation:stay-marker-pulse 1.5s ease-in-out infinite;"></div>` : ''}
+      <div style="width:26px;height:26px;border-radius:50%;background:${color};border:${highlighted ? '3px solid white' : '2.5px solid white'};box-shadow:${highlighted ? `0 0 0 3px ${color}, 0 4px 16px rgba(0,0,0,0.35)` : '0 2px 6px rgba(0,0,0,0.25)'};display:flex;align-items:center;justify-content:center;">
         ${renderToStaticMarkup(<MapPin size={12} color="white" />)}
       </div>
-      <div style="margin-top:3px;background:white;padding:1px 5px;border-radius:4px;font-size:9px;font-weight:800;color:${color};white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,0.12);">
+      <div style="margin-top:3px;background:${highlighted ? color : 'white'};padding:1px 5px;border-radius:4px;font-size:9px;font-weight:800;color:${highlighted ? 'white' : color};white-space:nowrap;box-shadow:${highlighted ? `0 2px 8px rgba(0,0,0,0.2)` : '0 1px 3px rgba(0,0,0,0.12)'};">
         ${name}
       </div>
     </div>`,

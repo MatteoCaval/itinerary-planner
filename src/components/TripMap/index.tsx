@@ -47,6 +47,7 @@ type Stay = {
 interface TripMapProps {
   visits: VisitItem[];
   selectedVisitId: string | null;
+  highlightedVisitId?: string | null;
   onSelectVisit: (id: string | null) => void;
   expanded: boolean;
   stay: Stay | null;
@@ -81,6 +82,7 @@ const BASEMAPS: Record<BasemapMode, { url: string; attribution: string; maxZoom?
 export default function TripMap({
   visits,
   selectedVisitId,
+  highlightedVisitId,
   onSelectVisit,
   expanded,
   stay,
@@ -174,6 +176,7 @@ export default function TripMap({
             <ClusteredMarkers
               visits={visits}
               selectedVisitId={selectedVisitId}
+              highlightedVisitId={highlightedVisitId}
               onSelectVisit={onSelectVisit}
               enableClustering={enableClustering}
             />
