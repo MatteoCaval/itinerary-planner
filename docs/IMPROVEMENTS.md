@@ -173,15 +173,76 @@ These should use shadcn `Button` for consistent styling, focus states, and acces
   - Option A is better — it's closer to Google Maps / Wanderlog UX. Keep the current floating mode as a mobile fallback. Desktop gets permanent split. The map resize handle already exists; just change the CSS from `absolute` positioning to `flex` layout.
 - **Complexity:** Medium-High — layout restructuring, but no new features. Must preserve mobile (Sheet) behavior.
 
-### 3. To-do list for destinations
-- [x] **Already exists** — `StayTodoSection` in `StayOverviewPanel.tsx` provides a collapsible checklist per stay. Accessible via the sidebar "Details" tab when a stay is selected. Also visible in the mobile Sheet drawer.
-- **Enhancement ideas if the current version feels insufficient:**
-  - Show to-do progress on the timeline stay block (e.g., "3/5" badge)
-  - Show uncompleted to-dos in the global itinerary view
-  - Add due dates or priority to checklist items
+### 3. Destination wishlist / inbox
+
+A **parking lot for destinations** — mirrors how visits have an unplanned inbox, but one level up for stays. Stays with `startSlot: -1` are "unplaced" — they exist with name, coords, color, notes, and even pre-planned visits, but aren't on the timeline.
+
+#### Use cases
+- **Research phase** — "I want to visit Kyoto, Nara, Osaka, maybe Hiroshima" — add them all to the wishlist, then place the ones you commit to on the timeline
+- **Refactoring** — "I need to rearrange my timeline" — park a stay temporarily in the wishlist, move other stays around, then place it back
+- **Maybe / stretch goals** — "If we have time, add Nara as a day trip" — keep it in the wishlist with notes and visits pre-planned, ready to slot in
+
+#### Data model
+No schema change needed. A wishlist stay is a regular `Stay` with sentinel values `startSlot: -1, endSlot: -1`. Everything else (name, color, coords, visits, notes, checklist, links, accommodations) is preserved. The timeline already filters by slot range, so these stays would be naturally excluded.
+
+#### UX design decisions
+
+**Where does the wishlist live?**
+
+| Option | Pros | Cons |
+|--------|------|------|
+| **(A) New sidebar tab** — "Planned / Inbox / Wishlist" (3 tabs) | Always accessible, clear separation | Tab bar gets crowded |
+| **(B) Section in the global view** — wishlist cards below planned stays when no stay is selected | No UI clutter, contextual | Hidden when a stay is selected |
+| **(C) Section above/below timeline** — always visible strip | Always visible, easy drag-to-timeline | Takes vertical space from timeline |
+| **(D) Collapsible section at the bottom of the sidebar** — visible in both tabs | Non-intrusive, always accessible | Can feel tucked away |
+
+**Recommended: B + D hybrid** — show wishlist prominently in the global view (when no stay selected), and as a collapsible section at the bottom of the sidebar when a stay is selected. This way it's always reachable but never in the way.
+
+**Adding to wishlist:**
+- Current "Add destination" button opens `AddStayModal` → places on timeline
+- Add a toggle or second button: "Add to wishlist" — same modal but skips duration picker, saves with `startSlot: -1`
+- Or: the modal gets a "Save to wishlist" secondary action alongside "Add to Timeline"
+
+**Placing from wishlist to timeline:**
+- Click "Place on timeline" on a wishlist card → opens a lightweight modal with just a duration picker (name/coords already set)
+- Or: drag the wishlist card onto the timeline → auto-creates with default 3 days at the drop position
+- The stay's existing visits are preserved — if they had `dayOffset` values from a previous placement, they restore; otherwise they sit in the stay's inbox
+
+**Parking a stay (timeline → wishlist):**
+- In `StayEditorModal`, add a "Park in wishlist" button alongside Delete
+- This sets `startSlot: -1, endSlot: -1` but **preserves everything** — visits keep their `dayOffset/dayPart` so if placed back at the same duration, the schedule restores
+- Timeline gap left by the parked stay remains empty (user can shrink or fill)
+
+**Map behavior:**
+- Wishlist stays show on the map overview with a **distinct marker style** — e.g., dashed outline, lower opacity, or a "?" badge — to differentiate from placed stays
+- Clicking a wishlist marker on the map could open its detail panel
+
+**Wishlist card design:**
+- Compact card showing: color dot, destination name, visit count, "Place" button
+- Expandable to show notes, checklist progress, visit list
+- Edit button opens `StayEditorModal` as usual
+- Delete removes from wishlist entirely
+
+#### Implementation steps
+1. Filter `sortedStays` to exclude `startSlot < 0` for timeline rendering
+2. Add `wishlistStays` derived value filtering `startSlot < 0`
+3. Render wishlist section in global view and sidebar
+4. Update `AddStayModal` with "Save to wishlist" option
+5. Add "Park in wishlist" to `StayEditorModal`
+6. Add "Place on timeline" action on wishlist cards (opens duration picker)
+7. Show wishlist stays on map with distinct marker style
+
+#### Complexity
+Medium — no data model changes, mostly UI work. The stay already supports all fields; we just need the sentinel value convention and the UI to manage unplaced stays.
+
+#### Per-stay to-do (already exists)
+`StayTodoSection` in `StayOverviewPanel.tsx` provides a collapsible checklist per stay. Accessible via sidebar "Details" tab. Enhancement ideas:
+- Show to-do progress on timeline stay block (e.g., "3/5" badge)
+- Show uncompleted to-dos in the global itinerary view
+- Add due dates or priority to checklist items
 
 ### 4. Click unplanned place to see it on map
-- [ ] **Map preview for unplanned visits** — clicking a visit in the unplanned inbox (left sidebar) should highlight it on the map, even though it's not scheduled to a specific day
+- [x] **Map preview for unplanned visits** — MapPin button on inbox cards flies to location on map, temporarily shows marker
 - **Approach:** Unplanned visits already have `lat/lng` from geocoding. When clicking an inbox card:
   1. Set `selectedVisitId` to that visit's id
   2. Temporarily include unplanned visits in `mapVisits` (currently filtered to scheduled-only)

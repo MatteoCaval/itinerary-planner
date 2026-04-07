@@ -4,7 +4,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Keeping docs up to date
 
-After adding or changing any feature, update `docs/PRD.md` — specifically the **Features** section, the **Feature Status** table, and **Known Limitations** if relevant. The PRD is the canonical source of truth for what the app does.
+After adding or changing any feature, update these docs **in the same session** — don't wait to be asked:
+
+- **`docs/PRD.md`** — the canonical source of truth for what the app does. Update the **Features** section, **Feature Status** table, and **Known Limitations** whenever behavior changes.
+- **`docs/IMPROVEMENTS.md`** — the backlog and audit checklist. Tick items as done (`- [x]`) immediately after implementing them. Add new findings if discovered during work.
 
 ## Commands
 
@@ -30,7 +33,7 @@ Tests use jsdom + Testing Library. Setup file: `src/test/setup.ts`.
 
 ### CHRONOS app (`src/App.tsx`)
 
-The main UI component (~4800 lines). Types and business logic are imported from the domain layer.
+The main orchestration component (~2900 lines). State management, callbacks, and layout composition. UI components are extracted into `src/components/`.
 
 **Data model:**
 
@@ -38,6 +41,20 @@ The main UI component (~4800 lines). Types and business logic are imported from 
 - Stays = timeline blocks (colored, cover a span of `startSlot`–`endSlot` on the timeline)
 - Visits with `dayOffset !== null` = scheduled activities rendered in day columns
 - Visits with `dayOffset === null` = inbox/unscheduled (left sidebar)
+
+### UI layer (`src/components/`)
+
+```
+ui/                    # shadcn/ui components (Button, Dialog, Input, etc.) + ModalBase, TransportIcon
+modals/                # 10 modal dialogs (AccommodationEditor, AIPlannerModal, AuthSimple, etc.)
+panels/                # Sidebar panels (StayOverview, VisitDetail, ProfileMenu, History, TripSwitcher)
+cards/                 # DraggableInventoryCard, SortableVisitCard
+timeline/              # DroppablePeriodSlot
+TripMap/               # Leaflet map (markers, routes, clustering, day filters, basemap picker)
+WelcomeScreen.tsx      # Landing page for new users
+ChronosErrorBoundary.tsx
+InlineDateRangePicker.tsx
+```
 
 ### Domain layer (`src/domain/`) — pure business logic
 
@@ -52,21 +69,23 @@ visitTypeDisplay.ts   # getVisitTypeBg, getVisitTypeColor, getVisitLabel
 migration.ts          # legacyTripToHybrid, hybridTripToLegacy, normalizeTrip
 tripMutations.ts      # extendTripBefore/After, applyTimelineDrag, adjustStaysForDateChange
 sampleData.ts         # createSampleTrip (Japan demo)
-__tests__/            # 36 unit tests
+__tests__/            # Unit tests
 ```
 
-Zero React dependencies. All functions are pure and unit-testable. App.tsx imports from this layer.
+Zero React dependencies. All functions are pure and unit-testable.
 
 ### Supporting files
 
 ```
-src/context/
-  AuthContext.tsx       # Firebase auth provider
 src/hooks/
+  useHistory.ts        # Undo/redo history (50-step)
   usePlaceSearch.ts    # Nominatim geocoding with debounce
   useRouteGeometry.ts  # OSRM route geometry
-src/components/
-  TripMap/             # Leaflet map (markers, routes, clustering, day filters)
+src/lib/
+  persistence.ts       # loadStore, saveStore (localStorage)
+  utils.ts             # shadcn cn() utility
+src/context/
+  AuthContext.tsx       # Firebase auth provider
 src/services/
   httpClient.ts        # HTTP client with retry/timeout
   telemetry.ts         # Error/event tracking
@@ -82,11 +101,14 @@ src/unsplash.ts        # Unsplash photo search
 ## Key Conventions
 
 - **Tailwind v4** via `@tailwindcss/vite` plugin — no `tailwind.config.js`. CSS variables and theme tokens go in `src/index.css`.
-- **Design tokens:** Primary orange `#ec5b13`, font Inter.
+- **shadcn/ui** (nova preset, Radix-based). Components in `src/components/ui/`. Use semantic tokens (`text-foreground`, `bg-muted`, `border-border`, `text-destructive`, `text-success`, etc.) — not hardcoded Tailwind colors.
+- **Design tokens:** Primary orange `#ec5b13`, font Inter. Semantic colors: success (green), warning (amber), info (blue), destructive (red).
 - **Formatting:** 2-space indent, single quotes, semicolons, trailing commas, 100-char line width (Prettier-enforced).
 - **Naming:** PascalCase components, `use` prefix hooks, camelCase utilities.
 - **Types** live in `src/domain/types.ts`. No separate `src/types.ts`.
 - **Never touch `.env.local`.**
+- **Never mention Claude Code** as author, helper, or generator — not in commits, PRs, code comments, or anywhere in the repo.
+- **Never commit without explicit permission** — present changes and wait for the user to say "commit".
 
 ## Working on UI Features
 
