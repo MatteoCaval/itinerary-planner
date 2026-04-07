@@ -197,6 +197,13 @@ function ChronosApp() {
   const [hoveredStayId, setHoveredStayId] = useState<string | null>(null);
   const [selectedVisitId, setSelectedVisitId] = useState<string | null>(null);
   const [hoveredVisitId, setHoveredVisitId] = useState<string | null>(null);
+  const [locatedVisitId, setLocatedVisitId] = useState<string | null>(null);
+  // Clear located visit when selection changes to something else
+  useEffect(() => {
+    if (locatedVisitId && selectedVisitId !== locatedVisitId) {
+      setLocatedVisitId(null);
+    }
+  }, [selectedVisitId, locatedVisitId]);
   const [dragState, setDragState] = useState<DragState>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [mapExpanded, setMapExpanded] = useState(
@@ -468,8 +475,16 @@ function ChronosApp() {
     if (mapMode === 'detail' && mapDayFilter !== null) {
       scheduled = scheduled.filter((v) => v.dayOffset === mapDayFilter);
     }
-    return sortVisits(scheduled);
-  }, [selectedStay, mapDayFilter, mapMode]);
+    const sorted = sortVisits(scheduled);
+    // Include a located unplanned visit so the map can show/fly to it
+    if (locatedVisitId) {
+      const located = selectedStay.visits.find((v) => v.id === locatedVisitId);
+      if (located && !sorted.some((v) => v.id === locatedVisitId)) {
+        sorted.push(located);
+      }
+    }
+    return sorted;
+  }, [selectedStay, mapDayFilter, mapMode, locatedVisitId]);
 
   // ── Timeline drag ─────────────────────────────────────────────────────────
   useEffect(() => {
@@ -1743,6 +1758,10 @@ function ChronosApp() {
                       key={v.id}
                       visit={v}
                       onEdit={() => setEditingVisit(v)}
+                      onLocate={() => {
+                        setLocatedVisitId(v.id);
+                        setSelectedVisitId(v.id);
+                      }}
                     />
                   ))}
                   {inboxVisits.length === 0 && (
@@ -1936,6 +1955,7 @@ function ChronosApp() {
                           onAddVisit={(d, p) => setAddingVisitToSlot({ dayOffset: d, part: p })}
                           onHoverVisit={(id) => setHoveredVisitId(id)}
                           onHoverVisitEnd={() => setHoveredVisitId(null)}
+                          highlightedVisitId={hoveredVisitId}
                         />
                       ))}
                     </div>
@@ -2582,6 +2602,10 @@ function ChronosApp() {
                       key={v.id}
                       visit={v}
                       onEdit={() => setEditingVisit(v)}
+                      onLocate={() => {
+                        setLocatedVisitId(v.id);
+                        setSelectedVisitId(v.id);
+                      }}
                     />
                   ))}
                   {inboxVisits.length === 0 && (

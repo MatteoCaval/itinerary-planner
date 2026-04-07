@@ -155,3 +155,48 @@ These should use shadcn `Button` for consistent styling, focus states, and acces
 ### Data integrity
 - [x] ~~StayEditorModal custom color input~~ — native `<input type="color">` always returns valid `#rrggbb`
 - [x] **Password hint on AuthModalSimple** — added "Password should be at least 6 characters" warning for signup
+
+---
+
+## Feature Ideas (from Notion)
+
+### 1. Custom block for flights
+- [ ] **Flight card between stays** — replace or augment the current transit chip (circular icon between stays on the timeline) with a richer "flight card" that shows airline, flight number, departure/arrival times, terminal, booking reference
+- **Approach:** Create a `FlightInfo` type extending the existing `travelNotesToNext` field on `Stay`. Add a dedicated `FlightEditorModal` (similar to `RouteEditorModal` but with structured fields: airline, flight #, departure time, arrival time, terminal, booking ref, seat). Render as an expanded card between stays on the timeline when transport mode is `flight`. In the day columns, show a flight summary card at the transition between stays.
+- **Complexity:** Medium — new data type + modal + timeline rendering. No external API needed.
+
+### 2. Map inside the page, not as overlay
+- [ ] **Inline map layout** — replace the floating/overlay map panel with a side-by-side layout where the map is a permanent panel alongside the day columns
+- **Approach:** Two layout options to consider:
+  - **(A) Split pane:** Map takes the right portion of the main area (like current expanded mode but permanent). Day columns scroll on the left. Use a draggable divider (already have `startMapResize`). The current floating panel + collapse/expand/mini modes would be replaced by a simpler toggle.
+  - **(B) Map as a tab/row:** Map sits below the timeline as a full-width band, with day columns below it. Less ideal for side-by-side reference.
+  - Option A is better — it's closer to Google Maps / Wanderlog UX. Keep the current floating mode as a mobile fallback. Desktop gets permanent split. The map resize handle already exists; just change the CSS from `absolute` positioning to `flex` layout.
+- **Complexity:** Medium-High — layout restructuring, but no new features. Must preserve mobile (Sheet) behavior.
+
+### 3. To-do list for destinations
+- [x] **Already exists** — `StayTodoSection` in `StayOverviewPanel.tsx` provides a collapsible checklist per stay. Accessible via the sidebar "Details" tab when a stay is selected. Also visible in the mobile Sheet drawer.
+- **Enhancement ideas if the current version feels insufficient:**
+  - Show to-do progress on the timeline stay block (e.g., "3/5" badge)
+  - Show uncompleted to-dos in the global itinerary view
+  - Add due dates or priority to checklist items
+
+### 4. Click unplanned place to see it on map
+- [ ] **Map preview for unplanned visits** — clicking a visit in the unplanned inbox (left sidebar) should highlight it on the map, even though it's not scheduled to a specific day
+- **Approach:** Unplanned visits already have `lat/lng` from geocoding. When clicking an inbox card:
+  1. Set `selectedVisitId` to that visit's id
+  2. Temporarily include unplanned visits in `mapVisits` (currently filtered to scheduled-only)
+  3. The map's `SelectedVisitHandler` will fly to the visit's location
+  4. Show a subtle marker (maybe with a dashed outline or different opacity to indicate "unplanned")
+  5. Clicking away or selecting another item clears it
+- **Complexity:** Low-Medium — need to adjust `mapVisits` filter logic and add the inbox card click handler. Marker is already supported.
+
+### 5. Google Maps integration features
+- [ ] **"Open in Google Maps" links** — add contextual links/buttons to open locations in Google Maps
+- **Approach — multiple features under this umbrella:**
+  - **Open in Google Maps button** on visit detail drawer and stay overview panel. URL format: `https://www.google.com/maps/search/?api=1&query={lat},{lng}` or `https://www.google.com/maps/place/?q=place_id:{name}`. Simple external link, no API key needed.
+  - **Navigate to** button — deep link to Google Maps navigation: `https://www.google.com/maps/dir/?api=1&destination={lat},{lng}`. Opens turn-by-turn in the user's Google Maps app on mobile.
+  - **Embed Google Street View** — show a Street View thumbnail for each visit using the Street View Static API (requires API key). Nice-to-have, adds visual context.
+  - **Google Places autocomplete** — replace Nominatim search with Google Places API for better results, photos, ratings, opening hours. Significant upgrade but requires API key + billing.
+  - **Route planning via Google Directions** — replace OSRM with Google Directions API for more accurate travel times between visits. Could show driving/transit/walking time estimates.
+- **Recommended first step:** Just add "Open in Google Maps" and "Navigate" buttons — zero API cost, immediate value. Use `ExternalLink` and `Navigation` lucide icons.
+- **Complexity:** Low for links, High for full Places/Directions integration.
