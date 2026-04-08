@@ -266,4 +266,4 @@ Medium — no data model changes, mostly UI work. The stay already supports all 
 
 ## Data Model v2 Migration ✅
 
-Implemented. See `docs/decisions/001-data-model-v2.md` for full details.
+Implemented. See PR description for full rationale.

@@ -8,7 +8,7 @@ After adding or changing any feature, update these docs **in the same session** 
 
 - **`docs/PRD.md`** — the canonical source of truth for what the app does. Update the **Features** section, **Feature Status** table, **Data Model**, and **Known Limitations** whenever behavior changes.
 - **`docs/IMPROVEMENTS.md`** — the backlog for planned features and known issues. Only update when working from items already in the file. Don't add routine work here — it's not a changelog.
-- **`docs/decisions/`** — for major architectural decisions and migrations. Create a new markdown file per decision (e.g., `001-data-model-v2.md`). Include: context, decision, consequences.
+- **PR descriptions** — for major architectural decisions, document the rationale in the PR body. It lives in Git history attached to the merge commit.
 
 ## Commands
 
