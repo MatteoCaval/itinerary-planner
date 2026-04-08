@@ -491,6 +491,8 @@ function ChronosApp() {
   }, [selectedStay, trip.visits, mapDayFilter, mapMode, locatedVisitId]);
 
   // ── Timeline drag ─────────────────────────────────────────────────────────
+  // During drag, update stays directly (bypass history) to avoid flooding
+  // the undo stack with intermediate positions. Push one snapshot on mouseup.
   useEffect(() => {
     if (!dragState) return;
     const zone = timelineZoneRef.current;
@@ -498,7 +500,7 @@ function ChronosApp() {
 
     const applyDelta = (clientX: number) => {
       const delta = Math.round((clientX - dragState.originX) / slotWidth);
-      setTrip((curr) => ({
+      updateTrip((curr) => ({
         ...curr,
         stays: applyTimelineDrag(curr.stays, dragState, delta, curr.totalDays * 3),
       }));
@@ -508,7 +510,11 @@ function ChronosApp() {
       e.preventDefault();
       applyDelta(e.touches[0].clientX);
     };
-    const onUp = () => setDragState(null);
+    const onUp = () => {
+      // Push a single history snapshot for the entire drag operation
+      hist.push(trip);
+      setDragState(null);
+    };
     window.addEventListener('mousemove', onMove);
     window.addEventListener('mouseup', onUp);
     window.addEventListener('touchmove', onTouchMove, { passive: false });
@@ -519,7 +525,7 @@ function ChronosApp() {
       window.removeEventListener('touchmove', onTouchMove);
       window.removeEventListener('touchend', onUp);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- setTrip changes on every trip update; including it would break mid-drag
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- updateTrip/hist change on every trip update; including them would break mid-drag
   }, [dragState, zoomDays, trip.totalDays]);
 
   // ── Auto-fetch visit photos for selected stay ─────────────────────────────
