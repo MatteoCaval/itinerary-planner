@@ -6,8 +6,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 After adding or changing any feature, update these docs **in the same session** — don't wait to be asked:
 
-- **`docs/PRD.md`** — the canonical source of truth for what the app does. Update the **Features** section, **Feature Status** table, and **Known Limitations** whenever behavior changes.
-- **`docs/IMPROVEMENTS.md`** — the backlog and audit checklist. Tick items as done (`- [x]`) immediately after implementing them. Add new findings if discovered during work.
+- **`docs/PRD.md`** — the canonical source of truth for what the app does. Update the **Features** section, **Feature Status** table, **Data Model**, and **Known Limitations** whenever behavior changes.
+- **`docs/IMPROVEMENTS.md`** — the backlog for planned features and known issues. Only update when working from items already in the file. Don't add routine work here — it's not a changelog.
+- **`docs/decisions/`** — for major architectural decisions and migrations. Create a new markdown file per decision (e.g., `001-data-model-v2.md`). Include: context, decision, consequences.
 
 ## Commands
 

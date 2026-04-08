@@ -32,9 +32,7 @@ export function deriveStayDays(trip: HybridTrip, stay: Stay) {
       return slot >= stay.startSlot && slot < stay.endSlot;
     });
     const hasNight = enabledParts.includes('evening');
-    const nightAccom = hasNight
-      ? (stay.nightAccommodations?.[i] ?? (stay.lodging ? { name: stay.lodging } : undefined))
-      : undefined;
+    const nightAccom = hasNight ? stay.nightAccommodations?.[i] : undefined;
     return {
       dayOffset: i,
       absoluteDay,

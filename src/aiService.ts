@@ -248,7 +248,7 @@ export const generateAIItinerary = async (
 
 // ─── Hybrid (CHRONOS) format ──────────────────────────────────────────────────
 
-export type AIHybridVisitType = 'area' | 'landmark' | 'museum' | 'food' | 'walk' | 'hotel';
+export type AIHybridVisitType = 'landmark' | 'museum' | 'food' | 'walk' | 'shopping';
 export type AIHybridDayPart = 'morning' | 'afternoon' | 'evening';
 export type AIHybridTravelMode = 'train' | 'flight' | 'drive' | 'ferry' | 'bus' | 'walk';
 
@@ -256,7 +256,6 @@ export interface AIHybridVisit {
   id: string;
   name: string;
   type: AIHybridVisitType;
-  area: string;
   lat: number;
   lng: number;
   dayOffset: number | null;

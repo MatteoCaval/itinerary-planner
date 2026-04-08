@@ -14,11 +14,13 @@ function StayOverviewPanel({
   stayDays,
   accommodationGroups,
   onUpdate,
+  visitCount,
 }: {
   stay: Stay;
   stayDays: ReturnType<typeof deriveStayDays>;
   accommodationGroups: AccommodationGroup[];
   onUpdate: (updates: Partial<Stay>) => void;
+  visitCount: number;
 }) {
   const [notes, setNotes] = useState(stay.notes ?? '');
   const [links, setLinks] = useState<VisitLink[]>(stay.links ?? []);
@@ -81,7 +83,7 @@ function StayOverviewPanel({
         {[
           { value: stayDays.length, label: 'Days' },
           { value: nights, label: 'Nights' },
-          { value: stay.visits.length, label: 'Places' },
+          { value: visitCount, label: 'Places' },
         ].map(({ value, label }, i) => (
           <div
             key={label}

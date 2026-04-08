@@ -8,7 +8,6 @@ export interface VisitMarkerItem {
   id: string;
   name: string;
   type: VisitType;
-  area: string;
   lat: number;
   lng: number;
 }
@@ -166,8 +165,6 @@ export function ClusteredMarkers({
               <strong>
                 {entry.index + 1}. {v.name}
               </strong>
-              <br />
-              <span style={{ color: '#6c757d' }}>{v.area}</span>
             </Popup>
           </Marker>
         );

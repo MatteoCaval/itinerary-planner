@@ -10,13 +10,12 @@ import type { BasemapMode } from './useBasemapState';
 import StayOverviewLayer from './StayOverviewLayer';
 import type { OverviewStay } from './StayOverviewLayer';
 
-type VisitType = 'area' | 'landmark' | 'museum' | 'food' | 'walk' | 'hotel' | 'shopping';
+type VisitType = 'landmark' | 'museum' | 'food' | 'walk' | 'shopping';
 
 type VisitItem = {
   id: string;
   name: string;
   type: VisitType;
-  area: string;
   lat: number;
   lng: number;
   dayOffset: number | null;
@@ -41,7 +40,6 @@ type Stay = {
   centerLat: number;
   centerLng: number;
   nightAccommodations?: Record<number, NightAccommodation>;
-  visits: VisitItem[];
 };
 
 interface TripMapProps {

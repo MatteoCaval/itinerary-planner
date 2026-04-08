@@ -32,10 +32,15 @@ function getTomorrow() {
 
 export function createEmptyTrip(): HybridTrip {
   return {
-    id: '_empty',
+    id: `trip-${Date.now()}`,
     name: 'New Trip',
+    stays: [],
+    visits: [],
+    routes: [],
     startDate: getTomorrow(),
     totalDays: 7,
-    stays: [],
+    version: 2,
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
   };
 }

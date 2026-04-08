@@ -7,7 +7,7 @@ function makeVisit(overrides: Partial<VisitItem> = {}): VisitItem {
     id: 'v1',
     name: 'Test',
     type: 'landmark',
-    area: '',
+    stayId: '',
     lat: 0,
     lng: 0,
     dayOffset: null,
@@ -23,7 +23,7 @@ describe('createVisit', () => {
       'id1',
       'Colosseum',
       'landmark',
-      'Rome',
+      'stay-rome',
       41.89,
       12.49,
       0,
@@ -33,6 +33,7 @@ describe('createVisit', () => {
     );
     expect(v.id).toBe('id1');
     expect(v.name).toBe('Colosseum');
+    expect(v.stayId).toBe('stay-rome');
     expect(v.durationHint).toBe('2h');
     expect(v.dayOffset).toBe(0);
   });

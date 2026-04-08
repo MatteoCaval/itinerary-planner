@@ -6,23 +6,25 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { Stay, TravelMode } from '@/domain/types';
+import { TravelMode } from '@/domain/types';
 import { TRAVEL_MODES } from '@/domain/constants';
 
 function RouteEditorModal({
-  stay,
-  nextStay,
+  route,
+  fromStayName,
+  toStayName,
   onClose,
   onSave,
 }: {
-  stay: Stay;
-  nextStay: Stay;
+  route: { mode: TravelMode; duration?: string; notes?: string } | null;
+  fromStayName: string;
+  toStayName: string;
   onClose: () => void;
   onSave: (mode: TravelMode, duration: string, notes: string) => void;
 }) {
-  const [mode, setMode] = useState<TravelMode>(stay.travelModeToNext);
-  const [duration, setDuration] = useState(stay.travelDurationToNext ?? '');
-  const [notes, setNotes] = useState(stay.travelNotesToNext ?? '');
+  const [mode, setMode] = useState<TravelMode>(route?.mode ?? 'train');
+  const [duration, setDuration] = useState(route?.duration ?? '');
+  const [notes, setNotes] = useState(route?.notes ?? '');
 
   const modeConfig: Record<TravelMode, { label: string; color: string }> = {
     train: { label: 'Train', color: '#0f7a72' },
@@ -45,9 +47,9 @@ function RouteEditorModal({
         <div className="space-y-5">
           {/* From → To */}
           <div className="flex items-center gap-3 bg-muted rounded-lg p-3 text-xs font-semibold text-foreground">
-            <span className="truncate">{stay.name}</span>
+            <span className="truncate">{fromStayName}</span>
             <ArrowLeftRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-            <span className="truncate">{nextStay.name}</span>
+            <span className="truncate">{toStayName}</span>
           </div>
 
           {/* Transport mode picker */}

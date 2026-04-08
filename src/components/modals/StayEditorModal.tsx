@@ -22,14 +22,15 @@ function StayEditorModal({
   onClose,
   onSave,
   onDelete,
+  visitCount = 0,
 }: {
   stay: Stay;
   onClose: () => void;
   onSave: (updates: Partial<Stay>) => void;
   onDelete: () => void;
+  visitCount?: number;
 }) {
   const [name, setName] = useState(stay.name);
-  const [lodging, setLodging] = useState(stay.lodging);
   const [color, setColor] = useState(stay.color);
 
   return (
@@ -44,17 +45,6 @@ function StayEditorModal({
             value={name}
             onChange={(e) => setName(e.target.value)}
             autoFocus
-          />
-        </div>
-        <div>
-          <label className="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground mb-2 block">
-            Lodging
-          </label>
-          <Input
-            className="text-xs"
-            value={lodging}
-            onChange={(e) => setLodging(e.target.value)}
-            placeholder="Hotel name or area"
           />
         </div>
         <div>
@@ -95,8 +85,8 @@ function StayEditorModal({
               <AlertDialogHeader>
                 <AlertDialogTitle>Delete &ldquo;{stay.name}&rdquo;?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  This removes all {stay.visits.length} scheduled{' '}
-                  {stay.visits.length === 1 ? 'place' : 'places'}. This action cannot be undone.
+                  This removes all {visitCount} scheduled{' '}
+                  {visitCount === 1 ? 'place' : 'places'}. This action cannot be undone.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
@@ -120,7 +110,7 @@ function StayEditorModal({
             size="sm"
             className="flex-1"
             onClick={() => {
-              onSave({ name, lodging, color });
+              onSave({ name, color });
               onClose();
             }}
           >

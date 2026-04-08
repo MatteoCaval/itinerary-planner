@@ -261,3 +261,9 @@ Medium — no data model changes, mostly UI work. The stay already supports all 
   - **Route planning via Google Directions** — replace OSRM with Google Directions API for more accurate travel times between visits. Could show driving/transit/walking time estimates.
 - **Recommended first step:** Just add "Open in Google Maps" and "Navigate" buttons — zero API cost, immediate value. Use `ExternalLink` and `Navigation` lucide icons.
 - **Complexity:** Low for links, High for full Places/Directions integration.
+
+---
+
+## Data Model v2 Migration ✅
+
+Implemented. See `docs/decisions/001-data-model-v2.md` for full details.

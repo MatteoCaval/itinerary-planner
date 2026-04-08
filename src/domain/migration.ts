@@ -10,8 +10,10 @@ import type {
   LegacyStoredTrip,
   LegacyTransportType,
   NightAccommodation,
+  Route,
   Stay,
   TravelMode,
+  V1HybridTrip,
   VisitItem,
   VisitType,
 } from './types';
@@ -70,14 +72,15 @@ export function legacyTripToHybrid(leg: LegacyStoredTrip, colorOffset = 0): Hybr
   const rawDays = Math.round((e.getTime() - s.getTime()) / 86400000) + 1;
   const totalDays = Number.isFinite(rawDays) && rawDays >= 1 ? rawDays : 1;
   const days = leg.days ?? [];
-  const routes = leg.routes ?? [];
+  const legRoutes = leg.routes ?? [];
 
   const dayIdxById: Record<string, number> = {};
   days.forEach((d, i) => {
     dayIdxById[d.id] = i;
   });
 
-  const stays: Stay[] = (leg.locations ?? []).map((loc, locIdx) => {
+  // Build V1-style stays from legacy data
+  const v1Stays = (leg.locations ?? []).map((loc, locIdx) => {
     const startDayIdx = loc.startDayId ? (dayIdxById[loc.startDayId] ?? 0) : 0;
     const startSlot = startDayIdx * 3 + legacySlotToIndex(loc.startSlot);
     const duration = loc.duration ?? 3;
@@ -85,7 +88,7 @@ export function legacyTripToHybrid(leg: LegacyStoredTrip, colorOffset = 0): Hybr
 
     const nextLoc = leg.locations?.[locIdx + 1];
     const routeToNext = nextLoc
-      ? routes.find(
+      ? legRoutes.find(
           (r) =>
             (r.fromLocationId === loc.id && r.toLocationId === nextLoc.id) ||
             (r.fromLocationId === nextLoc.id && r.toLocationId === loc.id),
@@ -115,14 +118,14 @@ export function legacyTripToHybrid(leg: LegacyStoredTrip, colorOffset = 0): Hybr
       }
     }
 
-    const visits: VisitItem[] = (loc.subLocations ?? []).map((sub) => {
+    const visits = (loc.subLocations ?? []).map((sub) => {
       const dayOffset = sub.dayOffset ?? null;
       const dayPart = sub.startSlot ? (sub.startSlot as DayPart) : null;
       const isScheduled = dayOffset !== null && dayPart !== null;
       return {
         id: sub.id,
         name: sub.name,
-        type: legacyCategoryToVisitType(sub.category, sub._visitType),
+        type: legacyCategoryToVisitType(sub.category, sub._visitType) as string,
         area: sub._area ?? sub.name,
         lat: sub.lat,
         lng: sub.lng,
@@ -152,7 +155,8 @@ export function legacyTripToHybrid(leg: LegacyStoredTrip, colorOffset = 0): Hybr
     };
   });
 
-  return { id: leg.id, name: leg.name, startDate, totalDays, stays };
+  const v1Trip: V1HybridTrip = { id: leg.id, name: leg.name, startDate, totalDays, stays: v1Stays };
+  return migrateV1toV2(v1Trip);
 }
 
 export function hybridTripToLegacy(trip: HybridTrip): LegacyStoredTrip {
@@ -175,8 +179,6 @@ export function hybridTripToLegacy(trip: HybridTrip): LegacyStoredTrip {
       const nightAccom = coveringStay.nightAccommodations?.[dayOffset];
       if (nightAccom) {
         accommodation = { ...nightAccom };
-      } else if (coveringStay.lodging) {
-        accommodation = { name: coveringStay.lodging };
       }
     }
     return { id: `day-${i}-${trip.id}`, date, accommodation };
@@ -187,8 +189,10 @@ export function hybridTripToLegacy(trip: HybridTrip): LegacyStoredTrip {
     dayIdByIdx[i] = d.id;
   });
 
-  const routes: LegacyRoute[] = [];
+  const legacyRoutes: LegacyRoute[] = [];
   const sortedStays = [...trip.stays].sort((a, b) => a.startSlot - b.startSlot);
+  const tripVisits = trip.visits ?? [];
+  const tripRoutes = trip.routes ?? [];
 
   const locations: LegacyLocation[] = sortedStays.map((stay, stayIdx) => {
     const startDayIdx = Math.floor(stay.startSlot / 3);
@@ -197,17 +201,21 @@ export function hybridTripToLegacy(trip: HybridTrip): LegacyStoredTrip {
 
     const nextStay = sortedStays[stayIdx + 1];
     if (nextStay) {
-      routes.push({
+      const route = tripRoutes.find(
+        (r) => r.fromStayId === stay.id && r.toStayId === nextStay.id,
+      );
+      legacyRoutes.push({
         id: `route-${stay.id}-${nextStay.id}`,
         fromLocationId: stay.id,
         toLocationId: nextStay.id,
-        transportType: modeToLegacyTransport(stay.travelModeToNext),
-        duration: stay.travelDurationToNext,
-        notes: stay.travelNotesToNext,
+        transportType: modeToLegacyTransport(route?.mode ?? 'train'),
+        duration: route?.duration,
+        notes: route?.notes,
       });
     }
 
-    const subLocations: LegacyLocation[] = stay.visits.map((v) => {
+    const stayVisits = tripVisits.filter((v) => v.stayId === stay.id);
+    const subLocations: LegacyLocation[] = stayVisits.map((v) => {
       const absDayIdx = v.dayOffset !== null ? startDayIdx + v.dayOffset : startDayIdx;
       const subDayId = v.dayOffset !== null ? (dayIdByIdx[absDayIdx] ?? startDayId) : undefined;
       let durationNum: number | undefined;
@@ -230,10 +238,13 @@ export function hybridTripToLegacy(trip: HybridTrip): LegacyStoredTrip {
         order: v.order,
         checklist: [],
         links: [],
-        _area: v.area,
         _visitType: v.type,
       };
     });
+
+    // Derive lodging from first night accommodation for legacy compat
+    const firstNight = stay.nightAccommodations?.[0];
+    const lodging = firstNight?.name ?? '';
 
     return {
       id: stay.id,
@@ -251,36 +262,131 @@ export function hybridTripToLegacy(trip: HybridTrip): LegacyStoredTrip {
       checklist: [],
       links: [],
       _color: stay.color,
-      _lodging: stay.lodging,
+      _lodging: lodging,
     };
   });
 
   return {
     id: trip.id,
     name: trip.name,
-    createdAt: Date.now(),
-    updatedAt: Date.now(),
+    createdAt: trip.createdAt ?? Date.now(),
+    updatedAt: trip.updatedAt ?? Date.now(),
     startDate,
     endDate,
     days,
     locations,
-    routes,
+    routes: legacyRoutes,
     version: '2.0',
   };
 }
 
-/** Ensure all array fields on a HybridTrip are actual arrays (Firebase may return objects with numeric keys). */
-export function normalizeTrip(t: HybridTrip): HybridTrip {
-  const toArr = <T>(v: T[] | Record<string, T> | undefined): T[] => {
-    if (Array.isArray(v)) return v;
-    if (v && typeof v === 'object') return Object.values(v);
-    return [];
-  };
-  return {
-    ...t,
-    stays: toArr(t.stays).map((s) => ({
-      ...s,
-      visits: toArr(s.visits),
+// ─── V1 → V2 migration ─────────────────────────────────────────────────────
+
+export function migrateV1toV2(old: V1HybridTrip): HybridTrip {
+  const now = Date.now();
+  const sortedStays = [...old.stays].sort((a, b) => a.startSlot - b.startSlot);
+
+  // Extract visits from all stays, add stayId, clean fields
+  const visits: VisitItem[] = old.stays.flatMap((stay) =>
+    stay.visits.map((v) => ({
+      id: v.id,
+      stayId: stay.id,
+      name: v.name,
+      type: (v.type === 'area' || v.type === 'hotel' ? 'landmark' : v.type) as VisitType,
+      lat: v.lat,
+      lng: v.lng,
+      durationHint: v.durationHint,
+      dayOffset: v.dayOffset,
+      dayPart: v.dayPart,
+      order: v.order,
+      notes: v.notes,
+      imageUrl: v.imageUrl,
+      checklist: v.checklist,
+      links: v.links,
     })),
+  );
+
+  // Build routes from consecutive sorted stays
+  const routes: Route[] = [];
+  for (let i = 0; i < sortedStays.length - 1; i++) {
+    const from = sortedStays[i];
+    const to = sortedStays[i + 1];
+    routes.push({
+      fromStayId: from.id,
+      toStayId: to.id,
+      mode: from.travelModeToNext ?? 'train',
+      duration: from.travelDurationToNext,
+      notes: from.travelNotesToNext,
+    });
+  }
+
+  // Clean stays: remove visits, lodging, travel fields
+  // Migrate lodging → nightAccommodations if needed
+  const stays: Stay[] = old.stays.map((s) => {
+    const nightAccommodations = { ...s.nightAccommodations };
+    // If lodging exists but no nightAccommodations, create entries for all nights
+    if (s.lodging && (!s.nightAccommodations || Object.keys(s.nightAccommodations).length === 0)) {
+      const nightCount = Math.max(1, Math.ceil((s.endSlot - s.startSlot) / 3));
+      for (let n = 0; n < nightCount; n++) {
+        nightAccommodations[n] = { name: s.lodging };
+      }
+    }
+
+    return {
+      id: s.id,
+      name: s.name,
+      color: s.color,
+      startSlot: s.startSlot,
+      endSlot: s.endSlot,
+      centerLat: s.centerLat,
+      centerLng: s.centerLng,
+      imageUrl: s.imageUrl,
+      nightAccommodations:
+        Object.keys(nightAccommodations).length > 0 ? nightAccommodations : undefined,
+      checklist: s.checklist,
+      notes: s.notes,
+      links: s.links,
+    };
+  });
+
+  return {
+    id: old.id,
+    name: old.name,
+    startDate: old.startDate,
+    totalDays: old.totalDays,
+    version: 2,
+    createdAt: now,
+    updatedAt: now,
+    stays,
+    visits,
+    routes,
+  };
+}
+
+export function needsMigrationToV2(trip: unknown): boolean {
+  const t = trip as Record<string, unknown>;
+  return t.version !== 2;
+}
+
+/** Ensure all array fields on a HybridTrip are actual arrays (Firebase may return objects with numeric keys). */
+export function normalizeTrip(raw: HybridTrip): HybridTrip {
+  return {
+    ...raw,
+    stays: (raw.stays ?? []).map((s) => ({
+      ...s,
+      nightAccommodations: s.nightAccommodations ?? undefined,
+      checklist: s.checklist ?? undefined,
+      notes: s.notes ?? undefined,
+      links: s.links ?? undefined,
+    })),
+    visits: (raw.visits ?? []).map((v) => ({
+      ...v,
+      checklist: v.checklist ?? undefined,
+      links: v.links ?? undefined,
+    })),
+    routes: raw.routes ?? [],
+    version: raw.version ?? undefined,
+    createdAt: raw.createdAt ?? undefined,
+    updatedAt: raw.updatedAt ?? undefined,
   };
 }

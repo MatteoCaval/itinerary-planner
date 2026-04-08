@@ -25,8 +25,8 @@ function HistoryPanel({
           const prev = i > 0 ? history[i - 1] : null;
           const staysDiff = prev ? snap.trip.stays.length - prev.trip.stays.length : null;
           const placesDiff = prev
-            ? snap.trip.stays.reduce((s, st) => s + st.visits.length, 0) -
-              prev.trip.stays.reduce((s, st) => s + st.visits.length, 0)
+            ? snap.trip.visits.length -
+              prev.trip.visits.length
             : null;
           return (
             <button
@@ -58,7 +58,7 @@ function HistoryPanel({
                   <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                     <p className="text-[11px] text-muted-foreground">
                       {snap.trip.stays.length} stays ·{' '}
-                      {snap.trip.stays.reduce((s, st) => s + st.visits.length, 0)} places
+                      {snap.trip.visits.length} places
                     </p>
                     {staysDiff !== null && staysDiff !== 0 && (
                       <Badge

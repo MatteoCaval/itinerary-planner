@@ -2,16 +2,16 @@
 
 export type DayPart = 'morning' | 'afternoon' | 'evening';
 export type TravelMode = 'train' | 'flight' | 'drive' | 'ferry' | 'bus' | 'walk';
-export type VisitType = 'landmark' | 'museum' | 'food' | 'walk' | 'shopping' | 'area' | 'hotel'; // area/hotel kept for legacy compat
+export type VisitType = 'landmark' | 'museum' | 'food' | 'walk' | 'shopping';
 
 export type ChecklistItem = { id: string; text: string; done: boolean };
 export type VisitLink = { url: string; label?: string };
 
 export type VisitItem = {
   id: string;
+  stayId: string;
   name: string;
   type: VisitType;
-  area: string;
   lat: number;
   lng: number;
   durationHint?: string;
@@ -41,17 +41,20 @@ export type Stay = {
   endSlot: number;
   centerLat: number;
   centerLng: number;
-  lodging: string;
   imageUrl?: string;
   /** Per-night accommodation keyed by dayOffset (0-based within the stay). A night on dayOffset=0 means "sleeping between day 0 and day 1". */
   nightAccommodations?: Record<number, NightAccommodation>;
-  travelModeToNext: TravelMode;
-  travelDurationToNext?: string;
-  travelNotesToNext?: string;
-  visits: VisitItem[];
   checklist?: ChecklistItem[];
   notes?: string;
   links?: VisitLink[];
+};
+
+export type Route = {
+  fromStayId: string;
+  toStayId: string;
+  mode: TravelMode;
+  duration?: string;
+  notes?: string;
 };
 
 export type HybridTrip = {
@@ -59,7 +62,12 @@ export type HybridTrip = {
   name: string;
   startDate: string;
   totalDays: number;
+  version?: number;
+  createdAt?: number;
+  updatedAt?: number;
   stays: Stay[];
+  visits: VisitItem[];
+  routes: Route[];
 };
 
 export type TripStore = { trips: HybridTrip[]; activeTripId: string };
@@ -77,6 +85,53 @@ export type AccommodationGroup = {
   startDayOffset: number;
   nights: number;
   accommodation: NightAccommodation;
+};
+
+// ─── V1 types (for migration from old format) ──────────────────────────────
+
+export type V1Stay = {
+  id: string;
+  name: string;
+  color: string;
+  startSlot: number;
+  endSlot: number;
+  centerLat: number;
+  centerLng: number;
+  lodging: string;
+  imageUrl?: string;
+  nightAccommodations?: Record<number, NightAccommodation>;
+  travelModeToNext: TravelMode;
+  travelDurationToNext?: string;
+  travelNotesToNext?: string;
+  visits: V1VisitItem[];
+  checklist?: ChecklistItem[];
+  notes?: string;
+  links?: VisitLink[];
+};
+
+export type V1VisitItem = {
+  id: string;
+  name: string;
+  type: string; // may include 'area' | 'hotel'
+  area: string;
+  lat: number;
+  lng: number;
+  durationHint?: string;
+  dayOffset: number | null;
+  dayPart: DayPart | null;
+  order: number;
+  notes?: string;
+  imageUrl?: string;
+  checklist?: ChecklistItem[];
+  links?: VisitLink[];
+};
+
+export type V1HybridTrip = {
+  id: string;
+  name: string;
+  startDate: string;
+  totalDays: number;
+  stays: V1Stay[];
 };
 
 // ─── Legacy data model types (for storage compatibility) ──────────────────────

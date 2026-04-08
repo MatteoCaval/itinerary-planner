@@ -112,7 +112,6 @@ function VisitDetailDrawer({
             {getVisitLabel(visit.type)}
           </Badge>
           <h3 className="text-white font-bold text-sm leading-tight mt-1 truncate" title={visit.name}>{visit.name}</h3>
-          {visit.area && <p className="text-white/60 text-[11px] truncate" title={visit.area}>{visit.area}</p>}
         </div>
       </div>
 
