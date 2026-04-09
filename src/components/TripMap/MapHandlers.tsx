@@ -43,8 +43,18 @@ export function FitMap({ points, expanded }: FitMapProps) {
     };
   }, [expanded, map]);
 
-  // When the content changes (new stay, mode switch, day filter), re-center immediately.
+  // When the content changes (new stay, mode switch, day filter), re-center.
+  // Small delay on mount to let the map container size settle.
+  const mountRef = useRef(true);
   useEffect(() => {
+    if (mountRef.current) {
+      mountRef.current = false;
+      const timer = setTimeout(() => {
+        map.invalidateSize();
+        fitPoints(map, points);
+      }, 150);
+      return () => clearTimeout(timer);
+    }
     fitPoints(map, points);
   }, [map, points]);
 

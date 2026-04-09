@@ -17,9 +17,6 @@ function makeStay(overrides: Partial<Stay> = {}): Stay {
     endSlot: 9,
     centerLat: 0,
     centerLng: 0,
-    lodging: 'Hotel',
-    travelModeToNext: 'train',
-    visits: [],
     ...overrides,
   };
 }
@@ -101,13 +98,13 @@ describe('deriveStayDays', () => {
     expect(days[1].absoluteDay).toBe(3);
   });
 
-  it('uses lodging fallback when no nightAccommodations set', () => {
+  it('returns undefined nightAccommodation when no nightAccommodations set', () => {
     const trip = makeTrip();
-    const stay = makeStay({ startSlot: 0, endSlot: 9, lodging: 'Grand Hotel' });
+    const stay = makeStay({ startSlot: 0, endSlot: 9 });
     const days = deriveStayDays(trip, stay);
     const nightDays = days.filter((d) => d.hasNight);
     expect(nightDays.length).toBeGreaterThan(0);
-    expect(nightDays[0].nightAccommodation?.name).toBe('Grand Hotel');
+    expect(nightDays[0].nightAccommodation).toBeUndefined();
   });
 
   it('uses explicit nightAccommodations when set', () => {
@@ -115,7 +112,6 @@ describe('deriveStayDays', () => {
     const stay = makeStay({
       startSlot: 0,
       endSlot: 9,
-      lodging: 'Default',
       nightAccommodations: { 0: { name: 'Night 1 Hotel' }, 1: { name: 'Night 2 Hotel' } },
     });
     const days = deriveStayDays(trip, stay);
@@ -127,12 +123,20 @@ describe('deriveStayDays', () => {
 describe('deriveAccommodationGroups', () => {
   it('groups consecutive nights with same accommodation', () => {
     const trip = makeTrip();
-    const stay = makeStay({ startSlot: 0, endSlot: 9, lodging: 'Same Hotel' });
+    const stay = makeStay({
+      startSlot: 0,
+      endSlot: 9,
+      nightAccommodations: {
+        0: { name: 'Same Hotel' },
+        1: { name: 'Same Hotel' },
+        2: { name: 'Same Hotel' },
+      },
+    });
     const days = deriveStayDays(trip, stay);
     const groups = deriveAccommodationGroups(days);
     expect(groups).toHaveLength(1);
     expect(groups[0].name).toBe('Same Hotel');
-    expect(groups[0].nights).toBe(3); // 3-day stay (slots 0-9) has evening on all 3 days
+    expect(groups[0].nights).toBe(3);
   });
 
   it('splits into multiple groups for different accommodations', () => {
@@ -144,8 +148,8 @@ describe('deriveAccommodationGroups', () => {
     });
     const days = deriveStayDays(trip, stay);
     const groups = deriveAccommodationGroups(days);
-    // 3 days = 3 evenings; day 0 has Hotel A, day 1 has Hotel B, day 2 falls back to lodging
-    expect(groups).toHaveLength(3);
+    // 3 days = 3 evenings; day 0 has Hotel A, day 1 has Hotel B, day 2 has no accommodation
+    expect(groups).toHaveLength(2);
     expect(groups[0].name).toBe('Hotel A');
     expect(groups[1].name).toBe('Hotel B');
   });

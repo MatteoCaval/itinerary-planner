@@ -87,38 +87,39 @@ Trip dates edited via an inline calendar (react-day-picker v9). When shortening 
 
 ---
 
-## Data Model
+## Data Model (v2)
 
 ```
-TripStore       { trips: HybridTrip[], activeTripId: string }
+TripStore       { trips: Trip[], activeTripId: string }
 
-HybridTrip      { id, name, startDate: "YYYY-MM-DD", totalDays, stays: Stay[] }
+Trip            { id, name, startDate: "YYYY-MM-DD", totalDays,
+                  version: 2, createdAt, updatedAt,
+                  stays: Stay[], visits: VisitItem[], routes: Route[] }
 
 Stay            { id, name, color, startSlot, endSlot,
-                  centerLat, centerLng, lodging,
+                  centerLat, centerLng, imageUrl?,
                   nightAccommodations?: Record<dayOffset, NightAccommodation>,
-                  travelModeToNext, travelDurationToNext?, travelNotesToNext?,
-                  notes?: string,
-                  links?: VisitLink[],
-                  checklist?: ChecklistItem[],
-                  visits: VisitItem[] }
+                  checklist?, notes?, links? }
 
-NightAccommodation  { name, lat?, lng?, cost?, notes?, link? }
-
-VisitItem       { id, name, type: VisitType, area, lat, lng,
+VisitItem       { id, stayId, name, type: VisitType, lat, lng,
                   dayOffset: number|null,   // null = unscheduled inbox
                   dayPart: DayPart|null,
-                  order, durationHint?, notes?,
+                  order, durationHint?, notes?, imageUrl?,
                   checklist?: ChecklistItem[],
                   links?: VisitLink[] }
 
+Route           { fromStayId, toStayId, mode: TravelMode, duration?, notes? }
+
+NightAccommodation  { name, lat?, lng?, cost?, notes?, link? }
 ChecklistItem   { id, text, done: boolean }
 VisitLink       { url, label?: string }
 ```
 
+**Key design:** Visits are flat at trip level (not nested in stays) with `stayId` reference. Routes are first-class entities between stays. This enables cross-stay visit moves (just change `stayId`), route data survives stay reordering, and future features like destination wishlist (`startSlot: -1`).
+
 **Slot arithmetic:** 1 day = 3 slots. `startSlot = dayIndex * 3`. Stay night count = `ceil((endSlot - startSlot) / 3)`.
 
-**Persistence keys** (checked in order on load): `itinerary-trips-v1` → `itinerary-hybrid-trips-v2` → `itinerary-hybrid-v3`. Cloud: `users/{uid}/tripStore`.
+**Persistence:** Primary key `itinerary-store-v2` (native v2 JSON). Legacy keys read on migration: `itinerary-trips-v1` → `itinerary-hybrid-trips-v2`. Cloud: `users/{uid}/tripStore`. Old v1 data is auto-migrated to v2 on load via `migrateV1toV2()`.
 
 ---
 

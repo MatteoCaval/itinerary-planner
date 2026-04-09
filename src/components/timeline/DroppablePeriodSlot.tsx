@@ -15,6 +15,7 @@ function DroppablePeriodSlot({
   onAddVisit,
   onHoverVisit,
   onHoverVisitEnd,
+  highlightedVisitId,
 }: {
   dayOffset: number;
   period: DayPart;
@@ -25,6 +26,7 @@ function DroppablePeriodSlot({
   onAddVisit: (dayOffset: number, part: DayPart) => void;
   onHoverVisit?: (id: string) => void;
   onHoverVisitEnd?: () => void;
+  highlightedVisitId?: string | null;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: `slot-${dayOffset}-${period}` });
   const PeriodIcon = period === 'morning' ? Sunrise : period === 'afternoon' ? Sun : Moon;
@@ -52,6 +54,7 @@ function DroppablePeriodSlot({
               key={v.id}
               visit={v}
               isSelected={selectedVisitId === v.id}
+              isHighlighted={highlightedVisitId === v.id}
               onSelect={() => onSelectVisit(v.id)}
               onEdit={() => onEditVisit(v)}
               onHover={() => onHoverVisit?.(v.id)}

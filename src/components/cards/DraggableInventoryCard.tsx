@@ -1,12 +1,20 @@
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
-import { Pencil, GripVertical, Check, Link2 } from 'lucide-react';
+import { Pencil, GripVertical, Check, Link2, MapPin } from 'lucide-react';
 import { getVisitTypeColor, getVisitLabel } from '@/domain/visitTypeDisplay';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import type { VisitItem } from '@/domain/types';
 
-function DraggableInventoryCard({ visit, onEdit }: { visit: VisitItem; onEdit: () => void }) {
+function DraggableInventoryCard({
+  visit,
+  onEdit,
+  onLocate,
+}: {
+  visit: VisitItem;
+  onEdit: () => void;
+  onLocate?: () => void;
+}) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: `inbox-${visit.id}`,
     data: { type: 'inbox', visit },
@@ -28,6 +36,20 @@ function DraggableInventoryCard({ visit, onEdit }: { visit: VisitItem; onEdit: (
           {getVisitLabel(visit.type)}
         </Badge>
         <div className="flex items-center gap-1">
+          {onLocate && (
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                onLocate();
+              }}
+              className="opacity-60 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-primary touch-auto"
+              aria-label={`Show ${visit.name} on map`}
+            >
+              <MapPin className="w-3.5 h-3.5" />
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="icon-sm"

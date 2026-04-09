@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { Download, Upload, User, LogIn, LogOut, Lock, Check, Compass } from 'lucide-react';
 import AuthModalSimple from '@/components/modals/AuthModalSimple';
-import type { HybridTrip } from '@/domain/types';
+import type { HybridTrip, V1HybridTrip } from '@/domain/types';
 import { useAuth } from '@/context/AuthContext';
-import { hybridTripToLegacy, normalizeTrip } from '@/domain/migration';
+import { hybridTripToLegacy, normalizeTrip, needsMigrationToV2, migrateV1toV2 } from '@/domain/migration';
 import { generateMarkdown, downloadMarkdown } from '@/markdownExporter';
 import { addDaysTo } from '@/domain/dateUtils';
 import { Button } from '@/components/ui/button';
@@ -75,12 +75,15 @@ function ProfileMenu({
           alert('Invalid trip file — expected a Chronos trip JSON with "name" and "stays".');
           return;
         }
-        const imported = normalizeTrip({
+        let imported = normalizeTrip({
           ...parsed,
           id: parsed.id || `trip-${Date.now()}`,
           startDate: parsed.startDate || '',
           totalDays: parsed.totalDays || 1,
         } as HybridTrip);
+        if (needsMigrationToV2(imported)) {
+          imported = migrateV1toV2(imported as unknown as V1HybridTrip);
+        }
         onImport(imported);
       } catch {
         alert('Error reading file. Please ensure it is valid JSON.');

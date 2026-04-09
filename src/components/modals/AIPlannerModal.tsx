@@ -5,7 +5,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { HybridTrip, Stay, NightAccommodation } from '@/domain/types';
+import {
+  HybridTrip,
+  Stay,
+  VisitItem,
+  VisitType,
+  Route,
+  TravelMode,
+  NightAccommodation,
+} from '@/domain/types';
 import { generateHybridItinerary, AIHybridStay } from '@/aiService';
 
 function AIPlannerModal({
@@ -19,7 +27,7 @@ function AIPlannerModal({
   settings: { apiKey: string; model: string };
   onSettingsChange: (s: { apiKey: string; model: string }) => void;
   onClose: () => void;
-  onApply: (stays: Stay[]) => void;
+  onApply: (result: { stays: Stay[]; visits: VisitItem[]; routes: Route[] }) => void;
 }) {
   const [tab, setTab] = useState<'generate' | 'settings'>('generate');
   const [prompt, setPrompt] = useState('');
@@ -27,7 +35,11 @@ function AIPlannerModal({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [explanation, setExplanation] = useState<string | null>(null);
-  const [pendingStays, setPendingStays] = useState<Stay[] | null>(null);
+  const [pendingResult, setPendingResult] = useState<{
+    stays: Stay[];
+    visits: VisitItem[];
+    routes: Route[];
+  } | null>(null);
 
   const handleGenerate = async () => {
     if (!settings.apiKey.trim()) {
@@ -39,7 +51,7 @@ function AIPlannerModal({
     setLoading(true);
     setError(null);
     setExplanation(null);
-    setPendingStays(null);
+    setPendingResult(null);
     try {
       const result = await generateHybridItinerary(
         prompt,
@@ -53,15 +65,18 @@ function AIPlannerModal({
               name: s.name,
               startSlot: s.startSlot,
               endSlot: s.endSlot,
-              visits: s.visits.map((v) => ({
-                name: v.name,
-                dayOffset: v.dayOffset,
-                dayPart: v.dayPart,
-              })),
+              visits: trip.visits
+                .filter((v) => v.stayId === s.id)
+                .map((v) => ({
+                  name: v.name,
+                  dayOffset: v.dayOffset,
+                  dayPart: v.dayPart,
+                })),
             }))
           : undefined,
       );
-      // Map AI output → app Stay type
+      // Map AI output → v2 app types (flat visits + routes)
+      const allVisits: VisitItem[] = [];
       const newStays: Stay[] = (result.stays as AIHybridStay[]).map((s, i) => {
         // Parse nightAccommodations from AI response
         const rawAccom = (s as unknown as Record<string, unknown>).nightAccommodations as
@@ -93,42 +108,61 @@ function AIPlannerModal({
             )
           : undefined;
 
+        const stayId = `ai-stay-${Date.now()}-${i}`;
+
+        // Extract visits for this stay into the flat list
+        const stayVisits: VisitItem[] = (s.visits ?? []).map((v, vi) => ({
+          id: `ai-visit-${Date.now()}-${i}-${vi}`,
+          stayId,
+          name: v.name,
+          type: ((v.type as string) === 'area' || (v.type as string) === 'hotel'
+            ? 'landmark'
+            : v.type ?? 'landmark') as VisitType,
+          lat: v.lat,
+          lng: v.lng,
+          dayOffset: v.dayOffset ?? 0,
+          dayPart: v.dayPart ?? 'morning',
+          order: v.order ?? vi,
+          durationHint: v.durationHint,
+          notes: v.notes,
+        }));
+        allVisits.push(...stayVisits);
+
         return {
-          id: `ai-stay-${Date.now()}-${i}`,
+          id: stayId,
           name: s.name,
           color: s.color,
           startSlot: s.startSlot,
           endSlot: s.endSlot,
           centerLat: s.centerLat,
           centerLng: s.centerLng,
-          lodging: s.lodging ?? '',
+          imageUrl: undefined,
           nightAccommodations:
             nightAccommodations && Object.keys(nightAccommodations).length > 0
               ? nightAccommodations
               : undefined,
-          travelModeToNext: s.travelModeToNext ?? 'train',
-          travelDurationToNext: s.travelDurationToNext,
-          travelNotesToNext: s.travelNotesToNext,
-          visits: (s.visits ?? []).map((v, vi) => ({
-            id: `ai-visit-${Date.now()}-${i}-${vi}`,
-            name: v.name,
-            type: v.type ?? 'landmark',
-            area: v.area ?? '',
-            lat: v.lat,
-            lng: v.lng,
-            dayOffset: v.dayOffset ?? 0,
-            dayPart: v.dayPart ?? 'morning',
-            order: v.order ?? vi,
-            durationHint: v.durationHint,
-            notes: v.notes,
-          })),
         };
       });
+
+      // Build routes from consecutive stays
+      const routes: Route[] = [];
+      for (let i = 0; i < newStays.length - 1; i++) {
+        const aiStay = (result.stays as AIHybridStay[])[i];
+        routes.push({
+          fromStayId: newStays[i].id,
+          toStayId: newStays[i + 1].id,
+          mode: (aiStay.travelModeToNext ?? 'train') as TravelMode,
+          duration: aiStay.travelDurationToNext,
+          notes: aiStay.travelNotesToNext,
+        });
+      }
+
+      const aiResult = { stays: newStays, visits: allVisits, routes };
       if (result.explanation) {
         setExplanation(result.explanation);
-        setPendingStays(newStays);
+        setPendingResult(aiResult);
       } else {
-        onApply(newStays);
+        onApply(aiResult);
         onClose();
       }
     } catch (e) {
@@ -139,8 +173,8 @@ function AIPlannerModal({
   };
 
   const handleApply = () => {
-    if (pendingStays) {
-      onApply(pendingStays);
+    if (pendingResult) {
+      onApply(pendingResult);
       onClose();
     }
   };

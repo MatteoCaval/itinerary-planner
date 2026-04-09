@@ -1,9 +1,9 @@
 import L from 'leaflet';
-import { UtensilsCrossed, Landmark, MapPin, Hotel, Compass, ShoppingBag } from 'lucide-react';
+import { UtensilsCrossed, Landmark, MapPin, Hotel, ShoppingBag } from 'lucide-react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import type { LucideIcon } from 'lucide-react';
 
-export type VisitType = 'area' | 'landmark' | 'museum' | 'food' | 'walk' | 'hotel' | 'shopping';
+export type VisitType = 'landmark' | 'museum' | 'food' | 'walk' | 'shopping';
 export type LatLngTuple = [number, number];
 
 const VISIT_TYPE_COLORS: Record<VisitType, string> = {
@@ -11,8 +11,6 @@ const VISIT_TYPE_COLORS: Record<VisitType, string> = {
   landmark: '#ec5b13',
   museum: '#2563eb',
   walk: '#0d9488',
-  hotel: '#475569',
-  area: '#7c3aed',
   shopping: '#db2777',
 };
 
@@ -21,17 +19,15 @@ const VISIT_TYPE_ICONS: Record<VisitType, LucideIcon> = {
   landmark: Landmark,
   museum: Landmark,
   walk: MapPin,
-  hotel: Hotel,
-  area: Compass,
   shopping: ShoppingBag,
 };
 
 export const getVisitTypeColor = (type: VisitType): string =>
-  VISIT_TYPE_COLORS[type] || VISIT_TYPE_COLORS.area;
+  VISIT_TYPE_COLORS[type] || VISIT_TYPE_COLORS.landmark;
 
 export const createIcon = (type: VisitType, index: number, isSelected: boolean) => {
-  const IconComponent = VISIT_TYPE_ICONS[type] || Compass;
-  const baseColor = VISIT_TYPE_COLORS[type] || VISIT_TYPE_COLORS.area;
+  const IconComponent = VISIT_TYPE_ICONS[type] || Landmark;
+  const baseColor = VISIT_TYPE_COLORS[type] || VISIT_TYPE_COLORS.landmark;
   return L.divIcon({
     className: 'custom-marker-wrapper',
     html: `

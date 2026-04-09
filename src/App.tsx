@@ -197,6 +197,13 @@ function ChronosApp() {
   const [hoveredStayId, setHoveredStayId] = useState<string | null>(null);
   const [selectedVisitId, setSelectedVisitId] = useState<string | null>(null);
   const [hoveredVisitId, setHoveredVisitId] = useState<string | null>(null);
+  const [locatedVisitId, setLocatedVisitId] = useState<string | null>(null);
+  // Clear located visit when selection changes to something else
+  useEffect(() => {
+    if (locatedVisitId && selectedVisitId !== locatedVisitId) {
+      setLocatedVisitId(null);
+    }
+  }, [selectedVisitId, locatedVisitId]);
   const [dragState, setDragState] = useState<DragState>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [mapExpanded, setMapExpanded] = useState(
@@ -425,16 +432,19 @@ function ChronosApp() {
   );
   const overviewStays = useMemo(
     () =>
-      sortedStays.map((s) => ({
-        id: s.id,
-        name: s.name,
-        color: s.color,
-        centerLat: s.centerLat,
-        centerLng: s.centerLng,
-        travelModeToNext: s.travelModeToNext,
-        travelDurationToNext: s.travelDurationToNext,
-      })),
-    [sortedStays],
+      sortedStays.map((s) => {
+        const route = trip.routes.find((r) => r.fromStayId === s.id);
+        return {
+          id: s.id,
+          name: s.name,
+          color: s.color,
+          centerLat: s.centerLat,
+          centerLng: s.centerLng,
+          travelModeToNext: route?.mode ?? 'train',
+          travelDurationToNext: route?.duration,
+        };
+      }),
+    [sortedStays, trip.routes],
   );
   const dayFilterOptions = useMemo(
     () => stayDays.map((d) => ({ dayOffset: d.dayOffset, label: `Day ${d.dayOffset + 1}` })),
@@ -444,7 +454,6 @@ function ChronosApp() {
   const existingAccommodationNames = useMemo(() => {
     const names = new Set<string>();
     trip.stays.forEach((s) => {
-      if (s.lodging) names.add(s.lodging);
       if (s.nightAccommodations)
         Object.values(s.nightAccommodations).forEach((a) => {
           if (a.name) names.add(a.name);
@@ -456,22 +465,34 @@ function ChronosApp() {
 
   const inboxVisits = useMemo(() => {
     if (!selectedStay) return [];
-    return selectedStay.visits
-      .filter((v) => v.dayOffset === null || v.dayPart === null)
+    return trip.visits
+      .filter((v) => v.stayId === selectedStay.id && (v.dayOffset === null || v.dayPart === null))
       .filter((v) => !searchTerm || v.name.toLowerCase().includes(searchTerm))
       .sort((a, b) => a.order - b.order);
-  }, [selectedStay, searchTerm]);
+  }, [selectedStay, trip.visits, searchTerm]);
 
   const mapVisits = useMemo(() => {
     if (!selectedStay) return [];
-    let scheduled = selectedStay.visits.filter((v) => v.dayOffset !== null && v.dayPart !== null);
+    let scheduled = trip.visits.filter(
+      (v) => v.stayId === selectedStay.id && v.dayOffset !== null && v.dayPart !== null,
+    );
     if (mapMode === 'detail' && mapDayFilter !== null) {
       scheduled = scheduled.filter((v) => v.dayOffset === mapDayFilter);
     }
-    return sortVisits(scheduled);
-  }, [selectedStay, mapDayFilter, mapMode]);
+    const sorted = sortVisits(scheduled);
+    // Include a located unplanned visit so the map can show/fly to it
+    if (locatedVisitId) {
+      const located = trip.visits.find((v) => v.id === locatedVisitId);
+      if (located && !sorted.some((v) => v.id === locatedVisitId)) {
+        sorted.push(located);
+      }
+    }
+    return sorted;
+  }, [selectedStay, trip.visits, mapDayFilter, mapMode, locatedVisitId]);
 
   // ── Timeline drag ─────────────────────────────────────────────────────────
+  // During drag, update stays directly (bypass history) to avoid flooding
+  // the undo stack with intermediate positions. Push one snapshot on mouseup.
   useEffect(() => {
     if (!dragState) return;
     const zone = timelineZoneRef.current;
@@ -479,7 +500,7 @@ function ChronosApp() {
 
     const applyDelta = (clientX: number) => {
       const delta = Math.round((clientX - dragState.originX) / slotWidth);
-      setTrip((curr) => ({
+      updateTrip((curr) => ({
         ...curr,
         stays: applyTimelineDrag(curr.stays, dragState, delta, curr.totalDays * 3),
       }));
@@ -489,7 +510,11 @@ function ChronosApp() {
       e.preventDefault();
       applyDelta(e.touches[0].clientX);
     };
-    const onUp = () => setDragState(null);
+    const onUp = () => {
+      // Push a single history snapshot for the entire drag operation
+      hist.push(trip);
+      setDragState(null);
+    };
     window.addEventListener('mousemove', onMove);
     window.addEventListener('mouseup', onUp);
     window.addEventListener('touchmove', onTouchMove, { passive: false });
@@ -500,32 +525,26 @@ function ChronosApp() {
       window.removeEventListener('touchmove', onTouchMove);
       window.removeEventListener('touchend', onUp);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- setTrip changes on every trip update; including it would break mid-drag
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- updateTrip/hist change on every trip update; including them would break mid-drag
   }, [dragState, zoomDays, trip.totalDays]);
 
   // ── Auto-fetch visit photos for selected stay ─────────────────────────────
   useEffect(() => {
     if (!import.meta.env.VITE_UNSPLASH_ACCESS_KEY || !selectedStay) return;
-    const visitsNeedingImages = selectedStay.visits.filter((v) => !v.imageUrl);
+    const visitsNeedingImages = trip.visits.filter(
+      (v) => v.stayId === selectedStay.id && !v.imageUrl,
+    );
     if (visitsNeedingImages.length === 0) return;
-    const stayId = selectedStay.id;
     visitsNeedingImages.forEach(async (visit) => {
       const url = await searchPhoto(visit.name);
       if (url)
         updateTripRef.current((t) => ({
           ...t,
-          stays: t.stays.map((s) =>
-            s.id === stayId
-              ? {
-                  ...s,
-                  visits: s.visits.map((v) => (v.id === visit.id ? { ...v, imageUrl: url } : v)),
-                }
-              : s,
-          ),
+          visits: t.visits.map((v) => (v.id === visit.id ? { ...v, imageUrl: url } : v)),
         }));
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedStay?.id, selectedStay?.visits.map((v) => `${v.id}:${v.imageUrl ?? ''}`).join('|')]);
+  }, [selectedStay?.id, trip.visits]);
 
   // ── Mutators ──────────────────────────────────────────────────────────────
   const updateSelectedStay = (fn: (s: Stay) => Stay) => {
@@ -541,38 +560,38 @@ function ChronosApp() {
     targetDayOffset: number | null,
     targetPart: DayPart | null,
   ) => {
-    if (!selectedStay) return;
-    updateSelectedStay((stay) => {
-      const moving = stay.visits.find((v) => v.id === visitId);
-      if (!moving) return stay;
-      const rest = stay.visits.filter((v) => v.id !== visitId);
-      return {
-        ...stay,
-        visits: normalizeVisitOrders([
-          ...rest,
-          { ...moving, dayOffset: targetDayOffset, dayPart: targetPart, order: 9999 },
-        ]),
-      };
-    });
+    setTrip((t) => ({
+      ...t,
+      visits: normalizeVisitOrders(
+        t.visits.map((v) =>
+          v.id === visitId
+            ? { ...v, dayOffset: targetDayOffset, dayPart: targetPart, order: 9999 }
+            : v,
+        ),
+      ),
+    }));
   };
 
   const reorderVisits = (aId: string, bId: string) => {
-    if (!selectedStay) return;
-    updateSelectedStay((stay) => {
-      const aVisit = stay.visits.find((v) => v.id === aId);
-      if (!aVisit) return stay;
-      // Operate only on the visits in this slot, preserving order values elsewhere
-      const slotVisits = stay.visits
-        .filter((v) => v.dayOffset === aVisit.dayOffset && v.dayPart === aVisit.dayPart)
+    setTrip((t) => {
+      const aVisit = t.visits.find((v) => v.id === aId);
+      if (!aVisit) return t;
+      const slotVisits = t.visits
+        .filter(
+          (v) =>
+            v.stayId === aVisit.stayId &&
+            v.dayOffset === aVisit.dayOffset &&
+            v.dayPart === aVisit.dayPart,
+        )
         .sort((a, b) => a.order - b.order);
       const fromIdx = slotVisits.findIndex((v) => v.id === aId);
       const toIdx = slotVisits.findIndex((v) => v.id === bId);
-      if (fromIdx === -1 || toIdx === -1) return stay;
+      if (fromIdx === -1 || toIdx === -1) return t;
       const reordered = arrayMove(slotVisits, fromIdx, toIdx);
       const newOrders = new Map(reordered.map((v, i) => [v.id, i]));
       return {
-        ...stay,
-        visits: stay.visits.map((v) =>
+        ...t,
+        visits: t.visits.map((v) =>
           newOrders.has(v.id) ? { ...v, order: newOrders.get(v.id)! } : v,
         ),
       };
@@ -599,7 +618,7 @@ function ChronosApp() {
     // Dropped onto another visit card (common when slot is populated)
     if (oId.startsWith('visit-')) {
       const targetVisitId = oId.slice(6);
-      const targetVisit = selectedStay.visits.find((v) => v.id === targetVisitId);
+      const targetVisit = trip.visits.find((v) => v.id === targetVisitId);
       if (!targetVisit) return;
 
       if (aId.startsWith('inbox-')) {
@@ -611,7 +630,7 @@ function ChronosApp() {
       }
 
       // Scheduled visit → another visit
-      const activeVisit = selectedStay.visits.find((v) => v.id === visitId);
+      const activeVisit = trip.visits.find((v) => v.id === visitId);
       if (!activeVisit) return;
       if (
         activeVisit.dayOffset === targetVisit.dayOffset &&
@@ -632,8 +651,13 @@ function ChronosApp() {
       id: `trip-${Date.now()}`,
       name: 'New Trip',
       stays: [],
+      visits: [],
+      routes: [],
       startDate: '',
       totalDays: 7,
+      version: 2,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
     };
     setStore((s) => {
       const next = { trips: [...s.trips, sample], activeTripId: sample.id };
@@ -814,7 +838,7 @@ function ChronosApp() {
     : null;
   const activeScheduledVisit =
     activeId?.startsWith('visit-') && selectedStay
-      ? selectedStay.visits.find((v) => `visit-${v.id}` === activeId)
+      ? trip.visits.find((v) => `visit-${v.id}` === activeId)
       : null;
 
   // ── Welcome screen for first-time users ──────────────────────────────────
@@ -1467,18 +1491,24 @@ function ChronosApp() {
                                           </span>
                                         )}
                                       </div>
-                                      {stay.lodging && !isNarrow && (
-                                        <span
-                                          className="text-[9px] font-semibold truncate mt-px"
-                                          style={{
-                                            color: isSelected
-                                              ? 'rgba(255,255,255,0.6)'
-                                              : `color-mix(in srgb, ${stay.color} 60%, #64748b)`,
-                                          }}
-                                        >
-                                          {stay.lodging}
-                                        </span>
-                                      )}
+                                      {(() => {
+                                        // Show first accommodation name if available
+                                        const firstAccom = stay.nightAccommodations
+                                          ? Object.values(stay.nightAccommodations)[0]?.name
+                                          : undefined;
+                                        return firstAccom && !isNarrow ? (
+                                          <span
+                                            className="text-[9px] font-semibold truncate mt-px"
+                                            style={{
+                                              color: isSelected
+                                                ? 'rgba(255,255,255,0.6)'
+                                                : `color-mix(in srgb, ${stay.color} 60%, #64748b)`,
+                                            }}
+                                          >
+                                            {firstAccom}
+                                          </span>
+                                        ) : null;
+                                      })()}
                                     </div>
                                   );
                                 })()}
@@ -1525,23 +1555,26 @@ function ChronosApp() {
                               {/* Transit chip — centered in gap between the two stays */}
                               {nextStay &&
                                 (() => {
+                                  const route = trip.routes.find(
+                                    (r) => r.fromStayId === stay.id,
+                                  );
                                   const gapStart = (stay.endSlot / (numDays * 3)) * 100;
                                   const gapEnd = (nextStay.startSlot / (numDays * 3)) * 100;
                                   const chipLeft = (gapStart + gapEnd) / 2;
                                   return (
                                     <button
-                                      aria-label={`Route: ${TRANSPORT_LABELS[stay.travelModeToNext]}${stay.travelDurationToNext ? `, ${stay.travelDurationToNext}` : ''}`}
+                                      aria-label={`Route: ${TRANSPORT_LABELS[route?.mode ?? 'train']}${route?.duration ? `, ${route.duration}` : ''}`}
                                       onClick={() => setEditingRouteStayId(stay.id)}
                                       className="group/chip absolute top-1/2 -translate-y-1/2 -translate-x-1/2 z-30 size-8 bg-white border border-border rounded-full flex items-center justify-center cursor-pointer hover:border-primary/40 hover:shadow-md transition-all shadow-sm"
                                       style={{ left: `${chipLeft}%` }}
                                     >
                                       <TransportIcon
-                                        mode={stay.travelModeToNext}
+                                        mode={route?.mode ?? 'train'}
                                         className="w-3.5 h-3.5 text-muted-foreground"
                                       />
-                                      {stay.travelDurationToNext && (
+                                      {route?.duration && (
                                         <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-foreground text-white text-[11px] font-bold rounded-md whitespace-nowrap opacity-0 group-hover/chip:opacity-100 transition-opacity shadow-lg z-40">
-                                          {stay.travelDurationToNext}
+                                          {route.duration}
                                         </div>
                                       )}
                                     </button>
@@ -1665,7 +1698,7 @@ function ChronosApp() {
                 selectedStay &&
                 selectedVisitId &&
                 (() => {
-                  const visit = selectedStay.visits.find((v) => v.id === selectedVisitId);
+                  const visit = trip.visits.find((v) => v.id === selectedVisitId);
                   if (!visit) return null;
                   const dayLabel =
                     visit.dayOffset !== null
@@ -1682,25 +1715,25 @@ function ChronosApp() {
                         setSelectedVisitId(null);
                       }}
                       onUnschedule={() => {
-                        updateSelectedStay((stay) => ({
-                          ...stay,
-                          visits: stay.visits.map((v) =>
+                        setTrip((t) => ({
+                          ...t,
+                          visits: t.visits.map((v) =>
                             v.id === visit.id ? { ...v, dayOffset: null, dayPart: null } : v,
                           ),
                         }));
                         setSelectedVisitId(null);
                       }}
                       onDelete={() => {
-                        updateSelectedStay((stay) => ({
-                          ...stay,
-                          visits: stay.visits.filter((v) => v.id !== visit.id),
+                        setTrip((t) => ({
+                          ...t,
+                          visits: t.visits.filter((v) => v.id !== visit.id),
                         }));
                         setSelectedVisitId(null);
                       }}
                       onUpdateVisit={(updates) => {
-                        updateSelectedStay((stay) => ({
-                          ...stay,
-                          visits: stay.visits.map((v) =>
+                        setTrip((t) => ({
+                          ...t,
+                          visits: t.visits.map((v) =>
                             v.id === visit.id ? { ...v, ...updates } : v,
                           ),
                         }));
@@ -1712,6 +1745,7 @@ function ChronosApp() {
                 <StayOverviewPanel
                   key={selectedStay.id}
                   stay={selectedStay}
+                  visitCount={trip.visits.filter((v) => v.stayId === selectedStay.id).length}
                   stayDays={stayDays}
                   accommodationGroups={accommodationGroups}
                   onUpdate={(updates) => updateSelectedStay((s) => ({ ...s, ...updates }))}
@@ -1743,6 +1777,10 @@ function ChronosApp() {
                       key={v.id}
                       visit={v}
                       onEdit={() => setEditingVisit(v)}
+                      onLocate={() => {
+                        setLocatedVisitId(v.id);
+                        setSelectedVisitId(v.id);
+                      }}
                     />
                   ))}
                   {inboxVisits.length === 0 && (
@@ -1810,8 +1848,9 @@ function ChronosApp() {
               {stayDays.map((day) => {
                 const dayVisits = selectedStay
                   ? sortVisits(
-                      selectedStay.visits.filter(
+                      trip.visits.filter(
                         (v) =>
+                          v.stayId === selectedStay.id &&
                           v.dayOffset === day.dayOffset &&
                           (!searchTerm || v.name.toLowerCase().includes(searchTerm)),
                       ),
@@ -1936,6 +1975,7 @@ function ChronosApp() {
                           onAddVisit={(d, p) => setAddingVisitToSlot({ dayOffset: d, part: p })}
                           onHoverVisit={(id) => setHoveredVisitId(id)}
                           onHoverVisitEnd={() => setHoveredVisitId(null)}
+                          highlightedVisitId={hoveredVisitId}
                         />
                       ))}
                     </div>
@@ -1969,7 +2009,9 @@ function ChronosApp() {
                         {/* Days for this stay */}
                         {days.map((day) => {
                           const dayVisits = sortVisits(
-                            stay.visits.filter((v) => v.dayOffset === day.dayOffset),
+                            trip.visits.filter(
+                              (v) => v.stayId === stay.id && v.dayOffset === day.dayOffset,
+                            ),
                           );
                           return (
                             <div
@@ -2510,7 +2552,7 @@ function ChronosApp() {
             {selectedVisitId &&
               selectedStay &&
               (() => {
-                const visit = selectedStay.visits.find((v) => v.id === selectedVisitId);
+                const visit = trip.visits.find((v) => v.id === selectedVisitId);
                 if (!visit) return null;
                 const dayLabel =
                   visit.dayOffset !== null
@@ -2531,9 +2573,9 @@ function ChronosApp() {
                       setMobileDrawerOpen(false);
                     }}
                     onUnschedule={() => {
-                      updateSelectedStay((stay) => ({
-                        ...stay,
-                        visits: stay.visits.map((v) =>
+                      setTrip((t) => ({
+                        ...t,
+                        visits: t.visits.map((v) =>
                           v.id === visit.id ? { ...v, dayOffset: null, dayPart: null } : v,
                         ),
                       }));
@@ -2541,17 +2583,17 @@ function ChronosApp() {
                       setMobileDrawerOpen(false);
                     }}
                     onDelete={() => {
-                      updateSelectedStay((stay) => ({
-                        ...stay,
-                        visits: stay.visits.filter((v) => v.id !== visit.id),
+                      setTrip((t) => ({
+                        ...t,
+                        visits: t.visits.filter((v) => v.id !== visit.id),
                       }));
                       setSelectedVisitId(null);
                       setMobileDrawerOpen(false);
                     }}
                     onUpdateVisit={(updates) => {
-                      updateSelectedStay((stay) => ({
-                        ...stay,
-                        visits: stay.visits.map((v) =>
+                      setTrip((t) => ({
+                        ...t,
+                        visits: t.visits.map((v) =>
                           v.id === visit.id ? { ...v, ...updates } : v,
                         ),
                       }));
@@ -2582,6 +2624,10 @@ function ChronosApp() {
                       key={v.id}
                       visit={v}
                       onEdit={() => setEditingVisit(v)}
+                      onLocate={() => {
+                        setLocatedVisitId(v.id);
+                        setSelectedVisitId(v.id);
+                      }}
                     />
                   ))}
                   {inboxVisits.length === 0 && (
@@ -2664,23 +2710,39 @@ function ChronosApp() {
         {/* Route editor */}
         {editingRouteStay && editingRouteNextStay && (
           <RouteEditorModal
-            stay={editingRouteStay}
-            nextStay={editingRouteNextStay}
+            route={trip.routes.find((r) => r.fromStayId === editingRouteStay.id) ?? null}
+            fromStayName={editingRouteStay.name}
+            toStayName={editingRouteNextStay.name}
             onClose={() => setEditingRouteStayId(null)}
             onSave={(mode, duration, notes) => {
-              setTrip((t) => ({
-                ...t,
-                stays: t.stays.map((s) =>
-                  s.id === editingRouteStay.id
-                    ? {
-                        ...s,
-                        travelModeToNext: mode,
-                        travelDurationToNext: duration,
-                        travelNotesToNext: notes,
-                      }
-                    : s,
-                ),
-              }));
+              setTrip((t) => {
+                const existingRoute = t.routes.find(
+                  (r) => r.fromStayId === editingRouteStay.id,
+                );
+                if (existingRoute) {
+                  return {
+                    ...t,
+                    routes: t.routes.map((r) =>
+                      r.fromStayId === editingRouteStay.id
+                        ? { ...r, mode, duration, notes }
+                        : r,
+                    ),
+                  };
+                }
+                return {
+                  ...t,
+                  routes: [
+                    ...t.routes,
+                    {
+                      fromStayId: editingRouteStay.id,
+                      toStayId: editingRouteNextStay.id,
+                      mode,
+                      duration,
+                      notes,
+                    },
+                  ],
+                };
+              });
             }}
           />
         )}
@@ -2693,6 +2755,7 @@ function ChronosApp() {
             return (
               <StayEditorModal
                 stay={stay}
+                visitCount={trip.visits.filter((v) => v.stayId === editingStayId).length}
                 onClose={() => setEditingStayId(null)}
                 onSave={(updates) => {
                   setTrip((t) => ({
@@ -2701,7 +2764,14 @@ function ChronosApp() {
                   }));
                 }}
                 onDelete={() => {
-                  setTrip((t) => ({ ...t, stays: t.stays.filter((s) => s.id !== editingStayId) }));
+                  setTrip((t) => ({
+                    ...t,
+                    stays: t.stays.filter((s) => s.id !== editingStayId),
+                    visits: t.visits.filter((v) => v.stayId !== editingStayId),
+                    routes: t.routes.filter(
+                      (r) => r.fromStayId !== editingStayId && r.toStayId !== editingStayId,
+                    ),
+                  }));
                   setSelectedStayId(trip.stays[0]?.id ?? '');
                 }}
               />
@@ -2729,9 +2799,6 @@ function ChronosApp() {
                 endSlot: Math.min(startSlot + days * 3, trip.totalDays * 3),
                 centerLat: lat ?? jitter(35.6762, 5),
                 centerLng: lng ?? jitter(139.6503, 5),
-                lodging: '',
-                travelModeToNext: 'train',
-                visits: [],
               };
               setTrip((t) => ({ ...t, stays: [...t.stays, newStay] }));
               setSelectedStayId(newStay.id);
@@ -2771,12 +2838,8 @@ function ChronosApp() {
                   for (const n of newNights) {
                     updated[n] = accom;
                   }
-                  // Clear lodging if it matches — prevents fallback re-appearing
-                  const clearLodging =
-                    s.lodging === accom.name || (group && s.lodging === group.name);
                   return {
                     ...s,
-                    lodging: clearLodging ? '' : s.lodging,
                     nightAccommodations: Object.keys(updated).length > 0 ? updated : undefined,
                   };
                 }),
@@ -2793,10 +2856,8 @@ function ChronosApp() {
                       for (let i = 0; i < nightCount; i++) {
                         delete updated[dayOffset + i];
                       }
-                      const clearLodging = s.lodging === group.name;
                       return {
                         ...s,
-                        lodging: clearLodging ? '' : s.lodging,
                         nightAccommodations: Object.keys(updated).length > 0 ? updated : undefined,
                       };
                     }),
@@ -2823,20 +2884,24 @@ function ChronosApp() {
             title={`Add Place to ${selectedStay.name}`}
             onClose={() => setAddingToInbox(false)}
             onSave={({ name, type, durationHint, lat, lng }) => {
-              updateSelectedStay((stay) => ({
-                ...stay,
+              setTrip((t) => ({
+                ...t,
                 visits: [
-                  ...stay.visits,
+                  ...t.visits,
                   createVisit(
                     `visit-${Date.now()}`,
                     name,
                     type,
-                    '',
-                    lat ?? jitter(stay.centerLat, 0.08),
-                    lng ?? jitter(stay.centerLng, 0.08),
+                    selectedStay.id,
+                    lat ?? jitter(selectedStay.centerLat, 0.08),
+                    lng ?? jitter(selectedStay.centerLng, 0.08),
                     null,
                     null,
-                    stay.visits.filter((v) => v.dayOffset === null || v.dayPart === null).length,
+                    t.visits.filter(
+                      (v) =>
+                        v.stayId === selectedStay.id &&
+                        (v.dayOffset === null || v.dayPart === null),
+                    ).length,
                     durationHint || undefined,
                   ),
                 ],
@@ -2852,30 +2917,35 @@ function ChronosApp() {
             onClose={() => setAddingVisitToSlot(null)}
             onSave={({ name, type, durationHint, notes, lat, lng }) => {
               const { dayOffset, part } = addingVisitToSlot;
-              const bucketSize = selectedStay.visits.filter(
-                (v) => v.dayOffset === dayOffset && v.dayPart === part,
-              ).length;
-              updateSelectedStay((stay) => ({
-                ...stay,
-                visits: [
-                  ...stay.visits,
-                  {
-                    ...createVisit(
-                      `visit-${Date.now()}`,
-                      name,
-                      type,
-                      '',
-                      lat ?? jitter(stay.centerLat, 0.05),
-                      lng ?? jitter(stay.centerLng, 0.05),
-                      dayOffset,
-                      part,
-                      bucketSize,
-                      durationHint || undefined,
-                    ),
-                    notes,
-                  },
-                ],
-              }));
+              setTrip((t) => {
+                const bucketSize = t.visits.filter(
+                  (v) =>
+                    v.stayId === selectedStay.id &&
+                    v.dayOffset === dayOffset &&
+                    v.dayPart === part,
+                ).length;
+                return {
+                  ...t,
+                  visits: [
+                    ...t.visits,
+                    {
+                      ...createVisit(
+                        `visit-${Date.now()}`,
+                        name,
+                        type,
+                        selectedStay.id,
+                        lat ?? jitter(selectedStay.centerLat, 0.05),
+                        lng ?? jitter(selectedStay.centerLng, 0.05),
+                        dayOffset,
+                        part,
+                        bucketSize,
+                        durationHint || undefined,
+                      ),
+                      notes,
+                    },
+                  ],
+                };
+              });
             }}
           />
         )}
@@ -2887,9 +2957,9 @@ function ChronosApp() {
             initial={editingVisit}
             onClose={() => setEditingVisit(null)}
             onSave={({ name, type, durationHint, notes, checklist, links }) => {
-              updateSelectedStay((stay) => ({
-                ...stay,
-                visits: stay.visits.map((v) =>
+              setTrip((t) => ({
+                ...t,
+                visits: t.visits.map((v) =>
                   v.id === editingVisit.id
                     ? {
                         ...v,
@@ -2905,9 +2975,9 @@ function ChronosApp() {
               }));
             }}
             onDelete={() => {
-              updateSelectedStay((stay) => ({
-                ...stay,
-                visits: normalizeVisitOrders(stay.visits.filter((v) => v.id !== editingVisit.id)),
+              setTrip((t) => ({
+                ...t,
+                visits: normalizeVisitOrders(t.visits.filter((v) => v.id !== editingVisit.id)),
               }));
               setEditingVisit(null);
             }}
@@ -2921,26 +2991,17 @@ function ChronosApp() {
             onMoveToStay={(targetStayId) => {
               setTrip((t) => ({
                 ...t,
-                stays: t.stays.map((s) => {
-                  if (s.id === selectedStay!.id) {
-                    return {
-                      ...s,
-                      visits: normalizeVisitOrders(
-                        s.visits.filter((v) => v.id !== editingVisit!.id),
-                      ),
-                    };
-                  }
-                  if (s.id === targetStayId) {
-                    return {
-                      ...s,
-                      visits: [
-                        ...s.visits,
-                        { ...editingVisit!, dayOffset: null, dayPart: null, order: s.visits.length },
-                      ],
-                    };
-                  }
-                  return s;
-                }),
+                visits: t.visits.map((v) =>
+                  v.id === editingVisit!.id
+                    ? {
+                        ...v,
+                        stayId: targetStayId,
+                        dayOffset: null,
+                        dayPart: null,
+                        order: t.visits.filter((vv) => vv.stayId === targetStayId).length,
+                      }
+                    : v,
+                ),
               }));
               setEditingVisit(null);
             }}
@@ -3003,8 +3064,13 @@ function ChronosApp() {
               localStorage.setItem('chronos-ai-settings', JSON.stringify(s));
             }}
             onClose={() => setShowAIPlanner(false)}
-            onApply={(newStays) => {
-              updateTrip((t) => ({ ...t, stays: newStays }));
+            onApply={(result) => {
+              updateTrip((t) => ({
+                ...t,
+                stays: result.stays,
+                visits: result.visits,
+                routes: result.routes,
+              }));
             }}
           />
         )}

@@ -1,4 +1,4 @@
-import type { DragState, HybridTrip, Stay } from './types';
+import type { DragState, HybridTrip, Stay, VisitItem } from './types';
 import { addDaysTo, safeDate } from './dateUtils';
 import { clamp } from './geoUtils';
 
@@ -75,41 +75,63 @@ export function applyTimelineDrag(
 // ─── Date range shrink/shift ─────────────────────────────────────────────────
 
 /**
- * Adjust stays after a date range change (start date shift and/or totalDays decrease).
+ * Adjust stays and visits after a date range change (start date shift and/or totalDays decrease).
  * - Shifts all stays by `-slotShift` to account for start date moving.
  * - Removes stays fully outside the new range.
  * - Clamps partially outside stays and unschedules overflowing visits.
  */
 export function adjustStaysForDateChange(
   stays: Stay[],
+  visits: VisitItem[],
   slotShift: number,
   newMaxSlot: number,
-): Stay[] {
-  return stays
+): { stays: Stay[]; visits: VisitItem[] } {
+  const shifted = stays.map((s) => ({
+    ...s,
+    startSlot: s.startSlot - slotShift,
+    endSlot: s.endSlot - slotShift,
+  }));
+
+  const removedStayIds = new Set(
+    shifted.filter((s) => s.endSlot <= 0 || s.startSlot >= newMaxSlot).map((s) => s.id),
+  );
+
+  const clampedStays = shifted
+    .filter((s) => !removedStayIds.has(s.id))
     .map((s) => ({
       ...s,
-      startSlot: s.startSlot - slotShift,
-      endSlot: s.endSlot - slotShift,
-    }))
-    .filter((s) => s.endSlot > 0 && s.startSlot < newMaxSlot)
-    .map((s) => {
-      const clamped = {
-        ...s,
-        startSlot: Math.max(0, s.startSlot),
-        endSlot: Math.min(newMaxSlot, s.endSlot),
-      };
-      if (clamped.startSlot === s.startSlot && clamped.endSlot === s.endSlot) return clamped;
-      const newDayCount = Math.ceil((clamped.endSlot - clamped.startSlot) / 3);
-      const dayShiftWithinStay = Math.max(0, Math.floor((clamped.startSlot - s.startSlot) / 3));
-      return {
-        ...clamped,
-        visits: clamped.visits.map((v) => {
-          if (v.dayOffset === null) return v;
-          const adjusted = v.dayOffset - dayShiftWithinStay;
-          return adjusted >= 0 && adjusted < newDayCount
-            ? { ...v, dayOffset: adjusted }
-            : { ...v, dayOffset: null, dayPart: null };
-        }),
-      };
-    });
+      startSlot: Math.max(0, s.startSlot),
+      endSlot: Math.min(newMaxSlot, s.endSlot),
+    }));
+
+  // Build a map of original shifted stays (before clamping) for day-shift calculation
+  const shiftedMap = new Map(shifted.map((s) => [s.id, s]));
+
+  const adjustedVisits = visits.map((v) => {
+    // Visits belonging to removed stays get unscheduled
+    if (removedStayIds.has(v.stayId)) {
+      return { ...v, dayOffset: null, dayPart: null };
+    }
+
+    if (v.dayOffset === null) return v;
+
+    const clamped = clampedStays.find((s) => s.id === v.stayId);
+    const original = shiftedMap.get(v.stayId);
+    if (!clamped || !original) return v;
+
+    // If stay wasn't clamped, visit is fine as-is
+    if (clamped.startSlot === original.startSlot && clamped.endSlot === original.endSlot) return v;
+
+    const newDayCount = Math.ceil((clamped.endSlot - clamped.startSlot) / 3);
+    const dayShiftWithinStay = Math.max(
+      0,
+      Math.floor((clamped.startSlot - original.startSlot) / 3),
+    );
+    const adjusted = v.dayOffset - dayShiftWithinStay;
+    return adjusted >= 0 && adjusted < newDayCount
+      ? { ...v, dayOffset: adjusted }
+      : { ...v, dayOffset: null, dayPart: null };
+  });
+
+  return { stays: clampedStays, visits: adjustedVisits };
 }

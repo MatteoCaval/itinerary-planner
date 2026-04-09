@@ -9,6 +9,7 @@ import type { VisitItem } from '@/domain/types';
 function SortableVisitCard({
   visit,
   isSelected,
+  isHighlighted,
   onSelect,
   onEdit,
   onHover,
@@ -16,6 +17,7 @@ function SortableVisitCard({
 }: {
   visit: VisitItem;
   isSelected: boolean;
+  isHighlighted?: boolean;
   onSelect: () => void;
   onEdit: () => void;
   onHover?: () => void;
@@ -41,9 +43,11 @@ function SortableVisitCard({
       className={`relative pl-[18px] pr-3.5 py-3.5 bg-white rounded-lg border transition-all group select-none touch-none cursor-grab active:cursor-grabbing ${
         isOver
           ? 'border-primary shadow-md ring-2 ring-primary/25 bg-primary/[0.02]'
-          : isSelected
-            ? 'border-primary/30 shadow-[0_4px_12px_rgba(236,91,19,0.1)] ring-1 ring-primary/10'
-            : 'border-border hover:border-border hover:shadow-md'
+          : isHighlighted
+            ? 'border-primary/40 shadow-md ring-2 ring-primary/20 bg-primary/[0.03]'
+            : isSelected
+              ? 'border-primary/30 shadow-[0_4px_12px_rgba(236,91,19,0.1)] ring-1 ring-primary/10'
+              : 'border-border hover:border-border hover:shadow-md'
       }`}
     >
       <div

@@ -6,7 +6,7 @@ export function createVisit(
   id: string,
   name: string,
   type: VisitType,
-  area: string,
+  stayId: string,
   lat: number,
   lng: number,
   dayOffset: number | null,
@@ -14,7 +14,7 @@ export function createVisit(
   order: number,
   durationHint?: string,
 ): VisitItem {
-  return { id, name, type, area, lat, lng, dayOffset, dayPart, order, durationHint };
+  return { id, name, type, stayId, lat, lng, dayOffset, dayPart, order, durationHint };
 }
 
 /** Sorts visits: unscheduled first, then by dayOffset → dayPart → order. */

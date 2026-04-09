@@ -85,8 +85,8 @@ function TripEditorModal({
       // Only update startDate — stays are trip-relative, no slot changes needed
       onSave({ name, startDate, totalDays });
     } else if (withClamp || slotShift !== 0) {
-      const adjustedStays = adjustStaysForDateChange(trip.stays, slotShift, newMaxSlot);
-      onSave({ name, startDate, totalDays, stays: adjustedStays });
+      const adjusted = adjustStaysForDateChange(trip.stays, trip.visits ?? [], slotShift, newMaxSlot);
+      onSave({ name, startDate, totalDays, stays: adjusted.stays, visits: adjusted.visits });
     } else {
       onSave({ name, startDate, totalDays });
     }
