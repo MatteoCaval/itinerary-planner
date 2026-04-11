@@ -2336,7 +2336,7 @@ function ChronosApp() {
                 mapVisits.length > 0 ||
                 mapDayFilter !== null ? (
                   <TripMap
-                    visits={mapMode !== 'overview' ? mapVisits : []}
+                    visits={mapVisits}
                     selectedVisitId={mapMode !== 'overview' ? selectedVisitId : null}
                     highlightedVisitId={mapMode !== 'overview' ? hoveredVisitId : null}
                     onSelectVisit={(id) => setSelectedVisitId(id)}
@@ -2349,6 +2349,11 @@ function ChronosApp() {
                     }}
                     selectedDayOffset={mapDayFilter}
                     highlightedStayId={mapMode === 'overview' ? hoveredStayId : null}
+                    onBackToOverview={() => {
+                      setSelectedStayId('');
+                      setMapMode('overview');
+                      setMapDayFilter(null);
+                    }}
                   />
                 ) : (
                   <div className="absolute inset-0 flex items-center justify-center bg-muted">

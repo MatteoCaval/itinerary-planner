@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { ChevronLeft } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, Popup, ZoomControl } from 'react-leaflet';
 import { createAccommodationIcon } from './markerFactories';
 import { ClusteredMarkers } from './ClusteredMarkers';
@@ -54,6 +55,7 @@ interface TripMapProps {
   onSelectStay?: (stayId: string) => void;
   selectedDayOffset?: number | null;
   highlightedStayId?: string | null;
+  onBackToOverview?: () => void;
 }
 
 const BASEMAPS: Record<BasemapMode, { url: string; attribution: string; maxZoom?: number }> = {
@@ -89,6 +91,7 @@ export default function TripMap({
   onSelectStay,
   selectedDayOffset,
   highlightedStayId,
+  onBackToOverview,
 }: TripMapProps) {
   const [basemap, setBasemap] = useBasemapState();
   const [showArrows, setShowArrows] = useState(true);
@@ -213,6 +216,17 @@ export default function TripMap({
 
         <FitMap points={allPoints} expanded={expanded} />
       </MapContainer>
+
+      {mode !== 'overview' && onBackToOverview && (
+        <button
+          onClick={onBackToOverview}
+          className="absolute bottom-14 left-3 z-[1000] flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white/90 backdrop-blur border border-slate-200 shadow-sm hover:bg-white hover:shadow-md transition-all text-slate-600 hover:text-slate-900 text-[11px] font-semibold"
+          aria-label="Back to trip overview"
+        >
+          <ChevronLeft className="w-3.5 h-3.5" />
+          Overview
+        </button>
+      )}
 
       <MapControlsPanel
         basemap={basemap}
