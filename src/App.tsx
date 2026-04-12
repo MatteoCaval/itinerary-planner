@@ -245,7 +245,7 @@ function ChronosApp() {
       const onMove = (ev: MouseEvent) => {
         if (!mapResizingRef.current) return;
         const newWidth = Math.min(
-          900,
+          Math.round(window.innerWidth * 0.75),
           Math.max(
             280,
             mapResizingRef.current.startWidth + (mapResizingRef.current.startX - ev.clientX),
@@ -496,7 +496,8 @@ function ChronosApp() {
   useEffect(() => {
     if (!dragState) return;
     const zone = timelineZoneRef.current;
-    const slotWidth = (zone?.clientWidth ?? trip.totalDays * 42) / (trip.totalDays * 3);
+    const visibleDays = zoomDays > 0 ? zoomDays : trip.totalDays;
+    const slotWidth = (zone?.clientWidth ?? visibleDays * 42) / (visibleDays * 3);
 
     const applyDelta = (clientX: number) => {
       const delta = Math.round((clientX - dragState.originX) / slotWidth);
@@ -914,7 +915,7 @@ function ChronosApp() {
               className="hidden md:flex items-center gap-1.5 text-[11px] font-semibold text-muted-foreground hover:text-foreground hover:bg-muted border border-border/60 px-2.5 py-1 rounded-lg transition-colors flex-shrink-0"
             >
               <span className="font-bold text-foreground">{tripStartLabel}</span>
-              <span className="text-slate-300">–</span>
+              <span className="text-muted-foreground/40">–</span>
               <span className="font-bold text-foreground">
                 {fmt(addDaysTo(safeDate(trip.startDate), trip.totalDays - 1), {
                   month: 'short',
@@ -1114,7 +1115,7 @@ function ChronosApp() {
             className="border-b border-border-neutral flex flex-col bg-white flex-shrink-0 z-40"
             style={{ height: 140 }}
           >
-            <div className="flex items-center justify-between px-6 border-b border-border-neutral bg-slate-50/50 py-1.5">
+            <div className="flex items-center justify-between px-6 border-b border-border-neutral bg-muted/30 py-1.5">
               <div className="flex items-center gap-4">
                 <span className="text-[11px] font-extrabold uppercase tracking-[0.15em] text-muted-foreground">
                   Timeline
@@ -1169,15 +1170,15 @@ function ChronosApp() {
                 {/* Day labels — buffer before (ALL view only) */}
                 {zoomDays === 0 && (
                   <div className="flex flex-col bg-muted/80 border-b border-r border-border-neutral">
-                    <div className="flex-1 flex items-center justify-center gap-1 text-[9px] font-bold text-slate-300 uppercase tracking-tighter border-b border-border">
-                      <span className="text-slate-200">{bufferBefore.weekday}</span>
-                      <span className="text-slate-300">{bufferBefore.date}</span>
+                    <div className="flex-1 flex items-center justify-center gap-1 text-[9px] font-bold text-muted-foreground/40 uppercase tracking-tighter border-b border-border">
+                      <span className="text-muted-foreground/20">{bufferBefore.weekday}</span>
+                      <span className="text-muted-foreground/40">{bufferBefore.date}</span>
                     </div>
                     <div className="flex h-3 divide-x divide-border">
                       {['M', 'A', 'E'].map((p) => (
                         <div
                           key={p}
-                          className="flex-1 flex items-center justify-center text-[9px] font-semibold text-slate-200"
+                          className="flex-1 flex items-center justify-center text-[9px] font-semibold text-muted-foreground/20"
                         >
                           {p}
                         </div>
@@ -1189,17 +1190,17 @@ function ChronosApp() {
                 {dayLabels.map(({ date, weekday }, i) => (
                   <div
                     key={i}
-                    className="flex flex-col border-b border-r border-border-neutral bg-slate-50/30"
+                    className="flex flex-col border-b border-r border-border-neutral bg-muted/20"
                   >
                     <div className="flex-1 flex items-center justify-center gap-1 text-[9px] font-bold text-muted-foreground uppercase tracking-tighter border-b border-border">
-                      <span className="text-slate-300">{weekday}</span>
+                      <span className="text-muted-foreground/50">{weekday}</span>
                       <span>{date}</span>
                     </div>
                     <div className="flex h-3 divide-x divide-border">
                       {['M', 'A', 'E'].map((p) => (
                         <div
                           key={p}
-                          className="flex-1 flex items-center justify-center text-[9px] font-semibold text-slate-300"
+                          className="flex-1 flex items-center justify-center text-[9px] font-semibold text-muted-foreground/40"
                         >
                           {p}
                         </div>
@@ -1210,15 +1211,15 @@ function ChronosApp() {
                 {/* Day labels — buffer after (ALL view only) */}
                 {zoomDays === 0 && (
                   <div className="flex flex-col bg-muted/80 border-b border-border-neutral">
-                    <div className="flex-1 flex items-center justify-center gap-1 text-[9px] font-bold text-slate-300 uppercase tracking-tighter border-b border-border">
-                      <span className="text-slate-200">{bufferAfter.weekday}</span>
-                      <span className="text-slate-300">{bufferAfter.date}</span>
+                    <div className="flex-1 flex items-center justify-center gap-1 text-[9px] font-bold text-muted-foreground/40 uppercase tracking-tighter border-b border-border">
+                      <span className="text-muted-foreground/20">{bufferAfter.weekday}</span>
+                      <span className="text-muted-foreground/40">{bufferAfter.date}</span>
                     </div>
                     <div className="flex h-3 divide-x divide-border">
                       {['M', 'A', 'E'].map((p) => (
                         <div
                           key={p}
-                          className="flex-1 flex items-center justify-center text-[9px] font-semibold text-slate-200"
+                          className="flex-1 flex items-center justify-center text-[9px] font-semibold text-muted-foreground/20"
                         >
                           {p}
                         </div>
@@ -1230,7 +1231,7 @@ function ChronosApp() {
                 {zoomDays === 0 && (
                   <button
                     onClick={handleExtendBefore}
-                    className="group/buf relative flex items-center justify-center border-r border-border-neutral transition-colors hover:bg-slate-100/60"
+                    className="group/buf relative flex items-center justify-center border-r border-border-neutral transition-colors hover:bg-muted/60"
                     style={{
                       background:
                         'repeating-linear-gradient(-45deg, transparent, transparent 4px, rgba(148,163,184,0.13) 4px, rgba(148,163,184,0.13) 8px), rgba(241,245,249,0.8)',
@@ -1627,7 +1628,7 @@ function ChronosApp() {
                 {zoomDays === 0 && (
                   <button
                     onClick={handleExtendAfter}
-                    className="group/buf relative flex items-center justify-center border-l border-border-neutral transition-colors hover:bg-slate-100/60"
+                    className="group/buf relative flex items-center justify-center border-l border-border-neutral transition-colors hover:bg-muted/60"
                     style={{
                       background:
                         'repeating-linear-gradient(-45deg, transparent, transparent 4px, rgba(148,163,184,0.13) 4px, rgba(148,163,184,0.13) 8px), rgba(241,245,249,0.8)',
@@ -1817,7 +1818,7 @@ function ChronosApp() {
             {/* Day columns */}
             <div
               data-day-columns
-              className={`flex-1 overflow-x-auto overflow-y-auto flex p-5 gap-5 min-w-0 bg-slate-50/50 scroll-hide transition-all duration-300 max-md:snap-x max-md:snap-mandatory max-md:scroll-pl-5 ${mapExpanded ? 'w-0 overflow-hidden opacity-0 p-0' : ''}`}
+              className={`flex-1 overflow-x-auto overflow-y-auto flex p-5 gap-5 min-w-0 bg-muted/30 scroll-hide transition-all duration-300 max-md:snap-x max-md:snap-mandatory max-md:scroll-pl-5 ${mapExpanded ? 'w-0 overflow-hidden opacity-0 p-0' : ''}`}
               style={mapExpanded ? undefined : { paddingRight: mapWidth + 20 }}
             >
               {sortedStays.length === 0 && (
@@ -1881,7 +1882,7 @@ function ChronosApp() {
                         </span>
                       </h4>
                       <MapPin
-                        className={`w-3 h-3 transition-colors ${mapMode === 'detail' && mapDayFilter === day.dayOffset ? 'text-primary' : 'text-slate-300 group-hover:text-primary/50'}`}
+                        className={`w-3 h-3 transition-colors ${mapMode === 'detail' && mapDayFilter === day.dayOffset ? 'text-primary' : 'text-muted-foreground/30 group-hover:text-primary/50'}`}
                       />
                     </button>
                     {/* Accommodation bar — rendered on the first day of each accommodation group */}
@@ -2182,8 +2183,8 @@ function ChronosApp() {
                       ? {
                           bottom: 16,
                           right: 16,
-                          width: 'clamp(320px, 28vw, 480px)',
-                          height: 'clamp(240px, 25vh, 360px)',
+                          width: 'clamp(320px, 40vw, 800px)',
+                          height: 'clamp(240px, 35vh, 600px)',
                         }
                       : { top: 16, bottom: 16, right: 16, width: mapWidth }
               }
@@ -2195,7 +2196,7 @@ function ChronosApp() {
                   className="absolute left-0 top-0 bottom-0 w-3 -ml-1.5 cursor-col-resize z-50 group flex items-center justify-center"
                   title="Drag to resize"
                 >
-                  <div className="w-1 h-8 rounded-full bg-slate-300/60 group-hover:bg-primary/50 group-hover:h-12 transition-all motion-reduce:transition-none" />
+                  <div className="w-1 h-8 rounded-full bg-muted-foreground/30 group-hover:bg-primary/50 group-hover:h-12 transition-all motion-reduce:transition-none" />
                 </div>
               )}
               {/* Map panel header */}

@@ -182,7 +182,7 @@ function AIPlannerModal({
   return (
     <ModalBase title="AI Planner" onClose={onClose} width="max-w-lg">
       {/* Tabs */}
-      <div className="flex border-b border-border -mx-6 px-6 mb-5 gap-4">
+      <div className="flex border-b border-border mb-5 gap-4">
         {(['generate', 'settings'] as const).map((t) => (
           <button
             key={t}
@@ -238,7 +238,7 @@ function AIPlannerModal({
             <div>
               <label className="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground mb-2 block">
                 What should I plan?{' '}
-                <span className="text-slate-300 normal-case font-medium">
+                <span className="text-muted-foreground/50 normal-case font-medium">
                   ({trip.totalDays} days available)
                 </span>
               </label>
