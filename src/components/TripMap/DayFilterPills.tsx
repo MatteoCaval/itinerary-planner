@@ -15,7 +15,7 @@ export default function DayFilterPills({
     `px-2.5 py-0.5 text-[10px] font-bold rounded-full transition-colors whitespace-nowrap cursor-pointer flex-shrink-0 ${
       active
         ? 'bg-primary text-white'
-        : 'bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-700'
+        : 'bg-muted text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary/50'
     }`;
 
   return (

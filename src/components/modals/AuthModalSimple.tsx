@@ -74,7 +74,7 @@ function AuthModalSimple({ onClose }: { onClose: () => void }) {
                 Itinerary
               </span>
             </div>
-            <DialogTitle className="text-[22px] font-extrabold text-slate-900 tracking-tight leading-none">
+            <DialogTitle className="text-[22px] font-extrabold text-foreground tracking-tight leading-none">
               {mode === 'signin' ? 'Welcome back' : 'Get started'}
             </DialogTitle>
             <p className="text-[11px] text-muted-foreground mt-1.5 font-medium">
@@ -105,30 +105,30 @@ function AuthModalSimple({ onClose }: { onClose: () => void }) {
 
           <form onSubmit={handleSubmit} className="space-y-3">
             <div className="relative">
-              <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-300 pointer-events-none" />
+              <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50 pointer-events-none" />
               <Input
                 type="email"
                 placeholder="Email address"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 autoFocus
-                className="pl-10 pr-4 py-2.5 text-sm bg-muted border border-border rounded-xl focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/10 placeholder:text-slate-300 font-medium text-foreground"
+                className="pl-10 pr-4 py-2.5 text-sm bg-muted border border-border rounded-xl focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/10 placeholder:text-muted-foreground/50 font-medium text-foreground"
               />
             </div>
             <div className="relative">
-              <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-300 pointer-events-none" />
+              <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50 pointer-events-none" />
               <Input
                 type={showPassword ? 'text' : 'password'}
                 placeholder="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="pl-10 pr-10 py-2.5 text-sm bg-muted border border-border rounded-xl focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/10 placeholder:text-slate-300 font-medium text-foreground"
+                className="pl-10 pr-10 py-2.5 text-sm bg-muted border border-border rounded-xl focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/10 placeholder:text-muted-foreground/50 font-medium text-foreground"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword((v) => !v)}
                 aria-label={showPassword ? 'Hide password' : 'Show password'}
-                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-300 hover:text-muted-foreground transition-colors"
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-muted-foreground/50 hover:text-muted-foreground transition-colors focus-visible:ring-2 focus-visible:ring-primary/50 rounded"
               >
                 {showPassword ? (
                   <EyeOff className="w-3.5 h-3.5" />
@@ -176,7 +176,7 @@ function AuthModalSimple({ onClose }: { onClose: () => void }) {
 
           <div className="flex items-center gap-3 my-4">
             <div className="flex-1 h-px bg-border" />
-            <span className="text-[11px] font-bold text-slate-300 uppercase tracking-widest">
+            <span className="text-[11px] font-bold text-muted-foreground/40 uppercase tracking-widest">
               or
             </span>
             <div className="flex-1 h-px bg-border" />

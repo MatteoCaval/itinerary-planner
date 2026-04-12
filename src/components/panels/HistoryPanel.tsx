@@ -45,7 +45,7 @@ function HistoryPanel({
             >
               <div className="flex items-start gap-2.5 min-w-0">
                 <span
-                  className={`text-[11px] font-mono mt-0.5 shrink-0 ${isCurrent ? 'text-primary' : 'text-slate-300'}`}
+                  className={`text-[11px] font-mono mt-0.5 shrink-0 ${isCurrent ? 'text-primary' : 'text-muted-foreground/40'}`}
                 >
                   #{i}
                 </span>
@@ -82,7 +82,7 @@ function HistoryPanel({
                 </div>
               </div>
               <div className="flex items-center gap-2 shrink-0">
-                <span className="text-[9px] text-slate-300 tabular-nums">
+                <span className="text-[9px] text-muted-foreground/60 tabular-nums">
                   {formatRelativeTime(snap.timestamp)}
                 </span>
                 {isCurrent && (
@@ -93,7 +93,7 @@ function HistoryPanel({
                     NOW
                   </Badge>
                 )}
-                {isFuture && <Redo2 className="w-3 h-3 text-slate-300" />}
+                {isFuture && <Redo2 className="w-3 h-3 text-muted-foreground/40" />}
               </div>
             </button>
           );

@@ -107,7 +107,7 @@ function ProfileMenu({
           <button
             className={`size-8 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-all flex-shrink-0 ml-1 ${
               user
-                ? 'bg-emerald-500 text-white border-emerald-400 hover:bg-emerald-600'
+                ? 'bg-success text-success-foreground border-success/50 hover:bg-success/90'
                 : 'bg-primary/10 text-primary border-primary/20 hover:bg-primary hover:text-white'
             }`}
           >
@@ -125,7 +125,7 @@ function ProfileMenu({
           <div className={`px-4 pt-4 pb-3 ${user ? 'bg-success/10' : 'bg-muted/80'}`}>
             <div className="flex items-center gap-3">
               <div
-                className={`size-9 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 ${user ? 'bg-emerald-500 text-white' : 'bg-primary/10 text-primary'}`}
+                className={`size-9 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 ${user ? 'bg-success text-success-foreground' : 'bg-primary/10 text-primary'}`}
               >
                 {user ? (user.email?.[0] ?? 'U').toUpperCase() : <User className="w-4 h-4" />}
               </div>
@@ -137,7 +137,7 @@ function ProfileMenu({
                   {user ? (
                     <Check className="w-3 h-3 text-success flex-shrink-0" />
                   ) : (
-                    <Lock className="w-3 h-3 text-slate-300 flex-shrink-0" />
+                    <Lock className="w-3 h-3 text-muted-foreground/50 flex-shrink-0" />
                   )}
                   <p
                     className={`text-[11px] font-semibold ${user ? 'text-success' : 'text-muted-foreground'}`}

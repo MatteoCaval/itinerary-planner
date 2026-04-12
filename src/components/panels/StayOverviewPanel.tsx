@@ -57,7 +57,7 @@ function StayOverviewPanel({
           <img src={stay.imageUrl} alt={stay.name} className="w-full h-full object-cover" />
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-muted to-muted">
-            <MapPin className="w-7 h-7 text-slate-300" />
+            <MapPin className="w-7 h-7 text-muted-foreground/30" />
           </div>
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />

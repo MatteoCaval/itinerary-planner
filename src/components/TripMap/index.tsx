@@ -163,7 +163,7 @@ export default function TripMap({
         zoom={11}
         zoomControl={false}
         className="w-full h-full"
-        style={{ background: '#f1f5f9' }}
+        style={{ background: 'var(--color-muted)' }}
       >
         <TileLayer key={basemap} attribution={activeBasemap.attribution} url={activeBasemap.url} {...(activeBasemap.maxZoom ? { maxZoom: activeBasemap.maxZoom } : {})} />
         <ZoomControl position="bottomright" />
@@ -193,7 +193,7 @@ export default function TripMap({
                   {acc.notes && (
                     <>
                       <br />
-                      <span style={{ color: '#6c757d' }}>{acc.notes}</span>
+                      <span className="text-muted-foreground">{acc.notes}</span>
                     </>
                   )}
                 </Popup>
@@ -220,7 +220,7 @@ export default function TripMap({
       {mode !== 'overview' && onBackToOverview && (
         <button
           onClick={onBackToOverview}
-          className="absolute bottom-14 left-3 z-[1000] flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white/90 backdrop-blur border border-slate-200 shadow-sm hover:bg-white hover:shadow-md transition-all text-slate-600 hover:text-slate-900 text-[11px] font-semibold"
+          className="absolute bottom-14 left-3 z-[1000] flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-background/90 backdrop-blur border border-border shadow-sm hover:bg-background hover:shadow-md transition-all text-muted-foreground hover:text-foreground text-[11px] font-semibold focus-visible:ring-2 focus-visible:ring-primary/50"
           aria-label="Back to trip overview"
         >
           <ChevronLeft className="w-3.5 h-3.5" />

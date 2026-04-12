@@ -40,7 +40,7 @@ export default function ModalBase({
           <DialogTitle className="font-extrabold text-xs tracking-wide">{title}</DialogTitle>
           <DialogDescription className="sr-only">Dialog for: {title}</DialogDescription>
         </DialogHeader>
-        <div className="overflow-y-auto flex-1 px-4 py-3.5">{children}</div>
+        <div className="overflow-y-auto overflow-x-hidden flex-1 px-4 py-3.5">{children}</div>
       </DialogContent>
     </Dialog>
   );

@@ -82,7 +82,7 @@ function SortableVisitCard({
             <Pencil className="w-3.5 h-3.5" />
           </Button>
           <div className="p-2.5" aria-hidden="true">
-            <GripVertical className="w-4 h-4 text-slate-300" />
+            <GripVertical className="w-4 h-4 text-muted-foreground/40" />
           </div>
         </div>
       </div>

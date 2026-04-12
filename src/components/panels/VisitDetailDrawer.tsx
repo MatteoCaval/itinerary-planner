@@ -123,7 +123,7 @@ function VisitDetailDrawer({
         </div>
         {visit.durationHint && (
           <>
-            <span className="text-slate-300">·</span>
+            <span className="text-muted-foreground/40">·</span>
             <span className="font-medium text-muted-foreground">{visit.durationHint}</span>
           </>
         )}
