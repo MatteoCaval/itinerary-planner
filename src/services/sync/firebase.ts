@@ -24,9 +24,7 @@ export class FirebaseSyncService implements SyncService {
         const raw = restoreArrays(tripsSnapshot.val()) as Record<string, unknown>;
         const trips = Object.values(raw).map(normalizeAndMigrate);
         const activeSnap = await get(child(dbRef, `users/${uid}/activeTripId`));
-        const activeTripId = activeSnap.exists()
-          ? String(activeSnap.val())
-          : (trips[0]?.id ?? '');
+        const activeTripId = activeSnap.exists() ? String(activeSnap.val()) : (trips[0]?.id ?? '');
         return { trips, activeTripId, source: 'cloud' };
       }
 
@@ -53,9 +51,7 @@ export class FirebaseSyncService implements SyncService {
 
     // Write each trip to its own node (idempotent — safe to retry)
     await Promise.all(
-      trips.map((trip) =>
-        set(ref(db, `users/${uid}/trips/${trip.id}`), sanitizeForFirebase(trip)),
-      ),
+      trips.map((trip) => set(ref(db, `users/${uid}/trips/${trip.id}`), sanitizeForFirebase(trip))),
     );
     await set(ref(db, `users/${uid}/activeTripId`), activeTripId);
 
