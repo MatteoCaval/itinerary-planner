@@ -134,37 +134,3 @@ export const loadItinerary = async (
   }
 };
 
-export const saveUserTripStore = async (
-  uid: string,
-  tripStore: unknown,
-): Promise<{ success: boolean; error?: string }> => {
-  try {
-    const { ref, set } = await import('firebase/database');
-    const db = await getDb();
-    await set(ref(db, `users/${uid}/tripStore`), sanitizeForFirebase(tripStore));
-    return { success: true };
-  } catch (error) {
-    trackError('account_trip_store_save_failed', error, { uid });
-    return { success: false, error: formatErrorMessage(error) };
-  }
-};
-
-export const loadUserTripStore = async (
-  uid: string,
-): Promise<{ success: boolean; exists: boolean; data?: unknown; error?: string }> => {
-  try {
-    const { ref, get, child } = await import('firebase/database');
-    const db = await getDb();
-    const dbRef = ref(db);
-    const snapshot = await get(child(dbRef, `users/${uid}/tripStore`));
-
-    if (snapshot.exists()) {
-      return { success: true, exists: true, data: restoreArrays(snapshot.val()) };
-    }
-
-    return { success: true, exists: false };
-  } catch (error) {
-    trackError('account_trip_store_load_failed', error, { uid });
-    return { success: false, exists: false, error: formatErrorMessage(error) };
-  }
-};
