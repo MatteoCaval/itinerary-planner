@@ -61,16 +61,47 @@ export class FirebaseSyncService implements SyncService {
     return { trips, activeTripId, source: 'cloud' };
   }
 
-  async saveTrip(_uid: string, _trip: HybridTrip): Promise<void> {
-    throw new Error('Not implemented');
+  async saveTrip(uid: string, trip: HybridTrip): Promise<void> {
+    try {
+      const { ref, get, set } = await import('firebase/database');
+      const db = await getDb();
+      const tripRef = ref(db, `users/${uid}/trips/${trip.id}`);
+
+      const snapshot = await get(tripRef);
+      if (snapshot.exists()) {
+        const cloud = snapshot.val() as { updatedAt?: number };
+        const cloudUpdatedAt = cloud.updatedAt ?? 0;
+        const localUpdatedAt = trip.updatedAt ?? 0;
+        if (localUpdatedAt < cloudUpdatedAt) return; // cloud is newer — don't overwrite
+      }
+
+      await set(tripRef, sanitizeForFirebase(trip));
+    } catch (error) {
+      trackError('sync_save_trip_failed', error, { uid, tripId: trip.id });
+      throw error;
+    }
   }
 
-  async deleteTrip(_uid: string, _tripId: string): Promise<void> {
-    throw new Error('Not implemented');
+  async deleteTrip(uid: string, tripId: string): Promise<void> {
+    try {
+      const { ref, remove } = await import('firebase/database');
+      const db = await getDb();
+      await remove(ref(db, `users/${uid}/trips/${tripId}`));
+    } catch (error) {
+      trackError('sync_delete_trip_failed', error, { uid, tripId });
+      throw error;
+    }
   }
 
-  async saveActiveTripId(_uid: string, _id: string): Promise<void> {
-    throw new Error('Not implemented');
+  async saveActiveTripId(uid: string, id: string): Promise<void> {
+    try {
+      const { ref, set } = await import('firebase/database');
+      const db = await getDb();
+      await set(ref(db, `users/${uid}/activeTripId`), id);
+    } catch (error) {
+      trackError('sync_save_active_trip_id_failed', error, { uid });
+      // Non-critical — don't rethrow
+    }
   }
 
   subscribe(_uid: string, _callbacks: SyncCallbacks): Unsubscribe {
