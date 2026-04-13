@@ -104,7 +104,50 @@ export class FirebaseSyncService implements SyncService {
     }
   }
 
-  subscribe(_uid: string, _callbacks: SyncCallbacks): Unsubscribe {
-    throw new Error('Not implemented');
+  subscribe(uid: string, callbacks: SyncCallbacks): Unsubscribe {
+    let unsubFns: Array<() => void> = [];
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const [{ ref, onValue }, db] = await Promise.all([
+          import('firebase/database'),
+          getDb(),
+        ]);
+
+        if (cancelled) return;
+
+        // Listen to per-trip nodes
+        const tripsRef = ref(db, `users/${uid}/trips`);
+        const unsubTrips = onValue(
+          tripsRef,
+          (snapshot) => {
+            if (!snapshot.exists()) return;
+            const raw = restoreArrays(snapshot.val()) as Record<string, unknown>;
+            Object.values(raw).forEach((t) => {
+              callbacks.onTripUpdated(normalizeAndMigrate(t));
+            });
+          },
+          (error) => callbacks.onError(error.message),
+        );
+
+        // Listen to activeTripId
+        const activeRef = ref(db, `users/${uid}/activeTripId`);
+        const unsubActive = onValue(activeRef, (snapshot) => {
+          if (snapshot.exists()) {
+            callbacks.onActiveTripIdChanged(String(snapshot.val()));
+          }
+        });
+
+        unsubFns = [unsubTrips, unsubActive];
+      } catch (error) {
+        callbacks.onError(error instanceof Error ? error.message : 'Sync listener failed');
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      unsubFns.forEach((fn) => fn());
+    };
   }
 }
