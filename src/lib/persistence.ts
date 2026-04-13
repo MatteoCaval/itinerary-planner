@@ -14,7 +14,15 @@ export function loadStore(): TripStore {
     const raw = localStorage.getItem('itinerary-store-v2');
     if (raw) {
       const parsed: TripStore = JSON.parse(raw);
-      return { ...parsed, trips: parsed.trips.map(normalizeTrip) };
+      return {
+        ...parsed,
+        trips: parsed.trips.map((t) => {
+          const normalized = normalizeTrip(t);
+          return needsMigrationToV2(normalized)
+            ? migrateV1toV2(normalized as unknown as V1HybridTrip)
+            : normalized;
+        }),
+      };
     }
   } catch {
     /* ignore */

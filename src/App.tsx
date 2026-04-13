@@ -50,6 +50,7 @@ import type {
   NightAccommodation,
   Stay,
   TripStore,
+  V1HybridTrip,
   VisitItem,
 } from './domain/types';
 import {
@@ -69,7 +70,7 @@ import {
 } from './domain/stayLogic';
 import { createVisit, normalizeVisitOrders, sortVisits } from './domain/visitLogic';
 import { getVisitTypeBg, getVisitTypeColor, getVisitLabel } from './domain/visitTypeDisplay';
-import { normalizeTrip } from './domain/migration';
+import { normalizeTrip, migrateV1toV2, needsMigrationToV2 } from './domain/migration';
 import { createSampleTrip } from './domain/sampleData';
 import {
   applyTimelineDrag,
@@ -131,7 +132,8 @@ function ChronosApp() {
   const [store, setStore] = useState<TripStore>(() => loadStore());
   const [isDemoMode, setIsDemoMode] = useState(false);
   const [pendingMerge, setPendingMerge] = useState<{
-    cloudTrips: HybridTrip[];
+    cloudTrips: HybridTrip[]; // cloud-only (not in local) — used for merge
+    allCloudTrips: HybridTrip[]; // full cloud store — used for use-cloud
     cloudActiveTripId: string;
   } | null>(null);
   const [syncError, setSyncError] = useState<string | null>(null);
@@ -366,7 +368,12 @@ function ChronosApp() {
       }
 
       const cloudStore = result.data as TripStore;
-      const cloudTrips: HybridTrip[] = (cloudStore?.trips ?? []).map(normalizeTrip);
+      const cloudTrips: HybridTrip[] = (cloudStore?.trips ?? []).map((t) => {
+        const normalized = normalizeTrip(t);
+        return needsMigrationToV2(normalized)
+          ? migrateV1toV2(normalized as unknown as V1HybridTrip)
+          : normalized;
+      });
       const localIds = new Set(currentStore.trips.map((t) => t.id));
       const cloudOnlyTrips = cloudTrips.filter((t) => !localIds.has(t.id));
 
@@ -390,6 +397,7 @@ function ChronosApp() {
       // Both sides have unique trips — ask the user
       setPendingMerge({
         cloudTrips: cloudOnlyTrips,
+        allCloudTrips: cloudTrips,
         cloudActiveTripId: cloudStore.activeTripId ?? '',
       });
     })();
@@ -403,6 +411,7 @@ function ChronosApp() {
       setSyncStatus('local');
       return;
     }
+    if (store.trips.length === 0) return; // don't overwrite cloud with empty store
     if (pendingMerge) return;
     setSyncStatus('saving');
     const timer = setTimeout(async () => {
@@ -414,7 +423,7 @@ function ChronosApp() {
       }
     }, 2000);
     return () => clearTimeout(timer);
-  }, [store, user, isDemoMode, pendingMerge]);
+  }, [store.trips, user, isDemoMode, pendingMerge]);
 
   // ── Derived values ────────────────────────────────────────────────────────
   const sortedStays = useMemo(
@@ -703,7 +712,7 @@ function ChronosApp() {
       setPendingMerge(null);
       return;
     }
-    const { cloudTrips, cloudActiveTripId } = pendingMerge;
+    const { cloudTrips, allCloudTrips, cloudActiveTripId } = pendingMerge;
 
     let next: TripStore;
     if (decision === 'merge') {
@@ -712,8 +721,11 @@ function ChronosApp() {
     } else if (decision === 'keep-local') {
       next = store;
     } else {
-      // use-cloud: replace local with cloud trips + any local-only trips we discard
-      next = { trips: cloudTrips, activeTripId: cloudActiveTripId || (cloudTrips[0]?.id ?? '') };
+      // use-cloud: replace local with full cloud store
+      next = {
+        trips: allCloudTrips,
+        activeTripId: cloudActiveTripId || (allCloudTrips[0]?.id ?? ''),
+      };
       setSelectedStayId('');
     }
 
@@ -3085,9 +3097,10 @@ function ChronosApp() {
         {pendingMerge && (
           <MergeDialog
             localCount={store.trips.length}
-            cloudCount={pendingMerge.cloudTrips.length}
+            cloudCount={pendingMerge.allCloudTrips.length}
+            mergeCount={store.trips.length + pendingMerge.cloudTrips.length}
             localTripNames={store.trips.map((t) => t.name)}
-            cloudTripNames={pendingMerge.cloudTrips.map((t) => t.name)}
+            cloudTripNames={pendingMerge.allCloudTrips.map((t) => t.name)}
             onMerge={() => handleMergeDecision('merge')}
             onKeepLocal={() => handleMergeDecision('keep-local')}
             onUseCloud={() => handleMergeDecision('use-cloud')}
