@@ -119,25 +119,45 @@ export class FirebaseSyncService implements SyncService {
 
         // Listen to per-trip nodes
         const tripsRef = ref(db, `users/${uid}/trips`);
+        let previousKeys = new Set<string>();
+
         const unsubTrips = onValue(
           tripsRef,
           (snapshot) => {
-            if (!snapshot.exists()) return;
+            if (!snapshot.exists()) {
+              previousKeys.forEach((k) => callbacks.onTripDeleted(k));
+              previousKeys.clear();
+              return;
+            }
             const raw = restoreArrays(snapshot.val()) as Record<string, unknown>;
+            const currentKeys = new Set(Object.keys(raw));
+
+            // Detect deletions
+            previousKeys.forEach((k) => {
+              if (!currentKeys.has(k)) callbacks.onTripDeleted(k);
+            });
+
+            // Notify updates
             Object.values(raw).forEach((t) => {
               callbacks.onTripUpdated(normalizeAndMigrate(t));
             });
+
+            previousKeys = currentKeys;
           },
           (error) => callbacks.onError(error.message),
         );
 
         // Listen to activeTripId
         const activeRef = ref(db, `users/${uid}/activeTripId`);
-        const unsubActive = onValue(activeRef, (snapshot) => {
-          if (snapshot.exists()) {
-            callbacks.onActiveTripIdChanged(String(snapshot.val()));
-          }
-        });
+        const unsubActive = onValue(
+          activeRef,
+          (snapshot) => {
+            if (snapshot.exists()) {
+              callbacks.onActiveTripIdChanged(String(snapshot.val()));
+            }
+          },
+          (error) => callbacks.onError(error.message),
+        );
 
         unsubFns = [unsubTrips, unsubActive];
       } catch (error) {
