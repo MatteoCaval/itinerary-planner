@@ -995,14 +995,14 @@ function ChronosApp() {
 
         {/* ── Sync error banner ── */}
         {syncError && (
-          <div className="flex items-center gap-2 px-4 py-2 bg-red-50 border-b border-red-100 text-xs text-red-700 flex-shrink-0 z-40">
+          <div className="flex items-center gap-2 px-4 py-2 bg-destructive/10 border-b border-destructive/20 text-xs text-destructive flex-shrink-0 z-40">
             <CloudOff className="w-3.5 h-3.5 flex-shrink-0" />
             <span className="flex-1">{syncError}</span>
             <Button
               variant="ghost"
               size="icon-xs"
               onClick={() => setSyncError(null)}
-              className="hover:bg-red-100"
+              className="hover:bg-destructive/20"
             >
               <X className="w-3 h-3" />
             </Button>
