@@ -125,12 +125,15 @@ export function useCloudSync(
       },
 
       onTripDeleted: (tripId) => {
-        setStore((prev) => ({
-          ...prev,
-          trips: prev.trips.filter((t) => t.id !== tripId),
-          activeTripId:
-            prev.activeTripId === tripId ? (prev.trips[0]?.id ?? '') : prev.activeTripId,
-        }));
+        setStore((prev) => {
+          const remaining = prev.trips.filter((t) => t.id !== tripId);
+          return {
+            ...prev,
+            trips: remaining,
+            activeTripId:
+              prev.activeTripId === tripId ? (remaining[0]?.id ?? '') : prev.activeTripId,
+          };
+        });
       },
 
       onActiveTripIdChanged: (id) => {
