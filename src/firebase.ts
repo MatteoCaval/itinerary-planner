@@ -30,7 +30,7 @@ const getFirebaseApp = async () => {
   return appPromise;
 };
 
-async function getDb() {
+export async function getDb() {
   if (!dbPromise) {
     dbPromise = (async () => {
       const { getDatabase } = await import('firebase/database');
@@ -53,7 +53,7 @@ export async function getFirebaseAuth() {
 }
 
 // Helper to remove undefined values recursively (Firebase doesn't allow them)
-const sanitizeForFirebase = (obj: unknown): unknown => {
+export const sanitizeForFirebase = (obj: unknown): unknown => {
   if (Array.isArray(obj)) {
     return obj.map(sanitizeForFirebase);
   }
@@ -74,7 +74,7 @@ const sanitizeForFirebase = (obj: unknown): unknown => {
 /** Firebase Realtime Database converts arrays to objects with numeric keys.
  *  This reverses that: any object whose keys are all consecutive integers 0..N
  *  is turned back into an array, recursively. */
-const restoreArrays = (obj: unknown): unknown => {
+export const restoreArrays = (obj: unknown): unknown => {
   if (obj === null || obj === undefined || typeof obj !== 'object') return obj;
   if (Array.isArray(obj)) return obj.map(restoreArrays);
 
