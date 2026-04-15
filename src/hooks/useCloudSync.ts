@@ -37,6 +37,21 @@ export function useCloudSync(
   const activeTripIdRef = useRef(store.activeTripId);
   useEffect(() => { activeTripIdRef.current = store.activeTripId; });
 
+  // True once the initial loadTrips call has completed. Suppresses toast for
+  // the subscriber's first fire (which replays current state, not a new change).
+  const initialLoadDoneRef = useRef(false);
+
+  // Seed lastPushedRef/lastPushedAtRef for a set of trips, but only if the
+  // subscriber hasn't already seeded a given trip (subscribe wins the race).
+  const seedIfUnseen = useCallback((trips: HybridTrip[]) => {
+    trips.forEach((t) => {
+      if (!(t.id in lastPushedAtRef.current)) {
+        lastPushedRef.current[t.id] = t;
+        lastPushedAtRef.current[t.id] = t.updatedAt ?? 0;
+      }
+    });
+  }, []);
+
   // ── Load on login ─────────────────────────────────────────────────────────
   useEffect(() => {
     if (!user) {
@@ -47,6 +62,7 @@ export function useCloudSync(
       syncedUidRef.current = null;
       lastPushedRef.current = {};
       lastPushedAtRef.current = {};
+      initialLoadDoneRef.current = false;
       return;
     }
 
@@ -60,6 +76,7 @@ export function useCloudSync(
 
         if (result.source === 'empty') {
           await Promise.all(currentStore.trips.map((t) => service.saveTrip(user.uid, t)));
+          seedIfUnseen(currentStore.trips);
           if (currentStore.activeTripId) {
             await service.saveActiveTripId(user.uid, currentStore.activeTripId);
           }
@@ -71,9 +88,24 @@ export function useCloudSync(
         const cloudOnlyTrips = cloudTrips.filter((t) => !localIds.has(t.id));
 
         if (cloudOnlyTrips.length === 0) {
-          if (currentStore.trips.length > 0) {
-            await Promise.all(currentStore.trips.map((t) => service.saveTrip(user.uid, t)));
+          // All cloud trips have matching local IDs. Pick winner per-trip by updatedAt.
+          const cloudById = Object.fromEntries(cloudTrips.map((t) => [t.id, t]));
+          const mergedTrips = currentStore.trips.map((local) => {
+            const cloud = cloudById[local.id];
+            if (!cloud) return local;
+            return (cloud.updatedAt ?? 0) > (local.updatedAt ?? 0) ? cloud : local;
+          });
+
+          const hasCloudWins = mergedTrips.some((t, i) => t !== currentStore.trips[i]);
+          if (hasCloudWins) {
+            const next: TripStore = { ...currentStore, trips: mergedTrips };
+            setStore(() => next);
+            saveStore(next);
           }
+
+          // Push locally-newer trips to cloud (saveTrip guards against overwriting newer cloud data)
+          await Promise.all(mergedTrips.map((t) => service.saveTrip(user.uid, t)));
+          seedIfUnseen(mergedTrips);
           return;
         }
 
@@ -84,6 +116,7 @@ export function useCloudSync(
           };
           setStore(() => next);
           saveStore(next);
+          seedIfUnseen(cloudTrips);
           return;
         }
 
@@ -92,11 +125,14 @@ export function useCloudSync(
           allCloudTrips: cloudTrips,
           cloudActiveTripId: result.activeTripId,
         });
+        seedIfUnseen(cloudTrips);
       } catch {
         setSyncError('Could not load your trips from the cloud. Your local trips are safe.');
+      } finally {
+        initialLoadDoneRef.current = true;
       }
     })();
-  }, [user, service, setStore]);
+  }, [user, service, setStore, seedIfUnseen]);
 
   // ── Real-time listener ────────────────────────────────────────────────────
   useEffect(() => {
@@ -109,11 +145,6 @@ export function useCloudSync(
           return;
         }
 
-        if (trip.id === activeTripIdRef.current) {
-          setRemoteUpdateToast({ tripName: trip.name });
-          return;
-        }
-
         setStore((prev) => {
           const idx = prev.trips.findIndex((t) => t.id === trip.id);
           if (idx === -1) return { ...prev, trips: [...prev.trips, trip] };
@@ -122,6 +153,16 @@ export function useCloudSync(
           trips[idx] = trip;
           return { ...prev, trips };
         });
+
+        // Always seed — subscribe wins over load effect's deferred seeding
+        lastPushedRef.current[trip.id] = trip;
+        lastPushedAtRef.current[trip.id] = trip.updatedAt ?? 0;
+
+        // Only toast after initial load — subscriber always fires once on connect
+        // with current state, which is not a new change
+        if (trip.id === activeTripIdRef.current && initialLoadDoneRef.current) {
+          setRemoteUpdateToast({ tripName: trip.name });
+        }
       },
 
       onTripDeleted: (tripId) => {
