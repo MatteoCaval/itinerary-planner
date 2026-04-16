@@ -194,7 +194,7 @@ describe('useShareCode', () => {
       expect(hasUpdate).toBe(false);
     });
 
-    it('returns false and clears sourceShareCode when code is revoked', async () => {
+    it('returns false and flags sourceRevoked when code is revoked', async () => {
       vi.mocked(firebase.getShareCodeMeta).mockResolvedValue({
         success: false,
         error: 'Share code not found',
@@ -210,6 +210,13 @@ describe('useShareCode', () => {
       });
 
       expect(hasUpdate).toBe(false);
+      expect(result.current.sourceRevoked).toBe(true);
+
+      // dismissRevoked clears the flag and the sourceShareCode
+      await act(async () => {
+        result.current.dismissRevoked();
+      });
+      expect(result.current.sourceRevoked).toBe(false);
       expect(setTrip).toHaveBeenCalled();
     });
   });

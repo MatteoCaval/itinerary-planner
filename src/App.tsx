@@ -1097,7 +1097,24 @@ function ChronosApp() {
             </Button>
           </div>
         )}
-        {trip.sourceShareCode && (
+        {shareCodeState.sourceRevoked && (
+          <div className="flex items-center gap-2 px-4 py-2 bg-warning/10 border-b border-warning/20 text-xs flex-shrink-0 z-40">
+            <Link2 className="w-3.5 h-3.5 text-warning flex-shrink-0" />
+            <span className="font-semibold text-warning">
+              This share code is no longer available
+            </span>
+            <div className="flex-1" />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={shareCodeState.dismissRevoked}
+              className="text-xs font-semibold h-6 px-2 text-warning hover:text-warning"
+            >
+              Dismiss
+            </Button>
+          </div>
+        )}
+        {trip.sourceShareCode && !shareCodeState.sourceRevoked && (
           <div className={`flex items-center gap-2 px-4 py-2 border-b text-xs flex-shrink-0 z-40 ${
             shareCodeState.updateAvailable
               ? 'bg-info/10 border-info/20'

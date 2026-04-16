@@ -21,6 +21,7 @@ export function useShareCode(
   const [error, setError] = useState<string | null>(null);
   const [updateAvailable, setUpdateAvailable] = useState(false);
   const [remoteMode, setRemoteMode] = useState<ShareCodeMode | null>(null);
+  const [sourceRevoked, setSourceRevoked] = useState(false);
   const tripRef = useRef(trip);
   tripRef.current = trip;
 
@@ -193,8 +194,8 @@ export function useShareCode(
 
     const meta = await getShareCodeMeta(sourceCode);
     if (!meta.success) {
-      // Code was revoked or doesn't exist
-      setTrip((prev) => ({ ...prev, sourceShareCode: undefined }));
+      // Code was revoked or doesn't exist — flag it, don't silently clear
+      setSourceRevoked(true);
       setUpdateAvailable(false);
       setRemoteMode(null);
       return false;
@@ -248,16 +249,23 @@ export function useShareCode(
     return true;
   }, [setTrip]);
 
+  const dismissRevoked = useCallback(() => {
+    setSourceRevoked(false);
+    setTrip((prev) => ({ ...prev, sourceShareCode: undefined }));
+  }, [setTrip]);
+
   return {
     status,
     error,
     updateAvailable,
     remoteMode,
+    sourceRevoked,
     createShareCode,
     pushUpdate,
     pushToSource,
     revokeShareCode,
     checkForUpdate,
     pullLatest,
+    dismissRevoked,
   };
 }
