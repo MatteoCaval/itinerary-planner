@@ -39,9 +39,7 @@ export const usePlaceSearch = ({
         trackError('place_search_failed', error, { queryLength: query.length });
         setSuggestions([]);
       } finally {
-        if (!controller.signal.aborted) {
-          setLoading(false);
-        }
+        setLoading(false);
       }
     }, debounceMs);
 

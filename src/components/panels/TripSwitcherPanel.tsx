@@ -18,6 +18,11 @@ function TripSwitcherPanel({
   return (
     <ModalBase title="Switch Trip" onClose={onClose}>
       <div className="space-y-2 mb-4">
+        {store.trips.length === 0 && (
+          <p className="text-sm text-muted-foreground text-center py-6">
+            No trips yet. Create your first one below!
+          </p>
+        )}
         {store.trips.map((t) => (
           <button
             key={t.id}
@@ -31,8 +36,8 @@ function TripSwitcherPanel({
                 : 'border-border hover:border-border hover:bg-muted'
             }`}
           >
-            <div>
-              <p className="text-sm font-bold text-foreground">{t.name}</p>
+            <div className="min-w-0">
+              <p className="text-sm font-bold text-foreground truncate">{t.name}</p>
               <p className="text-[11px] text-muted-foreground mt-0.5">
                 {fmt(new Date(t.startDate), { month: 'short', day: 'numeric', year: 'numeric' })} ·{' '}
                 {t.totalDays} days · {t.stays.length} stays

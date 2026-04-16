@@ -237,7 +237,7 @@ export function useCloudSync(
           });
         }
 
-        store.trips.forEach((t) => { lastPushedRef.current[t.id] = t; });
+        storeRef.current.trips.forEach((t) => { lastPushedRef.current[t.id] = t; });
 
         setSyncStatus('saved');
       } catch {

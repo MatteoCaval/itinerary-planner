@@ -24,6 +24,7 @@ function AddStayModal({
   const [pickedCoords, setPickedCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [showResults, setShowResults] = useState(false);
   const [searchError, setSearchError] = useState(false);
+  const [searchStale, setSearchStale] = useState(false);
 
   useEffect(() => {
     if (!name.trim() || name.trim().length < 3 || pickedCoords) {
@@ -35,6 +36,8 @@ function AddStayModal({
     const tid = window.setTimeout(async () => {
       setIsSearching(true);
       setSearchError(false);
+      setSearchStale(false);
+      const staleTimer = window.setTimeout(() => setSearchStale(true), 8000);
       try {
         const results = await searchPlace(name.trim(), { signal: controller.signal });
         setSearchResults(results.slice(0, 6));
@@ -42,12 +45,17 @@ function AddStayModal({
       } catch {
         if (!controller.signal.aborted) setSearchError(true);
       } finally {
-        if (!controller.signal.aborted) setIsSearching(false);
+        clearTimeout(staleTimer);
+        if (!controller.signal.aborted) {
+          setIsSearching(false);
+          setSearchStale(false);
+        }
       }
     }, 500);
     return () => {
       clearTimeout(tid);
       controller.abort();
+      setSearchStale(false);
     };
   }, [name, pickedCoords]);
 
@@ -117,6 +125,11 @@ function AddStayModal({
           {searchError && (
             <p className="text-[11px] text-destructive font-medium mt-1">
               Search failed — try a different name, or just type your destination and save.
+            </p>
+          )}
+          {isSearching && searchStale && (
+            <p className="text-[11px] text-muted-foreground font-medium mt-1">
+              Search is taking longer than expected…
             </p>
           )}
         </div>

@@ -65,10 +65,16 @@ function DroppablePeriodSlot({
         <Button
           variant="outline"
           onClick={() => onAddVisit(dayOffset, period)}
-          className="w-full h-10 border-2 border-dashed border-border text-muted-foreground hover:text-primary hover:border-primary/50 hover:bg-primary/5 gap-1.5 group"
+          className={`w-full h-10 border-2 border-dashed gap-1.5 group transition-all ${
+            isOver
+              ? 'border-primary bg-primary/10 text-primary scale-[1.02]'
+              : 'border-border text-muted-foreground hover:text-primary hover:border-primary/50 hover:bg-primary/5'
+          }`}
         >
           <PlusCircle className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
-          <span className="text-[11px] font-bold uppercase tracking-tight">Drop or add</span>
+          <span className="text-[11px] font-bold uppercase tracking-tight">
+            {isOver ? 'Drop here' : 'Drop or add'}
+          </span>
         </Button>
       </div>
     </div>

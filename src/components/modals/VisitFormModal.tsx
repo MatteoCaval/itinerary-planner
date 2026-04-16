@@ -81,10 +81,15 @@ function VisitFormModal({
   // Checklist
   const [checklist, setChecklist] = useState<ChecklistItem[]>(initial?.checklist ?? []);
   const [newChecklistText, setNewChecklistText] = useState('');
+  const [checklistDupe, setChecklistDupe] = useState(false);
   const addChecklistItem = () => {
     const text = newChecklistText.trim();
     if (!text) return;
-    if (checklist.some((c) => c.text.toLowerCase() === text.toLowerCase())) return;
+    if (checklist.some((c) => c.text.toLowerCase() === text.toLowerCase())) {
+      setChecklistDupe(true);
+      return;
+    }
+    setChecklistDupe(false);
     setChecklist((c) => [...c, { id: `cl-${Date.now()}`, text, done: false }]);
     setNewChecklistText('');
   };
@@ -316,7 +321,7 @@ function VisitFormModal({
                 className="flex-1 text-xs"
                 placeholder="Add item…"
                 value={newChecklistText}
-                onChange={(e) => setNewChecklistText(e.target.value)}
+                onChange={(e) => { setNewChecklistText(e.target.value); setChecklistDupe(false); }}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
                     e.preventDefault();
@@ -333,6 +338,9 @@ function VisitFormModal({
                 <Plus data-icon="inline-start" className="w-3.5 h-3.5" />
               </Button>
             </div>
+            {checklistDupe && (
+              <p className="text-[11px] text-warning font-medium px-1">Item already in the list.</p>
+            )}
           </div>
         </details>
 

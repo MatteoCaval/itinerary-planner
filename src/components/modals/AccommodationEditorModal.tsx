@@ -217,7 +217,12 @@ function AccommodationEditorModal({
             min="0"
             step="0.01"
             value={cost}
-            onChange={(e) => setCost(e.target.value)}
+            onChange={(e) => {
+              const val = e.target.value;
+              if (val === '' || (/^\d*\.?\d{0,2}$/.test(val) && Number(val) >= 0)) {
+                setCost(val);
+              }
+            }}
           />
         </div>
 
@@ -227,7 +232,7 @@ function AccommodationEditorModal({
             <label className="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground mb-1.5 block">
               Nights covered
             </label>
-            <div className="border border-border rounded-lg overflow-hidden">
+            <div className="border border-border rounded-lg overflow-hidden max-h-48 overflow-y-auto">
               {allNights.map(({ dayOffset, date }) => (
                 <label
                   key={dayOffset}

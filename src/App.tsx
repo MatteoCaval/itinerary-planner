@@ -174,14 +174,18 @@ function ChronosApp() {
     if (!import.meta.env.VITE_UNSPLASH_ACCESS_KEY) return;
     const staysNeedingImages = trip.stays.filter((s) => !s.imageUrl);
     if (staysNeedingImages.length === 0) return;
+    let cancelled = false;
     staysNeedingImages.forEach(async (stay) => {
-      const url = await searchPhoto(`${stay.name} city travel`);
-      if (url)
-        updateTripRef.current((t) => ({
-          ...t,
-          stays: t.stays.map((s) => (s.id === stay.id ? { ...s, imageUrl: url } : s)),
-        }));
+      try {
+        const url = await searchPhoto(`${stay.name} city travel`);
+        if (url && !cancelled)
+          updateTripRef.current((t) => ({
+            ...t,
+            stays: t.stays.map((s) => (s.id === stay.id ? { ...s, imageUrl: url } : s)),
+          }));
+      } catch { /* search failed — skip silently */ }
     });
+    return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trip.stays.map((s) => `${s.id}:${s.imageUrl ?? ''}`).join('|')]);
 
@@ -515,14 +519,18 @@ function ChronosApp() {
       (v) => v.stayId === selectedStay.id && !v.imageUrl,
     );
     if (visitsNeedingImages.length === 0) return;
+    let cancelled = false;
     visitsNeedingImages.forEach(async (visit) => {
-      const url = await searchPhoto(visit.name);
-      if (url)
-        updateTripRef.current((t) => ({
-          ...t,
-          visits: t.visits.map((v) => (v.id === visit.id ? { ...v, imageUrl: url } : v)),
-        }));
+      try {
+        const url = await searchPhoto(visit.name);
+        if (url && !cancelled)
+          updateTripRef.current((t) => ({
+            ...t,
+            visits: t.visits.map((v) => (v.id === visit.id ? { ...v, imageUrl: url } : v)),
+          }));
+      } catch { /* search failed — skip silently */ }
     });
+    return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedStay?.id, trip.visits]);
 

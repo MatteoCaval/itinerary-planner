@@ -62,7 +62,7 @@ function DraggableInventoryCard({
           >
             <Pencil className="w-3.5 h-3.5" />
           </Button>
-          <div className="p-2.5 text-muted-foreground/40" aria-hidden="true">
+          <div className="p-2.5 text-muted-foreground/30 group-hover:text-muted-foreground/60 transition-colors" aria-hidden="true">
             <GripVertical className="w-4 h-4" />
           </div>
         </div>

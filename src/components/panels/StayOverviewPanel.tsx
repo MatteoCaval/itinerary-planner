@@ -163,7 +163,7 @@ function StayOverviewPanel({
                   setLinks(next);
                   onUpdate({ links: next.length > 0 ? next : undefined });
                 }}
-                className="opacity-0 group-hover:opacity-100 hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
+                className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:bg-destructive/10 text-muted-foreground hover:text-destructive sm:max-md:opacity-100"
               >
                 <X className="w-3 h-3" />
               </Button>
@@ -264,6 +264,7 @@ export function StayTodoSection({
       </button>
       {open && (
         <div className="px-4 pb-3 space-y-1.5">
+          <div className="max-h-48 overflow-y-auto space-y-1.5">
           {checklist.map((item) => (
             <div key={item.id} className="flex items-center gap-2 group">
               <Checkbox
@@ -282,12 +283,13 @@ export function StayTodoSection({
                 variant="ghost"
                 size="icon-sm"
                 onClick={() => onUpdate(checklist.filter((i) => i.id !== item.id))}
-                className="opacity-0 group-hover:opacity-100 hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
+                className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:bg-destructive/10 text-muted-foreground hover:text-destructive sm:max-md:opacity-100"
               >
                 <X className="w-3 h-3" />
               </Button>
             </div>
           ))}
+          </div>
           <div className="flex items-center gap-1.5 mt-1">
             <Input
               className="flex-1 text-xs h-7"

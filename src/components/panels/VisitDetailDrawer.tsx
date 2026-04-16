@@ -178,7 +178,7 @@ function VisitDetailDrawer({
                     variant="ghost"
                     size="icon-sm"
                     onClick={() => removeChecklistItem(item.id)}
-                    className="opacity-0 group-hover:opacity-100 hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
+                    className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:bg-destructive/10 text-muted-foreground hover:text-destructive sm:max-md:opacity-100"
                   >
                     <X className="w-3 h-3" />
                   </Button>

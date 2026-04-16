@@ -97,6 +97,9 @@ function RouteEditorModal({
               value={duration}
               onChange={(e) => setDuration(e.target.value)}
             />
+            <p className="text-[11px] text-muted-foreground mt-1">
+              Free-form text — e.g. &ldquo;2h 30m&rdquo;, &ldquo;45 min&rdquo;, &ldquo;overnight&rdquo;
+            </p>
           </div>
 
           {/* Notes */}

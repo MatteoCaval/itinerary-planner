@@ -17,6 +17,11 @@ function HistoryPanel({
 }) {
   return (
     <ModalBase title="History" onClose={onClose}>
+      {history.length <= 1 ? (
+        <p className="text-sm text-muted-foreground text-center py-8">
+          No changes yet. Edits will appear here as you build your trip.
+        </p>
+      ) : (
       <div className="space-y-0.5 max-h-[min(24rem,calc(100vh-12rem))] overflow-y-auto -mx-1 px-1">
         {[...history].reverse().map((snap, ri) => {
           const i = history.length - 1 - ri;
@@ -99,6 +104,7 @@ function HistoryPanel({
           );
         })}
       </div>
+      )}
     </ModalBase>
   );
 }

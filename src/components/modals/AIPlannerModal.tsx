@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Sparkles, SlidersHorizontal, Check, X } from 'lucide-react';
 import ModalBase from '@/components/ui/ModalBase';
 import { Button } from '@/components/ui/button';
@@ -40,6 +40,9 @@ function AIPlannerModal({
     visits: VisitItem[];
     routes: Route[];
   } | null>(null);
+  const [loadingSlow, setLoadingSlow] = useState(false);
+
+  const slowTimerRef = useRef<number | null>(null);
 
   const handleGenerate = async () => {
     if (!settings.apiKey.trim()) {
@@ -49,6 +52,8 @@ function AIPlannerModal({
     }
     if (!prompt.trim()) return;
     setLoading(true);
+    setLoadingSlow(false);
+    slowTimerRef.current = window.setTimeout(() => setLoadingSlow(true), 15000);
     setError(null);
     setExplanation(null);
     setPendingResult(null);
@@ -168,7 +173,9 @@ function AIPlannerModal({
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Something went wrong.');
     } finally {
+      if (slowTimerRef.current) clearTimeout(slowTimerRef.current);
       setLoading(false);
+      setLoadingSlow(false);
     }
   };
 
@@ -262,6 +269,11 @@ function AIPlannerModal({
                   <p className="text-[11px] text-muted-foreground font-medium pt-1">
                     Generating your itinerary…
                   </p>
+                  {loadingSlow && (
+                    <p className="text-[11px] text-warning font-medium">
+                      This is taking longer than usual — hang tight…
+                    </p>
+                  )}
                 </div>
               )}
             </div>

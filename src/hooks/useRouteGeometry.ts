@@ -44,8 +44,9 @@ export function useRouteGeometry(routeSegments: RouteSegmentInput[]) {
           { signal: controller.signal },
         );
         if (cancelled || !geometry) continue;
-        routeShapesRef.current = { ...routeShapesRef.current, [segment.key]: geometry };
-        setRouteShapes(routeShapesRef.current);
+        const updated = { ...routeShapesRef.current, [segment.key]: geometry };
+        routeShapesRef.current = updated;
+        if (!cancelled) setRouteShapes(updated);
       }
     };
 

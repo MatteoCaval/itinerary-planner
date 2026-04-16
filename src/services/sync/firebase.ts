@@ -144,7 +144,7 @@ export class FirebaseSyncService implements SyncService {
 
             previousKeys = currentKeys;
           },
-          (error) => callbacks.onError(error.message),
+          (error) => callbacks.onError(error instanceof Error ? error.message : 'Sync listener failed'),
         );
 
         // Listen to activeTripId
@@ -156,7 +156,7 @@ export class FirebaseSyncService implements SyncService {
               callbacks.onActiveTripIdChanged(String(snapshot.val()));
             }
           },
-          (error) => callbacks.onError(error.message),
+          (error) => callbacks.onError(error instanceof Error ? error.message : 'Sync listener failed'),
         );
 
         unsubFns = [unsubTrips, unsubActive];
