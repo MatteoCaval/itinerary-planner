@@ -41,6 +41,8 @@ import {
   Undo2,
   X,
   Calendar,
+  Link2,
+  Upload,
 } from 'lucide-react';
 import type {
   AccommodationGroup,
@@ -48,6 +50,7 @@ import type {
   DragState,
   HybridTrip,
   NightAccommodation,
+  ShareCodeMode,
   Stay,
   TripStore,
   VisitItem,
@@ -110,6 +113,16 @@ import TripEditorModal from './components/modals/TripEditorModal';
 import AIPlannerModal from './components/modals/AIPlannerModal';
 import MergeDialog from './components/modals/MergeDialog';
 import ImportFromCodeDialog from './components/modals/ImportFromCodeDialog';
+import ShareTripDialog from './components/modals/ShareTripDialog';
+import AuthModalSimple from './components/modals/AuthModalSimple';
+import { useShareCode } from '@/hooks/useShareCode';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
 import TripSwitcherPanel from './components/panels/TripSwitcherPanel';
 import HistoryPanel from './components/panels/HistoryPanel';
 import StayOverviewPanel from './components/panels/StayOverviewPanel';
@@ -301,10 +314,45 @@ function ChronosApp() {
   const mobileSearchRef = useRef<HTMLInputElement>(null);
   const [showAIPlanner, setShowAIPlanner] = useState(false);
   const [showImportCode, setShowImportCode] = useState(false);
+  const [showShareTrip, setShowShareTrip] = useState(false);
+  const [showPullConfirm, setShowPullConfirm] = useState(false);
   const [aiSettings, setAiSettings] = useState<{ apiKey: string; model: string }>(() => {
     const saved = localStorage.getItem('chronos-ai-settings');
     return saved ? JSON.parse(saved) : { apiKey: '', model: 'gemini-2.0-flash' };
   });
+
+  const { user } = useAuth();
+  const shareCodeState = useShareCode(trip, updateTrip);
+
+  const handleCreateShareCode = useCallback(
+    async (mode: ShareCodeMode) => {
+      if (!user?.uid) return undefined;
+      return shareCodeState.createShareCode(user.uid, mode);
+    },
+    [user?.uid, shareCodeState],
+  );
+
+  const handlePushUpdate = useCallback(async () => {
+    return shareCodeState.pushUpdate(user?.uid ?? null);
+  }, [user?.uid, shareCodeState]);
+
+  const handleRevoke = useCallback(
+    () => shareCodeState.revokeShareCode(),
+    [shareCodeState],
+  );
+
+  const handlePullLatest = useCallback(async () => {
+    await shareCodeState.pullLatest();
+    setShowPullConfirm(false);
+  }, [shareCodeState]);
+
+  // Check for share code updates on trip load
+  const { checkForUpdate } = shareCodeState;
+  useEffect(() => {
+    if (trip.sourceShareCode) {
+      checkForUpdate();
+    }
+  }, [trip.id, trip.sourceShareCode, checkForUpdate]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -335,7 +383,6 @@ function ChronosApp() {
   }, [selectedStayId]);
 
   // ── Cloud sync ────────────────────────────────────────────────────────────
-  const { user } = useAuth();
   const syncService = useMemo(() => createSyncService(), []);
   const {
     syncStatus,
@@ -746,13 +793,22 @@ function ChronosApp() {
   // ── Welcome screen for first-time users ──────────────────────────────────
   if (store.trips.length === 0) {
     return (
-      <WelcomeScreen
-        onCreateTrip={() => {
-          handleNewTrip();
-          setShowTripEditor(true);
-        }}
-        onLoadDemo={handleLoadDemo}
-      />
+      <>
+        <WelcomeScreen
+          onCreateTrip={() => {
+            handleNewTrip();
+            setShowTripEditor(true);
+          }}
+          onLoadDemo={handleLoadDemo}
+          onImportFromCode={() => setShowImportCode(true)}
+        />
+        {showImportCode && (
+          <ImportFromCodeDialog
+            onImport={handleImportFromCode}
+            onClose={() => setShowImportCode(false)}
+          />
+        )}
+      </>
     );
   }
 
@@ -988,6 +1044,7 @@ function ChronosApp() {
               trip={trip}
               onImport={(data) => setTrip(() => data)}
               onImportFromCode={() => setShowImportCode(true)}
+              onShareTrip={() => setShowShareTrip(true)}
               onGoHome={handleGoHome}
               onSignOut={handleSignOut}
             />
@@ -1006,6 +1063,88 @@ function ChronosApp() {
               className="hover:bg-destructive/20"
             >
               <X className="w-3 h-3" />
+            </Button>
+          </div>
+        )}
+
+        {/* ── Share status bar ── */}
+        {trip.shareCode && (
+          <div className="flex items-center gap-2 px-4 py-2 bg-muted/30 border-b border-border/50 text-xs flex-shrink-0 z-40">
+            <Link2 className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+            <span className="font-semibold text-foreground">
+              Shared as{' '}
+              <span className="font-mono font-bold tracking-wider">{trip.shareCode}</span>
+            </span>
+            <span className="text-muted-foreground">·</span>
+            <span className="text-muted-foreground font-medium">Read only</span>
+            <div className="flex-1" />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => shareCodeState.pushUpdate(user?.uid ?? null)}
+              className="text-xs font-semibold h-6 px-2"
+            >
+              <Upload className="w-3 h-3 mr-1" />
+              Push changes
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowShareTrip(true)}
+              className="text-xs font-semibold h-6 px-2"
+            >
+              Manage
+            </Button>
+          </div>
+        )}
+        {shareCodeState.sourceRevoked && (
+          <div className="flex items-center gap-2 px-4 py-2 bg-warning/10 border-b border-warning/20 text-xs flex-shrink-0 z-40">
+            <Link2 className="w-3.5 h-3.5 text-warning flex-shrink-0" />
+            <span className="font-semibold text-warning">
+              This share code is no longer available
+            </span>
+            <div className="flex-1" />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={shareCodeState.dismissRevoked}
+              className="text-xs font-semibold h-6 px-2 text-warning hover:text-warning"
+            >
+              Dismiss
+            </Button>
+          </div>
+        )}
+        {trip.sourceShareCode && !shareCodeState.sourceRevoked && (
+          <div className={`flex items-center gap-2 px-4 py-2 border-b text-xs flex-shrink-0 z-40 ${
+            shareCodeState.updateAvailable
+              ? 'bg-info/10 border-info/20'
+              : 'bg-muted/30 border-border/50'
+          }`}>
+            <Link2 className={`w-3.5 h-3.5 flex-shrink-0 ${shareCodeState.updateAvailable ? 'text-info' : 'text-muted-foreground'}`} />
+            <span className={`font-semibold ${shareCodeState.updateAvailable ? 'text-info' : 'text-foreground'}`}>
+              {shareCodeState.updateAvailable ? 'Update available for' : 'Linked to'}{' '}
+              <span className="font-mono font-bold tracking-wider">{trip.sourceShareCode}</span>
+            </span>
+            <div className="flex-1" />
+            {shareCodeState.remoteMode === 'writable' && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => shareCodeState.pushToSource(user?.uid ?? null)}
+                className="text-xs font-semibold h-6 px-2"
+              >
+                <Upload className="w-3 h-3 mr-1" />
+                Push changes
+              </Button>
+            )}
+            <Button
+              variant={shareCodeState.updateAvailable ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => shareCodeState.updateAvailable ? setShowPullConfirm(true) : undefined}
+              disabled={!shareCodeState.updateAvailable}
+              className={`text-xs font-semibold h-6 px-2 ${!shareCodeState.updateAvailable ? 'text-muted-foreground' : ''}`}
+            >
+              {shareCodeState.updateAvailable ? 'Pull latest' : 'Up to date'}
             </Button>
           </div>
         )}
@@ -3016,6 +3155,53 @@ function ChronosApp() {
             onImport={handleImportFromCode}
             onClose={() => setShowImportCode(false)}
           />
+        )}
+
+        {showShareTrip && (
+          user ? (
+            <ShareTripDialog
+              shareCode={trip.shareCode}
+              status={shareCodeState.status}
+              error={shareCodeState.error}
+              onCreateCode={handleCreateShareCode}
+              onPushUpdate={handlePushUpdate}
+              onRevoke={handleRevoke}
+              onClose={() => setShowShareTrip(false)}
+            />
+          ) : (
+            <AuthModalSimple onClose={() => setShowShareTrip(false)} />
+          )
+        )}
+
+        {showPullConfirm && (
+          <Dialog open onOpenChange={(open) => { if (!open) setShowPullConfirm(false); }}>
+            <DialogContent className="sm:max-w-sm p-5">
+              <DialogDescription className="sr-only">Pull latest version of this trip</DialogDescription>
+              <DialogHeader>
+                <DialogTitle className="font-extrabold text-foreground text-sm">
+                  Pull latest version?
+                </DialogTitle>
+                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                  This will replace your current trip data with the latest version from the shared code.
+                </p>
+              </DialogHeader>
+              <div className="flex gap-2 mt-3">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowPullConfirm(false)}
+                  className="flex-1 text-xs font-semibold"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handlePullLatest}
+                  className="flex-1 text-xs font-bold"
+                >
+                  Pull latest
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
         )}
       </div>
     </DndContext>

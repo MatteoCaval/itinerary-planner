@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Compass, Plus, LogIn } from 'lucide-react';
+import { Compass, Plus, LogIn, Download } from 'lucide-react';
 import TransportIcon from '@/components/ui/TransportIcon';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
@@ -8,9 +8,11 @@ import AuthModalSimple from '@/components/modals/AuthModalSimple';
 function WelcomeScreen({
   onCreateTrip,
   onLoadDemo,
+  onImportFromCode,
 }: {
   onCreateTrip: () => void;
   onLoadDemo: () => void;
+  onImportFromCode: () => void;
 }) {
   const { user } = useAuth();
   const [showAuth, setShowAuth] = useState(false);
@@ -110,6 +112,10 @@ function WelcomeScreen({
             </Button>
             <Button variant="outline" onClick={onLoadDemo}>
               See a demo
+            </Button>
+            <Button variant="outline" onClick={onImportFromCode}>
+              <Download className="w-4 h-4" />
+              Import from code
             </Button>
           </div>
 

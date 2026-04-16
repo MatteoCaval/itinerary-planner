@@ -134,3 +134,59 @@ export const loadItinerary = async (
   }
 };
 
+export const checkShareCodeExists = async (
+  code: string,
+): Promise<{ exists: boolean; error?: string }> => {
+  try {
+    const { ref, get, child } = await import('firebase/database');
+    const db = await getDb();
+    const snapshot = await get(child(ref(db), `itineraries/${code}/ownerUid`));
+    return { exists: snapshot.exists() };
+  } catch (error) {
+    trackError('share_code_check_failed', error, { code });
+    return { exists: false, error: formatErrorMessage(error) };
+  }
+};
+
+export const deleteShareCode = async (
+  code: string,
+): Promise<{ success: boolean; error?: string }> => {
+  try {
+    const { ref, remove } = await import('firebase/database');
+    const db = await getDb();
+    await remove(ref(db, `itineraries/${code}`));
+    return { success: true };
+  } catch (error) {
+    trackError('share_code_delete_failed', error, { code });
+    return { success: false, error: formatErrorMessage(error) };
+  }
+};
+
+export const getShareCodeMeta = async (
+  code: string,
+): Promise<{ success: boolean; updatedAt?: number; mode?: string; error?: string }> => {
+  try {
+    const { ref, get, child } = await import('firebase/database');
+    const db = await getDb();
+    const dbRef = ref(db);
+
+    const [updatedAtSnap, modeSnap] = await Promise.all([
+      get(child(dbRef, `itineraries/${code}/updatedAt`)),
+      get(child(dbRef, `itineraries/${code}/mode`)),
+    ]);
+
+    if (!updatedAtSnap.exists()) {
+      return { success: false, error: 'Share code not found' };
+    }
+
+    return {
+      success: true,
+      updatedAt: updatedAtSnap.val() as number,
+      mode: modeSnap.val() as string,
+    };
+  } catch (error) {
+    trackError('share_code_meta_failed', error, { code });
+    return { success: false, error: formatErrorMessage(error) };
+  }
+};
+

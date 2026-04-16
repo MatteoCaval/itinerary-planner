@@ -69,6 +69,10 @@ Firebase Auth (email/password + Google OAuth). On login, local and cloud trips a
 
 JSON (native `HybridTrip` format) and Markdown (human-readable, grouped by day). Import validates with Zod. Access via profile menu.
 
+### Share via Code
+
+Trip creators can generate a short **share code** (format: `TRIP-XXXXXX`) to share out-of-band (text, email, etc.). Anyone can import a shared trip by entering the code—no login required. Creator can **push updates** to propagate changes to all importers, **toggle read-only/writable mode**, or **revoke** the share. Importers can **pull latest updates** with an option to save a copy before updating. One active share code per trip. Writable mode (future: auth-optional pushes) currently requires creator login to enable/disable.
+
 ### Multi-Trip & Welcome Screen
 
 Trip switcher modal. Shown when no trips exist: "Plan a trip" → new empty trip, "See a demo" → loads Japan sample without persisting. Deleting the last trip returns to welcome screen.
@@ -92,9 +96,10 @@ Trip dates edited via an inline calendar (react-day-picker v9). When shortening 
 ```
 TripStore       { trips: Trip[], activeTripId: string }
 
-Trip            { id, name, startDate: "YYYY-MM-DD", totalDays,
-                  version: 2, createdAt, updatedAt,
-                  stays: Stay[], visits: VisitItem[], routes: Route[] }
+Trip (HybridTrip) { id, name, startDate: "YYYY-MM-DD", totalDays,
+                    version: 2, createdAt, updatedAt,
+                    stays: Stay[], visits: VisitItem[], routes: Route[],
+                    shareCode?, sourceShareCode?, importedAt? }
 
 Stay            { id, name, color, startSlot, endSlot,
                   centerLat, centerLng, imageUrl?,
@@ -113,6 +118,9 @@ Route           { fromStayId, toStayId, mode: TravelMode, duration?, notes? }
 NightAccommodation  { name, lat?, lng?, cost?, notes?, link? }
 ChecklistItem   { id, text, done: boolean }
 VisitLink       { url, label?: string }
+
+ShareCodeNode   { code: string, tripId: string, userId: string, writable: boolean,
+                  createdAt: timestamp, updatedAt: timestamp, revokedAt?: timestamp }
 ```
 
 **Key design:** Visits are flat at trip level (not nested in stays) with `stayId` reference. Routes are first-class entities between stays. This enables cross-stay visit moves (just change `stayId`), route data survives stay reordering, and future features like destination wishlist (`startSlot: -1`).
@@ -145,6 +153,7 @@ VisitLink       { url, label?: string }
 | Undo/redo + history browser | ✅     | 50-step, keyboard shortcuts                                                                                                                                                                                                                                                                      |
 | Multi-trip + welcome screen | ✅     | Demo mode                                                                                                                                                                                                                                                                                        |
 | Mobile layout               | ✅     | Adaptive layout: map hidden <768px, sidebar → Sheet bottom drawer via FAB, snap-scroll day columns (85vw), footer hidden (sync dot in header), touch DnD (long-press), responsive header; safe-area insets on FAB + drawer; conflict/demo banners visible on all sizes |
+| Share via Code              | ✅     | Generate code, push/pull, toggle mode, revoke; importers don't need auth; writable mode (future: auth-optional)                                                                                                                                                                                 |
 | Passcode sharing            | ⚠️     | Firebase functions exist; not exposed in UI                                                                                                                                                                                                                                                      |
 | Cost/budget dashboard       | ❌     | `cost` field exists, no aggregate display                                                                                                                                                                                                                                                        |
 | Markdown import             | ❌     |                                                                                                                                                                                                                                                                                                  |
@@ -163,3 +172,5 @@ VisitLink       { url, label?: string }
 - **History is in-memory** — page reload resets the undo stack.
 - **Legacy app removed** — the old Mantine-based UI has been fully deleted. Only the CHRONOS app remains.
 - **Dark mode not implemented** — light mode only for now.
+- **Writable share mode requires creator login** — future improvement is to allow auth-optional pushes for writable shares.
+- **One active share code per trip** — revoking and re-sharing generates a new code; old importers lose access.

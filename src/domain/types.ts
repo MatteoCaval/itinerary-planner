@@ -68,6 +68,20 @@ export type HybridTrip = {
   stays: Stay[];
   visits: VisitItem[];
   routes: Route[];
+  shareCode?: string;
+  sourceShareCode?: string;
+  importedAt?: number;
+};
+
+export type ShareCodeMode = 'readonly' | 'writable';
+
+export type ShareCodeNode = {
+  trip: HybridTrip;
+  createdAt: number;
+  updatedAt: number;
+  ownerUid: string;
+  mode: ShareCodeMode;
+  lastUpdatedBy?: string;
 };
 
 export type TripStore = { trips: HybridTrip[]; activeTripId: string };
