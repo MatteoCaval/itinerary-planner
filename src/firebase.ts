@@ -182,7 +182,7 @@ export const getShareCodeMeta = async (
     return {
       success: true,
       updatedAt: updatedAtSnap.val() as number,
-      mode: modeSnap.val() as string,
+      mode: (modeSnap.val() as string) ?? 'readonly',
     };
   } catch (error) {
     trackError('share_code_meta_failed', error, { code });
