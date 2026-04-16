@@ -206,7 +206,7 @@ export function useShareCode(
     setUpdateAvailable(hasUpdate);
     setRemoteMode((meta.mode as ShareCodeMode) ?? null);
     return hasUpdate;
-  }, [setTrip]);
+  }, []);
 
   const pullLatest = useCallback(async (): Promise<boolean> => {
     const sourceCode = tripRef.current.sourceShareCode;
