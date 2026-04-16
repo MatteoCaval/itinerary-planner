@@ -17,9 +17,11 @@ const pinIcon = L.divIcon({
 
 function MapController({
   fitBounds,
+  hasValue,
   onMapClick,
 }: {
   fitBounds?: [number, number][];
+  hasValue: boolean;
   onMapClick: (lat: number, lng: number) => void;
 }) {
   const map = useMap();
@@ -27,7 +29,8 @@ function MapController({
 
   useEffect(() => {
     map.invalidateSize();
-    if (didFit.current) return;
+    // Skip fitBounds if a value is already set — the map opened centered on that value instead
+    if (didFit.current || hasValue) return;
     if (fitBounds && fitBounds.length > 1) {
       map.fitBounds(fitBounds as L.LatLngBoundsExpression, { padding: [30, 30], maxZoom: 10 });
       didFit.current = true;
@@ -35,7 +38,7 @@ function MapController({
       map.setView(fitBounds[0], 10);
       didFit.current = true;
     }
-  }, [map, fitBounds]);
+  }, [map, fitBounds, hasValue]);
 
   useMapEvents({
     click(e) {
@@ -77,11 +80,12 @@ export function LocationPicker({ value, onChange, defaultCenter, fitBounds }: Lo
   const [lngError, setLngError] = useState(false);
   const mapRef = useRef<L.Map | null>(null);
 
-  // Sync inputs when value changes (e.g. map click)
+  // Sync inputs and pan map when value changes (e.g. Nominatim pick or map click)
   useEffect(() => {
     if (value) {
       setLatText(value.lat.toFixed(5));
       setLngText(value.lng.toFixed(5));
+      mapRef.current?.panTo([value.lat, value.lng]);
     } else {
       setLatText('');
       setLngText('');
@@ -128,10 +132,13 @@ export function LocationPicker({ value, onChange, defaultCenter, fitBounds }: Lo
     setLngError(false);
   };
 
-  const mapCenter: [number, number] = defaultCenter
-    ? [defaultCenter.lat, defaultCenter.lng]
-    : [20, 0];
-  const mapZoom = defaultCenter?.zoom ?? 2;
+  // If a value is already set (e.g. from a prior Nominatim pick), open the map there
+  const mapCenter: [number, number] = value
+    ? [value.lat, value.lng]
+    : defaultCenter
+      ? [defaultCenter.lat, defaultCenter.lng]
+      : [20, 0];
+  const mapZoom = value ? 14 : (defaultCenter?.zoom ?? 2);
 
   return (
     <div>
@@ -157,7 +164,7 @@ export function LocationPicker({ value, onChange, defaultCenter, fitBounds }: Lo
               url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>'
             />
-            <MapController fitBounds={fitBounds} onMapClick={handleMapClick} />
+            <MapController fitBounds={fitBounds} hasValue={!!value} onMapClick={handleMapClick} />
             <MapRefCapture mapRef={mapRef} />
             {value && <Marker position={[value.lat, value.lng]} icon={pinIcon} />}
           </MapContainer>
