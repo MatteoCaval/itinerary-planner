@@ -55,7 +55,6 @@ import type {
 import {
   createEmptyTrip,
   DAY_PARTS,
-  LEGACY_STORAGE_KEY,
   STAY_COLORS,
   TRANSPORT_LABELS,
 } from './domain/constants';
@@ -615,15 +614,17 @@ function ChronosApp() {
   };
 
   const handleGoHome = () => {
-    setStore({ trips: [], activeTripId: '' });
-    localStorage.removeItem(LEGACY_STORAGE_KEY);
+    const empty: TripStore = { trips: [], activeTripId: '' };
+    setStore(empty);
+    saveStore(empty);
     setIsDemoMode(false);
     setSelectedStayId('');
   };
 
   const handleSignOut = () => {
-    setStore({ trips: [], activeTripId: '' });
-    localStorage.removeItem(LEGACY_STORAGE_KEY);
+    const empty: TripStore = { trips: [], activeTripId: '' };
+    setStore(empty);
+    saveStore(empty);
     setIsDemoMode(false);
     setSelectedStayId('');
   };
