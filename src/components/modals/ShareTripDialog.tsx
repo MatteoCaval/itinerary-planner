@@ -210,16 +210,17 @@ function ShareTripDialog({
             </div>
           </button>
           <button
-            onClick={() => setMode('writable')}
-            className={`flex items-start gap-3 p-3 rounded-lg border transition-colors text-left ${
-              mode === 'writable'
-                ? 'border-primary bg-primary/5'
-                : 'border-border hover:border-border/80'
-            }`}
+            disabled
+            className="flex items-start gap-3 p-3 rounded-lg border border-border text-left opacity-50 cursor-not-allowed"
           >
-            <Globe className={`w-4 h-4 mt-0.5 flex-shrink-0 ${mode === 'writable' ? 'text-primary' : 'text-muted-foreground'}`} />
+            <Globe className="w-4 h-4 mt-0.5 flex-shrink-0 text-muted-foreground" />
             <div>
-              <p className="text-xs font-bold text-foreground">Anyone can update</p>
+              <p className="text-xs font-bold text-foreground">
+                Anyone can update
+                <span className="ml-1.5 text-[9px] font-extrabold uppercase tracking-wider text-warning bg-warning/10 px-1.5 py-0.5 rounded">
+                  Coming soon
+                </span>
+              </p>
               <p className="text-[11px] text-muted-foreground mt-0.5">
                 Anyone with the code can push changes.
               </p>
