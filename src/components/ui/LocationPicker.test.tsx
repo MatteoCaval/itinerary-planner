@@ -46,9 +46,7 @@ describe('LocationPicker', () => {
   });
 
   it('shows current coords in inputs when value is provided', () => {
-    render(
-      <LocationPicker value={{ lat: 35.6762, lng: 139.6503 }} onChange={vi.fn()} />,
-    );
+    render(<LocationPicker value={{ lat: 35.6762, lng: 139.6503 }} onChange={vi.fn()} />);
     fireEvent.click(screen.getByRole('button', { name: /pick on map/i }));
     expect((screen.getByPlaceholderText('Lat') as HTMLInputElement).value).toBe('35.67620');
     expect((screen.getByPlaceholderText('Lng') as HTMLInputElement).value).toBe('139.65030');

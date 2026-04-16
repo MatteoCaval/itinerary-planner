@@ -43,11 +43,7 @@ function MapController({
 }
 
 // Stores the Leaflet map instance so we can pan to coords typed in the inputs
-function MapRefCapture({
-  mapRef,
-}: {
-  mapRef: React.MutableRefObject<L.Map | null>;
-}) {
+function MapRefCapture({ mapRef }: { mapRef: React.MutableRefObject<L.Map | null> }) {
   const map = useMap();
   useEffect(() => {
     mapRef.current = map;
@@ -66,12 +62,7 @@ export interface LocationPickerProps {
   fitBounds?: [number, number][];
 }
 
-export function LocationPicker({
-  value,
-  onChange,
-  defaultCenter,
-  fitBounds,
-}: LocationPickerProps) {
+export function LocationPicker({ value, onChange, defaultCenter, fitBounds }: LocationPickerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [latText, setLatText] = useState(value ? value.lat.toFixed(5) : '');
   const [lngText, setLngText] = useState(value ? value.lng.toFixed(5) : '');
