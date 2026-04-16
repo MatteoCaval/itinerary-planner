@@ -9,6 +9,7 @@ import {
 } from '@/domain/types';
 import { normalizeTrip, legacyTripToHybrid } from '@/domain/migration';
 import { loadItinerary } from '@/firebase';
+import { isShareCodeNode } from '@/domain/shareCode';
 import {
   Dialog,
   DialogContent,
@@ -48,7 +49,9 @@ function ImportFromCodeDialog({
     }
 
     localStorage.setItem('last-trip-passcode', trimmed);
-    const data = result.data as Record<string, unknown>;
+    const raw = result.data;
+    // Unwrap ShareCodeNode if present (new format), otherwise treat as raw trip (legacy)
+    const data = (isShareCodeNode(raw) ? raw.trip : raw) as Record<string, unknown>;
 
     let trip: HybridTrip;
     try {
@@ -80,8 +83,14 @@ function ImportFromCodeDialog({
       return;
     }
 
-    // Ensure unique ID
-    trip = normalizeTrip({ ...trip, id: crypto.randomUUID() });
+    // Ensure unique ID and store source metadata for pull-latest
+    trip = normalizeTrip({
+      ...trip,
+      id: crypto.randomUUID(),
+      sourceShareCode: trimmed,
+      importedAt: Date.now(),
+      shareCode: undefined, // don't inherit owner's share code
+    });
     setStatus({ type: 'success', message: `Loaded "${trip.name}"!` });
     setTimeout(() => {
       onImport(trip);

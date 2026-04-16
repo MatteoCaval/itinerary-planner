@@ -41,6 +41,9 @@ import {
   Undo2,
   X,
   Calendar,
+  Link2,
+  Upload,
+  Share2,
 } from 'lucide-react';
 import type {
   AccommodationGroup,
@@ -48,6 +51,7 @@ import type {
   DragState,
   HybridTrip,
   NightAccommodation,
+  ShareCodeMode,
   Stay,
   TripStore,
   VisitItem,
@@ -110,6 +114,16 @@ import TripEditorModal from './components/modals/TripEditorModal';
 import AIPlannerModal from './components/modals/AIPlannerModal';
 import MergeDialog from './components/modals/MergeDialog';
 import ImportFromCodeDialog from './components/modals/ImportFromCodeDialog';
+import ShareTripDialog from './components/modals/ShareTripDialog';
+import AuthModalSimple from './components/modals/AuthModalSimple';
+import { useShareCode } from '@/hooks/useShareCode';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
 import TripSwitcherPanel from './components/panels/TripSwitcherPanel';
 import HistoryPanel from './components/panels/HistoryPanel';
 import StayOverviewPanel from './components/panels/StayOverviewPanel';
@@ -301,10 +315,55 @@ function ChronosApp() {
   const mobileSearchRef = useRef<HTMLInputElement>(null);
   const [showAIPlanner, setShowAIPlanner] = useState(false);
   const [showImportCode, setShowImportCode] = useState(false);
+  const [showShareTrip, setShowShareTrip] = useState(false);
+  const [showPullConfirm, setShowPullConfirm] = useState(false);
   const [aiSettings, setAiSettings] = useState<{ apiKey: string; model: string }>(() => {
     const saved = localStorage.getItem('chronos-ai-settings');
     return saved ? JSON.parse(saved) : { apiKey: '', model: 'gemini-2.0-flash' };
   });
+
+  const { user } = useAuth();
+  const shareCodeState = useShareCode(trip, updateTrip);
+
+  const handleCreateShareCode = useCallback(
+    async (mode: ShareCodeMode) => {
+      if (!user?.uid) return undefined;
+      return shareCodeState.createShareCode(user.uid, mode);
+    },
+    [user?.uid, shareCodeState],
+  );
+
+  const handlePushUpdate = useCallback(async () => {
+    return shareCodeState.pushUpdate(user?.uid ?? null);
+  }, [user?.uid, shareCodeState]);
+
+  const handleRevoke = useCallback(
+    () => shareCodeState.revokeShareCode(),
+    [shareCodeState],
+  );
+
+  const handlePullLatest = useCallback(
+    async (saveCopy: boolean) => {
+      const addTrip = (newTrip: HybridTrip) => {
+        setStore((s) => {
+          const next = { ...s, trips: [...s.trips, newTrip] };
+          saveStore(next);
+          return next;
+        });
+      };
+      await shareCodeState.pullLatest(saveCopy, addTrip);
+      setShowPullConfirm(false);
+    },
+    [shareCodeState],
+  );
+
+  // Check for share code updates on trip load
+  const { checkForUpdate } = shareCodeState;
+  useEffect(() => {
+    if (trip.sourceShareCode) {
+      checkForUpdate();
+    }
+  }, [trip.id, trip.sourceShareCode, checkForUpdate]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -335,7 +394,6 @@ function ChronosApp() {
   }, [selectedStayId]);
 
   // ── Cloud sync ────────────────────────────────────────────────────────────
-  const { user } = useAuth();
   const syncService = useMemo(() => createSyncService(), []);
   const {
     syncStatus,
@@ -983,11 +1041,46 @@ function ChronosApp() {
               syncStatus === 'error' ? 'bg-destructive' :
               'bg-muted-foreground'
             }`} title={syncStatus === 'saved' ? 'Synced' : syncStatus === 'saving' ? 'Saving...' : syncStatus === 'error' ? 'Sync error' : 'Local only'} />
+            {/* Share code indicators */}
+            {trip.shareCode && (
+              <button
+                onClick={() => setShowShareTrip(true)}
+                className="hidden sm:flex items-center gap-1.5 text-[11px] font-bold text-primary bg-primary/8 px-2.5 py-1 rounded-lg transition-colors hover:bg-primary/15 flex-shrink-0"
+                title="This trip has an active share code"
+              >
+                <Share2 className="w-3 h-3" />
+                <span className="font-mono tracking-wider">{trip.shareCode}</span>
+              </button>
+            )}
+            {trip.sourceShareCode && (
+              <button
+                onClick={() => shareCodeState.updateAvailable ? setShowPullConfirm(true) : undefined}
+                className={`hidden sm:flex items-center gap-1.5 text-[11px] font-semibold px-2 py-1 rounded-lg transition-colors flex-shrink-0 ${
+                  shareCodeState.updateAvailable
+                    ? 'text-info bg-info/10 hover:bg-info/20 cursor-pointer'
+                    : 'text-muted-foreground bg-muted/50'
+                }`}
+                title={shareCodeState.updateAvailable ? 'Update available — click to pull latest' : 'Linked to a shared trip'}
+              >
+                <Link2 className="w-3 h-3" />
+                {shareCodeState.updateAvailable && <span className="size-1.5 rounded-full bg-info animate-pulse" />}
+              </button>
+            )}
+            {trip.sourceShareCode && shareCodeState.remoteMode === 'writable' && (
+              <button
+                onClick={() => shareCodeState.pushToSource(user?.uid ?? null)}
+                className="hidden sm:flex items-center gap-1.5 text-[11px] font-semibold text-muted-foreground bg-muted/50 px-2 py-1 rounded-lg transition-colors hover:bg-muted flex-shrink-0"
+                title="Push your changes to the shared trip"
+              >
+                <Upload className="w-3 h-3" />
+              </button>
+            )}
             {/* Profile menu */}
             <ProfileMenu
               trip={trip}
               onImport={(data) => setTrip(() => data)}
               onImportFromCode={() => setShowImportCode(true)}
+              onShareTrip={() => setShowShareTrip(true)}
               onGoHome={handleGoHome}
               onSignOut={handleSignOut}
             />
@@ -3016,6 +3109,60 @@ function ChronosApp() {
             onImport={handleImportFromCode}
             onClose={() => setShowImportCode(false)}
           />
+        )}
+
+        {showShareTrip && (
+          user ? (
+            <ShareTripDialog
+              shareCode={trip.shareCode}
+              status={shareCodeState.status}
+              error={shareCodeState.error}
+              onCreateCode={handleCreateShareCode}
+              onPushUpdate={handlePushUpdate}
+              onRevoke={handleRevoke}
+              onClose={() => setShowShareTrip(false)}
+            />
+          ) : (
+            <AuthModalSimple onClose={() => setShowShareTrip(false)} />
+          )
+        )}
+
+        {showPullConfirm && (
+          <Dialog open onOpenChange={(open) => { if (!open) setShowPullConfirm(false); }}>
+            <DialogContent className="sm:max-w-sm p-5">
+              <DialogDescription className="sr-only">Pull latest version of this trip</DialogDescription>
+              <DialogHeader>
+                <DialogTitle className="font-extrabold text-foreground text-sm">
+                  Update available
+                </DialogTitle>
+                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                  A newer version of this trip is available. Would you like to save a copy of your current version before updating?
+                </p>
+              </DialogHeader>
+              <div className="flex flex-col gap-2 mt-3">
+                <Button
+                  onClick={() => handlePullLatest(true)}
+                  className="w-full text-xs font-bold"
+                >
+                  Save copy & update
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => handlePullLatest(false)}
+                  className="w-full text-xs font-semibold"
+                >
+                  Update without saving
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={() => setShowPullConfirm(false)}
+                  className="w-full text-xs font-semibold text-muted-foreground"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
         )}
       </div>
     </DndContext>

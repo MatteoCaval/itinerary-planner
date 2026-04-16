@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Download, Upload, User, LogIn, LogOut, Lock, Check, Compass } from 'lucide-react';
+import { Download, Upload, User, LogIn, LogOut, Lock, Check, Compass, Share2 } from 'lucide-react';
 import AuthModalSimple from '@/components/modals/AuthModalSimple';
 import type { HybridTrip, V1HybridTrip } from '@/domain/types';
 import { useAuth } from '@/context/AuthContext';
@@ -20,12 +20,14 @@ function ProfileMenu({
   trip,
   onImport,
   onImportFromCode,
+  onShareTrip,
   onGoHome,
   onSignOut,
 }: {
   trip: HybridTrip;
   onImport: (data: HybridTrip) => void;
   onImportFromCode: () => void;
+  onShareTrip: () => void;
   onGoHome: () => void;
   onSignOut: () => void;
 }) {
@@ -177,6 +179,12 @@ function ProfileMenu({
               <Download className="w-3 h-3 text-violet-500" />
             </div>
             Import from code
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={onShareTrip}>
+            <div className="size-6 rounded-md bg-primary/10 flex items-center justify-center flex-shrink-0">
+              <Share2 className="w-3 h-3 text-primary" />
+            </div>
+            Share trip
           </DropdownMenuItem>
 
           {/* Navigation section */}
