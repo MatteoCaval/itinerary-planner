@@ -793,14 +793,22 @@ function ChronosApp() {
   // ── Welcome screen for first-time users ──────────────────────────────────
   if (store.trips.length === 0) {
     return (
-      <WelcomeScreen
-        onCreateTrip={() => {
-          handleNewTrip();
-          setShowTripEditor(true);
-        }}
-        onLoadDemo={handleLoadDemo}
-        onImportFromCode={() => setShowImportCode(true)}
-      />
+      <>
+        <WelcomeScreen
+          onCreateTrip={() => {
+            handleNewTrip();
+            setShowTripEditor(true);
+          }}
+          onLoadDemo={handleLoadDemo}
+          onImportFromCode={() => setShowImportCode(true)}
+        />
+        {showImportCode && (
+          <ImportFromCodeDialog
+            onImport={handleImportFromCode}
+            onClose={() => setShowImportCode(false)}
+          />
+        )}
+      </>
     );
   }
 
