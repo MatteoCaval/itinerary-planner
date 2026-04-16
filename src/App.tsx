@@ -55,12 +55,7 @@ import type {
   TripStore,
   VisitItem,
 } from './domain/types';
-import {
-  createEmptyTrip,
-  DAY_PARTS,
-  STAY_COLORS,
-  TRANSPORT_LABELS,
-} from './domain/constants';
+import { createEmptyTrip, DAY_PARTS, STAY_COLORS, TRANSPORT_LABELS } from './domain/constants';
 import { addDaysTo, fmt, safeDate } from './domain/dateUtils';
 import { haversineKm, jitter } from './domain/geoUtils';
 import {
@@ -183,9 +178,13 @@ function ChronosApp() {
             ...t,
             stays: t.stays.map((s) => (s.id === stay.id ? { ...s, imageUrl: url } : s)),
           }));
-      } catch { /* search failed — skip silently */ }
+      } catch {
+        /* search failed — skip silently */
+      }
     });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trip.stays.map((s) => `${s.id}:${s.imageUrl ?? ''}`).join('|')]);
 
@@ -340,10 +339,7 @@ function ChronosApp() {
     return shareCodeState.pushUpdate(user?.uid ?? null);
   }, [user?.uid, shareCodeState]);
 
-  const handleRevoke = useCallback(
-    () => shareCodeState.revokeShareCode(),
-    [shareCodeState],
-  );
+  const handleRevoke = useCallback(() => shareCodeState.revokeShareCode(), [shareCodeState]);
 
   const handlePullLatest = useCallback(async () => {
     await shareCodeState.pullLatest();
@@ -528,9 +524,13 @@ function ChronosApp() {
             ...t,
             visits: t.visits.map((v) => (v.id === visit.id ? { ...v, imageUrl: url } : v)),
           }));
-      } catch { /* search failed — skip silently */ }
+      } catch {
+        /* search failed — skip silently */
+      }
     });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedStay?.id, trip.visits]);
 
@@ -1041,12 +1041,26 @@ function ChronosApp() {
               <TooltipContent>AI Planner</TooltipContent>
             </Tooltip>
             {/* Mobile sync dot — md:hidden */}
-            <div className={`md:hidden size-1.5 rounded-full ${
-              syncStatus === 'saved' ? 'bg-success' :
-              syncStatus === 'saving' ? 'bg-warning animate-pulse' :
-              syncStatus === 'error' ? 'bg-destructive' :
-              'bg-muted-foreground'
-            }`} title={syncStatus === 'saved' ? 'Synced' : syncStatus === 'saving' ? 'Saving...' : syncStatus === 'error' ? 'Sync error' : 'Local only'} />
+            <div
+              className={`md:hidden size-1.5 rounded-full ${
+                syncStatus === 'saved'
+                  ? 'bg-success'
+                  : syncStatus === 'saving'
+                    ? 'bg-warning animate-pulse'
+                    : syncStatus === 'error'
+                      ? 'bg-destructive'
+                      : 'bg-muted-foreground'
+              }`}
+              title={
+                syncStatus === 'saved'
+                  ? 'Synced'
+                  : syncStatus === 'saving'
+                    ? 'Saving...'
+                    : syncStatus === 'error'
+                      ? 'Sync error'
+                      : 'Local only'
+              }
+            />
             {/* Profile menu */}
             <ProfileMenu
               trip={trip}
@@ -1080,8 +1094,7 @@ function ChronosApp() {
           <div className="flex items-center gap-2 px-4 py-2 bg-muted/30 border-b border-border/50 text-xs flex-shrink-0 z-40">
             <Link2 className="w-3.5 h-3.5 text-primary flex-shrink-0" />
             <span className="font-semibold text-foreground">
-              Shared as{' '}
-              <span className="font-mono font-bold tracking-wider">{trip.shareCode}</span>
+              Shared as <span className="font-mono font-bold tracking-wider">{trip.shareCode}</span>
             </span>
             <span className="text-muted-foreground">·</span>
             <span className="text-muted-foreground font-medium">Read only</span>
@@ -1123,13 +1136,19 @@ function ChronosApp() {
           </div>
         )}
         {trip.sourceShareCode && !shareCodeState.sourceRevoked && (
-          <div className={`flex items-center gap-2 px-4 py-2 border-b text-xs flex-shrink-0 z-40 ${
-            shareCodeState.updateAvailable
-              ? 'bg-info/10 border-info/20'
-              : 'bg-muted/30 border-border/50'
-          }`}>
-            <Link2 className={`w-3.5 h-3.5 flex-shrink-0 ${shareCodeState.updateAvailable ? 'text-info' : 'text-muted-foreground'}`} />
-            <span className={`font-semibold ${shareCodeState.updateAvailable ? 'text-info' : 'text-foreground'}`}>
+          <div
+            className={`flex items-center gap-2 px-4 py-2 border-b text-xs flex-shrink-0 z-40 ${
+              shareCodeState.updateAvailable
+                ? 'bg-info/10 border-info/20'
+                : 'bg-muted/30 border-border/50'
+            }`}
+          >
+            <Link2
+              className={`w-3.5 h-3.5 flex-shrink-0 ${shareCodeState.updateAvailable ? 'text-info' : 'text-muted-foreground'}`}
+            />
+            <span
+              className={`font-semibold ${shareCodeState.updateAvailable ? 'text-info' : 'text-foreground'}`}
+            >
               {shareCodeState.updateAvailable ? 'Update available for' : 'Linked to'}{' '}
               <span className="font-mono font-bold tracking-wider">{trip.sourceShareCode}</span>
             </span>
@@ -1148,7 +1167,9 @@ function ChronosApp() {
             <Button
               variant={shareCodeState.updateAvailable ? 'default' : 'ghost'}
               size="sm"
-              onClick={() => shareCodeState.updateAvailable ? setShowPullConfirm(true) : undefined}
+              onClick={() =>
+                shareCodeState.updateAvailable ? setShowPullConfirm(true) : undefined
+              }
               disabled={!shareCodeState.updateAvailable}
               className={`text-xs font-semibold h-6 px-2 ${!shareCodeState.updateAvailable ? 'text-muted-foreground' : ''}`}
             >
@@ -1288,7 +1309,9 @@ function ChronosApp() {
                   >
                     <div className="flex flex-col items-center gap-0.5 opacity-0 group-hover/buf:opacity-100 transition-opacity">
                       <Plus className="w-3.5 h-3.5 text-muted-foreground" />
-                      <span className="text-[9px] font-bold text-muted-foreground uppercase">Extend</span>
+                      <span className="text-[9px] font-bold text-muted-foreground uppercase">
+                        Extend
+                      </span>
                     </div>
                   </button>
                 )}
@@ -1604,9 +1627,7 @@ function ChronosApp() {
                               {/* Transit chip — centered in gap between the two stays */}
                               {nextStay &&
                                 (() => {
-                                  const route = trip.routes.find(
-                                    (r) => r.fromStayId === stay.id,
-                                  );
+                                  const route = trip.routes.find((r) => r.fromStayId === stay.id);
                                   const gapStart = (stay.endSlot / (numDays * 3)) * 100;
                                   const gapEnd = (nextStay.startSlot / (numDays * 3)) * 100;
                                   const chipLeft = (gapStart + gapEnd) / 2;
@@ -1685,7 +1706,9 @@ function ChronosApp() {
                   >
                     <div className="flex flex-col items-center gap-0.5 opacity-0 group-hover/buf:opacity-100 transition-opacity">
                       <Plus className="w-3.5 h-3.5 text-muted-foreground" />
-                      <span className="text-[9px] font-bold text-muted-foreground uppercase">Extend</span>
+                      <span className="text-[9px] font-bold text-muted-foreground uppercase">
+                        Extend
+                      </span>
                     </div>
                   </button>
                 )}
@@ -2647,9 +2670,7 @@ function ChronosApp() {
                     onUpdateVisit={(updates) => {
                       setTrip((t) => ({
                         ...t,
-                        visits: t.visits.map((v) =>
-                          v.id === visit.id ? { ...v, ...updates } : v,
-                        ),
+                        visits: t.visits.map((v) => (v.id === visit.id ? { ...v, ...updates } : v)),
                       }));
                     }}
                   />
@@ -2770,16 +2791,12 @@ function ChronosApp() {
             onClose={() => setEditingRouteStayId(null)}
             onSave={(mode, duration, notes) => {
               setTrip((t) => {
-                const existingRoute = t.routes.find(
-                  (r) => r.fromStayId === editingRouteStay.id,
-                );
+                const existingRoute = t.routes.find((r) => r.fromStayId === editingRouteStay.id);
                 if (existingRoute) {
                   return {
                     ...t,
                     routes: t.routes.map((r) =>
-                      r.fromStayId === editingRouteStay.id
-                        ? { ...r, mode, duration, notes }
-                        : r,
+                      r.fromStayId === editingRouteStay.id ? { ...r, mode, duration, notes } : r,
                     ),
                   };
                 }
@@ -2841,6 +2858,9 @@ function ChronosApp() {
             }}
             stayColor={STAY_COLORS[trip.stays.length % STAY_COLORS.length]}
             initialDays={pendingTimelineSlot?.days}
+            existingStayCoords={trip.stays
+              .filter((s) => s.centerLat != null && s.centerLng != null)
+              .map((s) => ({ lat: s.centerLat, lng: s.centerLng }))}
             onSave={({ name, days, lat, lng }) => {
               const startSlot =
                 pendingTimelineSlot?.startSlot ??
@@ -2961,6 +2981,7 @@ function ChronosApp() {
                 ],
               }));
             }}
+            stayCenter={{ lat: selectedStay.centerLat, lng: selectedStay.centerLng }}
           />
         )}
 
@@ -2974,9 +2995,7 @@ function ChronosApp() {
               setTrip((t) => {
                 const bucketSize = t.visits.filter(
                   (v) =>
-                    v.stayId === selectedStay.id &&
-                    v.dayOffset === dayOffset &&
-                    v.dayPart === part,
+                    v.stayId === selectedStay.id && v.dayOffset === dayOffset && v.dayPart === part,
                 ).length;
                 return {
                   ...t,
@@ -3001,6 +3020,7 @@ function ChronosApp() {
                 };
               });
             }}
+            stayCenter={{ lat: selectedStay.centerLat, lng: selectedStay.centerLng }}
           />
         )}
 
@@ -3059,6 +3079,7 @@ function ChronosApp() {
               }));
               setEditingVisit(null);
             }}
+            stayCenter={{ lat: selectedStay.centerLat, lng: selectedStay.centerLng }}
           />
         )}
 
@@ -3165,8 +3186,8 @@ function ChronosApp() {
           />
         )}
 
-        {showShareTrip && (
-          user ? (
+        {showShareTrip &&
+          (user ? (
             <ShareTripDialog
               shareCode={trip.shareCode}
               status={shareCodeState.status}
@@ -3178,19 +3199,26 @@ function ChronosApp() {
             />
           ) : (
             <AuthModalSimple onClose={() => setShowShareTrip(false)} />
-          )
-        )}
+          ))}
 
         {showPullConfirm && (
-          <Dialog open onOpenChange={(open) => { if (!open) setShowPullConfirm(false); }}>
+          <Dialog
+            open
+            onOpenChange={(open) => {
+              if (!open) setShowPullConfirm(false);
+            }}
+          >
             <DialogContent className="sm:max-w-sm p-5">
-              <DialogDescription className="sr-only">Pull latest version of this trip</DialogDescription>
+              <DialogDescription className="sr-only">
+                Pull latest version of this trip
+              </DialogDescription>
               <DialogHeader>
                 <DialogTitle className="font-extrabold text-foreground text-sm">
                   Pull latest version?
                 </DialogTitle>
                 <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                  This will replace your current trip data with the latest version from the shared code.
+                  This will replace your current trip data with the latest version from the shared
+                  code.
                 </p>
               </DialogHeader>
               <div className="flex gap-2 mt-3">
@@ -3201,10 +3229,7 @@ function ChronosApp() {
                 >
                   Cancel
                 </Button>
-                <Button
-                  onClick={handlePullLatest}
-                  className="flex-1 text-xs font-bold"
-                >
+                <Button onClick={handlePullLatest} className="flex-1 text-xs font-bold">
                   Pull latest
                 </Button>
               </div>
