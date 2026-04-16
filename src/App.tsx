@@ -55,7 +55,6 @@ import type {
 import {
   createEmptyTrip,
   DAY_PARTS,
-  LEGACY_STORAGE_KEY,
   STAY_COLORS,
   TRANSPORT_LABELS,
 } from './domain/constants';
@@ -69,7 +68,6 @@ import {
 } from './domain/stayLogic';
 import { createVisit, normalizeVisitOrders, sortVisits } from './domain/visitLogic';
 import { getVisitTypeBg, getVisitTypeColor, getVisitLabel } from './domain/visitTypeDisplay';
-import { normalizeTrip } from './domain/migration';
 import { createSampleTrip } from './domain/sampleData';
 import {
   applyTimelineDrag,
@@ -81,7 +79,8 @@ import {
 import TripMap from './components/TripMap';
 import DayFilterPills from './components/TripMap/DayFilterPills';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import { saveUserTripStore, loadUserTripStore } from './firebase';
+import { useCloudSync } from './hooks/useCloudSync';
+import { createSyncService } from './services/sync';
 import { searchPhoto } from './unsplash';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -130,12 +129,6 @@ function ChronosApp() {
   // ── Store (multi-trip) ───────────────────────────────────────────────────
   const [store, setStore] = useState<TripStore>(() => loadStore());
   const [isDemoMode, setIsDemoMode] = useState(false);
-  const [pendingMerge, setPendingMerge] = useState<{
-    cloudTrips: HybridTrip[];
-    cloudActiveTripId: string;
-  } | null>(null);
-  const [syncError, setSyncError] = useState<string | null>(null);
-  const syncedUidRef = useRef<string | null>(null);
   const storeRef = useRef(store);
   useEffect(() => {
     storeRef.current = store;
@@ -341,80 +334,19 @@ function ChronosApp() {
     setMapMode(selectedStayId ? 'stay' : 'overview');
   }, [selectedStayId]);
 
-  // ── Cloud sync: load on login ─────────────────────────────────────────────
+  // ── Cloud sync ────────────────────────────────────────────────────────────
   const { user } = useAuth();
-  useEffect(() => {
-    if (!user) return;
-    if (syncedUidRef.current === user.uid) return; // already handled this session
-    syncedUidRef.current = user.uid;
-
-    (async () => {
-      const result = await loadUserTripStore(user.uid);
-      if (!result.success) {
-        setSyncError(
-          result.error || 'Could not load your trips from the cloud. Your local trips are safe.',
-        );
-        return;
-      }
-
-      const currentStore = storeRef.current;
-
-      if (!result.exists) {
-        // First sign-in — upload local trips to cloud silently
-        if (currentStore.trips.length > 0) saveUserTripStore(user.uid, currentStore);
-        return;
-      }
-
-      const cloudStore = result.data as TripStore;
-      const cloudTrips: HybridTrip[] = (cloudStore?.trips ?? []).map(normalizeTrip);
-      const localIds = new Set(currentStore.trips.map((t) => t.id));
-      const cloudOnlyTrips = cloudTrips.filter((t) => !localIds.has(t.id));
-
-      if (cloudOnlyTrips.length === 0) {
-        // No new cloud trips — push local state up
-        if (currentStore.trips.length > 0) saveUserTripStore(user.uid, currentStore);
-        return;
-      }
-
-      if (currentStore.trips.length === 0) {
-        // No local trips — simply pull cloud
-        const next: TripStore = {
-          trips: cloudTrips,
-          activeTripId: cloudStore.activeTripId ?? cloudTrips[0]?.id ?? '',
-        };
-        setStore(next);
-        saveStore(next);
-        return;
-      }
-
-      // Both sides have unique trips — ask the user
-      setPendingMerge({
-        cloudTrips: cloudOnlyTrips,
-        cloudActiveTripId: cloudStore.activeTripId ?? '',
-      });
-    })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.uid]);
-
-  // ── Cloud sync: auto-save on store change ─────────────────────────────────
-  const [syncStatus, setSyncStatus] = useState<'saved' | 'saving' | 'error' | 'local'>('local');
-  useEffect(() => {
-    if (!user || isDemoMode) {
-      setSyncStatus('local');
-      return;
-    }
-    if (pendingMerge) return;
-    setSyncStatus('saving');
-    const timer = setTimeout(async () => {
-      try {
-        await saveUserTripStore(user.uid, store);
-        setSyncStatus('saved');
-      } catch {
-        setSyncStatus('error');
-      }
-    }, 2000);
-    return () => clearTimeout(timer);
-  }, [store, user, isDemoMode, pendingMerge]);
+  const syncService = useMemo(() => createSyncService(), []);
+  const {
+    syncStatus,
+    syncError,
+    setSyncError,
+    pendingMerge,
+    handleMergeDecision,
+    dismissMerge,
+    remoteUpdateToast,
+    dismissRemoteToast,
+  } = useCloudSync(syncService, store, setStore, user);
 
   // ── Derived values ────────────────────────────────────────────────────────
   const sortedStays = useMemo(
@@ -682,50 +614,19 @@ function ChronosApp() {
   };
 
   const handleGoHome = () => {
-    setStore({ trips: [], activeTripId: '' });
-    localStorage.removeItem(LEGACY_STORAGE_KEY);
+    const empty: TripStore = { trips: [], activeTripId: '' };
+    setStore(empty);
+    saveStore(empty);
     setIsDemoMode(false);
     setSelectedStayId('');
   };
 
   const handleSignOut = () => {
-    setStore({ trips: [], activeTripId: '' });
-    localStorage.removeItem(LEGACY_STORAGE_KEY);
+    const empty: TripStore = { trips: [], activeTripId: '' };
+    setStore(empty);
+    saveStore(empty);
     setIsDemoMode(false);
     setSelectedStayId('');
-    setPendingMerge(null);
-    setSyncError(null);
-    syncedUidRef.current = null;
-  };
-
-  const handleMergeDecision = (decision: 'merge' | 'keep-local' | 'use-cloud') => {
-    if (!pendingMerge || !user) {
-      setPendingMerge(null);
-      return;
-    }
-    const { cloudTrips, cloudActiveTripId } = pendingMerge;
-
-    let next: TripStore;
-    if (decision === 'merge') {
-      const merged = [...store.trips, ...cloudTrips];
-      next = { trips: merged, activeTripId: store.activeTripId || (merged[0]?.id ?? '') };
-    } else if (decision === 'keep-local') {
-      next = store;
-    } else {
-      // use-cloud: replace local with cloud trips + any local-only trips we discard
-      next = { trips: cloudTrips, activeTripId: cloudActiveTripId || (cloudTrips[0]?.id ?? '') };
-      setSelectedStayId('');
-    }
-
-    // Dismiss modal first so it always closes even if saves fail
-    setPendingMerge(null);
-    setStore(next);
-    try {
-      saveStore(next);
-    } catch (e) {
-      console.error('[MergeDecision] saveStore failed:', e);
-    }
-    saveUserTripStore(user.uid, next);
   };
 
   const handleSwitchTrip = (id: string) => {
@@ -1095,14 +996,14 @@ function ChronosApp() {
 
         {/* ── Sync error banner ── */}
         {syncError && (
-          <div className="flex items-center gap-2 px-4 py-2 bg-red-50 border-b border-red-100 text-xs text-red-700 flex-shrink-0 z-40">
+          <div className="flex items-center gap-2 px-4 py-2 bg-destructive/10 border-b border-destructive/20 text-xs text-destructive flex-shrink-0 z-40">
             <CloudOff className="w-3.5 h-3.5 flex-shrink-0" />
             <span className="flex-1">{syncError}</span>
             <Button
               variant="ghost"
               size="icon-xs"
               onClick={() => setSyncError(null)}
-              className="hover:bg-red-100"
+              className="hover:bg-destructive/20"
             >
               <X className="w-3 h-3" />
             </Button>
@@ -3085,14 +2986,29 @@ function ChronosApp() {
         {pendingMerge && (
           <MergeDialog
             localCount={store.trips.length}
-            cloudCount={pendingMerge.cloudTrips.length}
+            cloudCount={pendingMerge.allCloudTrips.length}
+            mergeCount={store.trips.length + pendingMerge.cloudTrips.length}
             localTripNames={store.trips.map((t) => t.name)}
-            cloudTripNames={pendingMerge.cloudTrips.map((t) => t.name)}
+            cloudTripNames={pendingMerge.allCloudTrips.map((t) => t.name)}
             onMerge={() => handleMergeDecision('merge')}
             onKeepLocal={() => handleMergeDecision('keep-local')}
             onUseCloud={() => handleMergeDecision('use-cloud')}
-            onDismiss={() => setPendingMerge(null)}
+            onDismiss={dismissMerge}
           />
+        )}
+
+        {remoteUpdateToast && (
+          <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-popover border border-border rounded-xl shadow-lg px-4 py-3 text-sm">
+            <span className="text-foreground">
+              <strong>"{remoteUpdateToast.tripName}"</strong> was updated on another device.
+            </span>
+            <button
+              onClick={dismissRemoteToast}
+              className="text-muted-foreground hover:text-foreground text-xs font-medium"
+            >
+              Dismiss
+            </button>
+          </div>
         )}
 
         {showImportCode && (

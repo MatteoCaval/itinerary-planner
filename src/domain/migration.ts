@@ -284,6 +284,7 @@ export function hybridTripToLegacy(trip: HybridTrip): LegacyStoredTrip {
 
 export function migrateV1toV2(old: V1HybridTrip): HybridTrip {
   const now = Date.now();
+  const rawOld = old as unknown as Record<string, unknown>;
   const sortedStays = [...old.stays].sort((a, b) => a.startSlot - b.startSlot);
 
   // Extract visits from all stays, add stayId, clean fields
@@ -355,8 +356,8 @@ export function migrateV1toV2(old: V1HybridTrip): HybridTrip {
     startDate: old.startDate,
     totalDays: old.totalDays,
     version: 2,
-    createdAt: now,
-    updatedAt: now,
+    createdAt: typeof rawOld.createdAt === 'number' ? rawOld.createdAt : now,
+    updatedAt: typeof rawOld.updatedAt === 'number' ? rawOld.updatedAt : now,
     stays,
     visits,
     routes,

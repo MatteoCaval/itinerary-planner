@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import { Compass, Plus, LogIn } from 'lucide-react';
 import TransportIcon from '@/components/ui/TransportIcon';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
+import AuthModalSimple from '@/components/modals/AuthModalSimple';
 
 function WelcomeScreen({
   onCreateTrip,
@@ -10,7 +12,8 @@ function WelcomeScreen({
   onCreateTrip: () => void;
   onLoadDemo: () => void;
 }) {
-  const { user, signInWithGoogle } = useAuth();
+  const { user } = useAuth();
+  const [showAuth, setShowAuth] = useState(false);
 
   const stayPreviews = [
     { left: '4%', width: '28%', color: '#2167d7', label: 'Tokyo' },
@@ -32,7 +35,7 @@ function WelcomeScreen({
           <Button
             variant="ghost"
             size="sm"
-            onClick={signInWithGoogle}
+            onClick={() => setShowAuth(true)}
             className="text-muted-foreground hover:text-primary"
           >
             <LogIn className="w-3.5 h-3.5" />
@@ -116,7 +119,7 @@ function WelcomeScreen({
               <Button
                 variant="link"
                 size="sm"
-                onClick={signInWithGoogle}
+                onClick={() => setShowAuth(true)}
                 className="p-0 h-auto text-[11px]"
               >
                 Sign in
@@ -126,6 +129,8 @@ function WelcomeScreen({
           )}
         </div>
       </main>
+
+      {showAuth && <AuthModalSimple onClose={() => setShowAuth(false)} />}
     </div>
   );
 }

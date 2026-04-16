@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 function MergeDialog({
   localCount,
   cloudCount,
+  mergeCount,
   cloudTripNames,
   localTripNames,
   onMerge,
@@ -20,6 +21,7 @@ function MergeDialog({
 }: {
   localCount: number;
   cloudCount: number;
+  mergeCount: number;
   cloudTripNames: string[];
   localTripNames: string[];
   onMerge: () => void;
@@ -90,7 +92,7 @@ function MergeDialog({
             className="w-full flex items-center justify-between px-4 py-2.5 text-xs font-bold"
           >
             <span>Merge everything</span>
-            <span className="opacity-70 font-normal">{localCount + cloudCount} trips total</span>
+            <span className="opacity-70 font-normal">{mergeCount} trips total</span>
           </Button>
           <Button
             variant="outline"

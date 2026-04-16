@@ -30,7 +30,7 @@ const getFirebaseApp = async () => {
   return appPromise;
 };
 
-async function getDb() {
+export async function getDb() {
   if (!dbPromise) {
     dbPromise = (async () => {
       const { getDatabase } = await import('firebase/database');
@@ -53,7 +53,7 @@ export async function getFirebaseAuth() {
 }
 
 // Helper to remove undefined values recursively (Firebase doesn't allow them)
-const sanitizeForFirebase = (obj: unknown): unknown => {
+export const sanitizeForFirebase = (obj: unknown): unknown => {
   if (Array.isArray(obj)) {
     return obj.map(sanitizeForFirebase);
   }
@@ -74,7 +74,7 @@ const sanitizeForFirebase = (obj: unknown): unknown => {
 /** Firebase Realtime Database converts arrays to objects with numeric keys.
  *  This reverses that: any object whose keys are all consecutive integers 0..N
  *  is turned back into an array, recursively. */
-const restoreArrays = (obj: unknown): unknown => {
+export const restoreArrays = (obj: unknown): unknown => {
   if (obj === null || obj === undefined || typeof obj !== 'object') return obj;
   if (Array.isArray(obj)) return obj.map(restoreArrays);
 
@@ -134,37 +134,3 @@ export const loadItinerary = async (
   }
 };
 
-export const saveUserTripStore = async (
-  uid: string,
-  tripStore: unknown,
-): Promise<{ success: boolean; error?: string }> => {
-  try {
-    const { ref, set } = await import('firebase/database');
-    const db = await getDb();
-    await set(ref(db, `users/${uid}/tripStore`), sanitizeForFirebase(tripStore));
-    return { success: true };
-  } catch (error) {
-    trackError('account_trip_store_save_failed', error, { uid });
-    return { success: false, error: formatErrorMessage(error) };
-  }
-};
-
-export const loadUserTripStore = async (
-  uid: string,
-): Promise<{ success: boolean; exists: boolean; data?: unknown; error?: string }> => {
-  try {
-    const { ref, get, child } = await import('firebase/database');
-    const db = await getDb();
-    const dbRef = ref(db);
-    const snapshot = await get(child(dbRef, `users/${uid}/tripStore`));
-
-    if (snapshot.exists()) {
-      return { success: true, exists: true, data: restoreArrays(snapshot.val()) };
-    }
-
-    return { success: true, exists: false };
-  } catch (error) {
-    trackError('account_trip_store_load_failed', error, { uid });
-    return { success: false, exists: false, error: formatErrorMessage(error) };
-  }
-};
