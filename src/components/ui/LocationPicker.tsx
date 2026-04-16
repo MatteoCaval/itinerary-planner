@@ -23,15 +23,19 @@ function MapController({
   onMapClick: (lat: number, lng: number) => void;
 }) {
   const map = useMap();
+  const didFit = useRef(false);
 
   useEffect(() => {
     map.invalidateSize();
+    if (didFit.current) return;
     if (fitBounds && fitBounds.length > 1) {
       map.fitBounds(fitBounds as L.LatLngBoundsExpression, { padding: [30, 30], maxZoom: 10 });
+      didFit.current = true;
     } else if (fitBounds && fitBounds.length === 1) {
       map.setView(fitBounds[0], 10);
+      didFit.current = true;
     }
-  }, [map]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [map, fitBounds]);
 
   useMapEvents({
     click(e) {
@@ -47,6 +51,9 @@ function MapRefCapture({ mapRef }: { mapRef: React.MutableRefObject<L.Map | null
   const map = useMap();
   useEffect(() => {
     mapRef.current = map;
+    return () => {
+      mapRef.current = null;
+    };
   }, [map, mapRef]);
   return null;
 }
