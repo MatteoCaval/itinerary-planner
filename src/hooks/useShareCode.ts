@@ -207,62 +207,46 @@ export function useShareCode(
     return hasUpdate;
   }, [setTrip]);
 
-  const pullLatest = useCallback(
-    async (saveCopy: boolean, addTrip: (trip: HybridTrip) => void): Promise<boolean> => {
-      const sourceCode = tripRef.current.sourceShareCode;
-      if (!sourceCode) return false;
+  const pullLatest = useCallback(async (): Promise<boolean> => {
+    const sourceCode = tripRef.current.sourceShareCode;
+    if (!sourceCode) return false;
 
-      setStatus('loading');
-      setError(null);
+    setStatus('loading');
+    setError(null);
 
-      const result = await loadItinerary(sourceCode);
-      if (!result.success || !result.data) {
-        setStatus('error');
-        setError('Share code no longer available.');
-        setTrip((prev) => ({ ...prev, sourceShareCode: undefined }));
-        setUpdateAvailable(false);
-        return false;
-      }
-
-      const data = result.data;
-      let remoteTrip: HybridTrip;
-      if (isShareCodeNode(data)) {
-        remoteTrip = data.trip;
-      } else {
-        remoteTrip = data as HybridTrip;
-      }
-
-      // Save copy of current trip if requested
-      if (saveCopy) {
-        const copy: HybridTrip = {
-          ...tripRef.current,
-          id: crypto.randomUUID(),
-          name: `${tripRef.current.name} (before update)`,
-          shareCode: undefined,
-          sourceShareCode: undefined,
-          importedAt: undefined,
-        };
-        addTrip(normalizeTrip(copy));
-      }
-
-      // Overwrite current trip with remote data, keep local ID and source link
-      const now = Date.now();
-      setTrip((prev) =>
-        normalizeTrip({
-          ...remoteTrip,
-          id: prev.id,
-          sourceShareCode: sourceCode,
-          importedAt: now,
-          shareCode: undefined,
-        }),
-      );
-
+    const result = await loadItinerary(sourceCode);
+    if (!result.success || !result.data) {
+      setStatus('error');
+      setError('Share code no longer available.');
+      setTrip((prev) => ({ ...prev, sourceShareCode: undefined }));
       setUpdateAvailable(false);
-      setStatus('success');
-      return true;
-    },
-    [setTrip],
-  );
+      return false;
+    }
+
+    const data = result.data;
+    let remoteTrip: HybridTrip;
+    if (isShareCodeNode(data)) {
+      remoteTrip = data.trip;
+    } else {
+      remoteTrip = data as HybridTrip;
+    }
+
+    // Overwrite current trip with remote data, keep local ID and source link
+    const now = Date.now();
+    setTrip((prev) =>
+      normalizeTrip({
+        ...remoteTrip,
+        id: prev.id,
+        sourceShareCode: sourceCode,
+        importedAt: now,
+        shareCode: undefined,
+      }),
+    );
+
+    setUpdateAvailable(false);
+    setStatus('success');
+    return true;
+  }, [setTrip]);
 
   return {
     status,
