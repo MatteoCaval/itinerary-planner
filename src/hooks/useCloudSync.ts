@@ -166,14 +166,20 @@ export function useCloudSync(
       },
 
       onTripDeleted: (tripId) => {
+        // Clean up tracking refs so auto-save doesn't see this as a local deletion to propagate
+        delete lastPushedRef.current[tripId];
+        delete lastPushedAtRef.current[tripId];
+
         setStore((prev) => {
           const remaining = prev.trips.filter((t) => t.id !== tripId);
-          return {
+          const next = {
             ...prev,
             trips: remaining,
             activeTripId:
               prev.activeTripId === tripId ? (remaining[0]?.id ?? '') : prev.activeTripId,
           };
+          saveStore(next);
+          return next;
         });
       },
 
@@ -195,13 +201,18 @@ export function useCloudSync(
 
   // ── Auto-save on trips change ─────────────────────────────────────────────
   useEffect(() => {
-    if (!user || store.trips.length === 0 || pendingMerge) {
+    if (!user || pendingMerge) {
       if (!user) setSyncStatus('local');
       return;
     }
 
     const changedTrips = store.trips.filter((t) => lastPushedRef.current[t.id] !== t);
-    if (changedTrips.length === 0) return;
+
+    // Detect trips that were tracked but no longer exist locally → deleted
+    const currentIds = new Set(store.trips.map((t) => t.id));
+    const deletedIds = Object.keys(lastPushedRef.current).filter((id) => !currentIds.has(id));
+
+    if (changedTrips.length === 0 && deletedIds.length === 0) return;
 
     setSyncStatus('saving');
     hasPendingSaveRef.current = true;
@@ -209,10 +220,23 @@ export function useCloudSync(
     const timer = setTimeout(async () => {
       try {
         const now = Date.now();
-        const stamped = changedTrips.map((t) => ({ ...t, updatedAt: now }));
-        await Promise.all(stamped.map((t) => service.saveTrip(user.uid, t)));
 
-        stamped.forEach((t) => { lastPushedAtRef.current[t.id] = now; });
+        // Save changed trips
+        if (changedTrips.length > 0) {
+          const stamped = changedTrips.map((t) => ({ ...t, updatedAt: now }));
+          await Promise.all(stamped.map((t) => service.saveTrip(user.uid, t)));
+          stamped.forEach((t) => { lastPushedAtRef.current[t.id] = now; });
+        }
+
+        // Delete removed trips from cloud
+        if (deletedIds.length > 0) {
+          await Promise.all(deletedIds.map((id) => service.deleteTrip(user.uid, id)));
+          deletedIds.forEach((id) => {
+            delete lastPushedRef.current[id];
+            delete lastPushedAtRef.current[id];
+          });
+        }
+
         store.trips.forEach((t) => { lastPushedRef.current[t.id] = t; });
 
         setSyncStatus('saved');
