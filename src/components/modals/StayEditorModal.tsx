@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Trash2 } from 'lucide-react';
+import { Trash2, Inbox } from 'lucide-react';
 import ModalBase from '@/components/ui/ModalBase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,16 +22,19 @@ function StayEditorModal({
   onClose,
   onSave,
   onDelete,
+  onDemote,
   visitCount = 0,
 }: {
   stay: Stay;
   onClose: () => void;
   onSave: (updates: Partial<Stay>) => void;
   onDelete: () => void;
+  onDemote?: () => void;
   visitCount?: number;
 }) {
   const [name, setName] = useState(stay.name);
   const [color, setColor] = useState(stay.color);
+  const [confirmingDemote, setConfirmingDemote] = useState(false);
 
   return (
     <ModalBase title="Edit Stay" onClose={onClose}>
@@ -103,6 +106,36 @@ function StayEditorModal({
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
+          {onDemote && (
+            <AlertDialog open={confirmingDemote} onOpenChange={setConfirmingDemote}>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Inbox data-icon="inline-start" className="w-3.5 h-3.5" /> Move to Inbox
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Move &ldquo;{stay.name}&rdquo; to inbox?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    The destination moves out of the timeline. Its {visitCount}{' '}
+                    scheduled {visitCount === 1 ? 'place' : 'places'} will be unscheduled
+                    but kept in the stay&apos;s own inbox.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => {
+                      onDemote();
+                      onClose();
+                    }}
+                  >
+                    Move to Inbox
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
           <Button variant="outline" size="sm" className="flex-1" onClick={onClose}>
             Cancel
           </Button>
