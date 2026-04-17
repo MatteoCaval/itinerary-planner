@@ -40,7 +40,7 @@ export function createEmptyTrip(): HybridTrip {
     routes: [],
     startDate: getTomorrow(),
     totalDays: 7,
-    version: 2,
+    version: 3,
     createdAt: Date.now(),
     updatedAt: Date.now(),
   };

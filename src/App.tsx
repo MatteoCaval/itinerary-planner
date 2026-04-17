@@ -649,7 +649,7 @@ function ChronosApp() {
       routes: [],
       startDate: '',
       totalDays: 7,
-      version: 2,
+      version: 3,
       createdAt: Date.now(),
       updatedAt: Date.now(),
     };
@@ -1932,11 +1932,14 @@ function ChronosApp() {
                                 aria-label={`Delete ${c.name} from inbox`}
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  updateTrip((t) => ({
+                                  setTrip((t) => ({
                                     ...t,
                                     candidateStays: t.candidateStays.filter((s) => s.id !== c.id),
                                     visits: t.visits.filter((v) => v.stayId !== c.id),
                                   }));
+                                  if (selectedCandidateId === c.id) {
+                                    setSelectedCandidateId(null);
+                                  }
                                 }}
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
@@ -2934,7 +2937,7 @@ function ChronosApp() {
                   setSelectedStayId(trip.stays[0]?.id ?? '');
                 }}
                 onDemote={() => {
-                  updateTrip((t) => demoteStay(t, editingStayId!));
+                  setTrip((t) => demoteStay(t, editingStayId!));
                   if (selectedStayId === editingStayId) {
                     setSelectedStayId('');
                   }
@@ -2982,8 +2985,11 @@ function ChronosApp() {
                 pendingTimelineSlot?.startSlot ??
                 (sortedStays.length > 0 ? sortedStays[sortedStays.length - 1].endSlot : 0);
               const endSlot = Math.min(startSlot + days * 3, trip.totalDays * 3);
-              updateTrip((t) => promoteCandidateStay(t, candidateId, startSlot, endSlot));
+              setTrip((t) => promoteCandidateStay(t, candidateId, startSlot, endSlot));
               setSelectedStayId(candidateId);
+              if (selectedCandidateId === candidateId) {
+                setSelectedCandidateId(null);
+              }
               setAddingStay(false);
               setPendingTimelineSlot(null);
               setPromotingCandidateId(null);
@@ -3001,7 +3007,7 @@ function ChronosApp() {
                 centerLat: lat ?? jitter(35.6762, 5),
                 centerLng: lng ?? jitter(139.6503, 5),
               };
-              updateTrip((t) => ({
+              setTrip((t) => ({
                 ...t,
                 candidateStays: [...t.candidateStays, newCandidate],
               }));

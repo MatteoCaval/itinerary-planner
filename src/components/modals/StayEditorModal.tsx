@@ -119,7 +119,8 @@ function StayEditorModal({
                   <AlertDialogDescription>
                     The destination moves out of the timeline. Its {visitCount}{' '}
                     scheduled {visitCount === 1 ? 'place' : 'places'} will be unscheduled
-                    but kept in the stay&apos;s own inbox.
+                    and stay attached to the destination — they&apos;ll reappear when you
+                    promote it back to the timeline.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
