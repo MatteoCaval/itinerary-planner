@@ -23,6 +23,8 @@ vi.mock('@/domain/migration', () => ({
   normalizeTrip: (x: unknown) => x,
   needsMigrationToV2: () => false,
   migrateV1toV2: (x: unknown) => x,
+  needsMigrationToV3: () => false,
+  migrateV2toV3: (x: unknown) => x,
 }));
 
 import * as firebaseDb from 'firebase/database';

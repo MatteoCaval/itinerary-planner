@@ -1,14 +1,24 @@
 import { trackError } from '@/services/telemetry';
-import { normalizeTrip, needsMigrationToV2, migrateV1toV2 } from '@/domain/migration';
+import {
+  normalizeTrip,
+  needsMigrationToV2,
+  migrateV1toV2,
+  needsMigrationToV3,
+  migrateV2toV3,
+} from '@/domain/migration';
 import type { HybridTrip, TripStore, V1HybridTrip } from '@/domain/types';
 import { getDb, sanitizeForFirebase, restoreArrays } from '@/firebase';
 import type { LoadResult, SyncCallbacks, SyncService, Unsubscribe } from './types';
 
 function normalizeAndMigrate(raw: unknown): HybridTrip {
-  const normalized = normalizeTrip(raw as HybridTrip);
-  return needsMigrationToV2(normalized)
-    ? migrateV1toV2(normalized as unknown as V1HybridTrip)
-    : normalized;
+  let trip = normalizeTrip(raw as HybridTrip);
+  if (needsMigrationToV2(trip)) {
+    trip = migrateV1toV2(trip as unknown as V1HybridTrip);
+  }
+  if (needsMigrationToV3(trip)) {
+    trip = migrateV2toV3(trip);
+  }
+  return trip;
 }
 
 export class FirebaseSyncService implements SyncService {
