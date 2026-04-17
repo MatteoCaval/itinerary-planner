@@ -359,6 +359,7 @@ export function migrateV1toV2(old: V1HybridTrip): HybridTrip {
     createdAt: typeof rawOld.createdAt === 'number' ? rawOld.createdAt : now,
     updatedAt: typeof rawOld.updatedAt === 'number' ? rawOld.updatedAt : now,
     stays,
+    candidateStays: [],
     visits,
     routes,
   };

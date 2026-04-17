@@ -644,6 +644,7 @@ function ChronosApp() {
       id: `trip-${Date.now()}`,
       name: 'New Trip',
       stays: [],
+      candidateStays: [],
       visits: [],
       routes: [],
       startDate: '',

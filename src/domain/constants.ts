@@ -35,6 +35,7 @@ export function createEmptyTrip(): HybridTrip {
     id: `trip-${Date.now()}`,
     name: 'New Trip',
     stays: [],
+    candidateStays: [],
     visits: [],
     routes: [],
     startDate: getTomorrow(),
