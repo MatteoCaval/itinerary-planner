@@ -42,7 +42,7 @@ export function loadStore(): TripStore {
       if (legacyStore?.trips?.length) {
         return {
           activeTripId: legacyStore.activeTripId,
-          trips: legacyStore.trips.map((t, i) => legacyTripToHybrid(t, i * 8)),
+          trips: legacyStore.trips.map((t, i) => migrateV2toV3(legacyTripToHybrid(t, i * 8))),
         };
       }
     }
