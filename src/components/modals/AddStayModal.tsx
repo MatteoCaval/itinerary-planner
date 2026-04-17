@@ -5,17 +5,20 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { searchPlace, PlaceSearchResult } from '@/utils/geocoding';
+import { LocationPicker } from '@/components/ui/LocationPicker';
 
 function AddStayModal({
   onClose,
   onSave,
   stayColor,
   initialDays,
+  existingStayCoords,
 }: {
   onClose: () => void;
   stayColor: string;
   initialDays?: number;
   onSave: (data: { name: string; days: number; lat?: number; lng?: number }) => void;
+  existingStayCoords?: { lat: number; lng: number }[];
 }) {
   const [name, setName] = useState('');
   const [days, setDays] = useState(initialDays ?? 3);
@@ -25,6 +28,11 @@ function AddStayModal({
   const [showResults, setShowResults] = useState(false);
   const [searchError, setSearchError] = useState(false);
   const [searchStale, setSearchStale] = useState(false);
+
+  const fitBounds: [number, number][] | undefined =
+    existingStayCoords && existingStayCoords.length > 0
+      ? existingStayCoords.map((c) => [c.lat, c.lng])
+      : undefined;
 
   useEffect(() => {
     if (!name.trim() || name.trim().length < 3 || pickedCoords) {
@@ -132,6 +140,11 @@ function AddStayModal({
               Search is taking longer than expected…
             </p>
           )}
+          <LocationPicker
+            value={pickedCoords}
+            onChange={(coords) => setPickedCoords(coords)}
+            fitBounds={fitBounds}
+          />
         </div>
 
         {/* Days stepper */}
