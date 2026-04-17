@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { migrateV1toV2 } from '../migration';
-import type { V1HybridTrip } from '../types';
+import { migrateV1toV2, normalizeTrip } from '../migration';
+import type { HybridTrip, V1HybridTrip, VisitItem } from '../types';
 
 const makeV1Trip = (): V1HybridTrip => ({
   id: 'trip-1',
@@ -171,5 +171,68 @@ describe('migrateV1toV2', () => {
     const hotelCheck = result.visits.find((v) => v.id === 'v2')!;
     expect(hotelCheck.dayOffset).toBeNull();
     expect(hotelCheck.dayPart).toBeNull();
+  });
+});
+
+describe('normalizeTrip', () => {
+  // Firebase RTDB drops null values on write. Inbox visits saved with
+  // {dayOffset: null, dayPart: null} come back without those keys (undefined).
+  // normalizeTrip must coerce undefined → null so inbox filters (=== null) keep matching.
+  it('coerces missing dayOffset/dayPart on visits back to null (Firebase null-strip)', () => {
+    const firebaseStrippedTrip = {
+      id: 'trip-1',
+      name: 'Japan',
+      startDate: '2026-05-01',
+      totalDays: 10,
+      version: 2,
+      stays: [],
+      routes: [],
+      visits: [
+        {
+          id: 'inbox-1',
+          stayId: 'stay-1',
+          name: 'Unscheduled place',
+          type: 'landmark',
+          lat: 35.68,
+          lng: 139.77,
+          order: 0,
+          // dayOffset and dayPart keys stripped by Firebase
+        } as unknown as VisitItem,
+      ],
+    } as HybridTrip;
+
+    const result = normalizeTrip(firebaseStrippedTrip);
+    const inbox = result.visits[0];
+    expect(inbox.dayOffset).toBeNull();
+    expect(inbox.dayPart).toBeNull();
+  });
+
+  it('preserves scheduled visits unchanged', () => {
+    const trip = {
+      id: 'trip-1',
+      name: 'Japan',
+      startDate: '2026-05-01',
+      totalDays: 10,
+      version: 2,
+      stays: [],
+      routes: [],
+      visits: [
+        {
+          id: 'v1',
+          stayId: 'stay-1',
+          name: 'Senso-ji',
+          type: 'landmark',
+          lat: 35.71,
+          lng: 139.79,
+          dayOffset: 0,
+          dayPart: 'morning',
+          order: 0,
+        } as VisitItem,
+      ],
+    } as HybridTrip;
+
+    const result = normalizeTrip(trip);
+    expect(result.visits[0].dayOffset).toBe(0);
+    expect(result.visits[0].dayPart).toBe('morning');
   });
 });

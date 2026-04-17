@@ -382,6 +382,8 @@ export function normalizeTrip(raw: HybridTrip): HybridTrip {
     })),
     visits: (raw.visits ?? []).map((v) => ({
       ...v,
+      dayOffset: v.dayOffset ?? null,
+      dayPart: v.dayPart ?? null,
       checklist: v.checklist ?? undefined,
       links: v.links ?? undefined,
     })),
