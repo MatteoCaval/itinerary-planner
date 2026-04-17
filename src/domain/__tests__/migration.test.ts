@@ -207,6 +207,23 @@ describe('normalizeTrip', () => {
     expect(inbox.dayPart).toBeNull();
   });
 
+  it('coerces missing candidateStays to empty array (Firebase empty-array strip)', () => {
+    const tripMissingCandidates = {
+      id: 'trip-1',
+      name: 'Japan',
+      startDate: '2026-05-01',
+      totalDays: 10,
+      version: 3,
+      stays: [],
+      visits: [],
+      routes: [],
+      // candidateStays key absent — Firebase strips empty arrays
+    } as unknown as HybridTrip;
+
+    const result = normalizeTrip(tripMissingCandidates);
+    expect(result.candidateStays).toEqual([]);
+  });
+
   it('preserves scheduled visits unchanged', () => {
     const trip = {
       id: 'trip-1',
