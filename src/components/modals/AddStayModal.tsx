@@ -1,33 +1,64 @@
 import { useState, useEffect } from 'react';
-import { Search, MapPin, Check } from 'lucide-react';
+import { Search, MapPin, Check, X } from 'lucide-react';
 import ModalBase from '@/components/ui/ModalBase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { searchPlace, PlaceSearchResult } from '@/utils/geocoding';
 import { LocationPicker } from '@/components/ui/LocationPicker';
+import type { Stay } from '@/domain/types';
+
+type AddStayMode = 'schedule' | 'candidate';
+
+type SavePayload = {
+  name: string;
+  days: number;
+  lat?: number;
+  lng?: number;
+};
+
+type PromotePayload = SavePayload & { candidateId: string };
+
+type CandidatePayload = { name: string; lat?: number; lng?: number };
 
 function AddStayModal({
   onClose,
   onSave,
+  onSavePromote,
+  onSaveCandidate,
   stayColor,
   initialDays,
   existingStayCoords,
+  candidates,
+  initialCandidateId,
+  mode = 'schedule',
 }: {
   onClose: () => void;
   stayColor: string;
   initialDays?: number;
-  onSave: (data: { name: string; days: number; lat?: number; lng?: number }) => void;
+  onSave: (data: SavePayload) => void;
+  onSavePromote?: (data: PromotePayload) => void;
+  onSaveCandidate?: (data: CandidatePayload) => void;
   existingStayCoords?: { lat: number; lng: number }[];
+  candidates?: Stay[];
+  initialCandidateId?: string;
+  mode?: AddStayMode;
 }) {
-  const [name, setName] = useState('');
+  const initialCandidate = candidates?.find((c) => c.id === initialCandidateId) ?? null;
+
+  const [name, setName] = useState(initialCandidate?.name ?? '');
   const [days, setDays] = useState(initialDays ?? 3);
   const [searchResults, setSearchResults] = useState<PlaceSearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
-  const [pickedCoords, setPickedCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [pickedCoords, setPickedCoords] = useState<{ lat: number; lng: number } | null>(
+    initialCandidate ? { lat: initialCandidate.centerLat, lng: initialCandidate.centerLng } : null,
+  );
   const [showResults, setShowResults] = useState(false);
   const [searchError, setSearchError] = useState(false);
   const [searchStale, setSearchStale] = useState(false);
+  const [selectedCandidateId, setSelectedCandidateId] = useState<string | null>(
+    initialCandidate?.id ?? null,
+  );
 
   const fitBounds: [number, number][] | undefined =
     existingStayCoords && existingStayCoords.length > 0
@@ -35,6 +66,11 @@ function AddStayModal({
       : undefined;
 
   useEffect(() => {
+    if (selectedCandidateId) {
+      setSearchResults([]);
+      setSearchError(false);
+      return;
+    }
     if (!name.trim() || name.trim().length < 3 || pickedCoords) {
       setSearchResults([]);
       setSearchError(false);
@@ -65,7 +101,7 @@ function AddStayModal({
       controller.abort();
       setSearchStale(false);
     };
-  }, [name, pickedCoords]);
+  }, [name, pickedCoords, selectedCandidateId]);
 
   const pickResult = (r: PlaceSearchResult) => {
     setName(r.display_name.split(',')[0].trim());
@@ -74,11 +110,90 @@ function AddStayModal({
     setShowResults(false);
   };
 
+  const pickCandidate = (c: Stay) => {
+    setName(c.name);
+    setPickedCoords({ lat: c.centerLat, lng: c.centerLng });
+    setSelectedCandidateId(c.id);
+    setSearchResults([]);
+    setShowResults(false);
+  };
+
+  const clearCandidate = () => {
+    setName('');
+    setPickedCoords(null);
+    setSelectedCandidateId(null);
+  };
+
   const canSave = name.trim().length > 0;
+  const isCandidateMode = mode === 'candidate';
+  const showChipRow =
+    !isCandidateMode && candidates !== undefined && candidates.length > 0;
+
+  const handleSave = () => {
+    if (!canSave) return;
+    if (isCandidateMode) {
+      onSaveCandidate?.({ name: name.trim(), lat: pickedCoords?.lat, lng: pickedCoords?.lng });
+      return;
+    }
+    if (selectedCandidateId && onSavePromote) {
+      onSavePromote({
+        candidateId: selectedCandidateId,
+        name: name.trim(),
+        days,
+        lat: pickedCoords?.lat,
+        lng: pickedCoords?.lng,
+      });
+      return;
+    }
+    onSave({ name: name.trim(), days, lat: pickedCoords?.lat, lng: pickedCoords?.lng });
+  };
+
+  const saveLabel = isCandidateMode ? 'Save to Inbox' : 'Add to Timeline';
+  const modalTitle = isCandidateMode ? 'Save Destination' : 'Add Destination';
 
   return (
-    <ModalBase title="Add Destination" onClose={onClose}>
+    <ModalBase title={modalTitle} onClose={onClose}>
       <div className="space-y-5">
+        {showChipRow && (
+          <div>
+            <label className="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground mb-2 block">
+              From inbox
+            </label>
+            <div className="flex gap-2 overflow-x-auto pb-1 scroll-hide">
+              {candidates!.map((c) => {
+                const active = c.id === selectedCandidateId;
+                return (
+                  <button
+                    key={c.id}
+                    onClick={() => (active ? clearCandidate() : pickCandidate(c))}
+                    aria-pressed={active}
+                    className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border text-[11px] font-semibold whitespace-nowrap transition-colors ${
+                      active
+                        ? 'bg-primary text-primary-foreground border-primary'
+                        : 'bg-white text-foreground border-border hover:bg-muted'
+                    }`}
+                  >
+                    <span
+                      className="w-2 h-2 rounded-full"
+                      style={{ background: c.color }}
+                      aria-hidden
+                    />
+                    {c.name}
+                  </button>
+                );
+              })}
+              {selectedCandidateId && (
+                <button
+                  onClick={clearCandidate}
+                  className="flex items-center gap-1 px-2 py-1.5 rounded-full text-muted-foreground hover:text-foreground text-[11px] font-medium"
+                >
+                  <X className="w-3 h-3" /> Clear
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Destination search */}
         <div className="relative">
           <label className="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground mb-2 block">
@@ -93,6 +208,7 @@ function AddStayModal({
               onChange={(e) => {
                 setName(e.target.value);
                 setPickedCoords(null);
+                setSelectedCandidateId(null);
               }}
               onFocus={() => searchResults.length > 0 && setShowResults(true)}
               autoFocus
@@ -147,34 +263,34 @@ function AddStayModal({
           />
         </div>
 
-        {/* Days stepper */}
-        <div>
-          <label className="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground mb-2 block">
-            Duration
-          </label>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center border border-border rounded-lg overflow-hidden bg-white">
-              <button
-                onClick={() => setDays((d) => Math.max(1, d - 1))}
-                className="w-11 h-11 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted text-xl font-light transition-colors"
-              >
-                −
-              </button>
-              <span className="w-10 text-center font-extrabold text-sm text-foreground tabular-nums">
-                {days}
-              </span>
-              <button
-                onClick={() => setDays((d) => Math.min(90, d + 1))}
-                className="w-11 h-11 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted text-xl font-light transition-colors"
-              >
-                +
-              </button>
+        {!isCandidateMode && (
+          <div>
+            <label className="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground mb-2 block">
+              Duration
+            </label>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center border border-border rounded-lg overflow-hidden bg-white">
+                <button
+                  onClick={() => setDays((d) => Math.max(1, d - 1))}
+                  className="w-11 h-11 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted text-xl font-light transition-colors"
+                >
+                  −
+                </button>
+                <span className="w-10 text-center font-extrabold text-sm text-foreground tabular-nums">
+                  {days}
+                </span>
+                <button
+                  onClick={() => setDays((d) => Math.min(90, d + 1))}
+                  className="w-11 h-11 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted text-xl font-light transition-colors"
+                >
+                  +
+                </button>
+              </div>
+              <span className="text-sm text-muted-foreground">{days === 1 ? 'day' : 'days'}</span>
             </div>
-            <span className="text-sm text-muted-foreground">{days === 1 ? 'day' : 'days'}</span>
           </div>
-        </div>
+        )}
 
-        {/* Preview */}
         <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-border bg-muted/60">
           <div className="w-2 h-8 rounded-full flex-shrink-0" style={{ background: stayColor }} />
           <div className="flex-1 min-w-0">
@@ -182,7 +298,9 @@ function AddStayModal({
               {name || 'New destination'}
             </p>
             <p className="text-[11px] text-muted-foreground font-medium mt-0.5">
-              {days} {days === 1 ? 'day' : 'days'} on the timeline
+              {isCandidateMode
+                ? 'Saved to inbox — no dates yet'
+                : `${days} ${days === 1 ? 'day' : 'days'} on the timeline`}
             </p>
           </div>
           {pickedCoords && (
@@ -195,21 +313,12 @@ function AddStayModal({
           )}
         </div>
 
-        {/* Actions */}
         <div className="flex gap-2.5 pt-1">
           <Button variant="outline" size="sm" className="flex-1" onClick={onClose}>
             Cancel
           </Button>
-          <Button
-            size="sm"
-            className="flex-1"
-            onClick={() =>
-              canSave &&
-              onSave({ name: name.trim(), days, lat: pickedCoords?.lat, lng: pickedCoords?.lng })
-            }
-            disabled={!canSave}
-          >
-            Add to Timeline
+          <Button size="sm" className="flex-1" onClick={handleSave} disabled={!canSave}>
+            {saveLabel}
           </Button>
         </div>
       </div>
