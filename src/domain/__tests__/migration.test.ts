@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { migrateV1toV2, normalizeTrip } from '../migration';
+import { migrateV1toV2, migrateV2toV3, normalizeTrip } from '../migration';
 import type { HybridTrip, V1HybridTrip, VisitItem } from '../types';
 
 const makeV1Trip = (): V1HybridTrip => ({
@@ -234,5 +234,43 @@ describe('normalizeTrip', () => {
     const result = normalizeTrip(trip);
     expect(result.visits[0].dayOffset).toBe(0);
     expect(result.visits[0].dayPart).toBe('morning');
+  });
+});
+
+describe('migrateV2toV3', () => {
+  it('adds empty candidateStays array and bumps version to 3', () => {
+    const v2Trip = {
+      id: 'trip-1',
+      name: 'Japan',
+      startDate: '2026-05-01',
+      totalDays: 10,
+      version: 2,
+      stays: [],
+      visits: [],
+      routes: [],
+    } as unknown as HybridTrip;
+
+    const result = migrateV2toV3(v2Trip);
+
+    expect(result.version).toBe(3);
+    expect(result.candidateStays).toEqual([]);
+  });
+
+  it('preserves existing trip data', () => {
+    const v2Trip = {
+      id: 'trip-1',
+      name: 'Japan',
+      startDate: '2026-05-01',
+      totalDays: 10,
+      version: 2,
+      stays: [{ id: 'stay-1', name: 'Tokyo' }],
+      visits: [{ id: 'v1', stayId: 'stay-1' }],
+      routes: [],
+    } as unknown as HybridTrip;
+
+    const result = migrateV2toV3(v2Trip);
+
+    expect(result.stays).toHaveLength(1);
+    expect(result.visits).toHaveLength(1);
   });
 });

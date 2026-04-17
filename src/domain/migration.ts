@@ -369,6 +369,21 @@ export function needsMigrationToV2(trip: unknown): boolean {
   return t.version !== 2;
 }
 
+// ─── V2 → V3 migration ─────────────────────────────────────────────────────
+
+export function migrateV2toV3(old: HybridTrip): HybridTrip {
+  return {
+    ...old,
+    version: 3,
+    candidateStays: (old as unknown as { candidateStays?: Stay[] }).candidateStays ?? [],
+  };
+}
+
+export function needsMigrationToV3(trip: unknown): boolean {
+  const t = trip as Record<string, unknown>;
+  return (t.version ?? 0) < 3;
+}
+
 /** Ensure all array fields on a HybridTrip are actual arrays (Firebase may return objects with numeric keys). */
 export function normalizeTrip(raw: HybridTrip): HybridTrip {
   return {
