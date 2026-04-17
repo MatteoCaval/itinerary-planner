@@ -160,7 +160,7 @@ function AddStayModal({
               From inbox
             </label>
             <div className="flex gap-2 overflow-x-auto pb-1 scroll-hide">
-              {candidates!.map((c) => {
+              {candidates.map((c) => {
                 const active = c.id === selectedCandidateId;
                 return (
                   <button
@@ -185,9 +185,10 @@ function AddStayModal({
               {selectedCandidateId && (
                 <button
                   onClick={clearCandidate}
+                  aria-label="Clear inbox selection"
                   className="flex items-center gap-1 px-2 py-1.5 rounded-full text-muted-foreground hover:text-foreground text-[11px] font-medium"
                 >
-                  <X className="w-3 h-3" /> Clear
+                  <X className="w-3 h-3" aria-hidden /> Clear
                 </button>
               )}
             </div>

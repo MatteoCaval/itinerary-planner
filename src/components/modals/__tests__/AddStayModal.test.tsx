@@ -58,6 +58,37 @@ describe('AddStayModal — pick from inbox', () => {
     expect(onSavePromote).toHaveBeenCalledTimes(1);
     expect(onSavePromote.mock.calls[0][0]).toMatchObject({ candidateId: 'c1' });
   });
+
+  it('clears selection when the Clear button is pressed', () => {
+    render(
+      <AddStayModal
+        onClose={() => {}}
+        onSave={() => {}}
+        stayColor="#111"
+        candidates={[kyoto]}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: /Kyoto/i }));
+    const nameInput = screen.getByPlaceholderText(/Tokyo, Kyoto, Paris/i) as HTMLInputElement;
+    expect(nameInput.value).toBe('Kyoto');
+
+    fireEvent.click(screen.getByRole('button', { name: /Clear inbox selection/i }));
+    expect(nameInput.value).toBe('');
+  });
+
+  it('pre-fills the name field when initialCandidateId is set', () => {
+    render(
+      <AddStayModal
+        onClose={() => {}}
+        onSave={() => {}}
+        stayColor="#111"
+        candidates={[kyoto]}
+        initialCandidateId="c1"
+      />,
+    );
+    const nameInput = screen.getByPlaceholderText(/Tokyo, Kyoto, Paris/i) as HTMLInputElement;
+    expect(nameInput.value).toBe('Kyoto');
+  });
 });
 
 describe('AddStayModal — candidate mode', () => {
