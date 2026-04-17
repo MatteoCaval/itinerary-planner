@@ -366,7 +366,7 @@ export function migrateV1toV2(old: V1HybridTrip): HybridTrip {
 }
 
 export function needsMigrationToV2(trip: unknown): boolean {
-  const t = trip as Record<string, unknown>;
+  const t = trip as { version?: number };
   return (t.version ?? 0) < 2;
 }
 
@@ -381,7 +381,7 @@ export function migrateV2toV3(old: HybridTrip): HybridTrip {
 }
 
 export function needsMigrationToV3(trip: unknown): boolean {
-  const t = trip as Record<string, unknown>;
+  const t = trip as { version?: number };
   return (t.version ?? 0) < 3;
 }
 
