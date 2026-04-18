@@ -135,3 +135,40 @@ export function adjustStaysForDateChange(
 
   return { stays: clampedStays, visits: adjustedVisits };
 }
+
+// ─── Candidate stay promotion / demotion ─────────────────────────────────────
+
+/** Move a stay from `stays` to `candidateStays`, unschedule its visits, and drop its routes. */
+export function demoteStay(trip: HybridTrip, stayId: string): HybridTrip {
+  const stay = trip.stays.find((s) => s.id === stayId);
+  if (!stay) return trip;
+
+  return {
+    ...trip,
+    stays: trip.stays.filter((s) => s.id !== stayId),
+    candidateStays: [...trip.candidateStays, stay],
+    visits: trip.visits.map((v) =>
+      v.stayId === stayId ? { ...v, dayOffset: null, dayPart: null } : v,
+    ),
+    routes: trip.routes.filter(
+      (r) => r.fromStayId !== stayId && r.toStayId !== stayId,
+    ),
+  };
+}
+
+/** Move a candidate stay into `stays` with the given slot range. */
+export function promoteCandidateStay(
+  trip: HybridTrip,
+  candidateId: string,
+  startSlot: number,
+  endSlot: number,
+): HybridTrip {
+  const candidate = trip.candidateStays.find((s) => s.id === candidateId);
+  if (!candidate) return trip;
+
+  return {
+    ...trip,
+    candidateStays: trip.candidateStays.filter((s) => s.id !== candidateId),
+    stays: [...trip.stays, { ...candidate, startSlot, endSlot }],
+  };
+}

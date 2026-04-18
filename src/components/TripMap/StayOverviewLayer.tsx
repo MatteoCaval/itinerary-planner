@@ -19,6 +19,14 @@ export type OverviewStay = {
   travelDurationToNext?: string;
 };
 
+export type OverviewCandidate = {
+  id: string;
+  name: string;
+  color: string;
+  centerLat: number;
+  centerLng: number;
+};
+
 const TRAVEL_COLORS: Record<TravelMode, string> = {
   train: '#0f7a72',
   flight: '#ab3b61',
@@ -46,17 +54,23 @@ function toTransportType(mode: TravelMode): TransportType {
 
 type StayOverviewLayerProps = {
   stays: OverviewStay[];
+  candidateStays?: OverviewCandidate[];
   onSelectStay: (stayId: string) => void;
+  onSelectCandidate?: (candidateId: string) => void;
   expanded?: boolean;
   highlightedStayId?: string | null;
+  highlightedCandidateId?: string | null;
   showRouteIcons?: boolean;
 };
 
 export default function StayOverviewLayer({
   stays,
+  candidateStays,
   onSelectStay,
+  onSelectCandidate,
   expanded = false,
   highlightedStayId,
+  highlightedCandidateId: _highlightedCandidateId,
   showRouteIcons = false,
 }: StayOverviewLayerProps) {
   const map = useMap();
@@ -157,6 +171,29 @@ export default function StayOverviewLayer({
             },
           }}
         />
+      ))}
+
+      {(candidateStays ?? []).map((c) => (
+        <Marker
+          key={`candidate-${c.id}`}
+          position={[c.centerLat, c.centerLng]}
+          icon={L.divIcon({
+            className: 'candidate-marker',
+            html: `<div style="width:28px;height:28px;border-radius:50%;border:2px dashed ${c.color};background:white;opacity:0.75;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,0.15);"><span style="font-size:10px;font-weight:700;color:${c.color};">${c.name.slice(0, 2).toUpperCase()}</span></div>`,
+            iconSize: [28, 28],
+            iconAnchor: [14, 14],
+          })}
+          eventHandlers={{
+            click: () => {
+              map.flyTo([c.centerLat, c.centerLng], 11, { duration: 0.5 });
+              onSelectCandidate?.(c.id);
+            },
+          }}
+        >
+          <Tooltip direction="top" offset={[0, -12]}>
+            <strong>{c.name}</strong> · in inbox
+          </Tooltip>
+        </Marker>
       ))}
     </>
   );

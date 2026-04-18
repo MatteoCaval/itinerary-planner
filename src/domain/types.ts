@@ -66,6 +66,7 @@ export type HybridTrip = {
   createdAt?: number;
   updatedAt?: number;
   stays: Stay[];
+  candidateStays: Stay[];
   visits: VisitItem[];
   routes: Route[];
   shareCode?: string;

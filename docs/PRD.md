@@ -48,6 +48,10 @@ Clicking a stay in the timeline opens its **Overview** tab in the left sidebar (
 - **Links** — external URLs with optional labels
 - **To-Do** — collapsible checklist for the whole stay (e.g. "Book Shinkansen pass")
 
+### Destination Inbox
+
+In trip overview mode (no stay selected), the sidebar inbox holds **candidate destinations** — stays saved without timeline dates. Users can save candidates when adding a new destination ("Save to inbox" path in `AddStayModal`), promote them onto the timeline with dates via a "Pick from inbox" chip in the Add Destination modal, and demote any scheduled stay back to the inbox from the stay editor ("Move to inbox" button in `StayEditorModal`). Visits travel with their stay on promote/demote; visits that had `dayOffset` values become unscheduled on demote. Candidate stays render as ghost markers on the overview map to show where potential destinations are without cluttering the placed-stay layer.
+
 ### Map
 
 Two modes:
@@ -91,15 +95,18 @@ Trip dates edited via an inline calendar (react-day-picker v9). When shortening 
 
 ---
 
-## Data Model (v2)
+## Data Model (v3)
 
 ```
 TripStore       { trips: Trip[], activeTripId: string }
 
 Trip (HybridTrip) { id, name, startDate: "YYYY-MM-DD", totalDays,
-                    version: 2, createdAt, updatedAt,
-                    stays: Stay[], visits: VisitItem[], routes: Route[],
+                    version: 3, createdAt, updatedAt,
+                    stays: Stay[], candidateStays: Stay[],
+                    visits: VisitItem[], routes: Route[],
                     shareCode?, sourceShareCode?, importedAt? }
+                  // candidateStays holds inbox destinations not yet placed on the timeline
+                  // v2→v3 migration adds candidateStays: [] to existing trips
 
 Stay            { id, name, color, startSlot, endSlot,
                   centerLat, centerLng, imageUrl?,
@@ -127,7 +134,7 @@ ShareCodeNode   { code: string, tripId: string, userId: string, writable: boolea
 
 **Slot arithmetic:** 1 day = 3 slots. `startSlot = dayIndex * 3`. Stay night count = `ceil((endSlot - startSlot) / 3)`.
 
-**Persistence:** Primary key `itinerary-store-v2` (native v2 JSON). Legacy keys read on migration: `itinerary-trips-v1` → `itinerary-hybrid-trips-v2`. Cloud: `users/{uid}/tripStore`. Old v1 data is auto-migrated to v2 on load via `migrateV1toV2()`.
+**Persistence:** Primary key `itinerary-store-v2` (native JSON). Legacy keys read on migration: `itinerary-trips-v1` → `itinerary-hybrid-trips-v2`. Cloud: `users/{uid}/tripStore`. Old v1 data is auto-migrated to v2 on load via `migrateV1toV2()`. v2→v3 adds `candidateStays: []`; `normalizeTrip` defends against Firebase stripping empty arrays.
 
 ---
 
@@ -138,6 +145,7 @@ ShareCodeNode   { code: string, tripId: string, userId: string, writable: boolea
 | Gantt timeline              | ✅     | Drag, resize, zoom, overlap detection, blocked buffer days, extend trip                                                                                                                                                                                                                          |
 | Date range shrink/shift     | ✅     | Clamping, removal confirmation, visit unscheduling                                                                                                                                                                                                                                               |
 | Stay CRUD                   | ✅     | Geocoding, color, route chips, manual map picker fallback                                                                                                                                                                                                                                        |
+| Destination Inbox           | ✅     | Candidate stays saved without dates, promote to timeline via "Pick from inbox", demote via "Move to inbox"; ghost markers on overview map; visits travel with stay on promote/demote                                                                                                              |
 | Activity kanban + inbox     | ✅     | DnD, search, type grid, global itinerary overview, manual map picker fallback                                                                                                                                                                                                                    |
 | Accommodation per-night     | ✅     | Geocoding, cost, grouping, night-range editing                                                                                                                                                                                                                                                   |
 | Stay overview panel         | ✅     | Hero, stats, notes, links, accommodation summary, to-do                                                                                                                                                                                                                                          |

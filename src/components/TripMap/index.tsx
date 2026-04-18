@@ -9,7 +9,7 @@ import { MapControlsPanel } from './MapControlsPanel';
 import { useBasemapState } from './useBasemapState';
 import type { BasemapMode } from './useBasemapState';
 import StayOverviewLayer from './StayOverviewLayer';
-import type { OverviewStay } from './StayOverviewLayer';
+import type { OverviewStay, OverviewCandidate } from './StayOverviewLayer';
 
 type VisitType = 'landmark' | 'museum' | 'food' | 'walk' | 'shopping';
 
@@ -52,9 +52,12 @@ interface TripMapProps {
   stay: Stay | null;
   mode: 'overview' | 'stay' | 'detail';
   overviewStays?: OverviewStay[];
+  overviewCandidates?: OverviewCandidate[];
   onSelectStay?: (stayId: string) => void;
+  onSelectCandidate?: (candidateId: string) => void;
   selectedDayOffset?: number | null;
   highlightedStayId?: string | null;
+  highlightedCandidateId?: string | null;
   onBackToOverview?: () => void;
 }
 
@@ -88,9 +91,12 @@ export default function TripMap({
   stay,
   mode,
   overviewStays,
+  overviewCandidates,
   onSelectStay,
+  onSelectCandidate,
   selectedDayOffset,
   highlightedStayId,
+  highlightedCandidateId,
   onBackToOverview,
 }: TripMapProps) {
   const [basemap, setBasemap] = useBasemapState();
@@ -143,7 +149,9 @@ export default function TripMap({
 
   const allPoints = useMemo(() => {
     if (mode === 'overview') {
-      return (overviewStays ?? []).map((s): [number, number] => [s.centerLat, s.centerLng]);
+      const stayPts = (overviewStays ?? []).map((s): [number, number] => [s.centerLat, s.centerLng]);
+      const candPts = (overviewCandidates ?? []).map((c): [number, number] => [c.centerLat, c.centerLng]);
+      return [...stayPts, ...candPts];
     }
     const pts: [number, number][] = visits.map((v) => [v.lat, v.lng]);
     accommodations.forEach((a) => pts.push([a.lat, a.lng]));
@@ -152,7 +160,7 @@ export default function TripMap({
       pts.push([stay.centerLat, stay.centerLng]);
     }
     return pts;
-  }, [visits, accommodations, mode, overviewStays, stay]);
+  }, [visits, accommodations, mode, overviewStays, overviewCandidates, stay]);
 
   const center: [number, number] = allPoints.length ? allPoints[0] : [35.6762, 139.6503];
 
@@ -171,9 +179,12 @@ export default function TripMap({
         {mode === 'overview' ? (
           <StayOverviewLayer
             stays={overviewStays ?? []}
+            candidateStays={overviewCandidates}
             onSelectStay={onSelectStay ?? (() => {})}
+            onSelectCandidate={onSelectCandidate}
             expanded={expanded}
             highlightedStayId={highlightedStayId}
+            highlightedCandidateId={highlightedCandidateId}
             showRouteIcons={showRouteIcons}
           />
         ) : (

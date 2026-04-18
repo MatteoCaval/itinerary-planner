@@ -12,6 +12,7 @@ import {
 import { arrayMove } from '@dnd-kit/sortable';
 import {
   Bed,
+  CalendarPlus,
   Check,
   ChevronDown,
   CloudOff,
@@ -69,8 +70,10 @@ import { getVisitTypeBg, getVisitTypeColor, getVisitLabel } from './domain/visit
 import { createSampleTrip } from './domain/sampleData';
 import {
   applyTimelineDrag,
+  demoteStay,
   extendTripAfter,
   extendTripBefore,
+  promoteCandidateStay,
   shrinkTripAfter,
   shrinkTripBefore,
 } from './domain/tripMutations';
@@ -207,6 +210,9 @@ function ChronosApp() {
   const [selectedVisitId, setSelectedVisitId] = useState<string | null>(null);
   const [hoveredVisitId, setHoveredVisitId] = useState<string | null>(null);
   const [locatedVisitId, setLocatedVisitId] = useState<string | null>(null);
+  const [selectedCandidateId, setSelectedCandidateId] = useState<string | null>(null);
+  const [promotingCandidateId, setPromotingCandidateId] = useState<string | null>(null);
+  const [addingCandidate, setAddingCandidate] = useState(false);
   // Clear located visit when selection changes to something else
   useEffect(() => {
     if (locatedVisitId && selectedVisitId !== locatedVisitId) {
@@ -639,11 +645,12 @@ function ChronosApp() {
       id: `trip-${Date.now()}`,
       name: 'New Trip',
       stays: [],
+      candidateStays: [],
       visits: [],
       routes: [],
       startDate: '',
       totalDays: 7,
-      version: 2,
+      version: 3,
       createdAt: Date.now(),
       updatedAt: Date.now(),
     };
@@ -1757,7 +1764,13 @@ function ChronosApp() {
                   </TabsList>
                 </Tabs>
                 <button
-                  onClick={() => setAddingToInbox(true)}
+                  onClick={() => {
+                    if (selectedStay) {
+                      setAddingToInbox(true);
+                    } else {
+                      setAddingCandidate(true);
+                    }
+                  }}
                   className={`px-2.5 flex items-center justify-center border-b border-l border-border-neutral bg-muted text-muted-foreground hover:text-primary hover:bg-white transition-colors ${sidebarTab === 'unplanned' ? '' : 'invisible pointer-events-none'}`}
                   aria-label="Add new place"
                 >
@@ -1844,43 +1857,113 @@ function ChronosApp() {
               {/* Unplanned tab */}
               {sidebarTab === 'unplanned' && (
                 <div className="flex-1 overflow-y-auto p-4 space-y-3 scroll-hide">
-                  {inboxVisits.map((v) => (
-                    <DraggableInventoryCard
-                      key={v.id}
-                      visit={v}
-                      onEdit={() => setEditingVisit(v)}
-                      onLocate={() => {
-                        setLocatedVisitId(v.id);
-                        setSelectedVisitId(v.id);
-                      }}
-                    />
-                  ))}
-                  {inboxVisits.length === 0 && (
-                    <div className="flex flex-col items-center justify-center py-8 gap-2">
-                      <div className="size-9 rounded-xl bg-muted flex items-center justify-center">
-                        {searchTerm ? (
-                          <Search className="w-4 h-4 text-muted-foreground" />
-                        ) : selectedStay ? (
-                          <Check className="w-4 h-4 text-success" />
-                        ) : (
-                          <Compass className="w-4 h-4 text-muted-foreground" />
-                        )}
-                      </div>
-                      <p className="text-[11px] font-bold text-muted-foreground">
-                        {searchTerm
-                          ? 'No matching places'
-                          : selectedStay
-                            ? 'All scheduled!'
-                            : 'No stay selected'}
-                      </p>
-                      <p className="text-[9px] text-muted-foreground text-center leading-relaxed">
-                        {searchTerm
-                          ? 'Try a different search term.'
-                          : selectedStay
-                            ? 'Add more with the + button above.'
-                            : 'Click a destination on the timeline.'}
-                      </p>
-                    </div>
+                  {selectedStay ? (
+                    <>
+                      {inboxVisits.map((v) => (
+                        <DraggableInventoryCard
+                          key={v.id}
+                          visit={v}
+                          onEdit={() => setEditingVisit(v)}
+                          onLocate={() => {
+                            setLocatedVisitId(v.id);
+                            setSelectedVisitId(v.id);
+                          }}
+                        />
+                      ))}
+                      {inboxVisits.length === 0 && (
+                        <div className="flex flex-col items-center justify-center py-8 gap-2">
+                          <div className="size-9 rounded-xl bg-muted flex items-center justify-center">
+                            {searchTerm ? (
+                              <Search className="w-4 h-4 text-muted-foreground" />
+                            ) : selectedStay ? (
+                              <Check className="w-4 h-4 text-success" />
+                            ) : (
+                              <Compass className="w-4 h-4 text-muted-foreground" />
+                            )}
+                          </div>
+                          <p className="text-[11px] font-bold text-muted-foreground">
+                            {searchTerm
+                              ? 'No matching places'
+                              : selectedStay
+                                ? 'All scheduled!'
+                                : 'No stay selected'}
+                          </p>
+                          <p className="text-[9px] text-muted-foreground text-center leading-relaxed">
+                            {searchTerm
+                              ? 'Try a different search term.'
+                              : selectedStay
+                                ? 'Add more with the + button above.'
+                                : 'Click a destination on the timeline.'}
+                          </p>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      {trip.candidateStays.map((c) => (
+                        <div
+                          key={c.id}
+                          className="group rounded-xl border border-border bg-white p-3 cursor-pointer hover:shadow-sm transition-shadow"
+                          onClick={() => setSelectedCandidateId(c.id)}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span
+                                className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                                style={{ background: c.color }}
+                              />
+                              <p className="text-xs font-bold text-foreground truncate">{c.name}</p>
+                            </div>
+                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <Button
+                                variant="ghost"
+                                size="icon-sm"
+                                aria-label={`Promote ${c.name} to timeline`}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setPromotingCandidateId(c.id);
+                                  setAddingStay(true);
+                                }}
+                              >
+                                <CalendarPlus className="w-3.5 h-3.5" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon-sm"
+                                aria-label={`Delete ${c.name} from inbox`}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setTrip((t) => ({
+                                    ...t,
+                                    candidateStays: t.candidateStays.filter((s) => s.id !== c.id),
+                                    visits: t.visits.filter((v) => v.stayId !== c.id),
+                                  }));
+                                  if (selectedCandidateId === c.id) {
+                                    setSelectedCandidateId(null);
+                                  }
+                                }}
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                      {trip.candidateStays.length === 0 && (
+                        <div className="flex flex-col items-center justify-center py-8 gap-2">
+                          <div className="size-9 rounded-xl bg-muted flex items-center justify-center">
+                            <Compass className="w-4 h-4 text-muted-foreground" />
+                          </div>
+                          <p className="text-[11px] font-bold text-muted-foreground">
+                            No destinations in inbox yet
+                          </p>
+                          <p className="text-[11px] text-muted-foreground text-center max-w-[220px]">
+                            Add places you&apos;re considering, then move them to the timeline when
+                            ready.
+                          </p>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               )}
@@ -2416,6 +2499,15 @@ function ChronosApp() {
                     stay={mapMode !== 'overview' ? selectedStay : null}
                     mode={mapMode}
                     overviewStays={overviewStays}
+                    overviewCandidates={trip.candidateStays.map((c) => ({
+                      id: c.id,
+                      name: c.name,
+                      color: c.color,
+                      centerLat: c.centerLat,
+                      centerLng: c.centerLng,
+                    }))}
+                    highlightedCandidateId={selectedCandidateId}
+                    onSelectCandidate={(id) => setSelectedCandidateId(id)}
                     onSelectStay={(stayId) => {
                       setSelectedStayId(stayId);
                     }}
@@ -2845,16 +2937,27 @@ function ChronosApp() {
                   }));
                   setSelectedStayId(trip.stays[0]?.id ?? '');
                 }}
+                onDemote={() => {
+                  setTrip((t) => demoteStay(t, editingStayId!));
+                  if (selectedStayId === editingStayId) {
+                    setSelectedStayId('');
+                  }
+                }}
               />
             );
           })()}
 
         {/* Add stay */}
-        {addingStay && (
+        {(addingStay || addingCandidate) && (
           <AddStayModal
+            mode={addingCandidate ? 'candidate' : 'schedule'}
+            candidates={trip.candidateStays}
+            initialCandidateId={promotingCandidateId ?? undefined}
             onClose={() => {
               setAddingStay(false);
+              setAddingCandidate(false);
               setPendingTimelineSlot(null);
+              setPromotingCandidateId(null);
             }}
             stayColor={STAY_COLORS[trip.stays.length % STAY_COLORS.length]}
             initialDays={pendingTimelineSlot?.days}
@@ -2878,6 +2981,40 @@ function ChronosApp() {
               setSelectedStayId(newStay.id);
               setAddingStay(false);
               setPendingTimelineSlot(null);
+            }}
+            onSavePromote={({ candidateId, days }) => {
+              const startSlot =
+                pendingTimelineSlot?.startSlot ??
+                (sortedStays.length > 0 ? sortedStays[sortedStays.length - 1].endSlot : 0);
+              const endSlot = Math.min(startSlot + days * 3, trip.totalDays * 3);
+              setTrip((t) => promoteCandidateStay(t, candidateId, startSlot, endSlot));
+              setSelectedStayId(candidateId);
+              if (selectedCandidateId === candidateId) {
+                setSelectedCandidateId(null);
+              }
+              setAddingStay(false);
+              setPendingTimelineSlot(null);
+              setPromotingCandidateId(null);
+            }}
+            onSaveCandidate={({ name, lat, lng }) => {
+              const newCandidate: Stay = {
+                id: `stay-${Date.now()}`,
+                name,
+                color:
+                  STAY_COLORS[
+                    (trip.stays.length + trip.candidateStays.length) % STAY_COLORS.length
+                  ],
+                startSlot: 0,
+                endSlot: 0,
+                centerLat: lat ?? jitter(35.6762, 5),
+                centerLng: lng ?? jitter(139.6503, 5),
+              };
+              setTrip((t) => ({
+                ...t,
+                candidateStays: [...t.candidateStays, newCandidate],
+              }));
+              setAddingCandidate(false);
+              setAddingStay(false);
             }}
           />
         )}

@@ -2,7 +2,9 @@ import type { LegacyTripsStore, TripStore, V1HybridTrip } from '@/domain/types';
 import { LEGACY_STORAGE_KEY } from '@/domain/constants';
 import {
   migrateV1toV2,
+  migrateV2toV3,
   needsMigrationToV2,
+  needsMigrationToV3,
   normalizeTrip,
   legacyTripToHybrid,
   hybridTripToLegacy,
@@ -17,10 +19,14 @@ export function loadStore(): TripStore {
       return {
         ...parsed,
         trips: parsed.trips.map((t) => {
-          const normalized = normalizeTrip(t);
-          return needsMigrationToV2(normalized)
-            ? migrateV1toV2(normalized as unknown as V1HybridTrip)
-            : normalized;
+          let migrated = normalizeTrip(t);
+          if (needsMigrationToV2(migrated)) {
+            migrated = migrateV1toV2(migrated as unknown as V1HybridTrip);
+          }
+          if (needsMigrationToV3(migrated)) {
+            migrated = migrateV2toV3(migrated);
+          }
+          return migrated;
         }),
       };
     }
@@ -36,7 +42,7 @@ export function loadStore(): TripStore {
       if (legacyStore?.trips?.length) {
         return {
           activeTripId: legacyStore.activeTripId,
-          trips: legacyStore.trips.map((t, i) => legacyTripToHybrid(t, i * 8)),
+          trips: legacyStore.trips.map((t, i) => migrateV2toV3(legacyTripToHybrid(t, i * 8))),
         };
       }
     }
@@ -52,10 +58,14 @@ export function loadStore(): TripStore {
       return {
         ...parsed,
         trips: parsed.trips.map((t) => {
-          const normalized = normalizeTrip(t);
-          return needsMigrationToV2(normalized)
-            ? migrateV1toV2(normalized as unknown as V1HybridTrip)
-            : normalized;
+          let migrated = normalizeTrip(t);
+          if (needsMigrationToV2(migrated)) {
+            migrated = migrateV1toV2(migrated as unknown as V1HybridTrip);
+          }
+          if (needsMigrationToV3(migrated)) {
+            migrated = migrateV2toV3(migrated);
+          }
+          return migrated;
         }),
       };
     }
@@ -68,10 +78,13 @@ export function loadStore(): TripStore {
     const old = localStorage.getItem('itinerary-hybrid-v3');
     if (old) {
       const parsed = JSON.parse(old);
-      const normalized = normalizeTrip(parsed);
-      const trip = needsMigrationToV2(normalized)
-        ? migrateV1toV2(normalized as unknown as V1HybridTrip)
-        : normalized;
+      let trip = normalizeTrip(parsed);
+      if (needsMigrationToV2(trip)) {
+        trip = migrateV1toV2(trip as unknown as V1HybridTrip);
+      }
+      if (needsMigrationToV3(trip)) {
+        trip = migrateV2toV3(trip);
+      }
       return { trips: [trip], activeTripId: trip.id };
     }
   } catch {

@@ -359,14 +359,30 @@ export function migrateV1toV2(old: V1HybridTrip): HybridTrip {
     createdAt: typeof rawOld.createdAt === 'number' ? rawOld.createdAt : now,
     updatedAt: typeof rawOld.updatedAt === 'number' ? rawOld.updatedAt : now,
     stays,
+    candidateStays: [],
     visits,
     routes,
   };
 }
 
 export function needsMigrationToV2(trip: unknown): boolean {
-  const t = trip as Record<string, unknown>;
-  return t.version !== 2;
+  const t = trip as { version?: number };
+  return (t.version ?? 0) < 2;
+}
+
+// ─── V2 → V3 migration ─────────────────────────────────────────────────────
+
+export function migrateV2toV3(old: HybridTrip): HybridTrip {
+  return {
+    ...old,
+    version: 3,
+    candidateStays: (old as unknown as { candidateStays?: Stay[] }).candidateStays ?? [],
+  };
+}
+
+export function needsMigrationToV3(trip: unknown): boolean {
+  const t = trip as { version?: number };
+  return (t.version ?? 0) < 3;
 }
 
 /** Ensure all array fields on a HybridTrip are actual arrays (Firebase may return objects with numeric keys). */
@@ -374,6 +390,13 @@ export function normalizeTrip(raw: HybridTrip): HybridTrip {
   return {
     ...raw,
     stays: (raw.stays ?? []).map((s) => ({
+      ...s,
+      nightAccommodations: s.nightAccommodations ?? undefined,
+      checklist: s.checklist ?? undefined,
+      notes: s.notes ?? undefined,
+      links: s.links ?? undefined,
+    })),
+    candidateStays: (raw.candidateStays ?? []).map((s) => ({
       ...s,
       nightAccommodations: s.nightAccommodations ?? undefined,
       checklist: s.checklist ?? undefined,

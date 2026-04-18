@@ -7,9 +7,10 @@ export function createSampleTrip(): HybridTrip {
     name: 'Japan Late Spring Circuit',
     startDate: '2026-05-28',
     totalDays: 15,
-    version: 2,
+    version: 3,
     createdAt: Date.now(),
     updatedAt: Date.now(),
+    candidateStays: [],
     stays: [
       {
         id: 'stay-tokyo',
