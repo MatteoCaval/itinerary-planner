@@ -46,7 +46,7 @@ function SortableVisitCard({
           : isHighlighted
             ? 'border-primary/40 shadow-md ring-2 ring-primary/20 bg-primary/[0.03]'
             : isSelected
-              ? 'border-primary/30 shadow-[0_4px_12px_rgba(236,91,19,0.1)] ring-1 ring-primary/10'
+              ? 'border-primary/30 shadow-[0_4px_12px_rgba(15,118,110,0.1)] ring-1 ring-primary/10'
               : 'border-border hover:border-border hover:shadow-md'
       }`}
     >

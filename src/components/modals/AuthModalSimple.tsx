@@ -155,7 +155,7 @@ function AuthModalSimple({ onClose }: { onClose: () => void }) {
               className="w-full py-2.5 text-sm font-extrabold text-white rounded-xl transition-all disabled:opacity-50 relative overflow-hidden group mt-1"
               style={{
                 background: 'linear-gradient(135deg, #0f766e 0%, #0d9488 100%)',
-                boxShadow: '0 4px 14px -2px rgba(236,91,19,0.4)',
+                boxShadow: '0 4px 14px -2px rgba(15,118,110,0.4)',
               }}
             >
               <span className="relative z-10 flex items-center justify-center gap-2">
