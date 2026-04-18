@@ -89,6 +89,7 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { Kbd } from '@/components/ui/kbd';
 import {
   Sheet,
   SheetContent,
@@ -995,7 +996,7 @@ function ChronosApp() {
                     <Undo2 className="w-4 h-4" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>Undo (Ctrl+Z)</TooltipContent>
+                <TooltipContent>Undo <Kbd>Ctrl+Z</Kbd></TooltipContent>
               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -1013,7 +1014,7 @@ function ChronosApp() {
                     <Redo2 className="w-4 h-4" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>Redo (Ctrl+Y)</TooltipContent>
+                <TooltipContent>Redo <Kbd>Ctrl+Y</Kbd></TooltipContent>
               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
