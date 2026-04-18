@@ -15,7 +15,7 @@ export function createSampleTrip(): HybridTrip {
       {
         id: 'stay-tokyo',
         name: 'Tokyo Exploration',
-        color: '#2167d7',
+        color: '#b8304f',
         startSlot: 0,
         endSlot: 10,
         centerLat: 35.6895,
@@ -24,7 +24,7 @@ export function createSampleTrip(): HybridTrip {
       {
         id: 'stay-kanazawa',
         name: 'Kanazawa & Hokuriku',
-        color: '#615cf6',
+        color: '#c15a2a',
         startSlot: 10,
         endSlot: 18,
         centerLat: 36.5613,
@@ -33,7 +33,7 @@ export function createSampleTrip(): HybridTrip {
       {
         id: 'stay-kyoto',
         name: 'Kyoto & Nara Cultural Core',
-        color: '#d78035',
+        color: '#2e3f8a',
         startSlot: 21,
         endSlot: 36,
         centerLat: 35.0116,
@@ -42,7 +42,7 @@ export function createSampleTrip(): HybridTrip {
       {
         id: 'stay-osaka',
         name: 'Osaka City',
-        color: '#20b5a8',
+        color: '#6b7a3a',
         startSlot: 36,
         endSlot: 45,
         centerLat: 34.6937,

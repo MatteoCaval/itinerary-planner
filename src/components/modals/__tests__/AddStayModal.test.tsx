@@ -6,7 +6,7 @@ import type { Stay } from '@/domain/types';
 const kyoto: Stay = {
   id: 'c1',
   name: 'Kyoto',
-  color: '#615cf6',
+  color: '#c15a2a',
   startSlot: 0,
   endSlot: 0,
   centerLat: 35.01,

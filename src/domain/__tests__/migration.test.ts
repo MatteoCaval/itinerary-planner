@@ -11,7 +11,7 @@ const makeV1Trip = (): V1HybridTrip => ({
     {
       id: 'stay-1',
       name: 'Tokyo',
-      color: '#2167d7',
+      color: '#b8304f',
       startSlot: 0,
       endSlot: 9,
       centerLat: 35.68,
@@ -60,7 +60,7 @@ const makeV1Trip = (): V1HybridTrip => ({
     {
       id: 'stay-2',
       name: 'Kyoto',
-      color: '#615cf6',
+      color: '#c15a2a',
       startSlot: 9,
       endSlot: 18,
       centerLat: 35.01,
