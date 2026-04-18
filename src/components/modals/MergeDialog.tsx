@@ -51,8 +51,8 @@ function MergeDialog({
               </DialogTitle>
               <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
                 You have <strong className="text-foreground">{localCount} local</strong> and{' '}
-                <strong className="text-foreground">{cloudCount} cloud</strong> trips. What would you
-                like to do?
+                <strong className="text-foreground">{cloudCount} cloud</strong> trips. What would
+                you like to do?
               </p>
             </div>
           </div>

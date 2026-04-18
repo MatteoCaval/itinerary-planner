@@ -67,7 +67,9 @@ function StayOverviewPanel({
               className="w-2 h-2 rounded-full flex-shrink-0 ring-1 ring-white/40"
               style={{ backgroundColor: stay.color }}
             />
-            <h2 className="text-white font-bold text-sm leading-tight truncate" title={stay.name}>{stay.name}</h2>
+            <h2 className="text-white font-bold text-sm leading-tight truncate" title={stay.name}>
+              {stay.name}
+            </h2>
           </div>
           {startDate && endDate && (
             <p className="font-num text-white/70 text-[11px] mt-0.5">
@@ -265,30 +267,30 @@ export function StayTodoSection({
       {open && (
         <div className="px-4 pb-3 space-y-1.5">
           <div className="max-h-48 overflow-y-auto space-y-1.5">
-          {checklist.map((item) => (
-            <div key={item.id} className="flex items-center gap-2 group">
-              <Checkbox
-                checked={item.done}
-                onCheckedChange={() =>
-                  onUpdate(checklist.map((i) => (i.id === item.id ? { ...i, done: !i.done } : i)))
-                }
-                className="size-3.5"
-              />
-              <span
-                className={`flex-1 text-xs ${item.done ? 'line-through text-muted-foreground' : 'text-foreground'}`}
-              >
-                {item.text}
-              </span>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                onClick={() => onUpdate(checklist.filter((i) => i.id !== item.id))}
-                className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:bg-destructive/10 text-muted-foreground hover:text-destructive sm:max-md:opacity-100"
-              >
-                <X className="w-3 h-3" />
-              </Button>
-            </div>
-          ))}
+            {checklist.map((item) => (
+              <div key={item.id} className="flex items-center gap-2 group">
+                <Checkbox
+                  checked={item.done}
+                  onCheckedChange={() =>
+                    onUpdate(checklist.map((i) => (i.id === item.id ? { ...i, done: !i.done } : i)))
+                  }
+                  className="size-3.5"
+                />
+                <span
+                  className={`flex-1 text-xs ${item.done ? 'line-through text-muted-foreground' : 'text-foreground'}`}
+                >
+                  {item.text}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  onClick={() => onUpdate(checklist.filter((i) => i.id !== item.id))}
+                  className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:bg-destructive/10 text-muted-foreground hover:text-destructive sm:max-md:opacity-100"
+                >
+                  <X className="w-3 h-3" />
+                </Button>
+              </div>
+            ))}
           </div>
           <div className="flex items-center gap-1.5 mt-1">
             <Input

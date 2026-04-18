@@ -29,16 +29,16 @@ Replaces `#ec5b13`. Reserved for **chrome only**: brand mark, primary CTA, activ
 
 Scale (drop-in values for Tailwind's emerald/teal 50–900):
 
-| Token | Hex | Use |
-|---|---|---|
-| `primary-50` | `#f0fdfa` | Subtle backgrounds, hover tints |
-| `primary-100` | `#ccfbf1` | Selected rows, pill chips |
-| `primary-200` | `#99f6e4` | Borders on tinted surfaces |
-| `primary-500` | `#14b8a6` | Bright variant, rare |
-| `primary-600` | `#0d9488` | Hover on fill |
-| `primary-700` | `#0f766e` | **Default primary** |
-| `primary-800` | `#115e59` | Active/pressed |
-| `primary-900` | `#134e4a` | Dark surface (top bar) |
+| Token         | Hex       | Use                             |
+| ------------- | --------- | ------------------------------- |
+| `primary-50`  | `#f0fdfa` | Subtle backgrounds, hover tints |
+| `primary-100` | `#ccfbf1` | Selected rows, pill chips       |
+| `primary-200` | `#99f6e4` | Borders on tinted surfaces      |
+| `primary-500` | `#14b8a6` | Bright variant, rare            |
+| `primary-600` | `#0d9488` | Hover on fill                   |
+| `primary-700` | `#0f766e` | **Default primary**             |
+| `primary-800` | `#115e59` | Active/pressed                  |
+| `primary-900` | `#134e4a` | Dark surface (top bar)          |
 
 ### 2. Stay palette — **P1 Jewel Tones**
 
@@ -61,15 +61,15 @@ export const STAY_COLORS = [
 
 ### 3. Canvas — **Neutral shell, teal on accents only**
 
-| Surface | Token | Hex | Use |
-|---|---|---|---|
-| App canvas | `--background` | `#fafaf9` | Main app background, sidebar, inbox |
-| Card / panel | `--card` | `#ffffff` | Cards, modals, popovers, right panel |
-| Chrome bar | `--chrome` | `#ffffff` | Top bar background |
-| Divider | `--border` | `#ececec` | Hairlines between zones |
-| Muted surface | `--muted` | `#f4f4f5` | Disabled inputs, inactive tabs |
-| Muted fg | `--muted-foreground` | `#71717a` | Secondary text |
-| Foreground | `--foreground` | `#18181b` | Body text |
+| Surface       | Token                | Hex       | Use                                  |
+| ------------- | -------------------- | --------- | ------------------------------------ |
+| App canvas    | `--background`       | `#fafaf9` | Main app background, sidebar, inbox  |
+| Card / panel  | `--card`             | `#ffffff` | Cards, modals, popovers, right panel |
+| Chrome bar    | `--chrome`           | `#ffffff` | Top bar background                   |
+| Divider       | `--border`           | `#ececec` | Hairlines between zones              |
+| Muted surface | `--muted`            | `#f4f4f5` | Disabled inputs, inactive tabs       |
+| Muted fg      | `--muted-foreground` | `#71717a` | Secondary text                       |
+| Foreground    | `--foreground`       | `#18181b` | Body text                            |
 
 Teal leaks into: brand dot, active sidebar item background (`primary-100`), focus ring, primary button, keyboard chip, selected timeline block accent stroke.
 
@@ -92,15 +92,15 @@ Tokens (under `@theme`):
 
 Scale (applied via utility classes, documented in `src/index.css`):
 
-| Name | Size | Weight | Letter-spacing | Use |
-|---|---|---|---|---|
-| `display` | 28/32 | 650 | -0.025em | Stay titles in overview hero |
-| `h1` | 22/27 | 650 | -0.02em | Panel titles, modal titles |
-| `h2` | 17/24 | 650 | -0.015em | Section headings inside panels |
-| `body` | 14/21 | 400 | 0 | Default text |
-| `small` | 12/18 | 400 | 0 | Metadata, hints |
-| `micro` | 10/14 | 600 | 0.1em upper | Labels ("DESTINATION · 02") |
-| `num` | (contextual) | 600 | -0.02em, tabular | Geist Mono — stat numerals, dates |
+| Name      | Size         | Weight | Letter-spacing   | Use                               |
+| --------- | ------------ | ------ | ---------------- | --------------------------------- |
+| `display` | 28/32        | 650    | -0.025em         | Stay titles in overview hero      |
+| `h1`      | 22/27        | 650    | -0.02em          | Panel titles, modal titles        |
+| `h2`      | 17/24        | 650    | -0.015em         | Section headings inside panels    |
+| `body`    | 14/21        | 400    | 0                | Default text                      |
+| `small`   | 12/18        | 400    | 0                | Metadata, hints                   |
+| `micro`   | 10/14        | 600    | 0.1em upper      | Labels ("DESTINATION · 02")       |
+| `num`     | (contextual) | 600    | -0.02em, tabular | Geist Mono — stat numerals, dates |
 
 **Rule:** anything purely numeric (stat counts, ISO/formatted dates, coordinates, version strings) uses `font-mono` with `tabular-nums`. Destination names and free text stay Inter.
 
@@ -108,24 +108,24 @@ Scale (applied via utility classes, documented in `src/index.css`):
 
 Replace current single `--radius: 0.625rem` with a scale. Keep the CSS variable name the project already has, redefine the scale around 10px as `lg`.
 
-| Token | Px | Use |
-|---|---|---|
-| `--radius-sm` | 5 | Inputs, outline chips, tight controls |
-| `--radius-md` | 7 | Buttons, kbd, stat tiles |
-| `--radius-lg` | 10 | Cards, panels, day columns |
-| `--radius-xl` | 14 | Stay overview hero, map card |
-| `--radius-2xl` | 18 | Modals, full-screen drawers |
-| `--radius-full` | 999 | Pill chips (visit type tags) |
+| Token           | Px  | Use                                   |
+| --------------- | --- | ------------------------------------- |
+| `--radius-sm`   | 5   | Inputs, outline chips, tight controls |
+| `--radius-md`   | 7   | Buttons, kbd, stat tiles              |
+| `--radius-lg`   | 10  | Cards, panels, day columns            |
+| `--radius-xl`   | 14  | Stay overview hero, map card          |
+| `--radius-2xl`  | 18  | Modals, full-screen drawers           |
+| `--radius-full` | 999 | Pill chips (visit type tags)          |
 
 ### 6. Elevation
 
 Shift from shadcn's default gray drop shadows to a two-tone scale where interactive lift gets a subtle teal glow. Reads warmer without being loud.
 
 ```css
---shadow-xs: 0 1px 2px rgba(15, 23, 42, .04);
---shadow-sm: 0 1px 2px rgba(15, 23, 42, .04), 0 2px 4px -2px rgba(15, 23, 42, .04);
---shadow-md: 0 1px 2px rgba(15, 23, 42, .04), 0 8px 16px -6px rgba(15, 118, 110, .10);
---shadow-lg: 0 1px 2px rgba(15, 23, 42, .05), 0 20px 40px -12px rgba(15, 118, 110, .18);
+--shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.04);
+--shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04), 0 2px 4px -2px rgba(15, 23, 42, 0.04);
+--shadow-md: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 16px -6px rgba(15, 118, 110, 0.1);
+--shadow-lg: 0 1px 2px rgba(15, 23, 42, 0.05), 0 20px 40px -12px rgba(15, 118, 110, 0.18);
 ```
 
 - `xs` — card rest state
@@ -137,11 +137,11 @@ Shift from shadcn's default gray drop shadows to a two-tone scale where interact
 
 Separate scale from brand so alerts never fight chrome teal.
 
-| Role | Fg | Bg | Border |
-|---|---|---|---|
-| Success | `#065f46` | `#ecfdf5` | `#a7f3d0` |
-| Warning | `#78350f` | `#fffbeb` | `#fde68a` |
-| Info | `#1e40af` | `#eff6ff` | `#bfdbfe` |
+| Role        | Fg        | Bg        | Border    |
+| ----------- | --------- | --------- | --------- |
+| Success     | `#065f46` | `#ecfdf5` | `#a7f3d0` |
+| Warning     | `#78350f` | `#fffbeb` | `#fde68a` |
+| Info        | `#1e40af` | `#eff6ff` | `#bfdbfe` |
 | Destructive | `#991b1b` | `#fef2f2` | `#fecaca` |
 
 Solid fills (for badges, buttons): success `#059669`, warning `#d97706`, info `#2563eb`, destructive `#dc2626`.

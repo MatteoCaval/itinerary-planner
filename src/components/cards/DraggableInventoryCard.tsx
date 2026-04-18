@@ -62,7 +62,10 @@ function DraggableInventoryCard({
           >
             <Pencil className="w-3.5 h-3.5" />
           </Button>
-          <div className="p-2.5 text-muted-foreground/30 group-hover:text-muted-foreground/60 transition-colors" aria-hidden="true">
+          <div
+            className="p-2.5 text-muted-foreground/30 group-hover:text-muted-foreground/60 transition-colors"
+            aria-hidden="true"
+          >
             <GripVertical className="w-4 h-4" />
           </div>
         </div>
@@ -76,13 +79,19 @@ function DraggableInventoryCard({
           {visit.checklist?.length || visit.links?.length ? (
             <div className="flex items-center gap-1.5 mt-1.5">
               {visit.checklist?.length ? (
-                <Badge variant="secondary" className="font-num text-[9px] font-bold text-muted-foreground gap-1.5">
+                <Badge
+                  variant="secondary"
+                  className="font-num text-[9px] font-bold text-muted-foreground gap-1.5"
+                >
                   <Check className="w-2.5 h-2.5" />
                   {visit.checklist.filter((i) => i.done).length}/{visit.checklist.length}
                 </Badge>
               ) : null}
               {visit.links?.length ? (
-                <Badge variant="secondary" className="font-num text-[9px] font-bold text-muted-foreground gap-1.5">
+                <Badge
+                  variant="secondary"
+                  className="font-num text-[9px] font-bold text-muted-foreground gap-1.5"
+                >
                   <Link2 className="w-2.5 h-2.5" />
                   {visit.links.length}
                 </Badge>

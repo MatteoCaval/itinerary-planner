@@ -1,13 +1,7 @@
 import { FirebaseSyncService } from './firebase';
 import type { SyncService } from './types';
 
-export type {
-  SyncService,
-  SyncCallbacks,
-  LoadResult,
-  PendingMerge,
-  SyncStatus,
-} from './types';
+export type { SyncService, SyncCallbacks, LoadResult, PendingMerge, SyncStatus } from './types';
 
 let instance: SyncService | null = null;
 

@@ -12,20 +12,21 @@
 
 ## File Map
 
-| Action | Path | Responsibility |
-|--------|------|----------------|
-| Create | `src/services/sync/types.ts` | `SyncService` interface, `SyncCallbacks`, `LoadResult`, `PendingMerge`, `SyncStatus` |
-| Create | `src/services/sync/firebase.ts` | `FirebaseSyncService` — all Firebase DB operations |
-| Create | `src/services/sync/index.ts` | `createSyncService()` factory |
-| Create | `src/hooks/useCloudSync.ts` | All sync behavior as a React hook |
-| Modify | `src/App.tsx` | Remove inline sync logic; consume `useCloudSync`; add remote-update toast |
-| Modify | `src/firebase.ts` | Remove `saveUserTripStore` / `loadUserTripStore` (replaced by service) |
+| Action | Path                            | Responsibility                                                                       |
+| ------ | ------------------------------- | ------------------------------------------------------------------------------------ |
+| Create | `src/services/sync/types.ts`    | `SyncService` interface, `SyncCallbacks`, `LoadResult`, `PendingMerge`, `SyncStatus` |
+| Create | `src/services/sync/firebase.ts` | `FirebaseSyncService` — all Firebase DB operations                                   |
+| Create | `src/services/sync/index.ts`    | `createSyncService()` factory                                                        |
+| Create | `src/hooks/useCloudSync.ts`     | All sync behavior as a React hook                                                    |
+| Modify | `src/App.tsx`                   | Remove inline sync logic; consume `useCloudSync`; add remote-update toast            |
+| Modify | `src/firebase.ts`               | Remove `saveUserTripStore` / `loadUserTripStore` (replaced by service)               |
 
 ---
 
 ## Task 1: Define SyncService types
 
 **Files:**
+
 - Create: `src/services/sync/types.ts`
 
 - [ ] **Step 1: Create the types file**
@@ -81,9 +82,11 @@ git commit -m "feat(sync): add SyncService interface and types"
 ## Task 2: Implement FirebaseSyncService — loadTrips + legacy migration
 
 **Files:**
+
 - Create: `src/services/sync/firebase.ts`
 
 > **Context:** Firebase DB structure being introduced:
+>
 > - `users/{uid}/trips/{tripId}` — full HybridTrip per trip
 > - `users/{uid}/activeTripId` — string
 > - `users/{uid}/tripStore` — legacy blob (read once then deleted during migration)
@@ -121,9 +124,7 @@ export class FirebaseSyncService implements SyncService {
         const raw = restoreArrays(tripsSnapshot.val()) as Record<string, unknown>;
         const trips = Object.values(raw).map(normalizeAndMigrate);
         const activeSnap = await get(child(dbRef, `users/${uid}/activeTripId`));
-        const activeTripId = activeSnap.exists()
-          ? String(activeSnap.val())
-          : (trips[0]?.id ?? '');
+        const activeTripId = activeSnap.exists() ? String(activeSnap.val()) : (trips[0]?.id ?? '');
         return { trips, activeTripId, source: 'cloud' };
       }
 
@@ -150,9 +151,7 @@ export class FirebaseSyncService implements SyncService {
 
     // Write each trip to its own node (idempotent — safe to retry)
     await Promise.all(
-      trips.map((trip) =>
-        set(ref(db, `users/${uid}/trips/${trip.id}`), sanitizeForFirebase(trip)),
-      ),
+      trips.map((trip) => set(ref(db, `users/${uid}/trips/${trip.id}`), sanitizeForFirebase(trip))),
     );
     await set(ref(db, `users/${uid}/activeTripId`), activeTripId);
 
@@ -192,6 +191,7 @@ git commit -m "feat(sync): add FirebaseSyncService with loadTrips and legacy mig
 ## Task 3: Implement FirebaseSyncService — saveTrip (with updatedAt gate), deleteTrip, saveActiveTripId
 
 **Files:**
+
 - Modify: `src/services/sync/firebase.ts`
 
 > **Context:** `saveTrip` must not overwrite a trip in Firebase if the cloud version has a newer `updatedAt`. This protects against Device B overwriting Device A's recent edit when Device B syncs its stale copy.
@@ -371,6 +371,7 @@ git commit -m "feat(sync): implement saveTrip with updatedAt gate, deleteTrip, s
 ## Task 4: Implement FirebaseSyncService — subscribe (real-time listener)
 
 **Files:**
+
 - Modify: `src/services/sync/firebase.ts`
 
 > **Context:** Firebase `onValue` fires immediately with current data AND on every subsequent change. The hook guards against own-echoes (changes we pushed ourselves) using a `lastPushedAtRef`. This method just calls the callbacks — it does not need to know about echoes.
@@ -446,6 +447,7 @@ git commit -m "feat(sync): implement real-time subscribe listener in FirebaseSyn
 ## Task 5: Create sync service factory
 
 **Files:**
+
 - Create: `src/services/sync/index.ts`
 
 - [ ] **Step 1: Create the factory**
@@ -455,7 +457,13 @@ git commit -m "feat(sync): implement real-time subscribe listener in FirebaseSyn
 import { FirebaseSyncService } from './firebase';
 import type { SyncService } from './types';
 
-export { type SyncService, type SyncCallbacks, type LoadResult, type PendingMerge, type SyncStatus } from './types';
+export {
+  type SyncService,
+  type SyncCallbacks,
+  type LoadResult,
+  type PendingMerge,
+  type SyncStatus,
+} from './types';
 
 let instance: SyncService | null = null;
 
@@ -480,11 +488,13 @@ git commit -m "feat(sync): add createSyncService factory"
 ## Task 6: Implement useCloudSync hook
 
 **Files:**
+
 - Create: `src/hooks/useCloudSync.ts`
 
 > **Context:** This hook replaces the two inline `useEffect` sync blocks in App.tsx (~lines 344–426) plus `handleMergeDecision` (~lines 711–733), `syncedUidRef`, `pendingMerge`, `syncError`, and `syncStatus` state.
 >
 > Key design decisions:
+>
 > - `lastPushedRef`: `Record<tripId, HybridTrip>` — tracks the store trip reference that was last pushed. When `store.trips` changes, trips whose reference differs from `lastPushedRef[id]` are the changed ones. After pushing, updates `lastPushedRef[id]` to the current store reference (not the stamped copy) so future mutations are detected correctly.
 > - `lastPushedAtRef`: `Record<tripId, number>` — tracks `updatedAt` values we assigned at push time. Used in `onTripUpdated` to ignore our own Firebase echoes.
 > - `hasPendingSaveRef`: boolean — true while debounce timer is running. Used to skip `onActiveTripIdChanged` from the listener when local changes are in flight.
@@ -504,8 +514,16 @@ import type { TripStore, HybridTrip } from '@/domain/types';
 
 function makeTrip(id: string, updatedAt = 1000): HybridTrip {
   return {
-    id, name: `Trip ${id}`, startDate: '2025-01-01', totalDays: 3,
-    version: 2, updatedAt, createdAt: updatedAt, stays: [], visits: [], routes: [],
+    id,
+    name: `Trip ${id}`,
+    startDate: '2025-01-01',
+    totalDays: 3,
+    version: 2,
+    updatedAt,
+    createdAt: updatedAt,
+    stays: [],
+    visits: [],
+    routes: [],
   };
 }
 
@@ -537,7 +555,9 @@ describe('useCloudSync', () => {
     const cloudTrip = makeTrip('cloud-1');
     const service = makeMockService({
       loadTrips: vi.fn().mockResolvedValue({
-        trips: [cloudTrip], activeTripId: 'cloud-1', source: 'cloud',
+        trips: [cloudTrip],
+        activeTripId: 'cloud-1',
+        source: 'cloud',
       }),
     });
     const setStore = vi.fn();
@@ -558,7 +578,9 @@ describe('useCloudSync', () => {
     const store: TripStore = { trips: [localTrip], activeTripId: 'local-1' };
     const service = makeMockService({
       loadTrips: vi.fn().mockResolvedValue({
-        trips: [cloudTrip], activeTripId: 'cloud-1', source: 'cloud',
+        trips: [cloudTrip],
+        activeTripId: 'cloud-1',
+        source: 'cloud',
       }),
     });
     const setStore = vi.fn();
@@ -578,7 +600,9 @@ describe('useCloudSync', () => {
 
     renderHook(() => useCloudSync(service, EMPTY_STORE, setStore, user));
 
-    await act(() => { vi.advanceTimersByTime(3000); });
+    await act(() => {
+      vi.advanceTimersByTime(3000);
+    });
     expect(service.saveTrip).not.toHaveBeenCalled();
   });
 
@@ -593,7 +617,9 @@ describe('useCloudSync', () => {
 
     renderHook(() => useCloudSync(service, store, setStore, user));
 
-    await act(() => { vi.advanceTimersByTime(3000); });
+    await act(() => {
+      vi.advanceTimersByTime(3000);
+    });
     expect(service.saveTrip).toHaveBeenCalled();
   });
 });
@@ -647,7 +673,9 @@ export function useCloudSync(
 
   // Snapshot of store for use inside async closures
   const storeRef = useRef(store);
-  useEffect(() => { storeRef.current = store; });
+  useEffect(() => {
+    storeRef.current = store;
+  });
 
   // Trip references from last successful push — used to detect changed trips
   const lastPushedRef = useRef<Record<string, HybridTrip>>({});
@@ -660,7 +688,9 @@ export function useCloudSync(
 
   // Track current active trip id for remote update toast decision
   const activeTripIdRef = useRef(store.activeTripId);
-  useEffect(() => { activeTripIdRef.current = store.activeTripId; });
+  useEffect(() => {
+    activeTripIdRef.current = store.activeTripId;
+  });
 
   // ── Load on login ────────────────────────────────────────────────────────
   useEffect(() => {
@@ -685,9 +715,7 @@ export function useCloudSync(
 
         if (result.source === 'empty') {
           // First login — upload local trips to cloud
-          await Promise.all(
-            currentStore.trips.map((t) => service.saveTrip(user.uid, t)),
-          );
+          await Promise.all(currentStore.trips.map((t) => service.saveTrip(user.uid, t)));
           if (currentStore.activeTripId) {
             await service.saveActiveTripId(user.uid, currentStore.activeTripId);
           }
@@ -710,7 +738,7 @@ export function useCloudSync(
           // No local trips — pull cloud silently
           const next: TripStore = {
             trips: cloudTrips,
-            activeTripId: result.activeTripId || cloudTrips[0]?.id ?? '',
+            activeTripId: (result.activeTripId || cloudTrips[0]?.id) ?? '',
           };
           setStore(() => next);
           saveStore(next);
@@ -906,9 +934,11 @@ git commit -m "feat(sync): implement useCloudSync hook"
 ## Task 7: Wire useCloudSync into App.tsx
 
 **Files:**
+
 - Modify: `src/App.tsx`
 
 > **Context:** This task removes all inline sync logic from App.tsx and wires the hook. Lines to remove:
+>
 > - `pendingMerge` useState (~line 133–136)
 > - `syncError` useState (~line 139)
 > - `syncedUidRef` useRef (~line 140)
@@ -924,6 +954,7 @@ git commit -m "feat(sync): implement useCloudSync hook"
 - [ ] **Step 1: Update imports in App.tsx**
 
 Remove from imports:
+
 ```ts
 import { saveUserTripStore, loadUserTripStore } from './firebase';
 import { normalizeTrip, migrateV1toV2, needsMigrationToV2 } from './domain/migration';
@@ -931,6 +962,7 @@ import { normalizeTrip, migrateV1toV2, needsMigrationToV2 } from './domain/migra
 ```
 
 Add:
+
 ```ts
 import { useMemo } from 'react'; // add to existing React import if not present
 import { useCloudSync } from './hooks/useCloudSync';
@@ -940,6 +972,7 @@ import { createSyncService } from './services/sync';
 - [ ] **Step 2: Replace inline sync state and effects with hook**
 
 Remove these lines from `ChronosApp()`:
+
 ```ts
 // DELETE these lines:
 const [pendingMerge, setPendingMerge] = useState<{ ... } | null>(null);
@@ -954,6 +987,7 @@ const [syncStatus, setSyncStatus] = useState<...>('local');
 ```
 
 Add after `const { user } = useAuth();`:
+
 ```ts
 const syncService = useMemo(() => createSyncService(), []);
 const {
@@ -971,45 +1005,52 @@ const {
 - [ ] **Step 3: Update handleSignOut**
 
 Remove these three lines from `handleSignOut`:
+
 ```ts
 // DELETE:
 setPendingMerge(null);
 setSyncError(null);
 syncedUidRef.current = null;
 ```
+
 The hook resets itself when `user` becomes null.
 
 - [ ] **Step 4: Update MergeDialog render and add remote-update toast**
 
 Replace the existing MergeDialog block (~line 3097) with:
-```tsx
-{pendingMerge && (
-  <MergeDialog
-    localCount={store.trips.length}
-    cloudCount={pendingMerge.allCloudTrips.length}
-    mergeCount={store.trips.length + pendingMerge.cloudTrips.length}
-    localTripNames={store.trips.map((t) => t.name)}
-    cloudTripNames={pendingMerge.allCloudTrips.map((t) => t.name)}
-    onMerge={() => handleMergeDecision('merge')}
-    onKeepLocal={() => handleMergeDecision('keep-local')}
-    onUseCloud={() => handleMergeDecision('use-cloud')}
-    onDismiss={dismissMerge}
-  />
-)}
 
-{remoteUpdateToast && (
-  <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-popover border border-border rounded-xl shadow-lg px-4 py-3 text-sm">
-    <span className="text-foreground">
-      <strong>"{remoteUpdateToast.tripName}"</strong> was updated on another device.
-    </span>
-    <button
-      onClick={dismissRemoteToast}
-      className="text-muted-foreground hover:text-foreground text-xs font-medium"
-    >
-      Dismiss
-    </button>
-  </div>
-)}
+```tsx
+{
+  pendingMerge && (
+    <MergeDialog
+      localCount={store.trips.length}
+      cloudCount={pendingMerge.allCloudTrips.length}
+      mergeCount={store.trips.length + pendingMerge.cloudTrips.length}
+      localTripNames={store.trips.map((t) => t.name)}
+      cloudTripNames={pendingMerge.allCloudTrips.map((t) => t.name)}
+      onMerge={() => handleMergeDecision('merge')}
+      onKeepLocal={() => handleMergeDecision('keep-local')}
+      onUseCloud={() => handleMergeDecision('use-cloud')}
+      onDismiss={dismissMerge}
+    />
+  );
+}
+
+{
+  remoteUpdateToast && (
+    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-popover border border-border rounded-xl shadow-lg px-4 py-3 text-sm">
+      <span className="text-foreground">
+        <strong>"{remoteUpdateToast.tripName}"</strong> was updated on another device.
+      </span>
+      <button
+        onClick={dismissRemoteToast}
+        className="text-muted-foreground hover:text-foreground text-xs font-medium"
+      >
+        Dismiss
+      </button>
+    </div>
+  );
+}
 ```
 
 - [ ] **Step 5: Run build**
@@ -1032,6 +1073,7 @@ git commit -m "feat(sync): wire useCloudSync into App.tsx, add remote-update toa
 ## Task 8: Remove deprecated firebase.ts functions
 
 **Files:**
+
 - Modify: `src/firebase.ts`
 
 > **Context:** `saveUserTripStore` and `loadUserTripStore` are now replaced by `FirebaseSyncService`. Remove them to avoid confusion. Check nothing else imports them first.
@@ -1075,6 +1117,7 @@ git commit -m "refactor(sync): remove deprecated saveUserTripStore/loadUserTripS
 ## Self-Review
 
 **Spec coverage check:**
+
 - ✅ Per-trip Firebase nodes: Task 2 (loadTrips), Task 3 (saveTrip/delete), Task 4 (subscribe)
 - ✅ Migration from legacy blob: Task 2 (`_migrateLegacyBlob`)
 - ✅ `updatedAt` gate: Task 3 (saveTrip implementation + tests)
@@ -1091,6 +1134,7 @@ git commit -m "refactor(sync): remove deprecated saveUserTripStore/loadUserTripS
 **Placeholder scan:** None found.
 
 **Type consistency check:**
+
 - `PendingMerge` defined in `types.ts` Task 1, used in `useCloudSync` Task 6 and `App.tsx` Task 7 ✅
 - `SyncStatus` defined in `types.ts` Task 1, returned by hook Task 6, consumed in App.tsx Task 7 ✅
 - `LoadResult.source: 'cloud' | 'empty'` — used correctly in Task 6 load logic ✅

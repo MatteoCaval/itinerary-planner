@@ -7,6 +7,7 @@
 ## Summary
 
 Three targeted UI changes to improve the share code UX:
+
 1. Replace small header icons with a dedicated share status bar below the header
 2. Remove "save copy before update" — pull always overwrites
 3. Add "Import from code" button on the WelcomeScreen
@@ -20,6 +21,7 @@ The bar only appears when the active trip has `shareCode` or `sourceShareCode`.
 ### Owner View (`trip.shareCode` exists)
 
 A subtle bar showing the active code, mode, and actions:
+
 - Left: link icon + "Shared as TRIP-ABC123" + mode badge ("Read only" or "Writable")
 - Right: "Push changes" button + "Manage" button (opens ShareTripDialog)
 
@@ -51,6 +53,7 @@ Remove the "save copy before update" option entirely.
 ### UI Change
 
 Replace the current 3-button pull confirm dialog with a simpler confirmation:
+
 - Title: "Pull latest version?"
 - Description: "This will replace your current trip data with the latest version from the shared code."
 - Buttons: "Cancel" and "Pull latest"

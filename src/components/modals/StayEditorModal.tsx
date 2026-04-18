@@ -88,8 +88,8 @@ function StayEditorModal({
               <AlertDialogHeader>
                 <AlertDialogTitle>Delete &ldquo;{stay.name}&rdquo;?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  This removes all {visitCount} scheduled{' '}
-                  {visitCount === 1 ? 'place' : 'places'}. This action cannot be undone.
+                  This removes all {visitCount} scheduled {visitCount === 1 ? 'place' : 'places'}.
+                  This action cannot be undone.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
@@ -117,10 +117,10 @@ function StayEditorModal({
                 <AlertDialogHeader>
                   <AlertDialogTitle>Move &ldquo;{stay.name}&rdquo; to inbox?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    The destination moves out of the timeline. Its {visitCount}{' '}
-                    scheduled {visitCount === 1 ? 'place' : 'places'} will be unscheduled
-                    and stay attached to the destination — they&apos;ll reappear when you
-                    promote it back to the timeline.
+                    The destination moves out of the timeline. Its {visitCount} scheduled{' '}
+                    {visitCount === 1 ? 'place' : 'places'} will be unscheduled and stay attached to
+                    the destination — they&apos;ll reappear when you promote it back to the
+                    timeline.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>

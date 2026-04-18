@@ -23,6 +23,7 @@ After each task: `npm run lint && npm run test && npm run build` must pass. Comm
 ## Task 1 — Add Geist Mono font dependency
 
 **Files:**
+
 - Modify: `package.json`
 - Modify: `src/main.tsx` (or wherever fonts are imported — verify first)
 
@@ -45,11 +46,13 @@ Expected: `package.json` dependencies now lists `@fontsource-variable/geist-mono
 - [ ] **Step 3: Import Geist Mono alongside Geist in `src/index.css`.**
 
 Find line 5:
+
 ```css
 @import '@fontsource-variable/geist';
 ```
 
 Replace with:
+
 ```css
 @import '@fontsource-variable/geist';
 @import '@fontsource-variable/geist-mono';
@@ -77,6 +80,7 @@ git commit -m "chore: add Geist Mono font for numeric UI text"
 This is the big one. All visual decisions land here. Split into sub-steps so each change is reviewable, but commit once at the end.
 
 **Files:**
+
 - Modify: `src/index.css`
 
 - [ ] **Step 1: Replace the `:root` color tokens.**
@@ -148,7 +152,7 @@ Find the current `:root { ... }` block (lines 7–48) and replace the listed var
   /* ── Elevation ─────────────────────────────────── */
   --shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.04);
   --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04), 0 2px 4px -2px rgba(15, 23, 42, 0.04);
-  --shadow-md: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 16px -6px rgba(15, 118, 110, 0.10);
+  --shadow-md: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 16px -6px rgba(15, 118, 110, 0.1);
   --shadow-lg: 0 1px 2px rgba(15, 23, 42, 0.05), 0 20px 40px -12px rgba(15, 118, 110, 0.18);
 
   /* ── Sidebar (used by shadcn sidebar primitive — kept harmonized) ── */
@@ -305,11 +309,11 @@ Change shadow to `0 2px 8px rgba(15, 118, 110, 0.35)`.
 Find the `@layer utilities { ... }` block (starts around line 75). At the end of the block (before the closing `}`) add:
 
 ```css
-  .font-num {
-    font-family: var(--font-mono);
-    font-variant-numeric: tabular-nums;
-    letter-spacing: -0.01em;
-  }
+.font-num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
 ```
 
 - [ ] **Step 8: Update the dark-mode `.dark { ... }` block.**
@@ -397,6 +401,7 @@ component-verified). Calendar (rdp) and map marker styles updated."
 ## Task 3 — Replace `STAY_COLORS` with Jewel Tones
 
 **Files:**
+
 - Modify: `src/domain/constants.ts`
 - Test: `src/domain/__tests__/constants.test.ts` (create if missing)
 
@@ -490,6 +495,7 @@ git commit -m "feat(theme): swap stay palette to P1 Jewel Tones"
 ## Task 4 — Delete orphan Mantine files
 
 **Files:**
+
 - Delete: `src/theme.ts`
 - Delete: `src/components/AppHeader.tsx`
 
@@ -527,6 +533,7 @@ git commit -m "chore: drop orphan Mantine exploration files"
 ## Task 5 — Sweep hardcoded `#ec5b13` sites
 
 **Files:**
+
 - Modify: `src/components/ui/LocationPicker.tsx`
 - Modify: `src/components/modals/AuthModalSimple.tsx`
 - Modify: `src/components/TripMap/markerFactories.tsx`
@@ -592,6 +599,7 @@ Expected: zero matches outside of (possibly) comments that explicitly describe t
 - [ ] **Step 5: Re-open the dev server and spot-check.**
 
 With `npm run dev` running, open:
+
 - The auth modal (sign-in flow) — header gradient now teal.
 - The map with a landmark visit — marker fill now teal.
 - The "Pick on map" flow — drop pin is now teal.
@@ -608,6 +616,7 @@ git commit -m "feat(theme): replace remaining orange literals with teal"
 ## Task 6 — Create the `Kbd` primitive
 
 **Files:**
+
 - Create: `src/components/ui/kbd.tsx`
 - Create: `src/components/ui/kbd.test.tsx`
 
@@ -660,11 +669,7 @@ Create `src/components/ui/kbd.tsx`:
 import * as React from 'react';
 import { cn } from '@/lib/utils';
 
-export function Kbd({
-  className,
-  children,
-  ...props
-}: React.HTMLAttributes<HTMLElement>) {
+export function Kbd({ className, children, ...props }: React.HTMLAttributes<HTMLElement>) {
   return (
     <kbd
       data-slot="kbd"
@@ -700,6 +705,7 @@ git commit -m "feat(ui): add Kbd primitive for keyboard shortcut chips"
 ## Task 7 — Apply `.font-num` to numeric display sites
 
 **Files:** (read each to confirm exact text before editing)
+
 - Modify: `src/App.tsx`
 - Modify: `src/components/panels/StayOverviewPanel.tsx`
 - Modify: `src/components/cards/SortableVisitCard.tsx`
@@ -780,6 +786,7 @@ git commit -m "feat(theme): apply font-num utility to numeric display sites"
 ## Task 8 — Wire the `Kbd` primitive into existing ad-hoc kbd sites
 
 **Files:** (use grep to locate)
+
 - Modify: the 4+ files currently rendering keyboard hints manually (e.g., `⌘K`, `⌘N`, or `Ctrl+...` strings)
 
 - [ ] **Step 1: Locate existing kbd-like sites.**
@@ -803,7 +810,7 @@ Becomes:
 ```tsx
 import { Kbd } from '@/components/ui/kbd';
 // ...
-<Kbd>⌘K</Kbd>
+<Kbd>⌘K</Kbd>;
 ```
 
 If the site is inside a primary (teal-fill) button, pass the tint variant:
@@ -838,6 +845,7 @@ git commit -m "refactor(ui): use Kbd primitive for keyboard hint sites"
 Most components already consume `bg-primary`, `text-primary`, `border-primary/40` — those pick up teal for free because `--color-primary` now resolves to teal. This task is the visual QA pass to catch anything that still reads wrong.
 
 **Files:** (inspect each — the list is every component using primary-token utilities, from the grep in the spec)
+
 - Modify as needed: all files listed in the spec's "Component restyling" section.
 
 - [ ] **Step 1: Start the dev server if it isn't running.**
@@ -849,6 +857,7 @@ npm run dev
 - [ ] **Step 2: Walk through each user-facing flow with the checklist below. For every issue, fix it in-place and continue. Don't batch fixes — fix as you find, so the app is always demoable.**
 
 Checklist (tick each):
+
 - Welcome screen loads: brand mark teal, CTA teal, illustration doesn't clash.
 - Create a new trip: modal opens with 2xl radius, primary CTA teal, secondary ghost.
 - Timeline: blocks use new Jewel Tones for new stays; existing stays keep their old colors (expected).
@@ -895,6 +904,7 @@ git commit -m "feat(theme): component sweep for Petrol Teal identity"
 ## Task 10 — Update docs
 
 **Files:**
+
 - Modify: `docs/PRD.md`
 - Modify: `CLAUDE.md`
 

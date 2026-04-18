@@ -201,9 +201,7 @@ export function hybridTripToLegacy(trip: HybridTrip): LegacyStoredTrip {
 
     const nextStay = sortedStays[stayIdx + 1];
     if (nextStay) {
-      const route = tripRoutes.find(
-        (r) => r.fromStayId === stay.id && r.toStayId === nextStay.id,
-      );
+      const route = tripRoutes.find((r) => r.fromStayId === stay.id && r.toStayId === nextStay.id);
       legacyRoutes.push({
         id: `route-${stay.id}-${nextStay.id}`,
         fromLocationId: stay.id,

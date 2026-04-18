@@ -85,7 +85,12 @@ function TripEditorModal({
       // Only update startDate — stays are trip-relative, no slot changes needed
       onSave({ name, startDate, totalDays });
     } else if (withClamp || slotShift !== 0) {
-      const adjusted = adjustStaysForDateChange(trip.stays, trip.visits ?? [], slotShift, newMaxSlot);
+      const adjusted = adjustStaysForDateChange(
+        trip.stays,
+        trip.visits ?? [],
+        slotShift,
+        newMaxSlot,
+      );
       onSave({ name, startDate, totalDays, stays: adjusted.stays, visits: adjusted.visits });
     } else {
       onSave({ name, startDate, totalDays });
@@ -201,12 +206,10 @@ function TripEditorModal({
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
-                    <AlertDialogTitle>
-                      Delete &ldquo;{trip.name}&rdquo;?
-                    </AlertDialogTitle>
+                    <AlertDialogTitle>Delete &ldquo;{trip.name}&rdquo;?</AlertDialogTitle>
                     <AlertDialogDescription>
-                      This will permanently delete the trip and all its stays and places. This action
-                      cannot be undone.
+                      This will permanently delete the trip and all its stays and places. This
+                      action cannot be undone.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>

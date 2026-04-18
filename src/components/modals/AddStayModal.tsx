@@ -126,8 +126,7 @@ function AddStayModal({
 
   const canSave = name.trim().length > 0;
   const isCandidateMode = mode === 'candidate';
-  const showChipRow =
-    !isCandidateMode && candidates !== undefined && candidates.length > 0;
+  const showChipRow = !isCandidateMode && candidates !== undefined && candidates.length > 0;
 
   const handleSave = () => {
     if (!canSave) return;

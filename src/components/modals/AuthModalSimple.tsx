@@ -139,7 +139,9 @@ function AuthModalSimple({ onClose }: { onClose: () => void }) {
             </div>
 
             {mode === 'signup' && password.length > 0 && password.length < 6 && (
-              <p className="text-[11px] text-warning font-medium">Password should be at least 6 characters</p>
+              <p className="text-[11px] text-warning font-medium">
+                Password should be at least 6 characters
+              </p>
             )}
 
             {error && (

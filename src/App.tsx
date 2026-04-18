@@ -996,7 +996,9 @@ function ChronosApp() {
                     <Undo2 className="w-4 h-4" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>Undo <Kbd>Ctrl+Z</Kbd></TooltipContent>
+                <TooltipContent>
+                  Undo <Kbd>Ctrl+Z</Kbd>
+                </TooltipContent>
               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -1014,7 +1016,9 @@ function ChronosApp() {
                     <Redo2 className="w-4 h-4" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>Redo <Kbd>Ctrl+Y</Kbd></TooltipContent>
+                <TooltipContent>
+                  Redo <Kbd>Ctrl+Y</Kbd>
+                </TooltipContent>
               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
