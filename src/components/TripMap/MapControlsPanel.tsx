@@ -80,7 +80,9 @@ export function MapControlsPanel({
               >
                 <Icon className="w-4 h-4" />
                 <span className="text-[10px] font-bold leading-none">{label}</span>
-                <span className={`text-[8px] leading-none ${active ? 'text-primary/60' : 'text-muted-foreground'}`}>
+                <span
+                  className={`text-[8px] leading-none ${active ? 'text-primary/60' : 'text-muted-foreground'}`}
+                >
                   {desc}
                 </span>
               </button>

@@ -64,11 +64,13 @@ interface TripMapProps {
 const BASEMAPS: Record<BasemapMode, { url: string; attribution: string; maxZoom?: number }> = {
   voyager: {
     url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>',
+    attribution:
+      '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>',
   },
   osm: {
     url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    attribution:
+      '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
     maxZoom: 19,
   },
   satellite: {
@@ -78,7 +80,8 @@ const BASEMAPS: Record<BasemapMode, { url: string; attribution: string; maxZoom?
   },
   minimal: {
     url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>',
+    attribution:
+      '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>',
   },
 };
 
@@ -149,8 +152,14 @@ export default function TripMap({
 
   const allPoints = useMemo(() => {
     if (mode === 'overview') {
-      const stayPts = (overviewStays ?? []).map((s): [number, number] => [s.centerLat, s.centerLng]);
-      const candPts = (overviewCandidates ?? []).map((c): [number, number] => [c.centerLat, c.centerLng]);
+      const stayPts = (overviewStays ?? []).map((s): [number, number] => [
+        s.centerLat,
+        s.centerLng,
+      ]);
+      const candPts = (overviewCandidates ?? []).map((c): [number, number] => [
+        c.centerLat,
+        c.centerLng,
+      ]);
       return [...stayPts, ...candPts];
     }
     const pts: [number, number][] = visits.map((v) => [v.lat, v.lng]);
@@ -173,7 +182,12 @@ export default function TripMap({
         className="w-full h-full"
         style={{ background: 'var(--color-muted)' }}
       >
-        <TileLayer key={basemap} attribution={activeBasemap.attribution} url={activeBasemap.url} {...(activeBasemap.maxZoom ? { maxZoom: activeBasemap.maxZoom } : {})} />
+        <TileLayer
+          key={basemap}
+          attribution={activeBasemap.attribution}
+          url={activeBasemap.url}
+          {...(activeBasemap.maxZoom ? { maxZoom: activeBasemap.maxZoom } : {})}
+        />
         <ZoomControl position="bottomright" />
 
         {mode === 'overview' ? (

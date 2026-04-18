@@ -32,7 +32,15 @@ describe('generateShareCode', () => {
 describe('isShareCodeNode', () => {
   it('returns true for valid ShareCodeNode', () => {
     const node = {
-      trip: { id: '1', name: 'Test', startDate: '2025-01-01', totalDays: 3, stays: [], visits: [], routes: [] },
+      trip: {
+        id: '1',
+        name: 'Test',
+        startDate: '2025-01-01',
+        totalDays: 3,
+        stays: [],
+        visits: [],
+        routes: [],
+      },
       createdAt: 1000,
       updatedAt: 1000,
       ownerUid: 'uid-123',
@@ -42,7 +50,15 @@ describe('isShareCodeNode', () => {
   });
 
   it('returns false for raw HybridTrip (legacy format)', () => {
-    const raw = { id: '1', name: 'Test', startDate: '2025-01-01', totalDays: 3, stays: [], visits: [], routes: [] };
+    const raw = {
+      id: '1',
+      name: 'Test',
+      startDate: '2025-01-01',
+      totalDays: 3,
+      stays: [],
+      visits: [],
+      routes: [],
+    };
     expect(isShareCodeNode(raw)).toBe(false);
   });
 

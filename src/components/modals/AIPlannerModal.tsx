@@ -122,7 +122,7 @@ function AIPlannerModal({
           name: v.name,
           type: ((v.type as string) === 'area' || (v.type as string) === 'hotel'
             ? 'landmark'
-            : v.type ?? 'landmark') as VisitType,
+            : (v.type ?? 'landmark')) as VisitType,
           lat: v.lat,
           lng: v.lng,
           dayOffset: v.dayOffset ?? 0,
@@ -285,7 +285,9 @@ function AIPlannerModal({
                   AI Plan Ready
                 </span>
               </div>
-              <p className="text-xs text-foreground leading-relaxed italic max-h-40 overflow-y-auto">{explanation}</p>
+              <p className="text-xs text-foreground leading-relaxed italic max-h-40 overflow-y-auto">
+                {explanation}
+              </p>
               <p className="text-[11px] text-muted-foreground pt-1">
                 Review the summary above, then apply to your timeline.
               </p>
@@ -368,15 +370,16 @@ function AIPlannerModal({
               className="flex flex-wrap gap-1.5 mb-2"
             >
               {[
-                { id: 'gemini-3.1-flash-lite-preview', label: '3.1 Lite', desc: 'Fast & free', badge: 'recommended' },
+                {
+                  id: 'gemini-3.1-flash-lite-preview',
+                  label: '3.1 Lite',
+                  desc: 'Fast & free',
+                  badge: 'recommended',
+                },
                 { id: 'gemini-3-flash-preview', label: '3 Flash', desc: 'Balanced' },
                 { id: 'gemini-3.1-pro-preview', label: '3.1 Pro', desc: 'Best quality' },
               ].map(({ id, label, desc, badge }) => (
-                <ToggleGroupItem
-                  key={id}
-                  value={id}
-                  className="px-2.5 py-1.5"
-                >
+                <ToggleGroupItem key={id} value={id} className="px-2.5 py-1.5">
                   <div className="text-center">
                     <span className="text-[11px] font-bold">
                       {label}

@@ -36,13 +36,13 @@ These fields sync to user's cloud storage (`users/{uid}/trips/{tripId}`) — int
 
 ## Permissions
 
-| Action | Auth required? |
-|--------|---------------|
-| Create share code | Yes |
+| Action                 | Auth required?   |
+| ---------------------- | ---------------- |
+| Create share code      | Yes              |
 | Update (readonly mode) | Yes (owner only) |
-| Update (writable mode) | No |
-| Revoke/delete | Yes (owner only) |
-| Import | No |
+| Update (writable mode) | No               |
+| Revoke/delete          | Yes (owner only) |
+| Import                 | No               |
 
 **Future TODO:** Require auth for writable pushes to prevent abuse. For now, open write is an accepted risk.
 
@@ -100,12 +100,12 @@ These fields sync to user's cloud storage (`users/{uid}/trips/{tripId}`) — int
 
 ### Top Bar Indicators
 
-| Trip state | Top bar indicator |
-|-----------|-------------------|
-| Has active share code (owner) | Share icon + code displayed |
-| Imported, no updates available | Subtle link icon |
-| Imported, update available | Link icon with badge/highlight |
-| Imported + writable | Link icon + "push" affordance |
+| Trip state                     | Top bar indicator              |
+| ------------------------------ | ------------------------------ |
+| Has active share code (owner)  | Share icon + code displayed    |
+| Imported, no updates available | Subtle link icon               |
+| Imported, update available     | Link icon with badge/highlight |
+| Imported + writable            | Link icon + "push" affordance  |
 
 ## Firebase Changes
 
@@ -128,6 +128,7 @@ These fields sync to user's cloud storage (`users/{uid}/trips/{tripId}`) — int
 Current state: open read/write on `itineraries/*`. No changes needed for initial implementation.
 
 **Future TODO:** Tighten rules to:
+
 - Enforce `ownerUid` match for writes on readonly codes
 - Require auth for writable code pushes
 - Rate limit code generation
@@ -142,18 +143,18 @@ The following changes need to be made manually in the Firebase Console:
 
 ## Edge Cases
 
-| Scenario | Behavior |
-|----------|----------|
-| Share code revoked, importer tries to pull | "This share code is no longer available" — clear `sourceShareCode`, remove indicator |
-| Firebase unreachable | Toast error, no state change, retry possible |
-| Trip imported then deleted locally | No effect on Firebase node |
+| Scenario                                        | Behavior                                                                                   |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| Share code revoked, importer tries to pull      | "This share code is no longer available" — clear `sourceShareCode`, remove indicator       |
+| Firebase unreachable                            | Toast error, no state change, retry possible                                               |
+| Trip imported then deleted locally              | No effect on Firebase node                                                                 |
 | Owner pushes update, importer has local changes | Importer sees "update available" on next load. Local changes preserved until explicit pull |
-| Simultaneous writable pushes | Last-write-wins via `updatedAt` |
-| User shares same trip twice | Return existing code, don't generate new |
-| User wants new code for same trip | Revoke old first, then generate new |
-| Import own trip (round-trip) | Treated as new independent copy |
-| Node deleted outside app (Firebase console) | Same as revoke — "no longer available" for importer, owner can generate new code |
-| Code input with lowercase/spaces | Normalize: trim, uppercase (already handled in ImportFromCodeDialog) |
+| Simultaneous writable pushes                    | Last-write-wins via `updatedAt`                                                            |
+| User shares same trip twice                     | Return existing code, don't generate new                                                   |
+| User wants new code for same trip               | Revoke old first, then generate new                                                        |
+| Import own trip (round-trip)                    | Treated as new independent copy                                                            |
+| Node deleted outside app (Firebase console)     | Same as revoke — "no longer available" for importer, owner can generate new code           |
+| Code input with lowercase/spaces                | Normalize: trim, uppercase (already handled in ImportFromCodeDialog)                       |
 
 ## Future Improvements
 

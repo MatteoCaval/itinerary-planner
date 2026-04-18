@@ -18,9 +18,9 @@ function WelcomeScreen({
   const [showAuth, setShowAuth] = useState(false);
 
   const stayPreviews = [
-    { left: '4%', width: '28%', color: '#2167d7', label: 'Tokyo' },
-    { left: '35%', width: '20%', color: '#615cf6', label: 'Kyoto' },
-    { left: '58%', width: '32%', color: '#d78035', label: 'Osaka' },
+    { left: '4%', width: '28%', color: '#b8304f', label: 'Tokyo' },
+    { left: '35%', width: '20%', color: '#c15a2a', label: 'Kyoto' },
+    { left: '58%', width: '32%', color: '#2e3f8a', label: 'Osaka' },
   ];
 
   return (

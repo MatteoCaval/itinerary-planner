@@ -3,7 +3,12 @@ import { Download, Upload, User, LogIn, LogOut, Lock, Check, Compass, Share2 } f
 import AuthModalSimple from '@/components/modals/AuthModalSimple';
 import type { HybridTrip, V1HybridTrip } from '@/domain/types';
 import { useAuth } from '@/context/AuthContext';
-import { hybridTripToLegacy, normalizeTrip, needsMigrationToV2, migrateV1toV2 } from '@/domain/migration';
+import {
+  hybridTripToLegacy,
+  normalizeTrip,
+  needsMigrationToV2,
+  migrateV1toV2,
+} from '@/domain/migration';
 import { generateMarkdown, downloadMarkdown } from '@/markdownExporter';
 import { addDaysTo } from '@/domain/dateUtils';
 import { Button } from '@/components/ui/button';
@@ -132,7 +137,10 @@ function ProfileMenu({
                 {user ? (user.email?.[0] ?? 'U').toUpperCase() : <User className="w-4 h-4" />}
               </div>
               <div className="min-w-0">
-                <p className="text-xs font-extrabold text-foreground truncate leading-tight" title={user ? user.email ?? undefined : undefined}>
+                <p
+                  className="text-xs font-extrabold text-foreground truncate leading-tight"
+                  title={user ? (user.email ?? undefined) : undefined}
+                >
                   {user ? user.email : 'Guest User'}
                 </p>
                 <div className="flex items-center gap-1.5 mt-0.5">

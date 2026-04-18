@@ -103,7 +103,7 @@ src/unsplash.ts        # Unsplash photo search
 
 - **Tailwind v4** via `@tailwindcss/vite` plugin — no `tailwind.config.js`. CSS variables and theme tokens go in `src/index.css`.
 - **shadcn/ui** (nova preset, Radix-based). Components in `src/components/ui/`. Use semantic tokens (`text-foreground`, `bg-muted`, `border-border`, `text-destructive`, `text-success`, etc.) — not hardcoded Tailwind colors.
-- **Design tokens:** Primary orange `#ec5b13`, font Inter. Semantic colors: success (green), warning (amber), info (blue), destructive (red).
+- **Design tokens:** Primary Petrol Teal `#0f766e` (chrome only), font Inter for UI and Geist Mono for numerals/dates/kbd (`font-num` utility). Neutral canvas `#fafaf9`, white cards. Radius scale `sm/md/lg/xl/2xl/full` via `--radius-*`. Shadow scale `xs/sm/md/lg` via `--shadow-*` — `md`/`lg` carry a subtle teal tint. Semantic colors: success (green `#059669`), warning (amber `#d97706`), info (blue `#2563eb`), destructive (red `#dc2626`).
 - **Formatting:** 2-space indent, single quotes, semicolons, trailing commas, 100-char line width (Prettier-enforced).
 - **Naming:** PascalCase components, `use` prefix hooks, camelCase utilities.
 - **Types** live in `src/domain/types.ts`. No separate `src/types.ts`.

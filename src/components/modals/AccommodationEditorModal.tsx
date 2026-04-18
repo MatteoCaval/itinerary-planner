@@ -109,7 +109,7 @@ function AccommodationEditorModal({
         <div className="flex items-center gap-2 bg-primary/5 border border-primary/20 rounded-lg px-3 py-2">
           <Hotel className="w-4 h-4 text-primary" />
           <span className="text-[11px] font-bold text-primary">
-            {nightCount} {nightCount === 1 ? 'night' : 'nights'}
+            <span className="font-num">{nightCount}</span> {nightCount === 1 ? 'night' : 'nights'}
           </span>
         </div>
 

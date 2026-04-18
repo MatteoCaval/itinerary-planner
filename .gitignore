@@ -43,3 +43,6 @@ docker-compose.override.yml
 
 # Personal trip data
 trips/
+
+# Superpowers brainstorm session mockups
+.superpowers/

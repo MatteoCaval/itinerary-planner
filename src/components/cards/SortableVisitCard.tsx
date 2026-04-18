@@ -46,7 +46,7 @@ function SortableVisitCard({
           : isHighlighted
             ? 'border-primary/40 shadow-md ring-2 ring-primary/20 bg-primary/[0.03]'
             : isSelected
-              ? 'border-primary/30 shadow-[0_4px_12px_rgba(236,91,19,0.1)] ring-1 ring-primary/10'
+              ? 'border-primary/30 shadow-[0_4px_12px_rgba(15,118,110,0.1)] ring-1 ring-primary/10'
               : 'border-border hover:border-border hover:shadow-md'
       }`}
     >
@@ -65,7 +65,9 @@ function SortableVisitCard({
             {getVisitLabel(visit.type)}
           </Badge>
           {visit.durationHint && (
-            <span className="text-[11px] text-muted-foreground font-medium">{visit.durationHint}</span>
+            <span className="text-[11px] text-muted-foreground font-medium">
+              {visit.durationHint}
+            </span>
           )}
         </div>
         <div className="flex items-center gap-1 flex-shrink-0 ml-1">
@@ -96,18 +98,26 @@ function SortableVisitCard({
             <Eye className="w-3 h-3 flex-shrink-0 opacity-0 group-hover:opacity-40 transition-opacity" />
           </p>
           {visit.notes && (
-            <p className="text-[11px] text-muted-foreground mt-1 italic leading-snug line-clamp-2">{visit.notes}</p>
+            <p className="text-[11px] text-muted-foreground mt-1 italic leading-snug line-clamp-2">
+              {visit.notes}
+            </p>
           )}
           {visit.checklist?.length || visit.links?.length ? (
             <div className="flex items-center gap-1.5 mt-1.5">
               {visit.checklist?.length ? (
-                <Badge variant="secondary" className="text-[9px] font-bold text-muted-foreground gap-1.5">
+                <Badge
+                  variant="secondary"
+                  className="font-num text-[9px] font-bold text-muted-foreground gap-1.5"
+                >
                   <Check className="w-2.5 h-2.5" />
                   {visit.checklist.filter((i) => i.done).length}/{visit.checklist.length}
                 </Badge>
               ) : null}
               {visit.links?.length ? (
-                <Badge variant="secondary" className="text-[9px] font-bold text-muted-foreground gap-1.5">
+                <Badge
+                  variant="secondary"
+                  className="font-num text-[9px] font-bold text-muted-foreground gap-1.5"
+                >
                   <Link2 className="w-2.5 h-2.5" />
                   {visit.links.length}
                 </Badge>

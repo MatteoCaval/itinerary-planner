@@ -21,6 +21,7 @@ Full audit conducted after the shadcn/ui migration. Covers every component, moda
 These should use shadcn `Button` for consistent styling, focus states, and accessibility.
 
 **Timeline section:**
+
 - [x] ~~Extend before button~~ — left as-is (custom striped background styling)
 - [x] ~~Extend after button~~ — left as-is (same)
 - [x] ~~Shrink before button~~ — left as-is (custom absolute positioned)
@@ -30,6 +31,7 @@ These should use shadcn `Button` for consistent styling, focus states, and acces
 - [x] ~~Stay edit button~~ — fixed in P0 (replaced icon with Pencil)
 
 **Map panel controls:**
+
 - [x] ~~Layers/overview toggle~~ — left as-is (inside TooltipTrigger asChild)
 - [x] ~~Mini/restore toggle~~ — left as-is (same)
 - [x] ~~Fullscreen toggle~~ — left as-is (same)
@@ -39,12 +41,14 @@ These should use shadcn `Button` for consistent styling, focus states, and acces
 - [x] Visit overlay edit button → migrated to `Button variant="outline" size="xs"`
 
 **Day columns:**
+
 - [x] Add first stay (second instance) → migrated to `Button variant="outline"`
 - [x] ~~Set accommodation (dashed)~~ — left as-is (custom dashed border)
 - [x] ~~Accommodation bar button~~ — left as-is (complex spanning layout)
 - [x] Add first stay (third instance) → migrated to `Button`
 
 **Header:**
+
 - [x] ~~Trip selector button~~ — left as-is (complex custom trigger)
 - [x] ~~Date range button (desktop)~~ — left as-is (custom layout)
 - [x] ~~Date range button (mobile)~~ — left as-is (same)
@@ -52,6 +56,7 @@ These should use shadcn `Button` for consistent styling, focus states, and acces
 - [x] Desktop search clear → migrated to `Button variant="ghost" size="icon-xs"`
 
 **Other components:**
+
 - [x] ChronosErrorBoundary — 2 raw buttons → migrated to `Button`
 - [x] InlineDateRangePicker "Clear" button → migrated to `Button variant="link"`
 - [x] DroppablePeriodSlot "Drop or add" button → migrated to `Button variant="outline"`
@@ -62,10 +67,12 @@ These should use shadcn `Button` for consistent styling, focus states, and acces
 - [x] MergeDialog "Decide later" button → migrated to `Button variant="ghost"`
 
 ### Raw `<input>` elements (2 in App.tsx)
+
 - [x] Mobile search input → migrated to `Input`
 - [x] Desktop search input → migrated to `Input`
 
 ### Raw toggle buttons that should use ToggleGroup
+
 - [x] AIPlannerModal mode toggle (scratch/refine) → migrated to `ToggleGroup`
 - [x] AIPlannerModal model selector buttons → migrated to `ToggleGroup`
 
@@ -91,6 +98,7 @@ These should use shadcn `Button` for consistent styling, focus states, and acces
 **~200 hardcoded colors replaced.** ~43 intentional `slate-200/300` remain (very faint decorative elements: timeline buffer labels, grip handles, separators, lock icons — lighter than `muted-foreground` by design).
 
 ### Badge variant gaps (still open)
+
 - [ ] Badges still use className overrides for success/destructive colors — could add proper Badge variants later
 
 ---
@@ -98,6 +106,7 @@ These should use shadcn `Button` for consistent styling, focus states, and acces
 ## P3 — UX Polish
 
 ### Forms & validation
+
 - [x] **AddStayModal missing required `*` indicator** — added `text-destructive` asterisk
 - [x] **RouteEditorModal / VisitFormModal have no `<form>` wrapper** — wrapped in `<form>`, Save→`type="submit"`, Enter-key submission works
 - [x] ~~**Duration field accepts any text**~~ — placeholder "e.g. 2h 30m" provides guidance, free-text is intentional
@@ -106,15 +115,18 @@ These should use shadcn `Button` for consistent styling, focus states, and acces
 - [x] **AuthModalSimple doesn't block Escape during loading** — onOpenChange now checks `!loading`
 
 ### Touch targets
+
 - [x] **Delete buttons too small** — upgraded `icon-xs` to `icon-sm` in StayOverviewPanel and VisitDetailDrawer
 
 ### Text overflow
+
 - [x] **Long visit notes show single line** — added `line-clamp-2` to SortableVisitCard
 - [x] **Long visit/stay names truncated without tooltip** — added native `title` attributes
 - [x] **Long email in ProfileMenu truncated without tooltip** — added `title={user.email}`
 - [x] **Trip name in footer uses `slice(0, 24)`** — replaced with CSS `truncate max-w-[200px]`
 
 ### Layout
+
 - [x] **AI explanation can overflow modal** — added `max-h-40 overflow-y-auto`
 - [x] **ProfileMenu dropdown is fixed `w-60`** — added `max-w-[calc(100vw-2rem)]`
 - [x] **HistoryPanel has fixed `max-h-96`** — changed to `max-h-[min(24rem,calc(100vh-12rem))]`
@@ -122,10 +134,12 @@ These should use shadcn `Button` for consistent styling, focus states, and acces
 - [x] ~~**StayOverviewPanel stats grid unconditionally 3-col**~~ — sidebar is fixed `w-64` and hidden on mobile, 3-col is fine
 
 ### Mobile
+
 - [x] **No sync status visible on mobile** — added sync dot indicator in header (`md:hidden`)
 - [x] **Sheet height `h-[85dvh]`** — changed to `h-[85vh]` for universal support
 
 ### Labeling & copy
+
 - [x] **"Go Back" button in TripEditor shrink confirmation** — changed to "Adjust Dates"
 - [x] **ImportFromCodeDialog placeholder** — changed to "Enter share code (e.g. TRIP-ABC123)"
 - [x] **AI model selector has no descriptions** — added "Fast & free", "Balanced", "Best quality" under each model
@@ -136,6 +150,7 @@ These should use shadcn `Button` for consistent styling, focus states, and acces
 ## P4 — Low Priority / Nice to Have
 
 ### Accessibility
+
 - [x] `aria-live="polite"` on ImportFromCodeDialog status messages — added `role="status" aria-live="polite"`
 - [x] MergeDialog trip name lists — added `aria-label="Local trips"` / `aria-label="Cloud trips"`
 - [x] Focus-visible styling on HistoryPanel and TripSwitcherPanel buttons — added `focus-visible:ring-2 focus-visible:ring-ring`
@@ -143,6 +158,7 @@ These should use shadcn `Button` for consistent styling, focus states, and acces
 - [x] ~~StayEditorModal color buttons focus ring~~ — already correct, focus ring is outside the ternary
 
 ### Code quality
+
 - [x] ~~Magic numbers in stay slot calculations~~ — comments already present in code
 - [x] ~~Three duplicate "Add first stay" buttons~~ — intentional, each has different context/styling
 - [x] **CSS variables fallback in accommodation bar** — added `var(--day-col-width, 288px)` and `var(--day-col-gap, 20px)`
@@ -150,9 +166,11 @@ These should use shadcn `Button` for consistent styling, focus states, and acces
 - [x] ~~Inconsistent modal padding~~ — intentional: AuthModal has branded layout, MergeDialog/ImportDialog are standalone
 
 ### Security
+
 - [x] **AI API key placeholder** — changed from "AIza…" to "Paste your API key"
 
 ### Data integrity
+
 - [x] ~~StayEditorModal custom color input~~ — native `<input type="color">` always returns valid `#rrggbb`
 - [x] **Password hint on AuthModalSimple** — added "Password should be at least 6 characters" warning for signup
 
@@ -161,11 +179,13 @@ These should use shadcn `Button` for consistent styling, focus states, and acces
 ## Feature Ideas (from Notion)
 
 ### 1. Custom block for flights
+
 - [ ] **Flight card between stays** — replace or augment the current transit chip (circular icon between stays on the timeline) with a richer "flight card" that shows airline, flight number, departure/arrival times, terminal, booking reference
 - **Approach:** Create a `FlightInfo` type extending the existing `travelNotesToNext` field on `Stay`. Add a dedicated `FlightEditorModal` (similar to `RouteEditorModal` but with structured fields: airline, flight #, departure time, arrival time, terminal, booking ref, seat). Render as an expanded card between stays on the timeline when transport mode is `flight`. In the day columns, show a flight summary card at the transition between stays.
 - **Complexity:** Medium — new data type + modal + timeline rendering. No external API needed.
 
 ### 2. Map inside the page, not as overlay
+
 - [ ] **Inline map layout** — replace the floating/overlay map panel with a side-by-side layout where the map is a permanent panel alongside the day columns
 - **Approach:** Two layout options to consider:
   - **(A) Split pane:** Map takes the right portion of the main area (like current expanded mode but permanent). Day columns scroll on the left. Use a draggable divider (already have `startMapResize`). The current floating panel + collapse/expand/mini modes would be replaced by a simpler toggle.
@@ -178,18 +198,22 @@ These should use shadcn `Button` for consistent styling, focus states, and acces
 A **parking lot for destinations** — mirrors how visits have an unplanned inbox, but one level up for stays. Candidate stays live in `trip.candidateStays` (data model v3) and are not placed on the timeline.
 
 **Implemented:**
+
 - `AddStayModal` — "Save to inbox" path saves a candidate without dates; "Pick from inbox" chip lets users promote a candidate onto the timeline with dates
 - `StayEditorModal` — "Move to inbox" button demotes any scheduled stay to the inbox; visits travel with the stay and become unscheduled
 - Overview map shows candidate stays as ghost markers to indicate potential destinations
 - Migration v2→v3 adds `candidateStays: []` to existing trips; `normalizeTrip` defends against Firebase stripping empty arrays
 
 #### Per-stay to-do (already exists)
+
 `StayTodoSection` in `StayOverviewPanel.tsx` provides a collapsible checklist per stay. Accessible via sidebar "Details" tab. Enhancement ideas:
+
 - Show to-do progress on timeline stay block (e.g., "3/5" badge)
 - Show uncompleted to-dos in the global itinerary view
 - Add due dates or priority to checklist items
 
 ### 4. Click unplanned place to see it on map
+
 - [x] **Map preview for unplanned visits** — MapPin button on inbox cards flies to location on map, temporarily shows marker
 - **Approach:** Unplanned visits already have `lat/lng` from geocoding. When clicking an inbox card:
   1. Set `selectedVisitId` to that visit's id
@@ -200,6 +224,7 @@ A **parking lot for destinations** — mirrors how visits have an unplanned inbo
 - **Complexity:** Low-Medium — need to adjust `mapVisits` filter logic and add the inbox card click handler. Marker is already supported.
 
 ### 5. Google Maps integration features
+
 - [ ] **"Open in Google Maps" links** — add contextual links/buttons to open locations in Google Maps
 - **Approach — multiple features under this umbrella:**
   - **Open in Google Maps button** on visit detail drawer and stay overview panel. URL format: `https://www.google.com/maps/search/?api=1&query={lat},{lng}` or `https://www.google.com/maps/place/?q=place_id:{name}`. Simple external link, no API key needed.

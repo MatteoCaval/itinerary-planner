@@ -57,7 +57,12 @@ function ShareTripDialog({
   // ── Management view: existing share code ──
   if (shareCode) {
     return (
-      <Dialog open onOpenChange={(open) => { if (!open) onClose(); }}>
+      <Dialog
+        open
+        onOpenChange={(open) => {
+          if (!open) onClose();
+        }}
+      >
         <DialogContent className="sm:max-w-sm p-5">
           <DialogDescription className="sr-only">Manage your trip share code</DialogDescription>
           <DialogHeader>
@@ -172,9 +177,16 @@ function ShareTripDialog({
 
   // ── Create view: no share code yet ──
   return (
-    <Dialog open onOpenChange={(open) => { if (!open) onClose(); }}>
+    <Dialog
+      open
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+    >
       <DialogContent className="sm:max-w-sm p-5">
-        <DialogDescription className="sr-only">Generate a share code for your trip</DialogDescription>
+        <DialogDescription className="sr-only">
+          Generate a share code for your trip
+        </DialogDescription>
         <DialogHeader>
           <div className="flex items-start gap-3">
             <div className="size-9 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
@@ -201,7 +213,9 @@ function ShareTripDialog({
                 : 'border-border hover:border-border/80'
             }`}
           >
-            <Lock className={`w-4 h-4 mt-0.5 flex-shrink-0 ${mode === 'readonly' ? 'text-primary' : 'text-muted-foreground'}`} />
+            <Lock
+              className={`w-4 h-4 mt-0.5 flex-shrink-0 ${mode === 'readonly' ? 'text-primary' : 'text-muted-foreground'}`}
+            />
             <div>
               <p className="text-xs font-bold text-foreground">Read only</p>
               <p className="text-[11px] text-muted-foreground mt-0.5">

@@ -189,4 +189,3 @@ export const getShareCodeMeta = async (
     return { success: false, error: formatErrorMessage(error) };
   }
 };
-

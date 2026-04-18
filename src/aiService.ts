@@ -13,6 +13,7 @@ type Day = { id: string; date: string; [key: string]: unknown };
 import { ApiError, fetchJson } from './services/httpClient';
 import { trackError } from './services/telemetry';
 import { DEFAULT_AI_MODEL } from './constants/daySection';
+import { STAY_COLORS } from './domain/constants';
 
 interface GeminiResponse {
   candidates?: {
@@ -284,17 +285,6 @@ export interface AIHybridResult {
   stays: AIHybridStay[];
 }
 
-const STAY_COLORS = [
-  '#2167d7',
-  '#615cf6',
-  '#2db6ab',
-  '#d78035',
-  '#20b5a8',
-  '#3b6dd8',
-  '#c45c99',
-  '#4c9463',
-];
-
 export const generateHybridItinerary = async (
   prompt: string,
   settings: AISettings,
@@ -366,7 +356,7 @@ Return ONLY valid JSON (no markdown, no code fences, no prose outside JSON):
   "stays": [
     {
       "name": "City Name",
-      "color": "#2167d7",
+      "color": "#b8304f",
       "startSlot": 0,
       "endSlot": 9,
       "centerLat": 35.6762,

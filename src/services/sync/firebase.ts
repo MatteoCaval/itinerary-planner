@@ -120,10 +120,7 @@ export class FirebaseSyncService implements SyncService {
 
     (async () => {
       try {
-        const [{ ref, onValue }, db] = await Promise.all([
-          import('firebase/database'),
-          getDb(),
-        ]);
+        const [{ ref, onValue }, db] = await Promise.all([import('firebase/database'), getDb()]);
 
         if (cancelled) return;
 
@@ -154,7 +151,8 @@ export class FirebaseSyncService implements SyncService {
 
             previousKeys = currentKeys;
           },
-          (error) => callbacks.onError(error instanceof Error ? error.message : 'Sync listener failed'),
+          (error) =>
+            callbacks.onError(error instanceof Error ? error.message : 'Sync listener failed'),
         );
 
         // Listen to activeTripId
@@ -166,7 +164,8 @@ export class FirebaseSyncService implements SyncService {
               callbacks.onActiveTripIdChanged(String(snapshot.val()));
             }
           },
-          (error) => callbacks.onError(error instanceof Error ? error.message : 'Sync listener failed'),
+          (error) =>
+            callbacks.onError(error instanceof Error ? error.message : 'Sync listener failed'),
         );
 
         unsubFns = [unsubTrips, unsubActive];

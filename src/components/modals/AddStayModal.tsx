@@ -126,8 +126,7 @@ function AddStayModal({
 
   const canSave = name.trim().length > 0;
   const isCandidateMode = mode === 'candidate';
-  const showChipRow =
-    !isCandidateMode && candidates !== undefined && candidates.length > 0;
+  const showChipRow = !isCandidateMode && candidates !== undefined && candidates.length > 0;
 
   const handleSave = () => {
     if (!canSave) return;
@@ -277,7 +276,7 @@ function AddStayModal({
                 >
                   −
                 </button>
-                <span className="w-10 text-center font-extrabold text-sm text-foreground tabular-nums">
+                <span className="font-num w-10 text-center font-extrabold text-sm text-foreground">
                   {days}
                 </span>
                 <button

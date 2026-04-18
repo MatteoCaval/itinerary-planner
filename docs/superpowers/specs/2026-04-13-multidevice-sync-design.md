@@ -106,7 +106,7 @@ function useCloudSync(
   remoteUpdateToast: { tripName: string } | null;
   dismissRemoteToast: () => void;
   setPendingMerge: (m: PendingMerge | null) => void;
-}
+};
 ```
 
 **Responsibilities:**
@@ -132,24 +132,21 @@ Replace the existing inline sync `useEffect` blocks and `pendingMerge` state wit
 ```tsx
 const syncService = useMemo(() => createSyncService(), []);
 
-const {
-  syncStatus,
-  pendingMerge,
-  remoteUpdateToast,
-  dismissRemoteToast,
-  setPendingMerge,
-} = useCloudSync(syncService, store, setStore, user);
+const { syncStatus, pendingMerge, remoteUpdateToast, dismissRemoteToast, setPendingMerge } =
+  useCloudSync(syncService, store, setStore, user);
 ```
 
 App.tsx renders the remote update toast:
 
 ```tsx
-{remoteUpdateToast && (
-  <Toast>
-    "{remoteUpdateToast.tripName}" was updated on another device.
-    <Button onClick={dismissRemoteToast}>Dismiss</Button>
-  </Toast>
-)}
+{
+  remoteUpdateToast && (
+    <Toast>
+      "{remoteUpdateToast.tripName}" was updated on another device.
+      <Button onClick={dismissRemoteToast}>Dismiss</Button>
+    </Toast>
+  );
+}
 ```
 
 No Firebase imports remain in App.tsx.
@@ -174,15 +171,15 @@ If migration fails mid-way, next login retries safely (write idempotency). The b
 
 ## Error Handling
 
-| Scenario | Behaviour |
-|---|---|
-| Save fails | Retry once after 3s, then `syncStatus: 'error'`. Local state safe. |
-| Load fails on login | Fall back to local store, show `syncError` banner. |
-| Migration fails mid-way | Safe retry on next login. Blob only deleted after all writes succeed. |
-| No `updatedAt` on trip | Treat as `0` — cloud wins. Trip gets timestamp after first save. |
-| Own-echo from listener | Guard via `lastPushedAt` ref. If incoming `updatedAt` matches last push, ignore. |
-| Listener active at sign-out | `useCloudSync` cleanup calls `unsubscribe()`. |
-| Offline / tab hidden | Firebase SDK handles reconnection. Debounce fires on reconnect. |
+| Scenario                    | Behaviour                                                                        |
+| --------------------------- | -------------------------------------------------------------------------------- |
+| Save fails                  | Retry once after 3s, then `syncStatus: 'error'`. Local state safe.               |
+| Load fails on login         | Fall back to local store, show `syncError` banner.                               |
+| Migration fails mid-way     | Safe retry on next login. Blob only deleted after all writes succeed.            |
+| No `updatedAt` on trip      | Treat as `0` — cloud wins. Trip gets timestamp after first save.                 |
+| Own-echo from listener      | Guard via `lastPushedAt` ref. If incoming `updatedAt` matches last push, ignore. |
+| Listener active at sign-out | `useCloudSync` cleanup calls `unsubscribe()`.                                    |
+| Offline / tab hidden        | Firebase SDK handles reconnection. Debounce fires on reconnect.                  |
 
 ---
 

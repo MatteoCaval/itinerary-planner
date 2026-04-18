@@ -60,7 +60,7 @@ function AuthModalSimple({ onClose }: { onClose: () => void }) {
         {/* Top accent bar */}
         <div
           className="h-1 w-full"
-          style={{ background: 'linear-gradient(90deg, #ec5b13, #f5844a)' }}
+          style={{ background: 'linear-gradient(90deg, #0f766e, #14b8a6)' }}
         />
 
         <div className="px-8 pt-7 pb-6">
@@ -139,7 +139,9 @@ function AuthModalSimple({ onClose }: { onClose: () => void }) {
             </div>
 
             {mode === 'signup' && password.length > 0 && password.length < 6 && (
-              <p className="text-[11px] text-warning font-medium">Password should be at least 6 characters</p>
+              <p className="text-[11px] text-warning font-medium">
+                Password should be at least 6 characters
+              </p>
             )}
 
             {error && (
@@ -154,8 +156,8 @@ function AuthModalSimple({ onClose }: { onClose: () => void }) {
               disabled={loading}
               className="w-full py-2.5 text-sm font-extrabold text-white rounded-xl transition-all disabled:opacity-50 relative overflow-hidden group mt-1"
               style={{
-                background: 'linear-gradient(135deg, #ec5b13 0%, #d44e0f 100%)',
-                boxShadow: '0 4px 14px -2px rgba(236,91,19,0.4)',
+                background: 'linear-gradient(135deg, #0f766e 0%, #0d9488 100%)',
+                boxShadow: '0 4px 14px -2px rgba(15,118,110,0.4)',
               }}
             >
               <span className="relative z-10 flex items-center justify-center gap-2">

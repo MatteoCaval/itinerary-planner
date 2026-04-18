@@ -8,7 +8,7 @@ import { Button } from './button';
 // Orange circle pin — avoids default Leaflet icon URL issues with Vite
 const pinIcon = L.divIcon({
   className: '',
-  html: '<div style="width:16px;height:16px;background:#ec5b13;border:3px solid white;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,0.35);"></div>',
+  html: '<div style="width:16px;height:16px;background:#0f766e;border:3px solid white;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,0.35);"></div>',
   iconSize: [16, 16],
   iconAnchor: [8, 8],
 });

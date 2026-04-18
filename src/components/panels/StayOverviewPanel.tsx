@@ -67,10 +67,12 @@ function StayOverviewPanel({
               className="w-2 h-2 rounded-full flex-shrink-0 ring-1 ring-white/40"
               style={{ backgroundColor: stay.color }}
             />
-            <h2 className="text-white font-bold text-sm leading-tight truncate" title={stay.name}>{stay.name}</h2>
+            <h2 className="text-white font-bold text-sm leading-tight truncate" title={stay.name}>
+              {stay.name}
+            </h2>
           </div>
           {startDate && endDate && (
-            <p className="text-white/70 text-[11px] mt-0.5">
+            <p className="font-num text-white/70 text-[11px] mt-0.5">
               {fmt(startDate, { month: 'short', day: 'numeric' })} →{' '}
               {fmt(endDate, { month: 'short', day: 'numeric' })}
             </p>
@@ -89,7 +91,7 @@ function StayOverviewPanel({
             key={label}
             className={`px-3 py-2 text-center ${i < 2 ? 'border-r border-border-neutral' : ''}`}
           >
-            <p className="text-base font-extrabold text-foreground">{value}</p>
+            <p className="font-num text-base font-extrabold text-foreground">{value}</p>
             <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest mt-0.5">
               {label}
             </p>
@@ -252,7 +254,7 @@ export function StayTodoSection({
           {checklist.length > 0 && (
             <Badge
               variant="secondary"
-              className={`text-[9px] font-bold h-auto px-1.5 py-0.5 ${doneCount === checklist.length ? 'bg-success/10 text-success' : 'bg-primary/10 text-primary'}`}
+              className={`font-num text-[9px] font-bold h-auto px-1.5 py-0.5 ${doneCount === checklist.length ? 'bg-success/10 text-success' : 'bg-primary/10 text-primary'}`}
             >
               {doneCount}/{checklist.length}
             </Badge>
@@ -265,30 +267,30 @@ export function StayTodoSection({
       {open && (
         <div className="px-4 pb-3 space-y-1.5">
           <div className="max-h-48 overflow-y-auto space-y-1.5">
-          {checklist.map((item) => (
-            <div key={item.id} className="flex items-center gap-2 group">
-              <Checkbox
-                checked={item.done}
-                onCheckedChange={() =>
-                  onUpdate(checklist.map((i) => (i.id === item.id ? { ...i, done: !i.done } : i)))
-                }
-                className="size-3.5"
-              />
-              <span
-                className={`flex-1 text-xs ${item.done ? 'line-through text-muted-foreground' : 'text-foreground'}`}
-              >
-                {item.text}
-              </span>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                onClick={() => onUpdate(checklist.filter((i) => i.id !== item.id))}
-                className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:bg-destructive/10 text-muted-foreground hover:text-destructive sm:max-md:opacity-100"
-              >
-                <X className="w-3 h-3" />
-              </Button>
-            </div>
-          ))}
+            {checklist.map((item) => (
+              <div key={item.id} className="flex items-center gap-2 group">
+                <Checkbox
+                  checked={item.done}
+                  onCheckedChange={() =>
+                    onUpdate(checklist.map((i) => (i.id === item.id ? { ...i, done: !i.done } : i)))
+                  }
+                  className="size-3.5"
+                />
+                <span
+                  className={`flex-1 text-xs ${item.done ? 'line-through text-muted-foreground' : 'text-foreground'}`}
+                >
+                  {item.text}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  onClick={() => onUpdate(checklist.filter((i) => i.id !== item.id))}
+                  className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:bg-destructive/10 text-muted-foreground hover:text-destructive sm:max-md:opacity-100"
+                >
+                  <X className="w-3 h-3" />
+                </Button>
+              </div>
+            ))}
           </div>
           <div className="flex items-center gap-1.5 mt-1">
             <Input

@@ -156,7 +156,11 @@ export function ClusteredMarkers({
           <Marker
             key={v.id}
             position={getJitteredPosition(entry)}
-            icon={createIcon(v.type, entry.index, selectedVisitId === v.id || highlightedVisitId === v.id)}
+            icon={createIcon(
+              v.type,
+              entry.index,
+              selectedVisitId === v.id || highlightedVisitId === v.id,
+            )}
             eventHandlers={{
               click: () => onSelectVisit(selectedVisitId === v.id ? null : v.id),
             }}

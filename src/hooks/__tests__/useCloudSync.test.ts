@@ -102,7 +102,9 @@ describe('useCloudSync', () => {
 
     renderHook(() => useCloudSync(service, EMPTY_STORE, setStore, user));
 
-    await act(async () => { vi.advanceTimersByTime(3000); });
+    await act(async () => {
+      vi.advanceTimersByTime(3000);
+    });
     expect(service.saveTrip).not.toHaveBeenCalled();
   });
 
@@ -117,7 +119,9 @@ describe('useCloudSync', () => {
 
     renderHook(() => useCloudSync(service, store, setStore, user));
 
-    await act(async () => { vi.advanceTimersByTime(3000); });
+    await act(async () => {
+      vi.advanceTimersByTime(3000);
+    });
     expect(service.saveTrip).toHaveBeenCalled();
   });
 
@@ -132,20 +136,23 @@ describe('useCloudSync', () => {
     const user = { uid: 'user-1' } as any;
 
     // First render: both trips exist — seeds lastPushedRef
-    const { rerender } = renderHook(
-      ({ store }) => useCloudSync(service, store, setStore, user),
-      { initialProps: { store: storeWithBoth } },
-    );
+    const { rerender } = renderHook(({ store }) => useCloudSync(service, store, setStore, user), {
+      initialProps: { store: storeWithBoth },
+    });
 
     // Wait for initial load + auto-save to seed tracking refs
-    await act(async () => { vi.advanceTimersByTime(3000); });
+    await act(async () => {
+      vi.advanceTimersByTime(3000);
+    });
     expect(service.saveTrip).toHaveBeenCalled();
 
     // Now simulate deleting trip-b locally
     const storeAfterDelete: TripStore = { trips: [tripA], activeTripId: 'trip-a' };
     rerender({ store: storeAfterDelete });
 
-    await act(async () => { vi.advanceTimersByTime(3000); });
+    await act(async () => {
+      vi.advanceTimersByTime(3000);
+    });
     expect(service.deleteTrip).toHaveBeenCalledWith('user-1', 'trip-b');
   });
 
@@ -168,10 +175,14 @@ describe('useCloudSync', () => {
     renderHook(() => useCloudSync(service, store, setStore, user));
 
     // Flush load effect
-    await act(async () => { await Promise.resolve(); });
+    await act(async () => {
+      await Promise.resolve();
+    });
 
     // Simulate remote deletion of trip-b
-    act(() => { subscribedCallbacks.onTripDeleted('trip-b'); });
+    act(() => {
+      subscribedCallbacks.onTripDeleted('trip-b');
+    });
 
     expect(setStore).toHaveBeenCalled();
     // Find the onTripDeleted updater call (it's an inline function, not a value)

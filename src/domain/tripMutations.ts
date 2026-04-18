@@ -150,9 +150,7 @@ export function demoteStay(trip: HybridTrip, stayId: string): HybridTrip {
     visits: trip.visits.map((v) =>
       v.stayId === stayId ? { ...v, dayOffset: null, dayPart: null } : v,
     ),
-    routes: trip.routes.filter(
-      (r) => r.fromStayId !== stayId && r.toStayId !== stayId,
-    ),
+    routes: trip.routes.filter((r) => r.fromStayId !== stayId && r.toStayId !== stayId),
   };
 }
 

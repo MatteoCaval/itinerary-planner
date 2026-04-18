@@ -12,24 +12,25 @@
 
 ## File Structure
 
-| File | Action | Responsibility |
-|------|--------|---------------|
-| `src/domain/types.ts` | Modify | Add `shareCode`, `sourceShareCode`, `importedAt` to `HybridTrip`; add `ShareCodeNode` type |
-| `src/domain/shareCode.ts` | Create | Pure functions: `generateShareCode()`, `isShareCodeNode()` type guard |
-| `src/domain/__tests__/shareCode.test.ts` | Create | Tests for share code generation and type guard |
-| `src/firebase.ts` | Modify | Update `saveItinerary` signature, add `checkShareCodeExists`, `deleteShareCode`, `getShareCodeMeta` |
-| `src/hooks/useShareCode.ts` | Create | Hook: create/update/revoke share code, check for updates on linked trips |
-| `src/hooks/__tests__/useShareCode.test.ts` | Create | Tests for useShareCode hook |
-| `src/components/modals/ShareTripDialog.tsx` | Create | Dialog: generate code, show existing code, copy, push update, revoke, toggle mode |
-| `src/components/modals/ImportFromCodeDialog.tsx` | Modify | Store `sourceShareCode` and `importedAt` on imported trips |
-| `src/components/panels/ProfileMenu.tsx` | Modify | Add "Share trip" menu item |
-| `src/App.tsx` | Modify | Wire ShareTripDialog, add top bar share indicators, add pull-latest flow |
+| File                                             | Action | Responsibility                                                                                      |
+| ------------------------------------------------ | ------ | --------------------------------------------------------------------------------------------------- |
+| `src/domain/types.ts`                            | Modify | Add `shareCode`, `sourceShareCode`, `importedAt` to `HybridTrip`; add `ShareCodeNode` type          |
+| `src/domain/shareCode.ts`                        | Create | Pure functions: `generateShareCode()`, `isShareCodeNode()` type guard                               |
+| `src/domain/__tests__/shareCode.test.ts`         | Create | Tests for share code generation and type guard                                                      |
+| `src/firebase.ts`                                | Modify | Update `saveItinerary` signature, add `checkShareCodeExists`, `deleteShareCode`, `getShareCodeMeta` |
+| `src/hooks/useShareCode.ts`                      | Create | Hook: create/update/revoke share code, check for updates on linked trips                            |
+| `src/hooks/__tests__/useShareCode.test.ts`       | Create | Tests for useShareCode hook                                                                         |
+| `src/components/modals/ShareTripDialog.tsx`      | Create | Dialog: generate code, show existing code, copy, push update, revoke, toggle mode                   |
+| `src/components/modals/ImportFromCodeDialog.tsx` | Modify | Store `sourceShareCode` and `importedAt` on imported trips                                          |
+| `src/components/panels/ProfileMenu.tsx`          | Modify | Add "Share trip" menu item                                                                          |
+| `src/App.tsx`                                    | Modify | Wire ShareTripDialog, add top bar share indicators, add pull-latest flow                            |
 
 ---
 
 ### Task 1: Add Types
 
 **Files:**
+
 - Modify: `src/domain/types.ts:60-71`
 
 - [ ] **Step 1: Add share-related fields to HybridTrip and ShareCodeNode type**
@@ -74,6 +75,7 @@ git commit -m "feat(types): add ShareCodeNode and share metadata fields to Hybri
 ### Task 2: Share Code Generation (Pure Domain Logic)
 
 **Files:**
+
 - Create: `src/domain/shareCode.ts`
 - Create: `src/domain/__tests__/shareCode.test.ts`
 
@@ -116,7 +118,15 @@ describe('generateShareCode', () => {
 describe('isShareCodeNode', () => {
   it('returns true for valid ShareCodeNode', () => {
     const node = {
-      trip: { id: '1', name: 'Test', startDate: '2025-01-01', totalDays: 3, stays: [], visits: [], routes: [] },
+      trip: {
+        id: '1',
+        name: 'Test',
+        startDate: '2025-01-01',
+        totalDays: 3,
+        stays: [],
+        visits: [],
+        routes: [],
+      },
       createdAt: 1000,
       updatedAt: 1000,
       ownerUid: 'uid-123',
@@ -126,7 +136,15 @@ describe('isShareCodeNode', () => {
   });
 
   it('returns false for raw HybridTrip (legacy format)', () => {
-    const raw = { id: '1', name: 'Test', startDate: '2025-01-01', totalDays: 3, stays: [], visits: [], routes: [] };
+    const raw = {
+      id: '1',
+      name: 'Test',
+      startDate: '2025-01-01',
+      totalDays: 3,
+      stays: [],
+      visits: [],
+      routes: [],
+    };
     expect(isShareCodeNode(raw)).toBe(false);
   });
 
@@ -202,6 +220,7 @@ git commit -m "feat(domain): add share code generation and ShareCodeNode type gu
 ### Task 3: Firebase Functions
 
 **Files:**
+
 - Modify: `src/firebase.ts:103-135`
 
 - [ ] **Step 1: Update saveItinerary to accept ShareCodeNode data**
@@ -287,6 +306,7 @@ git commit -m "feat(firebase): add checkShareCodeExists, deleteShareCode, getSha
 ### Task 4: useShareCode Hook
 
 **Files:**
+
 - Create: `src/hooks/useShareCode.ts`
 - Create: `src/hooks/__tests__/useShareCode.test.ts`
 
@@ -753,13 +773,15 @@ export function useShareCode(
 
       // Overwrite current trip with remote data, keep local ID and source link
       const now = Date.now();
-      setTrip((prev) => normalizeTrip({
-        ...remoteTrip,
-        id: prev.id,
-        sourceShareCode: sourceCode,
-        importedAt: now,
-        shareCode: undefined,
-      }));
+      setTrip((prev) =>
+        normalizeTrip({
+          ...remoteTrip,
+          id: prev.id,
+          sourceShareCode: sourceCode,
+          importedAt: now,
+          shareCode: undefined,
+        }),
+      );
 
       setUpdateAvailable(false);
       setStatus('success');
@@ -805,6 +827,7 @@ git commit -m "feat(hooks): add useShareCode hook for share code lifecycle"
 ### Task 5: ShareTripDialog Component
 
 **Files:**
+
 - Create: `src/components/modals/ShareTripDialog.tsx`
 
 - [ ] **Step 1: Create ShareTripDialog**
@@ -871,7 +894,12 @@ function ShareTripDialog({
   // ── Management view: existing share code ──
   if (shareCode) {
     return (
-      <Dialog open onOpenChange={(open) => { if (!open) onClose(); }}>
+      <Dialog
+        open
+        onOpenChange={(open) => {
+          if (!open) onClose();
+        }}
+      >
         <DialogContent className="sm:max-w-sm p-5">
           <DialogDescription className="sr-only">Manage your trip share code</DialogDescription>
           <DialogHeader>
@@ -986,9 +1014,16 @@ function ShareTripDialog({
 
   // ── Create view: no share code yet ──
   return (
-    <Dialog open onOpenChange={(open) => { if (!open) onClose(); }}>
+    <Dialog
+      open
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+    >
       <DialogContent className="sm:max-w-sm p-5">
-        <DialogDescription className="sr-only">Generate a share code for your trip</DialogDescription>
+        <DialogDescription className="sr-only">
+          Generate a share code for your trip
+        </DialogDescription>
         <DialogHeader>
           <div className="flex items-start gap-3">
             <div className="size-9 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
@@ -1015,7 +1050,9 @@ function ShareTripDialog({
                 : 'border-border hover:border-border/80'
             }`}
           >
-            <Lock className={`w-4 h-4 mt-0.5 flex-shrink-0 ${mode === 'readonly' ? 'text-primary' : 'text-muted-foreground'}`} />
+            <Lock
+              className={`w-4 h-4 mt-0.5 flex-shrink-0 ${mode === 'readonly' ? 'text-primary' : 'text-muted-foreground'}`}
+            />
             <div>
               <p className="text-xs font-bold text-foreground">Read only</p>
               <p className="text-[11px] text-muted-foreground mt-0.5">
@@ -1031,7 +1068,9 @@ function ShareTripDialog({
                 : 'border-border hover:border-border/80'
             }`}
           >
-            <Globe className={`w-4 h-4 mt-0.5 flex-shrink-0 ${mode === 'writable' ? 'text-primary' : 'text-muted-foreground'}`} />
+            <Globe
+              className={`w-4 h-4 mt-0.5 flex-shrink-0 ${mode === 'writable' ? 'text-primary' : 'text-muted-foreground'}`}
+            />
             <div>
               <p className="text-xs font-bold text-foreground">Anyone can update</p>
               <p className="text-[11px] text-muted-foreground mt-0.5">
@@ -1095,6 +1134,7 @@ git commit -m "feat(ui): add ShareTripDialog for code generation and management"
 ### Task 6: Update ImportFromCodeDialog
 
 **Files:**
+
 - Modify: `src/components/modals/ImportFromCodeDialog.tsx`
 
 - [ ] **Step 1: Update onImport to include source metadata**
@@ -1102,45 +1142,49 @@ git commit -m "feat(ui): add ShareTripDialog for code generation and management"
 In `src/components/modals/ImportFromCodeDialog.tsx`, update the import handling to store `sourceShareCode` and `importedAt`. Modify lines 82-89:
 
 Replace:
+
 ```typescript
-    // Ensure unique ID
-    trip = normalizeTrip({ ...trip, id: crypto.randomUUID() });
-    setStatus({ type: 'success', message: `Loaded "${trip.name}"!` });
-    setTimeout(() => {
-      onImport(trip);
-      onClose();
-    }, 800);
+// Ensure unique ID
+trip = normalizeTrip({ ...trip, id: crypto.randomUUID() });
+setStatus({ type: 'success', message: `Loaded "${trip.name}"!` });
+setTimeout(() => {
+  onImport(trip);
+  onClose();
+}, 800);
 ```
 
 With:
+
 ```typescript
-    // Ensure unique ID and store source metadata for pull-latest
-    trip = normalizeTrip({
-      ...trip,
-      id: crypto.randomUUID(),
-      sourceShareCode: trimmed,
-      importedAt: Date.now(),
-      shareCode: undefined, // don't inherit owner's share code
-    });
-    setStatus({ type: 'success', message: `Loaded "${trip.name}"!` });
-    setTimeout(() => {
-      onImport(trip);
-      onClose();
-    }, 800);
+// Ensure unique ID and store source metadata for pull-latest
+trip = normalizeTrip({
+  ...trip,
+  id: crypto.randomUUID(),
+  sourceShareCode: trimmed,
+  importedAt: Date.now(),
+  shareCode: undefined, // don't inherit owner's share code
+});
+setStatus({ type: 'success', message: `Loaded "${trip.name}"!` });
+setTimeout(() => {
+  onImport(trip);
+  onClose();
+}, 800);
 ```
 
 Also update the data extraction to handle the new wrapped format. Import `isShareCodeNode` and update lines 50-76.
 
 Add import at top:
+
 ```typescript
 import { isShareCodeNode } from '@/domain/shareCode';
 ```
 
 Replace the data handling block (lines 51-76):
+
 ```typescript
-    const raw = result.data;
-    // Unwrap ShareCodeNode if present (new format), otherwise treat as raw trip (legacy)
-    const data = (isShareCodeNode(raw) ? raw.trip : raw) as Record<string, unknown>;
+const raw = result.data;
+// Unwrap ShareCodeNode if present (new format), otherwise treat as raw trip (legacy)
+const data = (isShareCodeNode(raw) ? raw.trip : raw) as Record<string, unknown>;
 ```
 
 This replaces `const data = result.data as Record<string, unknown>;` at line 51.
@@ -1162,6 +1206,7 @@ git commit -m "feat(import): store source metadata and handle ShareCodeNode wrap
 ### Task 7: Add "Share trip" to ProfileMenu
 
 **Files:**
+
 - Modify: `src/components/panels/ProfileMenu.tsx`
 
 - [ ] **Step 1: Add Share trip menu item and onShareTrip prop**
@@ -1169,11 +1214,13 @@ git commit -m "feat(import): store source metadata and handle ShareCodeNode wrap
 In `src/components/panels/ProfileMenu.tsx`:
 
 Add `Share2` to the lucide import:
+
 ```typescript
 import { Download, Upload, User, LogIn, LogOut, Lock, Check, Compass, Share2 } from 'lucide-react';
 ```
 
 Add `onShareTrip` to the component props:
+
 ```typescript
 function ProfileMenu({
   trip,
@@ -1195,12 +1242,12 @@ function ProfileMenu({
 Add the "Share trip" menu item after the "Import from code" item (after line 180):
 
 ```tsx
-          <DropdownMenuItem onClick={onShareTrip}>
-            <div className="size-6 rounded-md bg-primary/10 flex items-center justify-center flex-shrink-0">
-              <Share2 className="w-3 h-3 text-primary" />
-            </div>
-            Share trip
-          </DropdownMenuItem>
+<DropdownMenuItem onClick={onShareTrip}>
+  <div className="size-6 rounded-md bg-primary/10 flex items-center justify-center flex-shrink-0">
+    <Share2 className="w-3 h-3 text-primary" />
+  </div>
+  Share trip
+</DropdownMenuItem>
 ```
 
 - [ ] **Step 2: Verify build passes**
@@ -1220,6 +1267,7 @@ git commit -m "feat(menu): add Share trip item to ProfileMenu"
 ### Task 8: Wire Everything in App.tsx
 
 **Files:**
+
 - Modify: `src/App.tsx`
 
 This task integrates all the pieces. Changes are grouped by area.
@@ -1316,40 +1364,50 @@ const handlePullLatest = async (saveCopy: boolean) => {
 In the header area, between the mobile sync dot (line 980) and the ProfileMenu (line 987), add the share code indicators:
 
 ```tsx
-{/* Share code indicators */}
-{trip.shareCode && (
-  <button
-    onClick={() => setShowShareDialog(true)}
-    className="hidden sm:flex items-center gap-1.5 text-[11px] font-bold text-primary bg-primary/8 px-2.5 py-1 rounded-lg transition-colors hover:bg-primary/15 flex-shrink-0"
-    title="This trip has an active share code"
-  >
-    <Share2 className="w-3 h-3" />
-    <span className="font-mono tracking-wider">{trip.shareCode}</span>
-  </button>
-)}
-{trip.sourceShareCode && (
-  <button
-    onClick={() => updateAvailable ? setShowPullConfirm(true) : undefined}
-    className={`hidden sm:flex items-center gap-1.5 text-[11px] font-semibold px-2 py-1 rounded-lg transition-colors flex-shrink-0 ${
-      updateAvailable
-        ? 'text-info bg-info/10 hover:bg-info/20 cursor-pointer'
-        : 'text-muted-foreground bg-muted/50'
-    }`}
-    title={updateAvailable ? 'Update available — click to pull latest' : 'Linked to a shared trip'}
-  >
-    <Link2 className="w-3 h-3" />
-    {updateAvailable && <span className="size-1.5 rounded-full bg-info animate-pulse" />}
-  </button>
-)}
-{trip.sourceShareCode && remoteMode === 'writable' && (
-  <button
-    onClick={() => pushToSource(user?.uid ?? null)}
-    className="hidden sm:flex items-center gap-1.5 text-[11px] font-semibold text-muted-foreground bg-muted/50 px-2 py-1 rounded-lg transition-colors hover:bg-muted flex-shrink-0"
-    title="Push your changes to the shared trip"
-  >
-    <Upload className="w-3 h-3" />
-  </button>
-)}
+{
+  /* Share code indicators */
+}
+{
+  trip.shareCode && (
+    <button
+      onClick={() => setShowShareDialog(true)}
+      className="hidden sm:flex items-center gap-1.5 text-[11px] font-bold text-primary bg-primary/8 px-2.5 py-1 rounded-lg transition-colors hover:bg-primary/15 flex-shrink-0"
+      title="This trip has an active share code"
+    >
+      <Share2 className="w-3 h-3" />
+      <span className="font-mono tracking-wider">{trip.shareCode}</span>
+    </button>
+  );
+}
+{
+  trip.sourceShareCode && (
+    <button
+      onClick={() => (updateAvailable ? setShowPullConfirm(true) : undefined)}
+      className={`hidden sm:flex items-center gap-1.5 text-[11px] font-semibold px-2 py-1 rounded-lg transition-colors flex-shrink-0 ${
+        updateAvailable
+          ? 'text-info bg-info/10 hover:bg-info/20 cursor-pointer'
+          : 'text-muted-foreground bg-muted/50'
+      }`}
+      title={
+        updateAvailable ? 'Update available — click to pull latest' : 'Linked to a shared trip'
+      }
+    >
+      <Link2 className="w-3 h-3" />
+      {updateAvailable && <span className="size-1.5 rounded-full bg-info animate-pulse" />}
+    </button>
+  );
+}
+{
+  trip.sourceShareCode && remoteMode === 'writable' && (
+    <button
+      onClick={() => pushToSource(user?.uid ?? null)}
+      className="hidden sm:flex items-center gap-1.5 text-[11px] font-semibold text-muted-foreground bg-muted/50 px-2 py-1 rounded-lg transition-colors hover:bg-muted flex-shrink-0"
+      title="Push your changes to the shared trip"
+    >
+      <Upload className="w-3 h-3" />
+    </button>
+  );
+}
 ```
 
 - [ ] **Step 6: Update ProfileMenu to pass onShareTrip**
@@ -1372,59 +1430,65 @@ Find the existing ProfileMenu rendering (around line 987) and add the `onShareTr
 Near the other dialog renderings (around line 3014 where ImportFromCodeDialog is rendered), add:
 
 ```tsx
-{showShareDialog && (
-  user ? (
-    <ShareTripDialog
-      shareCode={trip.shareCode}
-      status={shareStatus}
-      error={shareError}
-      onCreateCode={(mode) => createShareCode(user.uid, mode)}
-      onPushUpdate={() => pushUpdate(user.uid)}
-      onRevoke={revokeShareCode}
-      onClose={() => setShowShareDialog(false)}
-    />
-  ) : (
-    <AuthModalSimple onClose={() => setShowShareDialog(false)} />
-  )
-)}
+{
+  showShareDialog &&
+    (user ? (
+      <ShareTripDialog
+        shareCode={trip.shareCode}
+        status={shareStatus}
+        error={shareError}
+        onCreateCode={(mode) => createShareCode(user.uid, mode)}
+        onPushUpdate={() => pushUpdate(user.uid)}
+        onRevoke={revokeShareCode}
+        onClose={() => setShowShareDialog(false)}
+      />
+    ) : (
+      <AuthModalSimple onClose={() => setShowShareDialog(false)} />
+    ));
+}
 
-{showPullConfirm && (
-  <Dialog open onOpenChange={(open) => { if (!open) setShowPullConfirm(false); }}>
-    <DialogContent className="sm:max-w-sm p-5">
-      <DialogDescription className="sr-only">Pull latest version of this trip</DialogDescription>
-      <DialogHeader>
-        <DialogTitle className="font-extrabold text-foreground text-sm">
-          Update available
-        </DialogTitle>
-        <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-          A newer version of this trip is available. Would you like to save a copy of your current version before updating?
-        </p>
-      </DialogHeader>
-      <div className="flex flex-col gap-2 mt-3">
-        <Button
-          onClick={() => handlePullLatest(true)}
-          className="w-full text-xs font-bold"
-        >
-          Save copy & update
-        </Button>
-        <Button
-          variant="outline"
-          onClick={() => handlePullLatest(false)}
-          className="w-full text-xs font-semibold"
-        >
-          Update without saving
-        </Button>
-        <Button
-          variant="ghost"
-          onClick={() => setShowPullConfirm(false)}
-          className="w-full text-xs font-semibold text-muted-foreground"
-        >
-          Cancel
-        </Button>
-      </div>
-    </DialogContent>
-  </Dialog>
-)}
+{
+  showPullConfirm && (
+    <Dialog
+      open
+      onOpenChange={(open) => {
+        if (!open) setShowPullConfirm(false);
+      }}
+    >
+      <DialogContent className="sm:max-w-sm p-5">
+        <DialogDescription className="sr-only">Pull latest version of this trip</DialogDescription>
+        <DialogHeader>
+          <DialogTitle className="font-extrabold text-foreground text-sm">
+            Update available
+          </DialogTitle>
+          <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+            A newer version of this trip is available. Would you like to save a copy of your current
+            version before updating?
+          </p>
+        </DialogHeader>
+        <div className="flex flex-col gap-2 mt-3">
+          <Button onClick={() => handlePullLatest(true)} className="w-full text-xs font-bold">
+            Save copy & update
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => handlePullLatest(false)}
+            className="w-full text-xs font-semibold"
+          >
+            Update without saving
+          </Button>
+          <Button
+            variant="ghost"
+            onClick={() => setShowPullConfirm(false)}
+            className="w-full text-xs font-semibold text-muted-foreground"
+          >
+            Cancel
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
 ```
 
 Note: The pull confirm dialog uses the same Dialog/DialogContent/DialogHeader imports already present in App.tsx. If they're not imported yet, add the necessary shadcn imports.
@@ -1451,6 +1515,7 @@ git commit -m "feat: wire share code flow — dialog, top bar indicators, pull-l
 ### Task 9: Update PRD and Docs
 
 **Files:**
+
 - Modify: `docs/PRD.md`
 
 - [ ] **Step 1: Update PRD with export-to-code feature**

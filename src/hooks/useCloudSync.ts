@@ -29,13 +29,17 @@ export function useCloudSync(
 
   const syncedUidRef = useRef<string | null>(null);
   const storeRef = useRef(store);
-  useEffect(() => { storeRef.current = store; });
+  useEffect(() => {
+    storeRef.current = store;
+  });
 
   const lastPushedRef = useRef<Record<string, HybridTrip>>({});
   const lastPushedAtRef = useRef<Record<string, number>>({});
   const hasPendingSaveRef = useRef(false);
   const activeTripIdRef = useRef(store.activeTripId);
-  useEffect(() => { activeTripIdRef.current = store.activeTripId; });
+  useEffect(() => {
+    activeTripIdRef.current = store.activeTripId;
+  });
 
   // True once the initial loadTrips call has completed. Suppresses toast for
   // the subscriber's first fire (which replays current state, not a new change).
@@ -225,7 +229,9 @@ export function useCloudSync(
         if (changedTrips.length > 0) {
           const stamped = changedTrips.map((t) => ({ ...t, updatedAt: now }));
           await Promise.all(stamped.map((t) => service.saveTrip(user.uid, t)));
-          stamped.forEach((t) => { lastPushedAtRef.current[t.id] = now; });
+          stamped.forEach((t) => {
+            lastPushedAtRef.current[t.id] = now;
+          });
         }
 
         // Delete removed trips from cloud
@@ -237,7 +243,9 @@ export function useCloudSync(
           });
         }
 
-        storeRef.current.trips.forEach((t) => { lastPushedRef.current[t.id] = t; });
+        storeRef.current.trips.forEach((t) => {
+          lastPushedRef.current[t.id] = t;
+        });
 
         setSyncStatus('saved');
       } catch {
