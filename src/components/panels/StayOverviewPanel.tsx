@@ -70,7 +70,7 @@ function StayOverviewPanel({
             <h2 className="text-white font-bold text-sm leading-tight truncate" title={stay.name}>{stay.name}</h2>
           </div>
           {startDate && endDate && (
-            <p className="text-white/70 text-[11px] mt-0.5">
+            <p className="font-num text-white/70 text-[11px] mt-0.5">
               {fmt(startDate, { month: 'short', day: 'numeric' })} →{' '}
               {fmt(endDate, { month: 'short', day: 'numeric' })}
             </p>
@@ -89,7 +89,7 @@ function StayOverviewPanel({
             key={label}
             className={`px-3 py-2 text-center ${i < 2 ? 'border-r border-border-neutral' : ''}`}
           >
-            <p className="text-base font-extrabold text-foreground">{value}</p>
+            <p className="font-num text-base font-extrabold text-foreground">{value}</p>
             <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest mt-0.5">
               {label}
             </p>
@@ -252,7 +252,7 @@ export function StayTodoSection({
           {checklist.length > 0 && (
             <Badge
               variant="secondary"
-              className={`text-[9px] font-bold h-auto px-1.5 py-0.5 ${doneCount === checklist.length ? 'bg-success/10 text-success' : 'bg-primary/10 text-primary'}`}
+              className={`font-num text-[9px] font-bold h-auto px-1.5 py-0.5 ${doneCount === checklist.length ? 'bg-success/10 text-success' : 'bg-primary/10 text-primary'}`}
             >
               {doneCount}/{checklist.length}
             </Badge>

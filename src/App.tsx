@@ -1248,7 +1248,7 @@ function ChronosApp() {
                   <div className="flex flex-col bg-muted/80 border-b border-r border-border-neutral">
                     <div className="flex-1 flex items-center justify-center gap-1 text-[9px] font-bold text-muted-foreground/40 uppercase tracking-tighter border-b border-border">
                       <span className="text-muted-foreground/20">{bufferBefore.weekday}</span>
-                      <span className="text-muted-foreground/40">{bufferBefore.date}</span>
+                      <span className="font-num text-muted-foreground/40">{bufferBefore.date}</span>
                     </div>
                     <div className="flex h-3 divide-x divide-border">
                       {['M', 'A', 'E'].map((p) => (
@@ -1270,7 +1270,7 @@ function ChronosApp() {
                   >
                     <div className="flex-1 flex items-center justify-center gap-1 text-[9px] font-bold text-muted-foreground uppercase tracking-tighter border-b border-border">
                       <span className="text-muted-foreground/50">{weekday}</span>
-                      <span>{date}</span>
+                      <span className="font-num">{date}</span>
                     </div>
                     <div className="flex h-3 divide-x divide-border">
                       {['M', 'A', 'E'].map((p) => (
@@ -1289,7 +1289,7 @@ function ChronosApp() {
                   <div className="flex flex-col bg-muted/80 border-b border-border-neutral">
                     <div className="flex-1 flex items-center justify-center gap-1 text-[9px] font-bold text-muted-foreground/40 uppercase tracking-tighter border-b border-border">
                       <span className="text-muted-foreground/20">{bufferAfter.weekday}</span>
-                      <span className="text-muted-foreground/40">{bufferAfter.date}</span>
+                      <span className="font-num text-muted-foreground/40">{bufferAfter.date}</span>
                     </div>
                     <div className="flex h-3 divide-x divide-border">
                       {['M', 'A', 'E'].map((p) => (
@@ -2627,7 +2627,7 @@ function ChronosApp() {
                     </span>
                   </div>
                 </div>
-                <div className="text-right tabular-nums">
+                <div className="text-right font-num">
                   {mapMode === 'overview' ? (
                     <>
                       <span className="text-xs font-black text-foreground">

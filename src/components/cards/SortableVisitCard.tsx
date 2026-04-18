@@ -101,13 +101,13 @@ function SortableVisitCard({
           {visit.checklist?.length || visit.links?.length ? (
             <div className="flex items-center gap-1.5 mt-1.5">
               {visit.checklist?.length ? (
-                <Badge variant="secondary" className="text-[9px] font-bold text-muted-foreground gap-1.5">
+                <Badge variant="secondary" className="font-num text-[9px] font-bold text-muted-foreground gap-1.5">
                   <Check className="w-2.5 h-2.5" />
                   {visit.checklist.filter((i) => i.done).length}/{visit.checklist.length}
                 </Badge>
               ) : null}
               {visit.links?.length ? (
-                <Badge variant="secondary" className="text-[9px] font-bold text-muted-foreground gap-1.5">
+                <Badge variant="secondary" className="font-num text-[9px] font-bold text-muted-foreground gap-1.5">
                   <Link2 className="w-2.5 h-2.5" />
                   {visit.links.length}
                 </Badge>

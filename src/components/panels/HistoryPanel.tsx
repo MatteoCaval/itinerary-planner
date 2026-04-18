@@ -50,7 +50,7 @@ function HistoryPanel({
             >
               <div className="flex items-start gap-2.5 min-w-0">
                 <span
-                  className={`text-[11px] font-mono mt-0.5 shrink-0 ${isCurrent ? 'text-primary' : 'text-muted-foreground/40'}`}
+                  className={`font-num text-[11px] mt-0.5 shrink-0 ${isCurrent ? 'text-primary' : 'text-muted-foreground/40'}`}
                 >
                   #{i}
                 </span>
@@ -87,7 +87,7 @@ function HistoryPanel({
                 </div>
               </div>
               <div className="flex items-center gap-2 shrink-0">
-                <span className="text-[9px] text-muted-foreground/60 tabular-nums">
+                <span className="font-num text-[9px] text-muted-foreground/60">
                   {formatRelativeTime(snap.timestamp)}
                 </span>
                 {isCurrent && (

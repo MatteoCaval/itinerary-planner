@@ -277,7 +277,7 @@ function AddStayModal({
                 >
                   −
                 </button>
-                <span className="w-10 text-center font-extrabold text-sm text-foreground tabular-nums">
+                <span className="font-num w-10 text-center font-extrabold text-sm text-foreground">
                   {days}
                 </span>
                 <button
