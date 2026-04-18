@@ -8,7 +8,7 @@ export type LatLngTuple = [number, number];
 
 const VISIT_TYPE_COLORS: Record<VisitType, string> = {
   food: '#059669',
-  landmark: '#ec5b13',
+  landmark: '#0f766e',
   museum: '#2563eb',
   walk: '#0d9488',
   shopping: '#db2777',
