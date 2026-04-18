@@ -8,7 +8,13 @@
 
 CHRONOS is a browser-based trip planner with three linked views: a **Gantt timeline** of destinations, a **kanban activity board** per destination, and a **Leaflet map**. Trips are stored locally (localStorage) and optionally synced to Firebase. AI generation via Gemini (user API key). Single-user, desktop-first.
 
-**Stack:** React 18 + TypeScript, Tailwind v4, shadcn/ui (nova preset), @dnd-kit, react-leaflet, react-day-picker + date-fns, Firebase Auth + Realtime DB, Gemini REST API.
+**Stack:** React 18 + TypeScript, Tailwind v4, shadcn/ui (nova preset), Inter + Geist Mono, @dnd-kit, react-leaflet, react-day-picker + date-fns, Firebase Auth + Realtime DB, Gemini REST API.
+
+---
+
+## Identity
+
+Petrol Teal (`#0f766e`) primary, reserved for chrome (brand, CTA, active state, focus, kbd, links). Neutral warm-white canvas (`#fafaf9`), white card surfaces, soft teal-tinted shadows on lift. Inter for UI, Geist Mono for numerals/dates/coords/kbd. Stay palette: Jewel Tones (claret, rust, indigo, olive, plum, slate, ochre, moss) — explicitly avoids teal/cyan so content never collides with chrome.
 
 ---
 
