@@ -212,6 +212,7 @@ function ChronosApp() {
   const [locatedVisitId, setLocatedVisitId] = useState<string | null>(null);
   const [selectedCandidateId, setSelectedCandidateId] = useState<string | null>(null);
   const [promotingCandidateId, setPromotingCandidateId] = useState<string | null>(null);
+  const [addingCandidate, setAddingCandidate] = useState(false);
   // Clear located visit when selection changes to something else
   useEffect(() => {
     if (locatedVisitId && selectedVisitId !== locatedVisitId) {
@@ -1767,7 +1768,7 @@ function ChronosApp() {
                     if (selectedStay) {
                       setAddingToInbox(true);
                     } else {
-                      setAddingStay(true);
+                      setAddingCandidate(true);
                     }
                   }}
                   className={`px-2.5 flex items-center justify-center border-b border-l border-border-neutral bg-muted text-muted-foreground hover:text-primary hover:bg-white transition-colors ${sidebarTab === 'unplanned' ? '' : 'invisible pointer-events-none'}`}
@@ -2947,13 +2948,14 @@ function ChronosApp() {
           })()}
 
         {/* Add stay */}
-        {addingStay && (
+        {(addingStay || addingCandidate) && (
           <AddStayModal
-            mode={!selectedStay && !promotingCandidateId ? 'candidate' : 'schedule'}
+            mode={addingCandidate ? 'candidate' : 'schedule'}
             candidates={trip.candidateStays}
             initialCandidateId={promotingCandidateId ?? undefined}
             onClose={() => {
               setAddingStay(false);
+              setAddingCandidate(false);
               setPendingTimelineSlot(null);
               setPromotingCandidateId(null);
             }}
@@ -3011,6 +3013,7 @@ function ChronosApp() {
                 ...t,
                 candidateStays: [...t.candidateStays, newCandidate],
               }));
+              setAddingCandidate(false);
               setAddingStay(false);
             }}
           />
