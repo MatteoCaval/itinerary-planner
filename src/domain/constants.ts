@@ -13,14 +13,14 @@ export const TRANSPORT_LABELS: Record<TravelMode, string> = {
   walk: 'Walk',
 };
 export const STAY_COLORS = [
-  '#2167d7',
-  '#615cf6',
-  '#2db6ab',
-  '#d78035',
-  '#20b5a8',
-  '#3b6dd8',
-  '#c45c99',
-  '#4c9463',
+  '#b8304f', // Claret
+  '#c15a2a', // Rust
+  '#2e3f8a', // Indigo
+  '#6b7a3a', // Olive
+  '#7b3b6b', // Plum
+  '#3a4a5a', // Slate
+  '#a7772b', // Ochre
+  '#3d6b4a', // Moss
 ];
 export const VISIT_TYPES: VisitType[] = ['landmark', 'museum', 'food', 'walk', 'shopping'];
 
