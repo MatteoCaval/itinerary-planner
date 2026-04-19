@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Download, Upload, User, LogIn, LogOut, Lock, Check, Compass, Share2 } from 'lucide-react';
+import { toast } from 'sonner';
 import AuthModalSimple from '@/components/modals/AuthModalSimple';
 import type { HybridTrip, V1HybridTrip } from '@/domain/types';
 import { useAuth } from '@/context/AuthContext';
@@ -79,7 +80,7 @@ function ProfileMenu({
       try {
         const parsed = JSON.parse(String(ev.target?.result || '{}'));
         if (!parsed.stays || !parsed.name) {
-          alert('Invalid trip file — expected a Chronos trip JSON with "name" and "stays".');
+          toast.error('Invalid trip file — expected a Chronos trip JSON with "name" and "stays".');
           return;
         }
         let imported = normalizeTrip({
@@ -93,7 +94,7 @@ function ProfileMenu({
         }
         onImport(imported);
       } catch {
-        alert('Error reading file. Please ensure it is valid JSON.');
+        toast.error('Error reading file. Please ensure it is valid JSON.');
       }
     };
     reader.readAsText(file);

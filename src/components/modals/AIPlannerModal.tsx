@@ -1,10 +1,11 @@
 import { useState, useRef } from 'react';
-import { Sparkles, SlidersHorizontal, Check, X } from 'lucide-react';
+import { Sparkles, SlidersHorizontal, Check } from 'lucide-react';
 import ModalBase from '@/components/ui/ModalBase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { ErrorMessage } from '@/components/ui/ErrorMessage';
 import {
   HybridTrip,
   Stay,
@@ -327,12 +328,7 @@ function AIPlannerModal({
             </div>
           )}
 
-          {error && (
-            <div className="bg-destructive/10 border border-destructive/30 rounded-lg px-4 py-3 text-xs text-destructive flex gap-2 items-start">
-              <X className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
-              <span>{error}</span>
-            </div>
-          )}
+          {error && <ErrorMessage className="rounded-lg">{error}</ErrorMessage>}
 
         </div>
       )}

@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Calendar, Trash2, AlertTriangle } from 'lucide-react';
+import { Calendar, Trash2 } from 'lucide-react';
+import { ErrorMessage } from '@/components/ui/ErrorMessage';
 import ModalBase from '@/components/ui/ModalBase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -202,28 +203,24 @@ function TripEditorModal({
         )}
 
         {confirmShrink && (
-          <div
-            className={`${fullyOutsideStays.length > 0 ? 'bg-destructive/10 border-destructive/30' : 'bg-warning/10 border-warning/30'} border rounded-lg p-3`}
+          <ErrorMessage
+            tone={fullyOutsideStays.length > 0 ? 'destructive' : 'warning'}
+            className="rounded-lg p-3"
           >
-            <div className="flex items-start gap-2 mb-3">
-              <AlertTriangle
-                className={`w-4 h-4 flex-shrink-0 mt-0.5 ${fullyOutsideStays.length > 0 ? 'text-destructive' : 'text-warning'}`}
-              />
-              <div className="text-xs">
-                {fullyOutsideStays.length > 0 && (
-                  <p className="text-destructive mb-1">
-                    <strong>{fullyOutsideStays.map((s) => s.name).join(', ')}</strong>{' '}
-                    {fullyOutsideStays.length > 1 ? 'are' : 'is'} fully outside the new date range
-                    and will be <strong>removed</strong>.
-                  </p>
-                )}
-                {partiallyCutStays.length > 0 && (
-                  <p className="text-warning mb-1">
-                    <strong>{partiallyCutStays.map((s) => s.name).join(', ')}</strong> will be
-                    shortened to fit. Activities outside the new range will be unplanned.
-                  </p>
-                )}
-              </div>
+            <div className="text-xs">
+              {fullyOutsideStays.length > 0 && (
+                <p className="text-destructive mb-1">
+                  <strong>{fullyOutsideStays.map((s) => s.name).join(', ')}</strong>{' '}
+                  {fullyOutsideStays.length > 1 ? 'are' : 'is'} fully outside the new date range
+                  and will be <strong>removed</strong>.
+                </p>
+              )}
+              {partiallyCutStays.length > 0 && (
+                <p className="text-warning mb-1">
+                  <strong>{partiallyCutStays.map((s) => s.name).join(', ')}</strong> will be
+                  shortened to fit. Activities outside the new range will be unplanned.
+                </p>
+              )}
             </div>
             <div className="flex gap-2">
               <Button
@@ -243,7 +240,7 @@ function TripEditorModal({
                 {fullyOutsideStays.length > 0 ? 'Remove & Shorten' : 'Confirm & Shorten'}
               </Button>
             </div>
-          </div>
+          </ErrorMessage>
         )}
       </div>
     </ModalBase>
