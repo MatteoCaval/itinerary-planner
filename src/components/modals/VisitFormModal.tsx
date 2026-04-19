@@ -5,9 +5,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import {
-  AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader,
-  AlertDialogTitle, AlertDialogDescription, AlertDialogFooter,
-  AlertDialogCancel, AlertDialogAction,
+  AlertDialog,
+  AlertDialogTrigger,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
 } from '@/components/ui/alert-dialog';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { getVisitTypeIcon } from '@/components/ui/TransportIcon';
@@ -37,7 +43,15 @@ const toLinkItems = (links: VisitLink[]): LinkItem[] =>
 const toVisitLinks = (items: LinkItem[]): VisitLink[] =>
   items.map((i) => ({ url: i.url, label: i.label !== i.url ? i.label : undefined }));
 
-function DeleteDialog({ name, onDelete, onClose }: { name: string; onDelete: () => void; onClose: () => void }) {
+function DeleteDialog({
+  name,
+  onDelete,
+  onClose,
+}: {
+  name: string;
+  onDelete: () => void;
+  onClose: () => void;
+}) {
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
@@ -55,7 +69,10 @@ function DeleteDialog({ name, onDelete, onClose }: { name: string; onDelete: () 
         <AlertDialogFooter>
           <AlertDialogCancel>Keep</AlertDialogCancel>
           <AlertDialogAction
-            onClick={() => { onDelete(); onClose(); }}
+            onClick={() => {
+              onDelete();
+              onClose();
+            }}
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >
             Delete
@@ -67,15 +84,29 @@ function DeleteDialog({ name, onDelete, onClose }: { name: string; onDelete: () 
 }
 
 function VisitFormModal({
-  initial, title, onClose, onSave, onDelete, onUnschedule, onMoveToStay,
-  availableStays, currentStayId, stayCenter,
+  initial,
+  title,
+  onClose,
+  onSave,
+  onDelete,
+  onUnschedule,
+  onMoveToStay,
+  availableStays,
+  currentStayId,
+  stayCenter,
 }: {
   initial?: Partial<VisitItem>;
   title: string;
   onClose: () => void;
   onSave: (data: {
-    name: string; type: VisitType; durationHint: string; notes: string;
-    lat?: number; lng?: number; checklist: ChecklistItem[]; links: VisitLink[];
+    name: string;
+    type: VisitType;
+    durationHint: string;
+    notes: string;
+    lat?: number;
+    lng?: number;
+    checklist: ChecklistItem[];
+    links: VisitLink[];
   }) => void;
   onDelete?: () => void;
   onUnschedule?: () => void;
@@ -103,9 +134,14 @@ function VisitFormModal({
   const handleSave = () => {
     if (!name.trim()) return;
     onSave({
-      name: name.trim(), type, durationHint: duration, notes,
-      lat: pickedCoords?.lat, lng: pickedCoords?.lng,
-      checklist, links: toVisitLinks(links),
+      name: name.trim(),
+      type,
+      durationHint: duration,
+      notes,
+      lat: pickedCoords?.lat,
+      lng: pickedCoords?.lng,
+      checklist,
+      links: toVisitLinks(links),
     });
     onClose();
   };
@@ -114,7 +150,11 @@ function VisitFormModal({
     destructive: onDelete ? (
       <DeleteDialog name={name || initial?.name || ''} onDelete={onDelete} onClose={onClose} />
     ) : undefined,
-    cancel: <Button type="button" variant="outline" size="sm" onClick={onClose}>Cancel</Button>,
+    cancel: (
+      <Button type="button" variant="outline" size="sm" onClick={onClose}>
+        Cancel
+      </Button>
+    ),
     primary: (
       <Button size="sm" onClick={handleSave} disabled={!name.trim()}>
         {isEditing ? 'Save' : 'Add'}
@@ -143,12 +183,20 @@ function VisitFormModal({
         if (!controller.signal.aborted) setIsSearching(false);
       }
     }, 500);
-    return () => { clearTimeout(tid); controller.abort(); };
+    return () => {
+      clearTimeout(tid);
+      controller.abort();
+    };
   }, [name, pickedCoords]);
 
   return (
     <ModalBase title={title} onClose={onClose} footer={footer}>
-      <form onSubmit={(e) => { e.preventDefault(); handleSave(); }}>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          handleSave();
+        }}
+      >
         <div className="space-y-4">
           {/* Place search */}
           <div>
@@ -156,8 +204,15 @@ function VisitFormModal({
               id="visit-place-name"
               label="Place name"
               value={name}
-              onValueChange={(v) => { setName(v); setPickedCoords(null); }}
-              onPick={(r) => { setName(r.label); setPickedCoords({ lat: r.lat, lng: r.lng }); setSearchResults([]); }}
+              onValueChange={(v) => {
+                setName(v);
+                setPickedCoords(null);
+              }}
+              onPick={(r) => {
+                setName(r.label);
+                setPickedCoords({ lat: r.lat, lng: r.lng });
+                setSearchResults([]);
+              }}
               results={searchResults}
               loading={isSearching}
               error={searchError}
@@ -167,7 +222,9 @@ function VisitFormModal({
             <LocationPicker
               value={pickedCoords}
               onChange={(coords) => setPickedCoords(coords)}
-              defaultCenter={stayCenter ? { lat: stayCenter.lat, lng: stayCenter.lng, zoom: 14 } : undefined}
+              defaultCenter={
+                stayCenter ? { lat: stayCenter.lat, lng: stayCenter.lng, zoom: 14 } : undefined
+              }
             />
           </div>
 
@@ -179,7 +236,9 @@ function VisitFormModal({
             <ToggleGroup
               type="single"
               value={type}
-              onValueChange={(v) => { if (v) setType(v as VisitType); }}
+              onValueChange={(v) => {
+                if (v) setType(v as VisitType);
+              }}
               className="grid grid-cols-3 md:grid-cols-5 gap-1.5 w-full"
             >
               {VISIT_TYPES.map((t) => (
@@ -201,18 +260,37 @@ function VisitFormModal({
 
           {/* Duration */}
           <div>
-            <label htmlFor="visit-duration" className="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground mb-1.5 block">
+            <label
+              htmlFor="visit-duration"
+              className="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground mb-1.5 block"
+            >
               Duration
             </label>
-            <Input id="visit-duration" className="text-xs" placeholder="e.g. 2h, 90m, half day" value={duration} onChange={(e) => setDuration(e.target.value)} />
+            <Input
+              id="visit-duration"
+              className="text-xs"
+              placeholder="e.g. 2h, 90m, half day"
+              value={duration}
+              onChange={(e) => setDuration(e.target.value)}
+            />
           </div>
 
           {/* Notes */}
           <div>
-            <label htmlFor="visit-notes" className="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground mb-1.5 block">
+            <label
+              htmlFor="visit-notes"
+              className="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground mb-1.5 block"
+            >
               Notes
             </label>
-            <Textarea id="visit-notes" className="text-xs resize-none" rows={2} placeholder="Booking info, tips, opening hours…" value={notes} onChange={(e) => setNotes(e.target.value)} />
+            <Textarea
+              id="visit-notes"
+              className="text-xs resize-none"
+              rows={2}
+              placeholder="Booking info, tips, opening hours…"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+            />
           </div>
 
           {/* Checklist */}
@@ -238,23 +316,42 @@ function VisitFormModal({
                 Move to another stay
               </label>
               <div className="flex flex-wrap gap-1.5">
-                {availableStays.filter((s) => s.id !== currentStayId).map((s) => (
-                  <Button key={s.id} type="button" variant="outline" size="sm"
-                    onClick={() => { onMoveToStay(s.id); onClose(); }} className="gap-1.5"
-                  >
-                    <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: s.color }} />
-                    {s.name}
-                  </Button>
-                ))}
+                {availableStays
+                  .filter((s) => s.id !== currentStayId)
+                  .map((s) => (
+                    <Button
+                      key={s.id}
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        onMoveToStay(s.id);
+                        onClose();
+                      }}
+                      className="gap-1.5"
+                    >
+                      <div
+                        className="w-2 h-2 rounded-full flex-shrink-0"
+                        style={{ background: s.color }}
+                      />
+                      {s.name}
+                    </Button>
+                  ))}
               </div>
             </div>
           )}
 
           {/* Unschedule */}
           {onUnschedule && (
-            <Button type="button" variant="outline" size="sm"
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
               className="w-full border-info/30 text-info hover:bg-info/10"
-              onClick={() => { onUnschedule(); onClose(); }}
+              onClick={() => {
+                onUnschedule();
+                onClose();
+              }}
             >
               <ArrowLeftRight data-icon="inline-start" className="w-3 h-3" /> Move to Unplanned
             </Button>

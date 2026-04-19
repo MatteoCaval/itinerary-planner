@@ -19,6 +19,7 @@ Full scan of every app component (50 files; 19 shadcn primitives noted separatel
 ### P1 — state-of-the-art gaps
 
 **Consistency across modals**
+
 - Button ordering inconsistent — Cancel is left in 5 modals, right in 3, absent in 3. Pick one rule, apply everywhere.
 - Header typography scales differ: `xs` (11px) in `ModalBase`, `sm` in `ImportFromCodeDialog`/`ShareTripDialog`, `22px` in `AuthModalSimple`.
 - `AuthModalSimple` has no `DialogDescription` — a11y violation.
@@ -26,6 +27,7 @@ Full scan of every app component (50 files; 19 shadcn primitives noted separatel
 - Loading UX varies — most use spinners, `AIPlannerModal` uses skeleton placeholders. Pick a standard.
 
 **Accessibility**
+
 - Input fields missing `htmlFor`/`id` associations in `AuthModalSimple`, `AccommodationEditorModal`, `RouteEditorModal`, `VisitFormModal`.
 - No `aria-live` for search/loading state in any of the three geocoded-search modals.
 - Icon-only buttons missing `aria-label` in several places (copy button in `ShareTripDialog`, duration steppers in `AddStayModal`).
@@ -33,6 +35,7 @@ Full scan of every app component (50 files; 19 shadcn primitives noted separatel
 - `WelcomeScreen` heading is not in an `<h1>`; timeline visualization lacks `aria-hidden` / `role="presentation"`.
 
 **Mobile**
+
 - Touch targets below 44px: `DraggableInventoryCard` side-by-side buttons (~24px), `SortableVisitCard` edit button, `MapControlsPanel` settings button (32px), `TripSwitcherPanel` row buttons (30px).
 - Geocoded search dropdowns use `z-50 absolute` positioning that overflows on small screens (`AccommodationEditorModal`, `AddStayModal`, `VisitFormModal`).
 - `VisitFormModal` category grid is `grid-cols-5` — too tight on phone; needs responsive breakpoint.
@@ -40,6 +43,7 @@ Full scan of every app component (50 files; 19 shadcn primitives noted separatel
 - `MapControlsPanel` width is a fixed `w-56`.
 
 **Code quality**
+
 - No memoization on cards (`DraggableInventoryCard`, `SortableVisitCard`). Re-measure on every parent render.
 - `App.tsx` passes ~15 props into `TripMap` — group into subsystem props objects.
 - Duplicated form state patterns across 10 modals — candidates for a shared form hook.
@@ -48,6 +52,7 @@ Full scan of every app component (50 files; 19 shadcn primitives noted separatel
 - `MergeDialog`, `RouteEditorModal` have inline styles for gradients/colors — move to CSS classes.
 
 **Motion / a11y**
+
 - `prefers-reduced-motion` is respected in `index.css` globally but not component-side. Hover-scale and pulse animations still run for motion-averse users.
 - Modal enter/exit has no transition beyond shadcn default. Revoke-confirm in `ShareTripDialog` pops in abruptly.
 - Map `flyTo` durations inconsistent: 0.4s / 0.5s / 0.55s across `ClusteredMarkers`, `StayOverviewLayer`, `SelectedVisitHandler`. Standardize.
@@ -68,20 +73,25 @@ Full scan of every app component (50 files; 19 shadcn primitives noted separatel
 ## By-component quick index
 
 **Cards**
+
 - `DraggableInventoryCard` (117L): no memo, touch targets small, no reduced-motion, semantic role missing
 - `SortableVisitCard` (143L): select handler on `<p>` (critical), complex 4-state ring logic, no memo
 
 **Timeline / overview**
+
 - `DroppablePeriodSlot` (84L): period icons too small (12px), no memoized `items` for `SortableContext`, empty-state affordance weak
 
 **Landing / errors**
+
 - `WelcomeScreen` (144L): semantic HTML gaps, hardcoded positions, CTAs not hierarchical, no mobile adapt of timeline
 - `ChronosErrorBoundary` (51L): `role="alert"` missing, no telemetry, directly renders error message
 
 **Date picker**
+
 - `InlineDateRangePicker` (65L): parse called every render (memoize), no aria-label on summary
 
 **Modals — content**
+
 - `AccommodationEditorModal` (288L): autocomplete + geocoding dropdowns overflow on mobile, no inline validation
 - `AddStayModal` (329L): candidate logic and location picker bolted together, no aria-live
 - `AIPlannerModal` (411L): biggest modal; AI mapping should extract, tabs not semantic
@@ -96,6 +106,7 @@ Full scan of every app component (50 files; 19 shadcn primitives noted separatel
 - `ModalBase`: used by 8/11 modals; 3 modals bypass it → inconsistencies
 
 **Panels**
+
 - `HistoryPanel` (108L): reverse on every render, no confirmation on past-snapshot click
 - `ProfileMenu`: uses `alert()` for errors; no confirmation on sign-out
 - `StayOverviewPanel`: consistent hero pattern, but no skeletons/loading
@@ -103,6 +114,7 @@ Full scan of every app component (50 files; 19 shadcn primitives noted separatel
 - `VisitDetailDrawer`: delete has no confirmation; Escape handled manually
 
 **TripMap subsystem**
+
 - `index.tsx`: ~15-prop surface, should group
 - `ClusteredMarkers`: no moveend debounce; icon creation inline
 - `DayFilterPills`: fine

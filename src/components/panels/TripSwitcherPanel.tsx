@@ -33,10 +33,7 @@ function TripSwitcherPanel({
               const tripName = t.name;
               onSwitch(t.id);
               onClose();
-              notifyReversible(
-                `Switched to "${tripName}"`,
-                () => onSwitch(prev),
-              );
+              notifyReversible(`Switched to "${tripName}"`, () => onSwitch(prev));
             }}
             className={`w-full text-left px-4 py-3 rounded-lg border transition-all flex items-center justify-between focus-visible:ring-2 focus-visible:ring-ring ${
               t.id === store.activeTripId

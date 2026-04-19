@@ -102,17 +102,17 @@ Geocoded-search modals (`AddStayModal`, `AccommodationEditorModal`, `VisitFormMo
 
 Four new files under `src/components/ui/` and one hook:
 
-| File | Purpose |
-|---|---|
-| `ErrorMessage.tsx` | Shared inline error/warning/info message per rule 3. |
+| File                   | Purpose                                                                                                                                                                                                                                       |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ErrorMessage.tsx`     | Shared inline error/warning/info message per rule 3.                                                                                                                                                                                          |
 | `PlaceSearchField.tsx` | Extracted from `VisitFormModal`/`AddStayModal`/`AccommodationEditorModal`: geocoded search input with debounced autocomplete, loading indicator, error + stale surfaces, map-pick button. Generic — receives `onPick(latlng, name)` callback. |
-| `ChecklistSection.tsx` | Extracted from `VisitFormModal`: add/toggle/delete checklist items, duplicate warning. Receives `items`, `onChange`. |
-| `LinksSection.tsx` | Extracted from `VisitFormModal`: add/edit/delete links with URL normalization. Receives `items`, `onChange`. |
+| `ChecklistSection.tsx` | Extracted from `VisitFormModal`: add/toggle/delete checklist items, duplicate warning. Receives `items`, `onChange`.                                                                                                                          |
+| `LinksSection.tsx`     | Extracted from `VisitFormModal`: add/edit/delete links with URL normalization. Receives `items`, `onChange`.                                                                                                                                  |
 
 One hook:
 
-| File | Purpose |
-|---|---|
+| File                            | Purpose                                                                          |
+| ------------------------------- | -------------------------------------------------------------------------------- |
 | `src/hooks/useReducedMotion.ts` | Subscribes to `matchMedia('(prefers-reduced-motion: reduce)')`. Returns boolean. |
 
 One updated shadcn primitive:
@@ -129,6 +129,7 @@ Grouped by area. Each bullet maps to a concrete change. The plan turns these int
 ### Cards
 
 **`DraggableInventoryCard.tsx`**
+
 - Wrap in `React.memo`. Accept callbacks; require parent to pass stable references (use `useCallback` in `App.tsx`).
 - Add `role="button"` + `tabIndex={0}` + keyboard handler on the card itself so keyboard users can focus and drag (dnd-kit keyboard sensor already present — just surface it).
 - Side-by-side edit + locate buttons: change from `icon-sm` (28px) to `icon` (32px) and add horizontal padding to the group so the hit region is 44px+.
@@ -136,6 +137,7 @@ Grouped by area. Each bullet maps to a concrete change. The plan turns these int
 - Increase grip handle contrast at rest: `text-muted-foreground/40` → `text-muted-foreground/60`.
 
 **`SortableVisitCard.tsx`**
+
 - Convert the select handler from `<p onClick={onSelect}>` to a proper `<button>` wrapping the name (or wrap `<p>` in a focusable `<button>`). `focus-visible:ring-2 ring-primary/40`. `aria-pressed` reflects selected state.
 - Wrap in `React.memo`.
 - Simplify ring logic: at most two visual states — `selected` and `drag-over`. Collapse the 4-state ternary into data-attributes (`data-selected`, `data-over`) and CSS variants.
@@ -144,6 +146,7 @@ Grouped by area. Each bullet maps to a concrete change. The plan turns these int
 ### Timeline
 
 **`DroppablePeriodSlot.tsx`**
+
 - Memoize `visits.map()` for `SortableContext` `items` prop via `useMemo`.
 - Increase period icons from `w-3 h-3` (12px) to `w-4 h-4` (16px).
 - Replace `scale-[1.02]` hover animation with a background-tint change (no layout shift). Motion-safe already.
@@ -153,6 +156,7 @@ Grouped by area. Each bullet maps to a concrete change. The plan turns these int
 ### Landing / error
 
 **`WelcomeScreen.tsx`**
+
 - Wrap the hero text in an `<h1>`. Add `<section>` landmarks. Mark the decorative timeline `aria-hidden="true"` / `role="presentation"`.
 - Hide the decorative timeline at `<md` breakpoint (`hidden md:block` on its wrapper).
 - Hoist the demo `stayPreviews` / transit chips arrays outside the component.
@@ -160,6 +164,7 @@ Grouped by area. Each bullet maps to a concrete change. The plan turns these int
 - CTAs: the primary ("Plan a trip") stays filled; demo and import become outline (consistent with rule 1).
 
 **`ChronosErrorBoundary.tsx`**
+
 - Add `role="alert"` + `aria-live="assertive"` on the fallback container.
 - Route the caught error to `src/services/telemetry.ts` (already exists) instead of only `console.error`.
 - Sanitize the rendered `error.message` — render via `{String(error.message).slice(0, 400)}` with no `dangerouslySetInnerHTML` (already the case, but add the length cap). Add an `aria-describedby` pointing at the message container.
@@ -168,6 +173,7 @@ Grouped by area. Each bullet maps to a concrete change. The plan turns these int
 ### Date picker
 
 **`InlineDateRangePicker.tsx`**
+
 - Wrap `parseDate` results in `useMemo` keyed on the string inputs.
 - Validate input strings with `isValid` from date-fns before parsing; fall back to undefined silently.
 - Add `aria-label` to the rendered summary span.
@@ -178,22 +184,26 @@ Grouped by area. Each bullet maps to a concrete change. The plan turns these int
 All modals converge on `ModalBase` + footer rule + `ErrorMessage` + `<label htmlFor>` + `aria-live` as described in cross-cutting decisions. Per-modal specifics below.
 
 **`AccommodationEditorModal.tsx`**
+
 - Migrate both dropdowns (autocomplete + geocoding) to `Popover` anchored to the input, so they can't overflow the modal on mobile.
 - Replace inline `bg-destructive/10` + `text-red-600` error with `<ErrorMessage>`.
 - Remove tri-state (autocomplete vs geocoding vs picked) by unifying into one `PlaceSearchField` instance. (The stay-local autocomplete is an override — pass `localSuggestions` prop to `PlaceSearchField` to list them above the geocoder results.)
 
 **`AddStayModal.tsx`**
+
 - Use `PlaceSearchField`.
 - Duration stepper buttons get `aria-label="Increase days"` / `"Decrease days"` and arrow-key keyboard support (`onKeyDown` ↑/↓).
 - Inline error box → `<ErrorMessage>`.
 
 **`AIPlannerModal.tsx`**
+
 - Extract the AI-result mapping (lines 83–163) into `src/aiService.ts` helpers: `transformAIResult(raw): HybridTrip`. The modal calls it instead of doing the work inline.
 - Wrap tab row in `role="tablist"` with `aria-selected` on each tab. Drop the `-mb-px` hack.
 - Loading skeleton + slow-warning get `aria-live="polite"`.
 - Inline error → `<ErrorMessage>`.
 
 **`AuthModalSimple.tsx`**
+
 - Migrate to `ModalBase` with `accent="gradient"` to keep the top teal strip.
 - Header text uses the shared title size.
 - Email validation: simple regex (`^[^\s@]+@[^\s@]+\.[^\s@]+$`) at submit; surface with `<ErrorMessage>`.
@@ -202,88 +212,106 @@ All modals converge on `ModalBase` + footer rule + `ErrorMessage` + `<label html
 - Extract gradient button styling into a CSS class `.btn-gradient-primary` in `src/index.css`.
 
 **`ImportFromCodeDialog.tsx`**
+
 - Migrate to `ModalBase`.
 - Cancel button stays enabled during loading.
 - Status panel → `<ErrorMessage tone="...">` variants.
 
 **`MergeDialog.tsx`**
+
 - Migrate to `ModalBase`.
 - No other changes required — modal is already clean.
 
 **`RouteEditorModal.tsx`**
+
 - Add `htmlFor`/`id` for duration + notes fields.
 - Extract `modeConfig` into `src/domain/transportDisplay.ts`.
 - Replace inline `borderColor` / `color` styles with token-driven Tailwind classes (each mode gets a CSS class with the color stored as a CSS variable).
 - Required-field validation — at minimum, mode must be picked (it's pre-filled today, but validate on save).
 
 **`ShareTripDialog.tsx`**
+
 - Migrate to `ModalBase`.
 - Copy button gets `aria-label="Copy share code"` + `Kbd`.
 - Revoke confirmation uses `AlertDialog` (rule 2) instead of inline confirm state.
 - Mode picker wrapped in `<fieldset>` with a `<legend className="sr-only">`.
 
 **`StayEditorModal.tsx`**
+
 - Require non-empty name; disable Save otherwise.
 - "Move to inbox" keeps its two-step `AlertDialog` — no change.
 - Normalize footer ordering per rule 1: `[Delete] ... [Cancel] [Save]`.
 
 **`TripEditorModal.tsx`**
+
 - Delete confirmation now shows impact (stays + visits count), matching the Shrink flow's pattern.
 - Footer ordering per rule 1.
 
 **`VisitFormModal.tsx`**
+
 - **Split:** extract `ChecklistSection`, `LinksSection`, `PlaceSearchField`. Target: main modal at ≤ 300 lines.
 - `<label htmlFor>` on every input; remaining inline errors → `<ErrorMessage>`.
 - Category grid responsive: `grid-cols-3 md:grid-cols-5`.
 - Duplicate-checklist-item warning gets `role="alert"` (but not `aria-live` since it's already a static message).
 
 **`ModalBase.tsx`**
+
 - Add `accent` prop (`'none' | 'gradient'`) for the AuthModal case.
 - Expose a `footer` slot so modals can pass footer markup declaratively — `ModalBase` handles the ordering (destructive left, Cancel+CTA right) automatically. No modal writes its own footer `<div className="flex">` anymore.
 
 ### Panels
 
 **`HistoryPanel.tsx`**
+
 - `useMemo` the reversed history array.
 - Show a toast with "Undo" when navigating to a past snapshot (rule 2).
 - Wrap list in `<ul role="list">` with `<li>` children for semantic structure.
 
 **`ProfileMenu.tsx`**
+
 - Replace `window.alert()` with destructive toast.
 - Sign-out uses `AlertDialog` (rule 2) — destructive by nature.
 
 **`StayOverviewPanel.tsx`**
+
 - Add skeleton placeholders for the hero image and stat tiles while `photo` or stay data are loading. Small, use the shared `Skeleton` primitive (add one under `src/components/ui/skeleton.tsx` if it doesn't already exist).
 - Accommodation night counts switch to `font-num`.
 
 **`TripSwitcherPanel.tsx`**
+
 - Trip switch gets a toast+undo (rule 2).
 - Row buttons: raise from 30px to 44px hit region.
 
 **`VisitDetailDrawer.tsx`**
+
 - Delete wraps in `AlertDialog` with impact text (rule 2).
 
 ### TripMap subsystem
 
 **`markerFactories.tsx`**
+
 - Introduce a module-level `Map<string, L.DivIcon>` cache keyed by `${kind}:${type ?? ''}:${selected ? 's' : ''}:${color ?? ''}`. Cap at 200 entries (LRU eviction via deletion of the oldest inserted key). Applies to `createIcon`, `createAccommodationIcon`, `createStayMarkerIcon`, `createClusterIcon`.
 - Memoize `renderToStaticMarkup` output per icon identity. The cache entry already holds the resulting `DivIcon`.
 
 **`ClusteredMarkers.tsx`**
+
 - Debounce the `moveend` recompute to 120ms with a trailing-edge call.
 - Use the new icon cache; drop the per-render `createIcon()` calls.
 
 **`RouteSegments.tsx`**
+
 - `aria-description` on polylines per rule 10.
 - Debounce `useRouteGeometry` calls by 150ms so rapid visit reordering doesn't spray OSRM requests.
 - Cache polyline `ChevronRight` HTML strings using the marker-factory cache.
 
 **`StayOverviewLayer.tsx`**
+
 - Same `renderToStaticMarkup` cache.
 - Standardize `flyTo` duration to 0.4s (matching `ClusteredMarkers`).
 - Candidate markers render lazily — skip map mount until first pan/zoom hits a candidate bounds (only relevant if candidate count > 20, otherwise render everything).
 
 **`MapControlsPanel.tsx`**
+
 - Width becomes responsive: `w-56 max-md:w-[min(90vw,14rem)]`.
 - Settings button grows to `size-10` (40px) — just under 44 but within shadcn's `icon-lg`. If we need strict 44, switch to `size-11` with bigger padding. Go with `icon-lg` (40px).
 - Legend: wrap in `<dl>` with `<dt>`/`<dd>` pairs.
@@ -293,6 +321,7 @@ All modals converge on `ModalBase` + footer rule + `ErrorMessage` + `<label html
 **`MapHandlers.tsx`** — add inline comments for the 150ms mount delay and 80ms `moveend` debounce rationale.
 
 **`TripMap/index.tsx`**
+
 - Group the ~15 props into `{ data, selection, mode, callbacks }` objects and update the single caller in `src/App.tsx`. This is the only "refactor" allowed by the non-goal rule — it's a prop surface cleanup, not a restructure.
 
 ### UI primitives (low-touch)

@@ -49,8 +49,8 @@ function StayEditorModal({
           <AlertDialogHeader>
             <AlertDialogTitle>Delete &ldquo;{stay.name}&rdquo;?</AlertDialogTitle>
             <AlertDialogDescription>
-              This removes all {visitCount} scheduled {visitCount === 1 ? 'place' : 'places'}.
-              This action cannot be undone.
+              This removes all {visitCount} scheduled {visitCount === 1 ? 'place' : 'places'}. This
+              action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -91,7 +91,10 @@ function StayEditorModal({
     <ModalBase title="Edit Stay" onClose={onClose} footer={footer}>
       <div className="space-y-4">
         <div>
-          <label htmlFor="stay-name" className="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground mb-2 block">
+          <label
+            htmlFor="stay-name"
+            className="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground mb-2 block"
+          >
             Destination Name
           </label>
           <Input
@@ -142,8 +145,7 @@ function StayEditorModal({
                 <AlertDialogDescription>
                   The destination moves out of the timeline. Its {visitCount} scheduled{' '}
                   {visitCount === 1 ? 'place' : 'places'} will be unscheduled and stay attached to
-                  the destination — they&apos;ll reappear when you promote it back to the
-                  timeline.
+                  the destination — they&apos;ll reappear when you promote it back to the timeline.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>

@@ -59,10 +59,7 @@ export default function InlineDateRangePicker({
       />
       {(startDate || endDate) && (
         <div className="flex items-center justify-between mt-1 pt-2 border-t border-border">
-          <span
-            aria-label={`Date range: ${summary}`}
-            className="text-[11px] text-muted-foreground"
-          >
+          <span aria-label={`Date range: ${summary}`} className="text-[11px] text-muted-foreground">
             {summary}
           </span>
           <Button

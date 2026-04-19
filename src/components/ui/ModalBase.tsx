@@ -40,8 +40,7 @@ export default function ModalBase({
   width = 'max-w-md',
   accent = 'none',
 }: ModalBaseProps) {
-  const hasFooter =
-    !!footer && (footer.destructive || footer.cancel || footer.primary);
+  const hasFooter = !!footer && (footer.destructive || footer.cancel || footer.primary);
   return (
     <Dialog
       open
@@ -62,21 +61,15 @@ export default function ModalBase({
           />
         )}
         <DialogHeader className="px-4 py-3 border-b border-border flex-shrink-0">
-          <DialogTitle className="text-base font-semibold tracking-tight">
-            {title}
-          </DialogTitle>
+          <DialogTitle className="text-base font-semibold tracking-tight">{title}</DialogTitle>
           <DialogDescription className="sr-only">
             {description ?? `Dialog for: ${title}`}
           </DialogDescription>
         </DialogHeader>
-        <div className="overflow-y-auto overflow-x-hidden flex-1 px-4 py-3.5">
-          {children}
-        </div>
+        <div className="overflow-y-auto overflow-x-hidden flex-1 px-4 py-3.5">{children}</div>
         {hasFooter && (
           <div className="flex items-center gap-2 border-t border-border px-4 py-3">
-            {footer?.destructive && (
-              <div className="flex-shrink-0">{footer.destructive}</div>
-            )}
+            {footer?.destructive && <div className="flex-shrink-0">{footer.destructive}</div>}
             <div className="flex-1" />
             {footer?.cancel}
             {footer?.primary}

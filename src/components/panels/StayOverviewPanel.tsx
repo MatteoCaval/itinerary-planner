@@ -128,7 +128,8 @@ function StayOverviewPanel({
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-bold text-foreground truncate">{g.name}</p>
                   <p className="text-[9px] text-muted-foreground">
-                    <span className="font-num">{g.nights}</span> {g.nights === 1 ? 'night' : 'nights'}
+                    <span className="font-num">{g.nights}</span>{' '}
+                    {g.nights === 1 ? 'night' : 'nights'}
                   </p>
                 </div>
               </div>
@@ -269,7 +270,9 @@ export function StayTodoSection({
               variant="secondary"
               className={`text-[9px] font-bold h-auto px-1.5 py-0.5 ${doneCount === checklist.length ? 'bg-success/10 text-success' : 'bg-primary/10 text-primary'}`}
             >
-              <span className="font-num">{doneCount}/{checklist.length}</span>
+              <span className="font-num">
+                {doneCount}/{checklist.length}
+              </span>
             </Badge>
           )}
         </div>

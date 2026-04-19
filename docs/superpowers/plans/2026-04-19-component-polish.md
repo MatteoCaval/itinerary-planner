@@ -16,6 +16,7 @@
 ## File structure
 
 **New files:**
+
 - `src/components/ui/ErrorMessage.tsx` + `.test.tsx`
 - `src/components/ui/Skeleton.tsx`
 - `src/components/ui/sonner.tsx` (toast container — shadcn sonner)
@@ -27,6 +28,7 @@
 - `src/domain/transportDisplay.ts`
 
 **Modified (large):**
+
 - `src/components/ui/ModalBase.tsx` — add `accent` + `footer` slots
 - `src/components/modals/VisitFormModal.tsx` — split into subcomponents
 - `src/components/TripMap/markerFactories.tsx` — LRU icon cache
@@ -38,6 +40,7 @@
 - `src/App.tsx` — mount toast container, update TripMap call, toast+undo hooks
 
 **Modified (targeted):**
+
 - Every modal under `src/components/modals/` — footer normalization + ErrorMessage + labels + aria-live
 - Every panel under `src/components/panels/` — confirmation pattern
 - `src/components/cards/*.tsx` — memo, button semantics, touch targets
@@ -51,6 +54,7 @@ Pipeline gate after every task: `npm run lint && npm run test && npm run build` 
 ## Task 1 — Install sonner and mount the toast container
 
 **Files:**
+
 - Modify: `package.json`
 - Create: `src/components/ui/sonner.tsx`
 - Modify: `src/App.tsx`
@@ -79,10 +83,8 @@ export function Toaster() {
           toast:
             'group toast group-[.toaster]:bg-card group-[.toaster]:text-foreground group-[.toaster]:border-border group-[.toaster]:shadow-lg',
           description: 'group-[.toast]:text-muted-foreground',
-          actionButton:
-            'group-[.toast]:bg-primary group-[.toast]:text-primary-foreground',
-          cancelButton:
-            'group-[.toast]:bg-muted group-[.toast]:text-muted-foreground',
+          actionButton: 'group-[.toast]:bg-primary group-[.toast]:text-primary-foreground',
+          cancelButton: 'group-[.toast]:bg-muted group-[.toast]:text-muted-foreground',
           error: 'group-[.toaster]:border-destructive/40',
         },
       }}
@@ -125,6 +127,7 @@ git commit -m "feat(ui): mount sonner toast container"
 ## Task 2 — `useReducedMotion` hook
 
 **Files:**
+
 - Create: `src/hooks/useReducedMotion.ts`
 - Create: `src/hooks/__tests__/useReducedMotion.test.tsx`
 
@@ -236,6 +239,7 @@ git commit -m "feat(hooks): add useReducedMotion"
 ## Task 3 — `ErrorMessage` primitive
 
 **Files:**
+
 - Create: `src/components/ui/ErrorMessage.tsx`
 - Create: `src/components/ui/ErrorMessage.test.tsx`
 
@@ -277,9 +281,7 @@ describe('ErrorMessage', () => {
   });
 
   it('renders a custom icon', () => {
-    render(
-      <ErrorMessage icon={<svg data-testid="ico" />}>err</ErrorMessage>,
-    );
+    render(<ErrorMessage icon={<svg data-testid="ico" />}>err</ErrorMessage>);
     expect(screen.getByTestId('ico')).toBeInTheDocument();
   });
 });
@@ -304,26 +306,24 @@ import { cn } from '@/lib/utils';
 
 type Tone = 'destructive' | 'warning' | 'info';
 
-const toneStyles: Record<
-  Tone,
-  { container: string; text: string; defaultIcon: React.ReactNode }
-> = {
-  destructive: {
-    container: 'border-destructive/30 bg-destructive/10',
-    text: 'text-destructive',
-    defaultIcon: <AlertCircle className="size-3.5 shrink-0" />,
-  },
-  warning: {
-    container: 'border-warning/30 bg-warning/10',
-    text: 'text-warning',
-    defaultIcon: <AlertCircle className="size-3.5 shrink-0" />,
-  },
-  info: {
-    container: 'border-info/30 bg-info/10',
-    text: 'text-info',
-    defaultIcon: <AlertCircle className="size-3.5 shrink-0" />,
-  },
-};
+const toneStyles: Record<Tone, { container: string; text: string; defaultIcon: React.ReactNode }> =
+  {
+    destructive: {
+      container: 'border-destructive/30 bg-destructive/10',
+      text: 'text-destructive',
+      defaultIcon: <AlertCircle className="size-3.5 shrink-0" />,
+    },
+    warning: {
+      container: 'border-warning/30 bg-warning/10',
+      text: 'text-warning',
+      defaultIcon: <AlertCircle className="size-3.5 shrink-0" />,
+    },
+    info: {
+      container: 'border-info/30 bg-info/10',
+      text: 'text-info',
+      defaultIcon: <AlertCircle className="size-3.5 shrink-0" />,
+    },
+  };
 
 interface ErrorMessageProps extends React.HTMLAttributes<HTMLDivElement> {
   tone?: Tone;
@@ -380,6 +380,7 @@ git commit -m "feat(ui): add ErrorMessage primitive"
 ## Task 4 — `Skeleton` primitive
 
 **Files:**
+
 - Create: `src/components/ui/Skeleton.tsx`
 
 - [ ] **Step 1: Implement.**
@@ -390,10 +391,7 @@ Create `src/components/ui/Skeleton.tsx`:
 import * as React from 'react';
 import { cn } from '@/lib/utils';
 
-export function Skeleton({
-  className,
-  ...props
-}: React.HTMLAttributes<HTMLDivElement>) {
+export function Skeleton({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
       data-slot="skeleton"
@@ -425,6 +423,7 @@ git commit -m "feat(ui): add Skeleton primitive for loading placeholders"
 ## Task 5 — Rework `ModalBase` (accent + footer slots)
 
 **Files:**
+
 - Modify: `src/components/ui/ModalBase.tsx`
 
 - [ ] **Step 1: Replace the whole file.**
@@ -474,8 +473,7 @@ export default function ModalBase({
   width = 'max-w-md',
   accent = 'none',
 }: ModalBaseProps) {
-  const hasFooter =
-    !!footer && (footer.destructive || footer.cancel || footer.primary);
+  const hasFooter = !!footer && (footer.destructive || footer.cancel || footer.primary);
   return (
     <Dialog
       open
@@ -496,21 +494,15 @@ export default function ModalBase({
           />
         )}
         <DialogHeader className="px-4 py-3 border-b border-border flex-shrink-0">
-          <DialogTitle className="text-base font-semibold tracking-tight">
-            {title}
-          </DialogTitle>
+          <DialogTitle className="text-base font-semibold tracking-tight">{title}</DialogTitle>
           <DialogDescription className="sr-only">
             {description ?? `Dialog for: ${title}`}
           </DialogDescription>
         </DialogHeader>
-        <div className="overflow-y-auto overflow-x-hidden flex-1 px-4 py-3.5">
-          {children}
-        </div>
+        <div className="overflow-y-auto overflow-x-hidden flex-1 px-4 py-3.5">{children}</div>
         {hasFooter && (
           <div className="flex items-center gap-2 border-t border-border px-4 py-3">
-            {footer?.destructive && (
-              <div className="flex-shrink-0">{footer.destructive}</div>
-            )}
+            {footer?.destructive && <div className="flex-shrink-0">{footer.destructive}</div>}
             <div className="flex-1" />
             {footer?.cancel}
             {footer?.primary}
@@ -552,6 +544,7 @@ git commit -m "feat(ui): extend ModalBase with accent and footer slots"
 ## Task 6 — Migrate the four rogue modals into `ModalBase`
 
 **Files:**
+
 - Modify: `src/components/modals/AuthModalSimple.tsx`
 - Modify: `src/components/modals/ImportFromCodeDialog.tsx`
 - Modify: `src/components/modals/MergeDialog.tsx`
@@ -564,6 +557,7 @@ Migration pattern for each: the modal's outer `<Dialog><DialogContent>...</Dialo
 The existing modal wraps a `<Dialog><DialogContent>` with custom header + gradient strip + sign-in form.
 
 Changes:
+
 1. Replace the outer Dialog/DialogContent/DialogHeader markup with `<ModalBase title="Sign in" description="Sign in or create an account" onClose={() => onOpenChange(false)} accent="gradient" footer={{ cancel, primary }}>...`.
 2. Remove the manually rendered accent bar (line 61-64 area — the current `<div className="h-... bg-gradient...">`). ModalBase now renders it via `accent="gradient"`.
 3. Remove the custom-size title (`text-[22px]` etc.) — ModalBase renders the title.
@@ -581,12 +575,7 @@ import { Button } from '@/components/ui/button';
 const isValidEmail = (s: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s.trim());
 
 const primary = (
-  <Button
-    type="submit"
-    form="auth-form"
-    disabled={loading}
-    className="min-w-[96px]"
-  >
+  <Button type="submit" form="auth-form" disabled={loading} className="min-w-[96px]">
     {mode === 'signin' ? 'Sign in' : 'Create account'}
   </Button>
 );
@@ -614,6 +603,7 @@ return (
 ```
 
 Also:
+
 - Clear `error` state when the mode tabs flip (add `setError(null)` inside the tab-click handler).
 - Inputs get `<label htmlFor="auth-email" className="sr-only">Email</label>` and `<Input id="auth-email" ... />` (same pattern for password).
 
@@ -656,6 +646,7 @@ git commit -m "refactor(modals): migrate Auth/Import/Merge/Share to ModalBase"
 ## Task 7 — Normalize footers on the remaining modals
 
 **Files:**
+
 - Modify: `src/components/modals/AccommodationEditorModal.tsx`
 - Modify: `src/components/modals/AddStayModal.tsx`
 - Modify: `src/components/modals/AIPlannerModal.tsx`
@@ -734,6 +725,7 @@ git commit -m "refactor(modals): normalize footer layout via ModalBase.footer sl
 ## Task 8 — Sweep error surfaces: replace inline error markup with `ErrorMessage`
 
 **Files to sweep:**
+
 - `src/components/modals/AccommodationEditorModal.tsx`
 - `src/components/modals/AddStayModal.tsx`
 - `src/components/modals/AIPlannerModal.tsx`
@@ -765,7 +757,7 @@ After:
 ```tsx
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
 // ...
-<ErrorMessage>{error}</ErrorMessage>
+<ErrorMessage>{error}</ErrorMessage>;
 ```
 
 For warning-tone boxes (e.g. "Dates overlap" in `TripEditorModal`), use `<ErrorMessage tone="warning">`.
@@ -809,6 +801,7 @@ git commit -m "refactor: migrate inline error markup to ErrorMessage primitive"
 ## Task 9 — `PlaceSearchField` primitive
 
 **Files:**
+
 - Create: `src/components/ui/PlaceSearchField.tsx`
 - Create: `src/components/ui/PlaceSearchField.test.tsx`
 
@@ -837,13 +830,7 @@ describe('PlaceSearchField', () => {
 
   it('calls onValueChange when the user types', async () => {
     const onValueChange = vi.fn();
-    render(
-      <PlaceSearchField
-        value=""
-        onValueChange={onValueChange}
-        onPick={() => {}}
-      />,
-    );
+    render(<PlaceSearchField value="" onValueChange={onValueChange} onPick={() => {}} />);
     await userEvent.type(screen.getByRole('textbox'), 'Kyoto');
     expect(onValueChange).toHaveBeenCalled();
   });
@@ -868,14 +855,7 @@ describe('PlaceSearchField', () => {
   });
 
   it('announces loading state via aria-live', () => {
-    render(
-      <PlaceSearchField
-        value="k"
-        onValueChange={() => {}}
-        onPick={() => {}}
-        loading
-      />,
-    );
+    render(<PlaceSearchField value="k" onValueChange={() => {}} onPick={() => {}} loading />);
     const live = screen.getByText(/searching/i);
     expect(live.closest('[aria-live]')?.getAttribute('aria-live')).toBe('polite');
   });
@@ -990,9 +970,7 @@ export function PlaceSearchField({
                 >
                   <div className="font-medium">{r.label}</div>
                   {r.sublabel && (
-                    <div className="text-muted-foreground text-[11px]">
-                      {r.sublabel}
-                    </div>
+                    <div className="text-muted-foreground text-[11px]">{r.sublabel}</div>
                   )}
                 </button>
               </li>
@@ -1003,9 +981,7 @@ export function PlaceSearchField({
       <span aria-live="polite" className="sr-only">
         {loading ? 'Searching' : stale ? 'Results may be stale' : ''}
       </span>
-      {loading && (
-        <span className="text-[11px] text-muted-foreground">Searching…</span>
-      )}
+      {loading && <span className="text-[11px] text-muted-foreground">Searching…</span>}
       {stale && !loading && (
         <span className="text-[11px] text-muted-foreground">
           Showing previous results while typing…
@@ -1037,6 +1013,7 @@ git commit -m "feat(ui): add PlaceSearchField primitive with Popover anchoring"
 ## Task 10 — `ChecklistSection` + `LinksSection`
 
 **Files:**
+
 - Create: `src/components/ui/ChecklistSection.tsx`
 - Create: `src/components/ui/ChecklistSection.test.tsx`
 - Create: `src/components/ui/LinksSection.tsx`
@@ -1077,10 +1054,7 @@ describe('ChecklistSection', () => {
 
   it('flags duplicate entries', async () => {
     render(
-      <ChecklistSection
-        items={[{ id: '1', text: 'Pack', done: false }]}
-        onChange={() => {}}
-      />,
+      <ChecklistSection items={[{ id: '1', text: 'Pack', done: false }]} onChange={() => {}} />,
     );
     await userEvent.type(screen.getByPlaceholderText(/add item/i), 'pack');
     expect(screen.getByRole('alert')).toHaveTextContent(/already/i);
@@ -1089,10 +1063,7 @@ describe('ChecklistSection', () => {
   it('toggles done state', async () => {
     const onChange = vi.fn();
     render(
-      <ChecklistSection
-        items={[{ id: '1', text: 'Pack', done: false }]}
-        onChange={onChange}
-      />,
+      <ChecklistSection items={[{ id: '1', text: 'Pack', done: false }]} onChange={onChange} />,
     );
     await userEvent.click(screen.getByRole('checkbox'));
     const next = onChange.mock.calls.at(-1)?.[0];
@@ -1122,17 +1093,12 @@ interface ChecklistSectionProps {
   className?: string;
 }
 
-export function ChecklistSection({
-  items,
-  onChange,
-  className,
-}: ChecklistSectionProps) {
+export function ChecklistSection({ items, onChange, className }: ChecklistSectionProps) {
   const [draft, setDraft] = React.useState('');
 
   const trimmed = draft.trim();
   const isDuplicate =
-    trimmed.length > 0 &&
-    items.some((i) => i.text.trim().toLowerCase() === trimmed.toLowerCase());
+    trimmed.length > 0 && items.some((i) => i.text.trim().toLowerCase() === trimmed.toLowerCase());
 
   const add = () => {
     if (!trimmed || isDuplicate) return;
@@ -1153,21 +1119,13 @@ export function ChecklistSection({
     <div className={cn('flex flex-col gap-2', className)}>
       <ul className="flex flex-col gap-1.5">
         {items.map((item) => (
-          <li
-            key={item.id}
-            className="flex items-center gap-2 text-sm"
-          >
+          <li key={item.id} className="flex items-center gap-2 text-sm">
             <Checkbox
               checked={item.done}
               onCheckedChange={() => toggle(item.id)}
               aria-label={`Toggle "${item.text}"`}
             />
-            <span
-              className={cn(
-                'flex-1',
-                item.done && 'line-through text-muted-foreground',
-              )}
-            >
+            <span className={cn('flex-1', item.done && 'line-through text-muted-foreground')}>
               {item.text}
             </span>
             <Button
@@ -1195,12 +1153,7 @@ export function ChecklistSection({
           }}
           aria-describedby={isDuplicate ? 'checklist-dupe' : undefined}
         />
-        <Button
-          type="button"
-          onClick={add}
-          disabled={!trimmed || isDuplicate}
-          size="sm"
-        >
+        <Button type="button" onClick={add} disabled={!trimmed || isDuplicate} size="sm">
           <Plus className="size-3.5" />
           Add
         </Button>
@@ -1245,10 +1198,7 @@ describe('LinksSection', () => {
 
   it('rejects an invalid URL', async () => {
     render(<LinksSection items={[]} onChange={() => {}} />);
-    await userEvent.type(
-      screen.getByPlaceholderText(/url/i),
-      'not a url at all',
-    );
+    await userEvent.type(screen.getByPlaceholderText(/url/i), 'not a url at all');
     await userEvent.click(screen.getByRole('button', { name: /add/i }));
     expect(screen.getByRole('alert')).toHaveTextContent(/valid url/i);
   });
@@ -1291,9 +1241,7 @@ interface LinksSectionProps {
 function normalize(raw: string): string | null {
   const trimmed = raw.trim();
   if (!trimmed) return null;
-  const withProto = /^https?:\/\//i.test(trimmed)
-    ? trimmed
-    : `https://${trimmed}`;
+  const withProto = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
   try {
     const url = new URL(withProto);
     if (!url.hostname.includes('.')) return null;
@@ -1303,11 +1251,7 @@ function normalize(raw: string): string | null {
   }
 }
 
-export function LinksSection({
-  items,
-  onChange,
-  className,
-}: LinksSectionProps) {
+export function LinksSection({ items, onChange, className }: LinksSectionProps) {
   const [label, setLabel] = React.useState('');
   const [url, setUrl] = React.useState('');
   const [error, setError] = React.useState<string | null>(null);
@@ -1413,6 +1357,7 @@ git commit -m "feat(ui): add ChecklistSection and LinksSection primitives"
 ## Task 11 — Split `VisitFormModal` and adopt the new primitives
 
 **Files:**
+
 - Modify: `src/components/modals/VisitFormModal.tsx`
 
 - [ ] **Step 1: Replace inline checklist management with `ChecklistSection`.**
@@ -1424,11 +1369,7 @@ Open `src/components/modals/VisitFormModal.tsx`. Find the block managing `checkl
   <label className="text-[11px] font-semibold tracking-wide uppercase text-muted-foreground">
     Checklist
   </label>
-  <ChecklistSection
-    items={checklist}
-    onChange={setChecklist}
-    className="mt-1.5"
-  />
+  <ChecklistSection items={checklist} onChange={setChecklist} className="mt-1.5" />
 </div>
 ```
 
@@ -1451,11 +1392,7 @@ Find the block managing `links` state + UI (~lines 373–430). Replace with:
   <label className="text-[11px] font-semibold tracking-wide uppercase text-muted-foreground">
     Links
   </label>
-  <LinksSection
-    items={links}
-    onChange={setLinks}
-    className="mt-1.5"
-  />
+  <LinksSection items={links} onChange={setLinks} className="mt-1.5" />
 </div>
 ```
 
@@ -1529,6 +1466,7 @@ git commit -m "refactor(modals): split VisitFormModal via new primitives"
 ## Task 12 — Adopt `PlaceSearchField` in the other two modals
 
 **Files:**
+
 - Modify: `src/components/modals/AddStayModal.tsx`
 - Modify: `src/components/modals/AccommodationEditorModal.tsx`
 
@@ -1568,6 +1506,7 @@ git commit -m "refactor(modals): adopt PlaceSearchField in AddStay and Accommoda
 For each modal, inspect every `<Input>` / `<Textarea>`. Add an explicit `id` to the input and a matching `<Label htmlFor={...}>` (or `<label htmlFor={...}>` if `Label` isn't already imported — check existing patterns in the file). If the field currently relies on a placeholder, keep visual parity by making the label `sr-only`.
 
 Sweep target list (non-exhaustive — add any the grep surfaces):
+
 - `AccommodationEditorModal.tsx`: name, notes, cost, night picker toggles.
 - `AddStayModal.tsx`: days stepper (add `aria-label="Days" `and visible label already exists).
 - `AuthModalSimple.tsx`: email, password (covered in Task 6 — verify).
@@ -1628,6 +1567,7 @@ git commit -m "a11y(modals): label associations, aria-live, stepper labels"
 ## Task 14 — Cards + timeline: memo, semantic buttons, touch targets
 
 **Files:**
+
 - Modify: `src/components/cards/DraggableInventoryCard.tsx`
 - Modify: `src/components/cards/SortableVisitCard.tsx`
 - Modify: `src/components/timeline/DroppablePeriodSlot.tsx`
@@ -1760,6 +1700,7 @@ git commit -m "refactor(cards,timeline): memoize, use button semantics, enlarge 
 ## Task 15 — Destructive action guards: AlertDialog + toast undo
 
 **Files:**
+
 - Modify: `src/components/panels/HistoryPanel.tsx`
 - Modify: `src/components/panels/TripSwitcherPanel.tsx`
 - Modify: `src/components/panels/ProfileMenu.tsx`
@@ -1779,19 +1720,16 @@ import { toast } from 'sonner';
 
 function useReversibleAction<T>() {
   // returns a function you pass (description, commit, revert) to
-  return React.useCallback(
-    (label: string, revert: () => void, description?: string) => {
-      toast(label, {
-        description,
-        duration: 5000,
-        action: {
-          label: 'Undo',
-          onClick: () => revert(),
-        },
-      });
-    },
-    [],
-  );
+  return React.useCallback((label: string, revert: () => void, description?: string) => {
+    toast(label, {
+      description,
+      duration: 5000,
+      action: {
+        label: 'Undo',
+        onClick: () => revert(),
+      },
+    });
+  }, []);
 }
 
 // inside App:
@@ -1807,10 +1745,7 @@ When the user clicks a past snapshot:
 ```tsx
 const previousIndex = historyIndex;
 navigateHistory(targetIndex);
-notifyReversible(
-  `Switched to snapshot ${targetIndex + 1}`,
-  () => navigateHistory(previousIndex),
-);
+notifyReversible(`Switched to snapshot ${targetIndex + 1}`, () => navigateHistory(previousIndex));
 ```
 
 Also memoize the reversed list:
@@ -1824,10 +1759,7 @@ const reversed = React.useMemo(() => [...history].reverse(), [history]);
 ```tsx
 const prev = activeTripId;
 onSwitchTrip(tripId);
-notifyReversible(
-  `Switched to "${tripName}"`,
-  () => onSwitchTrip(prev),
-);
+notifyReversible(`Switched to "${tripName}"`, () => onSwitchTrip(prev));
 ```
 
 - [ ] **Step 4: `ProfileMenu` — sign-out confirmation + alert replacement.**
@@ -1837,7 +1769,9 @@ Wrap Sign out in `AlertDialog`:
 ```tsx
 <AlertDialog>
   <AlertDialogTrigger asChild>
-    <Button variant="ghost" className="w-full justify-start">Sign out</Button>
+    <Button variant="ghost" className="w-full justify-start">
+      Sign out
+    </Button>
   </AlertDialogTrigger>
   <AlertDialogContent>
     <AlertDialogHeader>
@@ -1891,8 +1825,8 @@ The existing Delete button already uses AlertDialog. Update the AlertDialogDescr
 
 ```tsx
 <AlertDialogDescription>
-  Delete "{tripName}" along with its {stayCount} {stayCount === 1 ? 'stay' : 'stays'} and
-  {' '}{visitCount} {visitCount === 1 ? 'place' : 'places'}? This cannot be undone.
+  Delete "{tripName}" along with its {stayCount} {stayCount === 1 ? 'stay' : 'stays'} and{' '}
+  {visitCount} {visitCount === 1 ? 'place' : 'places'}? This cannot be undone.
 </AlertDialogDescription>
 ```
 
@@ -1936,6 +1870,7 @@ git commit -m "feat(ux): add destructive-action guards and reversible toasts"
 ## Task 16 — Map subsystem: icon cache + debounces + a11y
 
 **Files:**
+
 - Modify: `src/components/TripMap/markerFactories.tsx`
 - Modify: `src/components/TripMap/ClusteredMarkers.tsx`
 - Modify: `src/components/TripMap/RouteSegments.tsx`
@@ -2011,7 +1946,7 @@ useEffect(() => {
     // existing fetch logic
   }, 150);
   return () => window.clearTimeout(t);
-}, [serialized-key-of-segments]);
+}, [serialized - key - of - segments]);
 ```
 
 The existing code already has the fetch body — just add the 150ms wrapper and clear on cleanup.
@@ -2049,7 +1984,9 @@ Any direct `renderToStaticMarkup` call in this file moves behind the icon-cache 
 
 ```tsx
 <dl className="grid grid-cols-[auto_1fr] gap-x-2 gap-y-1 text-xs">
-  <dt><span className="size-3 rounded-full" style={{background: color}} /></dt>
+  <dt>
+    <span className="size-3 rounded-full" style={{ background: color }} />
+  </dt>
   <dd>{label}</dd>
 </dl>
 ```
@@ -2060,8 +1997,17 @@ Replace the 15-prop interface with four grouped objects:
 
 ```tsx
 interface TripMapProps {
-  data: { trip: HybridTrip; accommodations: NightAccommodation[]; overviewStays: Stay[]; overviewCandidates: Stay[] };
-  selection: { selectedVisitId: string | null; highlightedVisitId: string | null; selectedStayId: string | null };
+  data: {
+    trip: HybridTrip;
+    accommodations: NightAccommodation[];
+    overviewStays: Stay[];
+    overviewCandidates: Stay[];
+  };
+  selection: {
+    selectedVisitId: string | null;
+    highlightedVisitId: string | null;
+    selectedStayId: string | null;
+  };
   mode: 'detail' | 'overview';
   callbacks: {
     onSelectVisit: (id: string) => void;
@@ -2099,6 +2045,7 @@ data/selection/mode/callbacks objects."
 ## Task 17 — Landing, error boundary, date picker polish
 
 **Files:**
+
 - Modify: `src/components/WelcomeScreen.tsx`
 - Modify: `src/components/ChronosErrorBoundary.tsx`
 - Modify: `src/components/InlineDateRangePicker.tsx`
@@ -2179,6 +2126,7 @@ git commit -m "feat(polish): Welcome/ErrorBoundary/DatePicker a11y and hardening
 ## Task 18 — Panel skeletons + accommodation `font-num`
 
 **Files:**
+
 - Modify: `src/components/panels/StayOverviewPanel.tsx`
 
 - [ ] **Step 1: Skeleton for hero image.**
@@ -2186,11 +2134,13 @@ git commit -m "feat(polish): Welcome/ErrorBoundary/DatePicker a11y and hardening
 Wrap the Unsplash hero `<img>` area with a `<Skeleton className="aspect-[3/1] w-full">` while the photo URL is loading:
 
 ```tsx
-{photoUrl ? (
-  <img src={photoUrl} alt={stay.name} className="..." />
-) : (
-  <Skeleton className="aspect-[3/1] w-full" />
-)}
+{
+  photoUrl ? (
+    <img src={photoUrl} alt={stay.name} className="..." />
+  ) : (
+    <Skeleton className="aspect-[3/1] w-full" />
+  );
+}
 ```
 
 - [ ] **Step 2: Skeleton for stat tiles.**
@@ -2214,6 +2164,7 @@ git commit -m "feat(panels): skeleton loader on stay hero, font-num on accommoda
 ## Task 19 — LocationPicker a11y
 
 **Files:**
+
 - Modify: `src/components/ui/LocationPicker.tsx`
 
 - [ ] **Step 1: Pick-on-map button a11y.**
@@ -2272,6 +2223,7 @@ Expected: ≤ 320.
 Restart the docker container (`docker compose restart`) and walk every flow from the spec (welcome → create trip → add stay → add visit → open map → open calendar → open AI planner → destructive actions on each panel).
 
 For each:
+
 - Toast undo works where expected (history, trip switch).
 - AlertDialog appears for delete/revoke/sign-out.
 - No orange left (regression guard from prior PR).

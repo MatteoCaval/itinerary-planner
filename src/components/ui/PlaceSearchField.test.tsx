@@ -18,13 +18,7 @@ describe('PlaceSearchField', () => {
 
   it('calls onValueChange when the user types', async () => {
     const onValueChange = vi.fn();
-    render(
-      <PlaceSearchField
-        value=""
-        onValueChange={onValueChange}
-        onPick={() => {}}
-      />,
-    );
+    render(<PlaceSearchField value="" onValueChange={onValueChange} onPick={() => {}} />);
     await userEvent.type(screen.getByRole('textbox'), 'Kyoto');
     expect(onValueChange).toHaveBeenCalled();
   });
@@ -39,9 +33,7 @@ describe('PlaceSearchField', () => {
         results={[{ id: 'r1', label: 'Kyoto', lat: 35, lng: 135 }]}
       />,
     );
-    await waitFor(() =>
-      expect(screen.getByRole('button', { name: /Kyoto/ })).toBeInTheDocument(),
-    );
+    await waitFor(() => expect(screen.getByRole('button', { name: /Kyoto/ })).toBeInTheDocument());
     await userEvent.click(screen.getByRole('button', { name: /Kyoto/ }));
     expect(onPick).toHaveBeenCalledWith({
       id: 'r1',
@@ -52,18 +44,9 @@ describe('PlaceSearchField', () => {
   });
 
   it('announces loading state via aria-live', () => {
-    render(
-      <PlaceSearchField
-        value="k"
-        onValueChange={() => {}}
-        onPick={() => {}}
-        loading
-      />,
-    );
+    render(<PlaceSearchField value="k" onValueChange={() => {}} onPick={() => {}} loading />);
     const liveEls = screen.getAllByText(/searching/i);
-    const live = liveEls.find(el =>
-      el.closest('[aria-live]') !== null,
-    );
+    const live = liveEls.find((el) => el.closest('[aria-live]') !== null);
     expect(live?.closest('[aria-live]')?.getAttribute('aria-live')).toBe('polite');
   });
 });

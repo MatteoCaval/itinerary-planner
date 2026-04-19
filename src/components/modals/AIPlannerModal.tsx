@@ -200,11 +200,7 @@ function AIPlannerModal({
               <Check data-icon="inline-start" className="w-4 h-4" /> Apply to Timeline
             </Button>
           ) : (
-            <Button
-              size="sm"
-              onClick={handleGenerate}
-              disabled={loading || !prompt.trim()}
-            >
+            <Button size="sm" onClick={handleGenerate} disabled={loading || !prompt.trim()}>
               {loading ? (
                 <span className="flex items-center gap-2">
                   <span className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />{' '}
@@ -277,7 +273,10 @@ function AIPlannerModal({
           {/* Prompt */}
           {!explanation ? (
             <div>
-              <label htmlFor="ai-prompt" className="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground mb-2 block">
+              <label
+                htmlFor="ai-prompt"
+                className="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground mb-2 block"
+              >
                 What should I plan?{' '}
                 <span className="text-muted-foreground/50 normal-case font-medium">
                   ({trip.totalDays} days available)
@@ -330,14 +329,16 @@ function AIPlannerModal({
           )}
 
           {error && <ErrorMessage className="rounded-lg">{error}</ErrorMessage>}
-
         </div>
       )}
 
       {tab === 'settings' && (
         <div className="space-y-4">
           <div>
-            <label htmlFor="ai-api-key" className="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground mb-2 block">
+            <label
+              htmlFor="ai-api-key"
+              className="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground mb-2 block"
+            >
               Gemini API Key
             </label>
             <Input
@@ -361,7 +362,10 @@ function AIPlannerModal({
             </p>
           </div>
           <div>
-            <label htmlFor="ai-model" className="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground mb-2 block">
+            <label
+              htmlFor="ai-model"
+              className="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground mb-2 block"
+            >
               Model
             </label>
             <ToggleGroup

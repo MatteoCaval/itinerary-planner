@@ -15,10 +15,7 @@ describe('LinksSection', () => {
 
   it('rejects an invalid URL', async () => {
     render(<LinksSection items={[]} onChange={() => {}} />);
-    await userEvent.type(
-      screen.getByPlaceholderText(/url/i),
-      'not a url at all',
-    );
+    await userEvent.type(screen.getByPlaceholderText(/url/i), 'not a url at all');
     await userEvent.click(screen.getByRole('button', { name: /add/i }));
     expect(screen.getByRole('alert')).toHaveTextContent(/valid url/i);
   });

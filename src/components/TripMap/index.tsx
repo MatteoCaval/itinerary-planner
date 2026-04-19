@@ -93,8 +93,13 @@ const BASEMAPS: Record<BasemapMode, { url: string; attribution: string; maxZoom?
 
 export default function TripMap({ data, selection, mode, expanded, callbacks }: TripMapProps) {
   const { visits, stay, overviewStays, overviewCandidates } = data;
-  const { selectedVisitId, highlightedVisitId, selectedDayOffset, highlightedStayId, highlightedCandidateId } =
-    selection;
+  const {
+    selectedVisitId,
+    highlightedVisitId,
+    selectedDayOffset,
+    highlightedStayId,
+    highlightedCandidateId,
+  } = selection;
   const { onSelectVisit, onSelectStay, onSelectCandidate, onBackToOverview } = callbacks;
   const [basemap, setBasemap] = useBasemapState();
   const [showArrows, setShowArrows] = useState(true);

@@ -61,11 +61,7 @@ function ShareTripDialog({
         onClose={onClose}
         width="max-w-sm"
         footer={{
-          primary: (
-            <Button onClick={onClose}>
-              Close
-            </Button>
-          ),
+          primary: <Button onClick={onClose}>Close</Button>,
         }}
       >
         <div className="flex items-start gap-3 mb-4">

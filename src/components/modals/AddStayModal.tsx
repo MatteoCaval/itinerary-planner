@@ -303,7 +303,6 @@ function AddStayModal({
             </Badge>
           )}
         </div>
-
       </div>
     </ModalBase>
   );

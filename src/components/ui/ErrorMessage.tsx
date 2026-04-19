@@ -4,26 +4,24 @@ import { cn } from '@/lib/utils';
 
 type Tone = 'destructive' | 'warning' | 'info';
 
-const toneStyles: Record<
-  Tone,
-  { container: string; text: string; defaultIcon: React.ReactNode }
-> = {
-  destructive: {
-    container: 'border-destructive/30 bg-destructive/10',
-    text: 'text-destructive',
-    defaultIcon: <AlertCircle className="size-3.5 shrink-0" />,
-  },
-  warning: {
-    container: 'border-warning/30 bg-warning/10',
-    text: 'text-warning',
-    defaultIcon: <AlertCircle className="size-3.5 shrink-0" />,
-  },
-  info: {
-    container: 'border-info/30 bg-info/10',
-    text: 'text-info',
-    defaultIcon: <AlertCircle className="size-3.5 shrink-0" />,
-  },
-};
+const toneStyles: Record<Tone, { container: string; text: string; defaultIcon: React.ReactNode }> =
+  {
+    destructive: {
+      container: 'border-destructive/30 bg-destructive/10',
+      text: 'text-destructive',
+      defaultIcon: <AlertCircle className="size-3.5 shrink-0" />,
+    },
+    warning: {
+      container: 'border-warning/30 bg-warning/10',
+      text: 'text-warning',
+      defaultIcon: <AlertCircle className="size-3.5 shrink-0" />,
+    },
+    info: {
+      container: 'border-info/30 bg-info/10',
+      text: 'text-info',
+      defaultIcon: <AlertCircle className="size-3.5 shrink-0" />,
+    },
+  };
 
 interface ErrorMessageProps extends React.HTMLAttributes<HTMLDivElement> {
   tone?: Tone;

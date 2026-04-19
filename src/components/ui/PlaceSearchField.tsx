@@ -94,9 +94,7 @@ export function PlaceSearchField({
                 >
                   <div className="font-medium">{r.label}</div>
                   {r.sublabel && (
-                    <div className="text-muted-foreground text-[11px]">
-                      {r.sublabel}
-                    </div>
+                    <div className="text-muted-foreground text-[11px]">{r.sublabel}</div>
                   )}
                 </button>
               </li>
@@ -107,9 +105,7 @@ export function PlaceSearchField({
       <span aria-live="polite" className="sr-only">
         {loading ? 'Searching' : stale ? 'Results may be stale' : ''}
       </span>
-      {loading && (
-        <span className="text-[11px] text-muted-foreground">Searching…</span>
-      )}
+      {loading && <span className="text-[11px] text-muted-foreground">Searching…</span>}
       {stale && !loading && (
         <span className="text-[11px] text-muted-foreground">
           Showing previous results while typing…

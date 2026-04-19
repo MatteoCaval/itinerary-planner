@@ -149,11 +149,7 @@ function TripEditorModal({
           </Button>
         ),
         primary: (
-          <Button
-            size="sm"
-            onClick={handleSave}
-            disabled={!startDate || totalDays < 1}
-          >
+          <Button size="sm" onClick={handleSave} disabled={!startDate || totalDays < 1}>
             Save changes
           </Button>
         ),
@@ -163,7 +159,10 @@ function TripEditorModal({
     <ModalBase title="Edit Trip" onClose={onClose} footer={footer}>
       <div className="space-y-4">
         <div>
-          <label htmlFor="trip-name" className="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground mb-2 block">
+          <label
+            htmlFor="trip-name"
+            className="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground mb-2 block"
+          >
             Trip Name
           </label>
           <Input
@@ -215,8 +214,8 @@ function TripEditorModal({
               {fullyOutsideStays.length > 0 && (
                 <p className="text-destructive mb-1">
                   <strong>{fullyOutsideStays.map((s) => s.name).join(', ')}</strong>{' '}
-                  {fullyOutsideStays.length > 1 ? 'are' : 'is'} fully outside the new date range
-                  and will be <strong>removed</strong>.
+                  {fullyOutsideStays.length > 1 ? 'are' : 'is'} fully outside the new date range and
+                  will be <strong>removed</strong>.
                 </p>
               )}
               {partiallyCutStays.length > 0 && (

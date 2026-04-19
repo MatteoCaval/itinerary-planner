@@ -31,9 +31,7 @@ describe('ErrorMessage', () => {
   });
 
   it('renders a custom icon', () => {
-    render(
-      <ErrorMessage icon={<svg data-testid="ico" />}>err</ErrorMessage>,
-    );
+    render(<ErrorMessage icon={<svg data-testid="ico" />}>err</ErrorMessage>);
     expect(screen.getByTestId('ico')).toBeInTheDocument();
   });
 });

@@ -28,10 +28,7 @@ describe('ChecklistSection', () => {
 
   it('flags duplicate entries', async () => {
     render(
-      <ChecklistSection
-        items={[{ id: '1', text: 'Pack', done: false }]}
-        onChange={() => {}}
-      />,
+      <ChecklistSection items={[{ id: '1', text: 'Pack', done: false }]} onChange={() => {}} />,
     );
     await userEvent.type(screen.getByPlaceholderText(/add item/i), 'pack');
     expect(screen.getByRole('alert')).toHaveTextContent(/already/i);
@@ -40,10 +37,7 @@ describe('ChecklistSection', () => {
   it('toggles done state', async () => {
     const onChange = vi.fn();
     render(
-      <ChecklistSection
-        items={[{ id: '1', text: 'Pack', done: false }]}
-        onChange={onChange}
-      />,
+      <ChecklistSection items={[{ id: '1', text: 'Pack', done: false }]} onChange={onChange} />,
     );
     await userEvent.click(screen.getByRole('checkbox'));
     const next = onChange.mock.calls.at(-1)?.[0];

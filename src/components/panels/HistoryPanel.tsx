@@ -42,9 +42,8 @@ function HistoryPanel({
                   const previousIndex = index;
                   onNavigate(i);
                   onClose();
-                  notifyReversible(
-                    `Switched to snapshot ${i + 1}`,
-                    () => onNavigate(previousIndex),
+                  notifyReversible(`Switched to snapshot ${i + 1}`, () =>
+                    onNavigate(previousIndex),
                   );
                 }}
                 className={`w-full text-left px-3 py-2.5 rounded-lg transition-all flex items-center justify-between gap-3 focus-visible:ring-2 focus-visible:ring-ring ${

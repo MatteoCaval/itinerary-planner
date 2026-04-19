@@ -154,9 +154,7 @@ export function LocationPicker({ value, onChange, defaultCenter, fitBounds }: Lo
       </button>
 
       <span className="sr-only" aria-live="polite">
-        {value
-          ? `Location set at ${value.lat.toFixed(4)}, ${value.lng.toFixed(4)}.`
-          : ''}
+        {value ? `Location set at ${value.lat.toFixed(4)}, ${value.lng.toFixed(4)}.` : ''}
       </span>
 
       {isOpen && (

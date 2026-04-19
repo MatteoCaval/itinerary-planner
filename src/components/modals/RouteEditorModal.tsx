@@ -105,7 +105,10 @@ function RouteEditorModal({
 
           {/* Duration */}
           <div>
-            <label htmlFor="route-duration" className="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground mb-2 block">
+            <label
+              htmlFor="route-duration"
+              className="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground mb-2 block"
+            >
               Duration
             </label>
             <Input
@@ -123,7 +126,10 @@ function RouteEditorModal({
 
           {/* Notes */}
           <div>
-            <label htmlFor="route-notes" className="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground mb-2 block">
+            <label
+              htmlFor="route-notes"
+              className="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground mb-2 block"
+            >
               Notes
             </label>
             <Textarea
@@ -135,7 +141,6 @@ function RouteEditorModal({
               onChange={(e) => setNotes(e.target.value)}
             />
           </div>
-
         </div>
       </form>
     </ModalBase>

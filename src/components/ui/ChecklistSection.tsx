@@ -19,8 +19,7 @@ export function ChecklistSection({ items, onChange, className }: ChecklistSectio
 
   const trimmed = draft.trim();
   const isDuplicate =
-    trimmed.length > 0 &&
-    items.some((i) => i.text.trim().toLowerCase() === trimmed.toLowerCase());
+    trimmed.length > 0 && items.some((i) => i.text.trim().toLowerCase() === trimmed.toLowerCase());
 
   const add = () => {
     if (!trimmed || isDuplicate) return;
@@ -47,9 +46,7 @@ export function ChecklistSection({ items, onChange, className }: ChecklistSectio
               onCheckedChange={() => toggle(item.id)}
               aria-label={`Toggle "${item.text}"`}
             />
-            <span
-              className={cn('flex-1', item.done && 'line-through text-muted-foreground')}
-            >
+            <span className={cn('flex-1', item.done && 'line-through text-muted-foreground')}>
               {item.text}
             </span>
             <Button
@@ -77,12 +74,7 @@ export function ChecklistSection({ items, onChange, className }: ChecklistSectio
           }}
           aria-describedby={isDuplicate ? 'checklist-dupe' : undefined}
         />
-        <Button
-          type="button"
-          onClick={add}
-          disabled={!trimmed || isDuplicate}
-          size="sm"
-        >
+        <Button type="button" onClick={add} disabled={!trimmed || isDuplicate} size="sm">
           <Plus className="size-3.5" />
           Add
         </Button>
