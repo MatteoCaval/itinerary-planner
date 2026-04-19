@@ -147,10 +147,17 @@ export function LocationPicker({ value, onChange, defaultCenter, fitBounds }: Lo
         onClick={() => setIsOpen((o) => !o)}
         className="flex items-center gap-1.5 text-[11px] font-semibold text-muted-foreground hover:text-foreground transition-colors mt-1"
         aria-label={isOpen ? 'Close map' : 'Pick on map'}
+        aria-expanded={isOpen}
       >
         <MapPin className="w-3 h-3" />
         {isOpen ? 'Close map' : 'Pick on map'}
       </button>
+
+      <span className="sr-only" aria-live="polite">
+        {value
+          ? `Location set at ${value.lat.toFixed(4)}, ${value.lng.toFixed(4)}.`
+          : ''}
+      </span>
 
       {isOpen && (
         <div className="mt-2 space-y-2">
