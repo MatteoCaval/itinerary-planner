@@ -1,12 +1,15 @@
+import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Pencil, GripVertical, Check, Link2, Eye } from 'lucide-react';
 import { getVisitTypeBg, getVisitTypeColor, getVisitLabel } from '@/domain/visitTypeDisplay';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { useReducedMotion } from '@/hooks/useReducedMotion';
+import { cn } from '@/lib/utils';
 import type { VisitItem } from '@/domain/types';
 
-function SortableVisitCard({
+const SortableVisitCard = React.memo(function SortableVisitCard({
   visit,
   isSelected,
   isHighlighted,
@@ -28,6 +31,8 @@ function SortableVisitCard({
       id: `visit-${visit.id}`,
       data: { type: 'visit', visit },
     });
+  const reduce = useReducedMotion();
+
   return (
     <div
       ref={setNodeRef}
@@ -35,20 +40,21 @@ function SortableVisitCard({
       {...attributes}
       style={{
         transform: CSS.Transform.toString(transform),
-        transition,
-        opacity: isDragging ? 0.3 : 1,
+        transition: reduce ? 'none' : transition,
+        opacity: isDragging ? (reduce ? 1 : 0.3) : 1,
       }}
       onMouseEnter={onHover}
       onMouseLeave={onHoverEnd}
-      className={`relative pl-[18px] pr-3.5 py-3.5 bg-white rounded-lg border transition-all group select-none touch-none cursor-grab active:cursor-grabbing ${
-        isOver
-          ? 'border-primary shadow-md ring-2 ring-primary/25 bg-primary/[0.02]'
-          : isHighlighted
-            ? 'border-primary/40 shadow-md ring-2 ring-primary/20 bg-primary/[0.03]'
-            : isSelected
-              ? 'border-primary/30 shadow-[0_4px_12px_rgba(15,118,110,0.1)] ring-1 ring-primary/10'
-              : 'border-border hover:border-border hover:shadow-md'
-      }`}
+      data-selected={isSelected ? '' : undefined}
+      data-over={isOver ? '' : undefined}
+      data-highlighted={isHighlighted && !isSelected ? '' : undefined}
+      className={cn(
+        'relative pl-[18px] pr-3.5 py-3.5 bg-white rounded-lg border border-border transition-colors group select-none touch-none cursor-grab active:cursor-grabbing',
+        'data-[over]:border-primary data-[over]:ring-2 data-[over]:ring-primary/25 data-[over]:bg-primary/[0.02]',
+        'data-[highlighted]:border-primary/40 data-[highlighted]:ring-2 data-[highlighted]:ring-primary/20',
+        'data-[selected]:border-primary/30 data-[selected]:ring-2 data-[selected]:ring-primary/40',
+        !isSelected && !isHighlighted && !isOver && 'hover:border-border hover:shadow-md',
+      )}
     >
       <div
         className={`absolute left-0 top-0 bottom-0 w-1 rounded-l-lg ${getVisitTypeBg(visit.type)}`}
@@ -90,13 +96,17 @@ function SortableVisitCard({
       </div>
       <div className="flex items-start gap-2">
         <div className="flex-1 min-w-0">
-          <p
+          <button
+            type="button"
             onClick={onSelect}
-            className="text-xs font-bold leading-tight text-foreground cursor-pointer hover:text-primary transition-colors flex items-center gap-1"
+            aria-pressed={isSelected}
+            className="text-left w-full rounded-sm focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none"
           >
-            <span className="truncate">{visit.name}</span>
-            <Eye className="w-3 h-3 flex-shrink-0 opacity-0 group-hover:opacity-40 transition-opacity" />
-          </p>
+            <p className="text-xs font-bold leading-tight text-foreground hover:text-primary transition-colors flex items-center gap-1">
+              <span className="truncate">{visit.name}</span>
+              <Eye className="w-3 h-3 flex-shrink-0 opacity-0 group-hover:opacity-40 transition-opacity" />
+            </p>
+          </button>
           {visit.notes && (
             <p className="text-[11px] text-muted-foreground mt-1 italic leading-snug line-clamp-2">
               {visit.notes}
@@ -138,6 +148,6 @@ function SortableVisitCard({
       </div>
     </div>
   );
-}
+});
 
 export default SortableVisitCard;
