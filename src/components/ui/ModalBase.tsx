@@ -15,17 +15,32 @@ const widthMap: Record<string, string> = {
   'max-w-xl': 'sm:max-w-xl',
 };
 
-export default function ModalBase({
-  title,
-  onClose,
-  children,
-  width = 'max-w-md',
-}: {
+type FooterSlot = {
+  destructive?: React.ReactNode;
+  cancel?: React.ReactNode;
+  primary?: React.ReactNode;
+};
+
+interface ModalBaseProps {
   title: string;
+  description?: string;
   onClose: () => void;
   children: React.ReactNode;
+  footer?: FooterSlot;
   width?: string;
-}) {
+  accent?: 'none' | 'gradient';
+}
+
+export default function ModalBase({
+  title,
+  description,
+  onClose,
+  children,
+  footer,
+  width = 'max-w-md',
+  accent = 'none',
+}: ModalBaseProps) {
+  const hasFooter = !!footer && (footer.destructive || footer.cancel || footer.primary);
   return (
     <Dialog
       open
@@ -34,14 +49,35 @@ export default function ModalBase({
       }}
     >
       <DialogContent
-        className={cn('max-h-[90dvh] flex flex-col gap-0 p-0', widthMap[width] ?? width)}
+        className={cn(
+          'max-h-[90dvh] flex flex-col gap-0 p-0 overflow-hidden',
+          widthMap[width] ?? width,
+        )}
       >
-        <DialogHeader className="px-4 py-2.5 border-b border-border flex-shrink-0">
-          <DialogTitle className="font-extrabold text-xs tracking-wide">{title}</DialogTitle>
-          <DialogDescription className="sr-only">Dialog for: {title}</DialogDescription>
+        {accent === 'gradient' && (
+          <div
+            aria-hidden="true"
+            className="h-1 w-full bg-[linear-gradient(90deg,var(--primary-700),var(--primary-500))]"
+          />
+        )}
+        <DialogHeader className="px-4 py-3 border-b border-border flex-shrink-0">
+          <DialogTitle className="text-base font-semibold tracking-tight">{title}</DialogTitle>
+          <DialogDescription className="sr-only">
+            {description ?? `Dialog for: ${title}`}
+          </DialogDescription>
         </DialogHeader>
         <div className="overflow-y-auto overflow-x-hidden flex-1 px-4 py-3.5">{children}</div>
+        {hasFooter && (
+          <div className="flex items-center gap-2 border-t border-border px-4 py-3">
+            {footer?.destructive && <div className="flex-shrink-0">{footer.destructive}</div>}
+            <div className="flex-1" />
+            {footer?.cancel}
+            {footer?.primary}
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );
 }
+
+export type { ModalBaseProps, FooterSlot };

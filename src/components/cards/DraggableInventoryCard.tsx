@@ -1,12 +1,14 @@
+import React from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { Pencil, GripVertical, Check, Link2, MapPin } from 'lucide-react';
 import { getVisitTypeColor, getVisitLabel } from '@/domain/visitTypeDisplay';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { useReducedMotion } from '@/hooks/useReducedMotion';
 import type { VisitItem } from '@/domain/types';
 
-function DraggableInventoryCard({
+const DraggableInventoryCard = React.memo(function DraggableInventoryCard({
   visit,
   onEdit,
   onLocate,
@@ -19,12 +21,17 @@ function DraggableInventoryCard({
     id: `inbox-${visit.id}`,
     data: { type: 'inbox', visit },
   });
+  const reduce = useReducedMotion();
+
   return (
     <div
       ref={setNodeRef}
       {...listeners}
       {...attributes}
-      style={{ transform: CSS.Translate.toString(transform), opacity: isDragging ? 0.4 : 1 }}
+      style={{
+        transform: CSS.Translate.toString(transform),
+        opacity: isDragging ? (reduce ? 1 : 0.4) : 1,
+      }}
       className="p-3 bg-white rounded-lg border border-border hover:border-border hover:shadow-md transition-all group select-none touch-none cursor-grab active:cursor-grabbing"
       aria-label={`Drag ${visit.name} to schedule`}
     >
@@ -35,35 +42,35 @@ function DraggableInventoryCard({
         >
           {getVisitLabel(visit.type)}
         </Badge>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 px-1">
           {onLocate && (
             <Button
               variant="ghost"
-              size="icon-sm"
+              size="icon"
               onClick={(e) => {
                 e.stopPropagation();
                 onLocate();
               }}
               className="opacity-60 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-primary touch-auto"
-              aria-label={`Show ${visit.name} on map`}
+              aria-label="Locate on map"
             >
-              <MapPin className="w-3.5 h-3.5" />
+              <MapPin className="size-3.5" />
             </Button>
           )}
           <Button
             variant="ghost"
-            size="icon-sm"
+            size="icon"
             onClick={(e) => {
               e.stopPropagation();
               onEdit();
             }}
             className="opacity-60 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground touch-auto"
-            aria-label={`Edit ${visit.name}`}
+            aria-label="Edit"
           >
-            <Pencil className="w-3.5 h-3.5" />
+            <Pencil className="size-3.5" />
           </Button>
           <div
-            className="p-2.5 text-muted-foreground/30 group-hover:text-muted-foreground/60 transition-colors"
+            className="p-2.5 text-muted-foreground/50 group-hover:text-muted-foreground/80 transition-colors"
             aria-hidden="true"
           >
             <GripVertical className="w-4 h-4" />
@@ -112,6 +119,6 @@ function DraggableInventoryCard({
       </div>
     </div>
   );
-}
+});
 
 export default DraggableInventoryCard;

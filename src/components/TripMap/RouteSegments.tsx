@@ -43,13 +43,27 @@ const SingleSegment = React.memo(function SingleSegment({
   showArrows: boolean;
 }) {
   const color = isAccommodationSegment ? '#7c3aed' : '#94a3b8';
+  const routeLabel = isAccommodationSegment ? 'Hotel route' : 'Walking route';
   return (
     <>
-      <Polyline positions={positions} color={color} weight={3} opacity={0.6} dashArray="5, 10">
+      <Polyline
+        positions={positions}
+        color={color}
+        weight={3}
+        opacity={0.6}
+        dashArray="5, 10"
+        eventHandlers={{
+          add: (e) => {
+            const path = (e.target as L.Path).getElement();
+            if (path) {
+              path.setAttribute('aria-description', routeLabel);
+              path.setAttribute('role', 'img');
+            }
+          },
+        }}
+      >
         <Tooltip permanent={false} direction="center" className="route-tooltip">
-          <div className="route-tooltip-content">
-            {isAccommodationSegment ? 'Hotel route' : 'Walking route'}
-          </div>
+          <div className="route-tooltip-content">{routeLabel}</div>
         </Tooltip>
       </Polyline>
       {/* Midpoint dot */}

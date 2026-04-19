@@ -1,10 +1,11 @@
 import { useState, useRef } from 'react';
-import { Sparkles, SlidersHorizontal, Check, X } from 'lucide-react';
+import { Sparkles, SlidersHorizontal, Check } from 'lucide-react';
 import ModalBase from '@/components/ui/ModalBase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { ErrorMessage } from '@/components/ui/ErrorMessage';
 import {
   HybridTrip,
   Stay,
@@ -186,8 +187,37 @@ function AIPlannerModal({
     }
   };
 
+  const generateFooter =
+    tab === 'generate'
+      ? {
+          cancel: (
+            <Button variant="outline" size="sm" onClick={onClose} disabled={loading}>
+              Cancel
+            </Button>
+          ),
+          primary: explanation ? (
+            <Button size="sm" onClick={handleApply}>
+              <Check data-icon="inline-start" className="w-4 h-4" /> Apply to Timeline
+            </Button>
+          ) : (
+            <Button size="sm" onClick={handleGenerate} disabled={loading || !prompt.trim()}>
+              {loading ? (
+                <span className="flex items-center gap-2">
+                  <span className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />{' '}
+                  Generating…
+                </span>
+              ) : (
+                <>
+                  <Sparkles data-icon="inline-start" className="w-4 h-4" /> Generate
+                </>
+              )}
+            </Button>
+          ),
+        }
+      : undefined;
+
   return (
-    <ModalBase title="AI Planner" onClose={onClose} width="max-w-lg">
+    <ModalBase title="AI Planner" onClose={onClose} width="max-w-lg" footer={generateFooter}>
       {/* Tabs */}
       <div className="flex border-b border-border mb-5 gap-4">
         {(['generate', 'settings'] as const).map((t) => (
@@ -243,13 +273,17 @@ function AIPlannerModal({
           {/* Prompt */}
           {!explanation ? (
             <div>
-              <label className="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground mb-2 block">
+              <label
+                htmlFor="ai-prompt"
+                className="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground mb-2 block"
+              >
                 What should I plan?{' '}
                 <span className="text-muted-foreground/50 normal-case font-medium">
                   ({trip.totalDays} days available)
                 </span>
               </label>
               <Textarea
+                id="ai-prompt"
                 className="text-sm resize-none"
                 rows={4}
                 placeholder={`e.g. ${trip.totalDays} days in Japan — Tokyo, Kyoto, Osaka. Culture, food, and nature. Mid-budget, late May 2026.`}
@@ -262,7 +296,7 @@ function AIPlannerModal({
                 autoFocus
               />
               {loading && (
-                <div className="mt-3 space-y-2 animate-pulse">
+                <div aria-live="polite" className="mt-3 space-y-2 animate-pulse">
                   <div className="h-2.5 bg-border rounded-full w-3/4" />
                   <div className="h-2.5 bg-border rounded-full w-1/2" />
                   <div className="h-2.5 bg-border rounded-full w-5/6" />
@@ -294,50 +328,21 @@ function AIPlannerModal({
             </div>
           )}
 
-          {error && (
-            <div className="bg-destructive/10 border border-destructive/30 rounded-lg px-4 py-3 text-xs text-destructive flex gap-2 items-start">
-              <X className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
-              <span>{error}</span>
-            </div>
-          )}
-
-          <div className="flex gap-3 pt-1">
-            <Button variant="outline" className="flex-1" onClick={onClose} disabled={loading}>
-              Cancel
-            </Button>
-            {explanation ? (
-              <Button className="flex-1" onClick={handleApply}>
-                <Check data-icon="inline-start" className="w-4 h-4" /> Apply to Timeline
-              </Button>
-            ) : (
-              <Button
-                className="flex-1"
-                onClick={handleGenerate}
-                disabled={loading || !prompt.trim()}
-              >
-                {loading ? (
-                  <span className="flex items-center gap-2">
-                    <span className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />{' '}
-                    Generating…
-                  </span>
-                ) : (
-                  <>
-                    <Sparkles data-icon="inline-start" className="w-4 h-4" /> Generate
-                  </>
-                )}
-              </Button>
-            )}
-          </div>
+          {error && <ErrorMessage className="rounded-lg">{error}</ErrorMessage>}
         </div>
       )}
 
       {tab === 'settings' && (
         <div className="space-y-4">
           <div>
-            <label className="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground mb-2 block">
+            <label
+              htmlFor="ai-api-key"
+              className="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground mb-2 block"
+            >
               Gemini API Key
             </label>
             <Input
+              id="ai-api-key"
               type="password"
               className="text-sm font-mono"
               placeholder="Paste your API key"
@@ -357,7 +362,10 @@ function AIPlannerModal({
             </p>
           </div>
           <div>
-            <label className="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground mb-2 block">
+            <label
+              htmlFor="ai-model"
+              className="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground mb-2 block"
+            >
               Model
             </label>
             <ToggleGroup
@@ -395,6 +403,7 @@ function AIPlannerModal({
               ))}
             </ToggleGroup>
             <Input
+              id="ai-model"
               type="text"
               className="text-sm font-mono"
               placeholder="or type a custom model ID"

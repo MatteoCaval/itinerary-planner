@@ -26,7 +26,7 @@ describe('AddStayModal — pick from inbox', () => {
     expect(screen.getByText(/From inbox/i)).toBeInTheDocument();
     const chip = screen.getByRole('button', { name: /Kyoto/i });
     fireEvent.click(chip);
-    const nameInput = screen.getByPlaceholderText(/Tokyo, Kyoto, Paris/i) as HTMLInputElement;
+    const nameInput = screen.getByPlaceholderText(/Search a city or region/i) as HTMLInputElement;
     expect(nameInput.value).toBe('Kyoto');
   });
 
@@ -52,7 +52,7 @@ describe('AddStayModal — pick from inbox', () => {
       <AddStayModal onClose={() => {}} onSave={() => {}} stayColor="#111" candidates={[kyoto]} />,
     );
     fireEvent.click(screen.getByRole('button', { name: /Kyoto/i }));
-    const nameInput = screen.getByPlaceholderText(/Tokyo, Kyoto, Paris/i) as HTMLInputElement;
+    const nameInput = screen.getByPlaceholderText(/Search a city or region/i) as HTMLInputElement;
     expect(nameInput.value).toBe('Kyoto');
 
     fireEvent.click(screen.getByRole('button', { name: /Clear inbox selection/i }));
@@ -69,7 +69,7 @@ describe('AddStayModal — pick from inbox', () => {
         initialCandidateId="c1"
       />,
     );
-    const nameInput = screen.getByPlaceholderText(/Tokyo, Kyoto, Paris/i) as HTMLInputElement;
+    const nameInput = screen.getByPlaceholderText(/Search a city or region/i) as HTMLInputElement;
     expect(nameInput.value).toBe('Kyoto');
   });
 });

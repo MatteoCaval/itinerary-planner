@@ -35,13 +35,30 @@ function RouteEditorModal({
     walk: { label: 'Walk', color: '#60713a' },
   };
 
+  const handleSave = () => {
+    onSave(mode, duration, notes);
+    onClose();
+  };
+
+  const footer = {
+    cancel: (
+      <Button variant="outline" size="sm" onClick={onClose}>
+        Cancel
+      </Button>
+    ),
+    primary: (
+      <Button size="sm" onClick={handleSave}>
+        Save Route
+      </Button>
+    ),
+  };
+
   return (
-    <ModalBase title="Edit Route" onClose={onClose}>
+    <ModalBase title="Edit Route" onClose={onClose} footer={footer}>
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          onSave(mode, duration, notes);
-          onClose();
+          handleSave();
         }}
       >
         <div className="space-y-5">
@@ -88,10 +105,14 @@ function RouteEditorModal({
 
           {/* Duration */}
           <div>
-            <label className="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground mb-2 block">
+            <label
+              htmlFor="route-duration"
+              className="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground mb-2 block"
+            >
               Duration
             </label>
             <Input
+              id="route-duration"
               className="text-xs"
               placeholder="e.g. 2h 30m"
               value={duration}
@@ -105,25 +126,20 @@ function RouteEditorModal({
 
           {/* Notes */}
           <div>
-            <label className="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground mb-2 block">
+            <label
+              htmlFor="route-notes"
+              className="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground mb-2 block"
+            >
               Notes
             </label>
             <Textarea
+              id="route-notes"
               className="text-xs resize-none"
               rows={3}
               placeholder="Booking reference, platform, tips..."
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
             />
-          </div>
-
-          <div className="flex gap-3 pt-1">
-            <Button type="button" variant="outline" size="sm" className="flex-1" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button type="submit" size="sm" className="flex-1">
-              Save Route
-            </Button>
           </div>
         </div>
       </form>

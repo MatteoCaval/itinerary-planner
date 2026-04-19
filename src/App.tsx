@@ -97,6 +97,8 @@ import {
   SheetTitle,
   SheetDescription,
 } from '@/components/ui/sheet';
+import { Toaster } from '@/components/ui/sonner';
+import { toast } from 'sonner';
 import 'leaflet/dist/leaflet.css';
 
 // ─── Extracted components ─────────────────────────────────────────────────────
@@ -194,6 +196,20 @@ function ChronosApp() {
 
   // Sync with history
   const hist = useHistory(trip);
+
+  const notifyReversible = useCallback(
+    (label: string, revert: () => void, description?: string) => {
+      toast(label, {
+        description,
+        duration: 5000,
+        action: {
+          label: 'Undo',
+          onClick: () => revert(),
+        },
+      });
+    },
+    [],
+  );
 
   const setTrip = useCallback(
     (fn: ((t: HybridTrip) => HybridTrip) | HybridTrip) => {
@@ -2496,32 +2512,36 @@ function ChronosApp() {
                 mapVisits.length > 0 ||
                 mapDayFilter !== null ? (
                   <TripMap
-                    visits={mapVisits}
-                    selectedVisitId={mapMode !== 'overview' ? selectedVisitId : null}
-                    highlightedVisitId={mapMode !== 'overview' ? hoveredVisitId : null}
-                    onSelectVisit={(id) => setSelectedVisitId(id)}
-                    expanded={mapExpanded}
-                    stay={mapMode !== 'overview' ? selectedStay : null}
-                    mode={mapMode}
-                    overviewStays={overviewStays}
-                    overviewCandidates={trip.candidateStays.map((c) => ({
-                      id: c.id,
-                      name: c.name,
-                      color: c.color,
-                      centerLat: c.centerLat,
-                      centerLng: c.centerLng,
-                    }))}
-                    highlightedCandidateId={selectedCandidateId}
-                    onSelectCandidate={(id) => setSelectedCandidateId(id)}
-                    onSelectStay={(stayId) => {
-                      setSelectedStayId(stayId);
+                    data={{
+                      visits: mapVisits,
+                      stay: mapMode !== 'overview' ? selectedStay : null,
+                      overviewStays,
+                      overviewCandidates: trip.candidateStays.map((c) => ({
+                        id: c.id,
+                        name: c.name,
+                        color: c.color,
+                        centerLat: c.centerLat,
+                        centerLng: c.centerLng,
+                      })),
                     }}
-                    selectedDayOffset={mapDayFilter}
-                    highlightedStayId={mapMode === 'overview' ? hoveredStayId : null}
-                    onBackToOverview={() => {
-                      setSelectedStayId('');
-                      setMapMode('overview');
-                      setMapDayFilter(null);
+                    selection={{
+                      selectedVisitId: mapMode !== 'overview' ? selectedVisitId : null,
+                      highlightedVisitId: mapMode !== 'overview' ? hoveredVisitId : null,
+                      selectedDayOffset: mapDayFilter,
+                      highlightedStayId: mapMode === 'overview' ? hoveredStayId : null,
+                      highlightedCandidateId: selectedCandidateId,
+                    }}
+                    mode={mapMode}
+                    expanded={mapExpanded}
+                    callbacks={{
+                      onSelectVisit: (id) => setSelectedVisitId(id),
+                      onSelectStay: (stayId) => setSelectedStayId(stayId),
+                      onSelectCandidate: (id) => setSelectedCandidateId(id),
+                      onBackToOverview: () => {
+                        setSelectedStayId('');
+                        setMapMode('overview');
+                        setMapDayFilter(null);
+                      },
                     }}
                   />
                 ) : (
@@ -3255,6 +3275,7 @@ function ChronosApp() {
             onSwitch={handleSwitchTrip}
             onNew={handleNewTrip}
             onClose={() => setShowTripSwitcher(false)}
+            notifyReversible={notifyReversible}
           />
         )}
 
@@ -3268,6 +3289,7 @@ function ChronosApp() {
               if (snap) updateTrip(() => snap.trip);
             }}
             onClose={() => setShowHistory(false)}
+            notifyReversible={notifyReversible}
           />
         )}
 
@@ -3390,6 +3412,7 @@ export default function App() {
       <AuthProvider>
         <TooltipProvider delayDuration={300}>
           <ChronosApp />
+          <Toaster />
         </TooltipProvider>
       </AuthProvider>
     </ChronosErrorBoundary>

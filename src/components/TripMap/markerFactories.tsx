@@ -6,6 +6,21 @@ import type { LucideIcon } from 'lucide-react';
 export type VisitType = 'landmark' | 'museum' | 'food' | 'walk' | 'shopping';
 export type LatLngTuple = [number, number];
 
+const ICON_CACHE = new Map<string, L.DivIcon>();
+const ICON_CACHE_LIMIT = 200;
+
+function cached(key: string, build: () => L.DivIcon): L.DivIcon {
+  const hit = ICON_CACHE.get(key);
+  if (hit) return hit;
+  const icon = build();
+  ICON_CACHE.set(key, icon);
+  if (ICON_CACHE.size > ICON_CACHE_LIMIT) {
+    const first = ICON_CACHE.keys().next().value;
+    if (first !== undefined) ICON_CACHE.delete(first);
+  }
+  return icon;
+}
+
 const VISIT_TYPE_COLORS: Record<VisitType, string> = {
   food: '#059669',
   landmark: '#0f766e',
@@ -26,60 +41,68 @@ export const getVisitTypeColor = (type: VisitType): string =>
   VISIT_TYPE_COLORS[type] || VISIT_TYPE_COLORS.landmark;
 
 export const createIcon = (type: VisitType, index: number, isSelected: boolean) => {
-  const IconComponent = VISIT_TYPE_ICONS[type] || Landmark;
-  const baseColor = VISIT_TYPE_COLORS[type] || VISIT_TYPE_COLORS.landmark;
-  return L.divIcon({
-    className: 'custom-marker-wrapper',
-    html: `
-      <div class="map-marker-container ${isSelected ? 'hovered' : ''}">
-        <div class="marker-circle" style="background-color: ${isSelected ? '#0d6efd' : baseColor}">
-          ${renderToStaticMarkup(<IconComponent size={12} color="white" />)}
+  return cached(`visit:${type}:${index}:${isSelected ? 's' : ''}`, () => {
+    const IconComponent = VISIT_TYPE_ICONS[type] || Landmark;
+    const baseColor = VISIT_TYPE_COLORS[type] || VISIT_TYPE_COLORS.landmark;
+    return L.divIcon({
+      className: 'custom-marker-wrapper',
+      html: `
+        <div class="map-marker-container ${isSelected ? 'hovered' : ''}">
+          <div class="marker-circle" style="background-color: ${isSelected ? '#0d6efd' : baseColor}">
+            ${renderToStaticMarkup(<IconComponent size={12} color="white" />)}
+          </div>
+          <div class="marker-number">${index + 1}</div>
         </div>
-        <div class="marker-number">${index + 1}</div>
-      </div>
-    `,
-    iconSize: [30, 30],
-    iconAnchor: [15, 15],
+      `,
+      iconSize: [30, 30],
+      iconAnchor: [15, 15],
+    });
   });
 };
 
 export const createAccommodationIcon = () =>
-  L.divIcon({
-    className: 'custom-marker-wrapper accommodation-marker',
-    html: `
-      <div class="map-marker-container">
-        <div class="marker-circle" style="background-color: #7c3aed;">
-          ${renderToStaticMarkup(<Hotel size={12} color="white" />)}
+  cached('accom', () =>
+    L.divIcon({
+      className: 'custom-marker-wrapper accommodation-marker',
+      html: `
+        <div class="map-marker-container">
+          <div class="marker-circle" style="background-color: #7c3aed;">
+            ${renderToStaticMarkup(<Hotel size={12} color="white" />)}
+          </div>
         </div>
-      </div>
-    `,
-    iconSize: [30, 30],
-    iconAnchor: [15, 15],
-  });
+      `,
+      iconSize: [30, 30],
+      iconAnchor: [15, 15],
+    }),
+  );
 
 export const createStayMarkerIcon = (name: string, color: string, highlighted = false) =>
-  L.divIcon({
-    className: 'custom-marker-wrapper',
-    html: `<div style="display:flex;flex-direction:column;align-items:center;transform:${highlighted ? 'scale(1.35)' : 'scale(1)'};transition:transform 0.18s ease;z-index:${highlighted ? 1000 : 1};">
-      ${highlighted ? `<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-55%);width:40px;height:40px;border-radius:50%;background:${color};opacity:0.18;animation:stay-marker-pulse 1.5s ease-in-out infinite;"></div>` : ''}
-      <div style="width:26px;height:26px;border-radius:50%;background:${color};border:${highlighted ? '3px solid white' : '2.5px solid white'};box-shadow:${highlighted ? `0 0 0 3px ${color}, 0 4px 16px rgba(0,0,0,0.35)` : '0 2px 6px rgba(0,0,0,0.25)'};display:flex;align-items:center;justify-content:center;">
-        ${renderToStaticMarkup(<MapPin size={12} color="white" />)}
-      </div>
-      <div style="margin-top:3px;background:${highlighted ? color : 'white'};padding:1px 5px;border-radius:4px;font-size:9px;font-weight:800;color:${highlighted ? 'white' : color};white-space:nowrap;box-shadow:${highlighted ? `0 2px 8px rgba(0,0,0,0.2)` : '0 1px 3px rgba(0,0,0,0.12)'};">
-        ${name}
-      </div>
-    </div>`,
-    iconSize: [60, 46],
-    iconAnchor: [30, 15],
-  });
+  cached(`stay:${color}:${name}:${highlighted ? 'h' : ''}`, () =>
+    L.divIcon({
+      className: 'custom-marker-wrapper',
+      html: `<div style="display:flex;flex-direction:column;align-items:center;transform:${highlighted ? 'scale(1.35)' : 'scale(1)'};transition:transform 0.18s ease;z-index:${highlighted ? 1000 : 1};">
+        ${highlighted ? `<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-55%);width:40px;height:40px;border-radius:50%;background:${color};opacity:0.18;animation:stay-marker-pulse 1.5s ease-in-out infinite;"></div>` : ''}
+        <div style="width:26px;height:26px;border-radius:50%;background:${color};border:${highlighted ? '3px solid white' : '2.5px solid white'};box-shadow:${highlighted ? `0 0 0 3px ${color}, 0 4px 16px rgba(0,0,0,0.35)` : '0 2px 6px rgba(0,0,0,0.25)'};display:flex;align-items:center;justify-content:center;">
+          ${renderToStaticMarkup(<MapPin size={12} color="white" />)}
+        </div>
+        <div style="margin-top:3px;background:${highlighted ? color : 'white'};padding:1px 5px;border-radius:4px;font-size:9px;font-weight:800;color:${highlighted ? 'white' : color};white-space:nowrap;box-shadow:${highlighted ? `0 2px 8px rgba(0,0,0,0.2)` : '0 1px 3px rgba(0,0,0,0.12)'};">
+          ${name}
+        </div>
+      </div>`,
+      iconSize: [60, 46],
+      iconAnchor: [30, 15],
+    }),
+  );
 
 export const createClusterIcon = (count: number) =>
-  L.divIcon({
-    className: 'custom-marker-wrapper cluster-marker-wrapper',
-    html: `<div class="cluster-marker-circle">${count}</div>`,
-    iconSize: [42, 42],
-    iconAnchor: [21, 21],
-  });
+  cached(`cluster:${count}`, () =>
+    L.divIcon({
+      className: 'custom-marker-wrapper cluster-marker-wrapper',
+      html: `<div class="cluster-marker-circle">${count}</div>`,
+      iconSize: [42, 42],
+      iconAnchor: [21, 21],
+    }),
+  );
 
 export const distanceBetween = (a: LatLngTuple, b: LatLngTuple) => {
   const dLat = b[0] - a[0];

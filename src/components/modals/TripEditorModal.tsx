@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Calendar, Trash2, AlertTriangle } from 'lucide-react';
+import { Calendar, Trash2 } from 'lucide-react';
+import { ErrorMessage } from '@/components/ui/ErrorMessage';
 import ModalBase from '@/components/ui/ModalBase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -35,6 +36,9 @@ function TripEditorModal({
   const [startDate, setStartDate] = useState(trip.startDate);
   const [totalDays, setTotalDays] = useState(trip.totalDays);
   const [confirmShrink, setConfirmShrink] = useState(false);
+
+  const stayCount = trip.stays.length;
+  const visitCount = trip.visits?.length ?? 0;
 
   const endDateStr =
     startDate && totalDays > 0
@@ -106,14 +110,63 @@ function TripEditorModal({
     }
   };
 
+  const footer = confirmShrink
+    ? undefined
+    : {
+        destructive: onDelete ? (
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive" size="sm">
+                <Trash2 data-icon="inline-start" className="w-3 h-3" /> Delete trip
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete &ldquo;{trip.name}&rdquo;?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will remove {stayCount} {stayCount === 1 ? 'stay' : 'stays'} and {visitCount}{' '}
+                  {visitCount === 1 ? 'place' : 'places'}. This cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Keep</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => {
+                    onDelete();
+                    onClose();
+                  }}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  Delete Trip
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        ) : undefined,
+        cancel: (
+          <Button variant="outline" size="sm" onClick={onClose}>
+            Cancel
+          </Button>
+        ),
+        primary: (
+          <Button size="sm" onClick={handleSave} disabled={!startDate || totalDays < 1}>
+            Save changes
+          </Button>
+        ),
+      };
+
   return (
-    <ModalBase title="Edit Trip" onClose={onClose}>
+    <ModalBase title="Edit Trip" onClose={onClose} footer={footer}>
       <div className="space-y-4">
         <div>
-          <label className="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground mb-2 block">
+          <label
+            htmlFor="trip-name"
+            className="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground mb-2 block"
+          >
             Trip Name
           </label>
           <Input
+            id="trip-name"
             className="text-xs font-semibold"
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -152,29 +205,25 @@ function TripEditorModal({
           </div>
         )}
 
-        {confirmShrink ? (
-          <div
-            className={`${fullyOutsideStays.length > 0 ? 'bg-destructive/10 border-destructive/30' : 'bg-warning/10 border-warning/30'} border rounded-lg p-3`}
+        {confirmShrink && (
+          <ErrorMessage
+            tone={fullyOutsideStays.length > 0 ? 'destructive' : 'warning'}
+            className="rounded-lg p-3"
           >
-            <div className="flex items-start gap-2 mb-3">
-              <AlertTriangle
-                className={`w-4 h-4 flex-shrink-0 mt-0.5 ${fullyOutsideStays.length > 0 ? 'text-destructive' : 'text-warning'}`}
-              />
-              <div className="text-xs">
-                {fullyOutsideStays.length > 0 && (
-                  <p className="text-destructive mb-1">
-                    <strong>{fullyOutsideStays.map((s) => s.name).join(', ')}</strong>{' '}
-                    {fullyOutsideStays.length > 1 ? 'are' : 'is'} fully outside the new date range
-                    and will be <strong>removed</strong>.
-                  </p>
-                )}
-                {partiallyCutStays.length > 0 && (
-                  <p className="text-warning mb-1">
-                    <strong>{partiallyCutStays.map((s) => s.name).join(', ')}</strong> will be
-                    shortened to fit. Activities outside the new range will be unplanned.
-                  </p>
-                )}
-              </div>
+            <div className="text-xs">
+              {fullyOutsideStays.length > 0 && (
+                <p className="text-destructive mb-1">
+                  <strong>{fullyOutsideStays.map((s) => s.name).join(', ')}</strong>{' '}
+                  {fullyOutsideStays.length > 1 ? 'are' : 'is'} fully outside the new date range and
+                  will be <strong>removed</strong>.
+                </p>
+              )}
+              {partiallyCutStays.length > 0 && (
+                <p className="text-warning mb-1">
+                  <strong>{partiallyCutStays.map((s) => s.name).join(', ')}</strong> will be
+                  shortened to fit. Activities outside the new range will be unplanned.
+                </p>
+              )}
             </div>
             <div className="flex gap-2">
               <Button
@@ -194,46 +243,7 @@ function TripEditorModal({
                 {fullyOutsideStays.length > 0 ? 'Remove & Shorten' : 'Confirm & Shorten'}
               </Button>
             </div>
-          </div>
-        ) : (
-          <div className="flex gap-3 pt-2">
-            {onDelete && (
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="destructive" size="sm">
-                    <Trash2 data-icon="inline-start" className="w-3 h-3" /> Delete
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Delete &ldquo;{trip.name}&rdquo;?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This will permanently delete the trip and all its stays and places. This
-                      action cannot be undone.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Keep</AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={() => {
-                        onDelete();
-                        onClose();
-                      }}
-                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                    >
-                      Delete Trip
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            )}
-            <Button variant="outline" className="flex-1" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button className="flex-1" onClick={handleSave} disabled={!startDate || totalDays < 1}>
-              Save
-            </Button>
-          </div>
+          </ErrorMessage>
         )}
       </div>
     </ModalBase>

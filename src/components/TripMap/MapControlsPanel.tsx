@@ -37,7 +37,7 @@ export function MapControlsPanel({
     return (
       <button
         onClick={() => setOpen(true)}
-        className="absolute top-3 right-3 z-[1000] size-8 flex items-center justify-center rounded-lg bg-background/90 backdrop-blur border border-border shadow-sm hover:bg-background hover:shadow-md transition-all text-muted-foreground hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary/50"
+        className="absolute top-3 right-3 z-[1000] size-10 flex items-center justify-center rounded-lg bg-background/90 backdrop-blur border border-border shadow-sm hover:bg-background hover:shadow-md transition-all text-muted-foreground hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary/50"
         aria-label="Map options"
       >
         <Settings className="w-4 h-4" />
@@ -46,7 +46,7 @@ export function MapControlsPanel({
   }
 
   return (
-    <div className="absolute top-3 right-3 z-[1000] w-56 bg-background/95 backdrop-blur-xl rounded-xl border border-border shadow-xl p-3 space-y-3">
+    <div className="absolute top-3 right-3 z-[1000] w-56 max-md:w-[min(90vw,14rem)] bg-background/95 backdrop-blur-xl rounded-xl border border-border shadow-xl p-3 space-y-3">
       <div className="flex items-center justify-between">
         <span className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-widest">
           Map Options
@@ -127,14 +127,16 @@ export function MapControlsPanel({
 
       {/* Minimal legend */}
       <div className="pt-2 border-t border-border">
-        <div className="flex items-center gap-1.5">
-          <div className="size-2 rounded-full bg-muted-foreground/40" />
-          <span className="text-[9px] font-semibold text-muted-foreground">Walking route</span>
-        </div>
-        <div className="flex items-center gap-1.5 mt-1">
-          <div className="size-2 rounded-full" style={{ background: '#7c3aed' }} />
-          <span className="text-[9px] font-semibold text-muted-foreground">Hotel route</span>
-        </div>
+        <dl className="grid grid-cols-[auto_1fr] gap-x-2 gap-y-1 text-xs">
+          <dt aria-hidden="true">
+            <span className="inline-block size-2 rounded-full bg-muted-foreground/40" />
+          </dt>
+          <dd className="text-[9px] font-semibold text-muted-foreground">Walking route</dd>
+          <dt aria-hidden="true">
+            <span className="inline-block size-2 rounded-full" style={{ background: '#7c3aed' }} />
+          </dt>
+          <dd className="text-[9px] font-semibold text-muted-foreground">Hotel route</dd>
+        </dl>
       </div>
     </div>
   );
