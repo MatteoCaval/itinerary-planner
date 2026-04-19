@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Skeleton } from '@/components/ui/Skeleton';
 
 function StayOverviewPanel({
   stay,
@@ -26,11 +27,13 @@ function StayOverviewPanel({
   const [links, setLinks] = useState<VisitLink[]>(stay.links ?? []);
   const [newLinkUrl, setNewLinkUrl] = useState('');
   const [newLinkLabel, setNewLinkLabel] = useState('');
+  const [photoLoading, setPhotoLoading] = useState(!stay.imageUrl);
 
   // Reset local state when switching to a different stay (not on every prop change — would clobber edits)
   useEffect(() => {
     setNotes(stay.notes ?? '');
     setLinks(stay.links ?? []);
+    setPhotoLoading(!stay.imageUrl);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stay.id]);
 
@@ -53,8 +56,16 @@ function StayOverviewPanel({
     <div className="flex-1 overflow-y-auto scroll-hide">
       {/* Hero */}
       <div className="relative h-24 bg-muted flex-shrink-0">
-        {stay.imageUrl ? (
-          <img src={stay.imageUrl} alt={stay.name} className="w-full h-full object-cover" />
+        {photoLoading && !stay.imageUrl ? (
+          <Skeleton className="w-full h-full rounded-none" />
+        ) : stay.imageUrl ? (
+          <img
+            src={stay.imageUrl}
+            alt={stay.name}
+            className="w-full h-full object-cover"
+            onLoad={() => setPhotoLoading(false)}
+            onError={() => setPhotoLoading(false)}
+          />
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-muted to-muted">
             <MapPin className="w-7 h-7 text-muted-foreground/30" />
@@ -91,7 +102,9 @@ function StayOverviewPanel({
             key={label}
             className={`px-3 py-2 text-center ${i < 2 ? 'border-r border-border-neutral' : ''}`}
           >
-            <p className="font-num text-base font-extrabold text-foreground">{value}</p>
+            <p className="text-base font-extrabold text-foreground">
+              <span className="font-num">{value}</span>
+            </p>
             <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest mt-0.5">
               {label}
             </p>
@@ -115,7 +128,7 @@ function StayOverviewPanel({
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-bold text-foreground truncate">{g.name}</p>
                   <p className="text-[9px] text-muted-foreground">
-                    {g.nights} {g.nights === 1 ? 'night' : 'nights'}
+                    <span className="font-num">{g.nights}</span> {g.nights === 1 ? 'night' : 'nights'}
                   </p>
                 </div>
               </div>
@@ -254,9 +267,9 @@ export function StayTodoSection({
           {checklist.length > 0 && (
             <Badge
               variant="secondary"
-              className={`font-num text-[9px] font-bold h-auto px-1.5 py-0.5 ${doneCount === checklist.length ? 'bg-success/10 text-success' : 'bg-primary/10 text-primary'}`}
+              className={`text-[9px] font-bold h-auto px-1.5 py-0.5 ${doneCount === checklist.length ? 'bg-success/10 text-success' : 'bg-primary/10 text-primary'}`}
             >
-              {doneCount}/{checklist.length}
+              <span className="font-num">{doneCount}/{checklist.length}</span>
             </Badge>
           )}
         </div>
