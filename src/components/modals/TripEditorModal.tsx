@@ -160,10 +160,11 @@ function TripEditorModal({
     <ModalBase title="Edit Trip" onClose={onClose} footer={footer}>
       <div className="space-y-4">
         <div>
-          <label className="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground mb-2 block">
+          <label htmlFor="trip-name" className="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground mb-2 block">
             Trip Name
           </label>
           <Input
+            id="trip-name"
             className="text-xs font-semibold"
             value={name}
             onChange={(e) => setName(e.target.value)}

@@ -249,6 +249,13 @@ function AddStayModal({
               <div className="flex items-center border border-border rounded-lg overflow-hidden bg-white">
                 <button
                   onClick={() => setDays((d) => Math.max(1, d - 1))}
+                  aria-label="Decrease days"
+                  onKeyDown={(e) => {
+                    if (e.key === 'ArrowDown') {
+                      e.preventDefault();
+                      setDays((d) => Math.max(1, d - 1));
+                    }
+                  }}
                   className="w-11 h-11 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted text-xl font-light transition-colors"
                 >
                   −
@@ -258,6 +265,13 @@ function AddStayModal({
                 </span>
                 <button
                   onClick={() => setDays((d) => Math.min(90, d + 1))}
+                  aria-label="Increase days"
+                  onKeyDown={(e) => {
+                    if (e.key === 'ArrowUp') {
+                      e.preventDefault();
+                      setDays((d) => Math.min(90, d + 1));
+                    }
+                  }}
                   className="w-11 h-11 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted text-xl font-light transition-colors"
                 >
                   +

@@ -105,10 +105,11 @@ function RouteEditorModal({
 
           {/* Duration */}
           <div>
-            <label className="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground mb-2 block">
+            <label htmlFor="route-duration" className="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground mb-2 block">
               Duration
             </label>
             <Input
+              id="route-duration"
               className="text-xs"
               placeholder="e.g. 2h 30m"
               value={duration}
@@ -122,10 +123,11 @@ function RouteEditorModal({
 
           {/* Notes */}
           <div>
-            <label className="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground mb-2 block">
+            <label htmlFor="route-notes" className="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground mb-2 block">
               Notes
             </label>
             <Textarea
+              id="route-notes"
               className="text-xs resize-none"
               rows={3}
               placeholder="Booking reference, platform, tips..."

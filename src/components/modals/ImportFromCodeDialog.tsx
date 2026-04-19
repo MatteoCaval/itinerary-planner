@@ -134,7 +134,11 @@ function ImportFromCodeDialog({
           handleLoad();
         }}
       >
+        <label htmlFor="import-share-code" className="sr-only">
+          Share code
+        </label>
         <Input
+          id="import-share-code"
           type="text"
           value={code}
           onChange={(e) => {

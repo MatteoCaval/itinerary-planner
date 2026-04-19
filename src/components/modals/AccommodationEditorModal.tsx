@@ -178,10 +178,11 @@ function AccommodationEditorModal({
 
         {/* Notes */}
         <div>
-          <label className="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground mb-1.5 block">
+          <label htmlFor="accom-notes" className="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground mb-1.5 block">
             Notes
           </label>
           <Input
+            id="accom-notes"
             className="text-xs"
             placeholder="Address, confirmation #, etc."
             value={notes}
@@ -191,10 +192,11 @@ function AccommodationEditorModal({
 
         {/* Cost */}
         <div>
-          <label className="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground mb-1.5 block">
+          <label htmlFor="accom-cost" className="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground mb-1.5 block">
             Nightly Cost
           </label>
           <Input
+            id="accom-cost"
             className="text-xs"
             placeholder="0.00"
             type="number"

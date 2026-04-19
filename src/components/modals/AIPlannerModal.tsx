@@ -277,13 +277,14 @@ function AIPlannerModal({
           {/* Prompt */}
           {!explanation ? (
             <div>
-              <label className="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground mb-2 block">
+              <label htmlFor="ai-prompt" className="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground mb-2 block">
                 What should I plan?{' '}
                 <span className="text-muted-foreground/50 normal-case font-medium">
                   ({trip.totalDays} days available)
                 </span>
               </label>
               <Textarea
+                id="ai-prompt"
                 className="text-sm resize-none"
                 rows={4}
                 placeholder={`e.g. ${trip.totalDays} days in Japan — Tokyo, Kyoto, Osaka. Culture, food, and nature. Mid-budget, late May 2026.`}
@@ -296,7 +297,7 @@ function AIPlannerModal({
                 autoFocus
               />
               {loading && (
-                <div className="mt-3 space-y-2 animate-pulse">
+                <div aria-live="polite" className="mt-3 space-y-2 animate-pulse">
                   <div className="h-2.5 bg-border rounded-full w-3/4" />
                   <div className="h-2.5 bg-border rounded-full w-1/2" />
                   <div className="h-2.5 bg-border rounded-full w-5/6" />
@@ -336,10 +337,11 @@ function AIPlannerModal({
       {tab === 'settings' && (
         <div className="space-y-4">
           <div>
-            <label className="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground mb-2 block">
+            <label htmlFor="ai-api-key" className="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground mb-2 block">
               Gemini API Key
             </label>
             <Input
+              id="ai-api-key"
               type="password"
               className="text-sm font-mono"
               placeholder="Paste your API key"
@@ -359,7 +361,7 @@ function AIPlannerModal({
             </p>
           </div>
           <div>
-            <label className="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground mb-2 block">
+            <label htmlFor="ai-model" className="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground mb-2 block">
               Model
             </label>
             <ToggleGroup
@@ -397,6 +399,7 @@ function AIPlannerModal({
               ))}
             </ToggleGroup>
             <Input
+              id="ai-model"
               type="text"
               className="text-sm font-mono"
               placeholder="or type a custom model ID"
