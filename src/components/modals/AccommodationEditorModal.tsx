@@ -1,12 +1,24 @@
-import { useState, useEffect } from 'react';
-import { Hotel, Search, MapPin, Check, Trash2 } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { Hotel, Trash2 } from 'lucide-react';
 import ModalBase from '@/components/ui/ModalBase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { NightAccommodation } from '@/domain/types';
 import { fmt } from '@/domain/dateUtils';
 import { searchPlace, PlaceSearchResult } from '@/utils/geocoding';
+import { PlaceSearchField, type PlaceResult } from '@/components/ui/PlaceSearchField';
 import { Checkbox } from '@/components/ui/checkbox';
+
+function toPlaceResult(r: PlaceSearchResult): PlaceResult {
+  const parts = r.display_name.split(',');
+  return {
+    id: String(r.place_id),
+    label: parts[0].trim(),
+    lat: Number(r.lat),
+    lng: Number(r.lon),
+    sublabel: parts.slice(1, 4).join(',').trim() || undefined,
+  };
+}
 
 function AccommodationEditorModal({
   initial,
@@ -39,19 +51,13 @@ function AccommodationEditorModal({
   };
   const [lat, setLat] = useState<number | undefined>(initial?.lat);
   const [lng, setLng] = useState<number | undefined>(initial?.lng);
-  const [searchResults, setSearchResults] = useState<PlaceSearchResult[]>([]);
+  const [searchResults, setSearchResults] = useState<PlaceSearchResult[] | undefined>(undefined);
   const [isSearching, setIsSearching] = useState(false);
-  const [showResults, setShowResults] = useState(false);
-
-  // Filter existing names for autocomplete
-  const filteredNames = name.trim()
-    ? existingNames.filter((n) => n.toLowerCase().includes(name.toLowerCase()) && n !== name)
-    : existingNames;
 
   // Debounced geocoding search
   useEffect(() => {
     if (!name.trim() || name.trim().length < 3 || lat) {
-      setSearchResults([]);
+      setSearchResults(undefined);
       return;
     }
     const controller = new AbortController();
@@ -60,7 +66,6 @@ function AccommodationEditorModal({
       try {
         const results = await searchPlace(name.trim(), { signal: controller.signal });
         setSearchResults(results.slice(0, 5));
-        setShowResults(true);
       } catch {
         /* ignore abort */
       } finally {
@@ -73,13 +78,17 @@ function AccommodationEditorModal({
     };
   }, [name, lat]);
 
-  const pickResult = (r: PlaceSearchResult) => {
-    setName(r.display_name.split(',')[0].trim());
-    setLat(parseFloat(r.lat));
-    setLng(parseFloat(r.lon));
-    setSearchResults([]);
-    setShowResults(false);
-  };
+  const mergedResults = useMemo<PlaceResult[]>(() => {
+    // Local suggestions come first (no coords — picking sets name only)
+    const filtered = name.trim()
+      ? existingNames.filter((n) => n.toLowerCase().includes(name.toLowerCase()) && n !== name)
+      : existingNames;
+    const local: PlaceResult[] = (!lat && name.trim().length > 0 ? filtered.slice(0, 4) : []).map(
+      (n) => ({ id: `local-${n}`, label: n, sublabel: 'Previously used', lat: 0, lng: 0 }),
+    );
+    const geo: PlaceResult[] = (searchResults ?? []).map(toPlaceResult);
+    return [...local, ...geo];
+  }, [existingNames, searchResults, lat, name]);
 
   const nightCount = selectedNights.size;
 
@@ -139,83 +148,32 @@ function AccommodationEditorModal({
           </span>
         </div>
 
-        {/* Name input with autocomplete */}
-        <div className="relative">
+        {/* Name input with autocomplete + geocoding */}
+        <div>
           <label className="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground mb-1.5 block">
             Hotel / Address <span className="text-destructive">*</span>
           </label>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
-            <Input
-              className="pl-9 pr-8 text-xs font-semibold"
-              placeholder="Search hotel or address..."
-              value={name}
-              onChange={(e) => {
-                setName(e.target.value);
-                setLat(undefined);
-                setLng(undefined);
-              }}
-              onFocus={() => {
-                if (searchResults.length > 0) setShowResults(true);
-              }}
-              autoFocus
-            />
-            {isSearching && (
-              <div className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-            )}
-            {lat && (
-              <div
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-success"
-                title={`Location: ${lat.toFixed(4)}, ${lng?.toFixed(4)}`}
-              >
-                <Check className="w-3.5 h-3.5" />
-              </div>
-            )}
-          </div>
-
-          {/* Existing accommodation suggestions */}
-          {filteredNames.length > 0 && !showResults && !lat && name.trim().length > 0 && (
-            <div className="absolute z-50 left-0 right-0 top-full mt-1 bg-white border border-border rounded-lg shadow-xl overflow-hidden">
-              {filteredNames.slice(0, 4).map((n) => (
-                <button
-                  key={n}
-                  onClick={() => {
-                    setName(n);
-                  }}
-                  className="w-full text-left px-3 py-2 hover:bg-primary/5 border-b last:border-b-0 border-border flex items-center gap-2 transition-colors"
-                >
-                  <Hotel className="w-3 h-3 text-muted-foreground" />
-                  <span className="text-xs font-semibold text-foreground">{n}</span>
-                </button>
-              ))}
-            </div>
-          )}
-
-          {/* Geocoding results */}
-          {showResults && searchResults.length > 0 && (
-            <div className="absolute z-50 left-0 right-0 top-full mt-1 bg-white border border-border rounded-lg shadow-xl overflow-hidden">
-              {searchResults.map((r) => {
-                const parts = r.display_name.split(',');
-                return (
-                  <button
-                    key={r.place_id}
-                    onClick={() => pickResult(r)}
-                    className="w-full text-left px-3 py-2.5 hover:bg-primary/5 border-b last:border-b-0 border-border flex items-start gap-2 transition-colors"
-                  >
-                    <MapPin className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0 mt-0.5" />
-                    <div className="min-w-0">
-                      <p className="text-xs font-semibold text-foreground truncate">
-                        {parts[0].trim()}
-                      </p>
-                      <p className="text-[11px] text-muted-foreground truncate">
-                        {parts.slice(1, 4).join(',').trim()}
-                      </p>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          )}
+          <PlaceSearchField
+            id="accom-name"
+            value={name}
+            onValueChange={(v) => {
+              setName(v);
+              setLat(undefined);
+              setLng(undefined);
+            }}
+            onPick={(r) => {
+              setName(r.label);
+              if (!r.id.startsWith('local-')) {
+                setLat(r.lat);
+                setLng(r.lng);
+              }
+              setSearchResults(undefined);
+            }}
+            results={mergedResults.length > 0 ? mergedResults : undefined}
+            loading={isSearching}
+            picked={!!lat}
+            placeholder="Search hotel or address…"
+          />
         </div>
 
         {/* Notes */}

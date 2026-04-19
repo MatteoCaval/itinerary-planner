@@ -1,12 +1,23 @@
 import { useState, useEffect } from 'react';
-import { Search, MapPin, Check, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import ModalBase from '@/components/ui/ModalBase';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { searchPlace, PlaceSearchResult } from '@/utils/geocoding';
+import { PlaceSearchField, type PlaceResult } from '@/components/ui/PlaceSearchField';
 import { LocationPicker } from '@/components/ui/LocationPicker';
 import type { Stay } from '@/domain/types';
+
+function toPlaceResult(r: PlaceSearchResult): PlaceResult {
+  const parts = r.display_name.split(',');
+  return {
+    id: String(r.place_id),
+    label: parts[0].trim(),
+    lat: Number(r.lat),
+    lng: Number(r.lon),
+    sublabel: parts.slice(1, 4).join(',').trim() || undefined,
+  };
+}
 
 type AddStayMode = 'schedule' | 'candidate';
 
@@ -48,12 +59,11 @@ function AddStayModal({
 
   const [name, setName] = useState(initialCandidate?.name ?? '');
   const [days, setDays] = useState(initialDays ?? 3);
-  const [searchResults, setSearchResults] = useState<PlaceSearchResult[]>([]);
+  const [searchResults, setSearchResults] = useState<PlaceSearchResult[] | undefined>(undefined);
   const [isSearching, setIsSearching] = useState(false);
   const [pickedCoords, setPickedCoords] = useState<{ lat: number; lng: number } | null>(
     initialCandidate ? { lat: initialCandidate.centerLat, lng: initialCandidate.centerLng } : null,
   );
-  const [showResults, setShowResults] = useState(false);
   const [searchError, setSearchError] = useState(false);
   const [searchStale, setSearchStale] = useState(false);
   const [selectedCandidateId, setSelectedCandidateId] = useState<string | null>(
@@ -67,12 +77,12 @@ function AddStayModal({
 
   useEffect(() => {
     if (selectedCandidateId) {
-      setSearchResults([]);
+      setSearchResults(undefined);
       setSearchError(false);
       return;
     }
     if (!name.trim() || name.trim().length < 3 || pickedCoords) {
-      setSearchResults([]);
+      setSearchResults(undefined);
       setSearchError(false);
       return;
     }
@@ -85,7 +95,6 @@ function AddStayModal({
       try {
         const results = await searchPlace(name.trim(), { signal: controller.signal });
         setSearchResults(results.slice(0, 6));
-        setShowResults(true);
       } catch {
         if (!controller.signal.aborted) setSearchError(true);
       } finally {
@@ -103,19 +112,11 @@ function AddStayModal({
     };
   }, [name, pickedCoords, selectedCandidateId]);
 
-  const pickResult = (r: PlaceSearchResult) => {
-    setName(r.display_name.split(',')[0].trim());
-    setPickedCoords({ lat: parseFloat(r.lat), lng: parseFloat(r.lon) });
-    setSearchResults([]);
-    setShowResults(false);
-  };
-
   const pickCandidate = (c: Stay) => {
     setName(c.name);
     setPickedCoords({ lat: c.centerLat, lng: c.centerLng });
     setSelectedCandidateId(c.id);
-    setSearchResults([]);
-    setShowResults(false);
+    setSearchResults(undefined);
   };
 
   const clearCandidate = () => {
@@ -208,67 +209,30 @@ function AddStayModal({
         )}
 
         {/* Destination search */}
-        <div className="relative">
+        <div>
           <label className="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground mb-2 block">
             City or destination <span className="text-destructive">*</span>
           </label>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
-            <Input
-              className="pl-9 pr-9 text-xs font-semibold placeholder:font-normal"
-              placeholder="e.g. Tokyo, Kyoto, Paris…"
-              value={name}
-              onChange={(e) => {
-                setName(e.target.value);
-                setPickedCoords(null);
-                setSelectedCandidateId(null);
-              }}
-              onFocus={() => searchResults.length > 0 && setShowResults(true)}
-              autoFocus
-            />
-            {isSearching && (
-              <div className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-            )}
-            {pickedCoords && !isSearching && (
-              <div className="absolute right-3 top-1/2 -translate-y-1/2 text-success">
-                <Check className="w-3.5 h-3.5" />
-              </div>
-            )}
-          </div>
-          {showResults && searchResults.length > 0 && (
-            <div className="absolute z-50 left-0 right-0 top-full mt-1 bg-white border border-border rounded-lg shadow-xl overflow-hidden">
-              {searchResults.map((r) => {
-                const parts = r.display_name.split(',');
-                return (
-                  <button
-                    key={r.place_id}
-                    onClick={() => pickResult(r)}
-                    className="w-full text-left px-3 py-2.5 hover:bg-primary/5 border-b last:border-b-0 border-border flex items-start gap-2 transition-colors"
-                  >
-                    <MapPin className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0 mt-0.5" />
-                    <div className="min-w-0">
-                      <p className="text-xs font-semibold text-foreground truncate">
-                        {parts[0].trim()}
-                      </p>
-                      <p className="text-[11px] text-muted-foreground truncate">
-                        {parts.slice(1, 4).join(',').trim()}
-                      </p>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          )}
-          {searchError && (
-            <p className="text-[11px] text-destructive font-medium mt-1">
-              Search failed — try a different name, or just type your destination and save.
-            </p>
-          )}
-          {isSearching && searchStale && (
-            <p className="text-[11px] text-muted-foreground font-medium mt-1">
-              Search is taking longer than expected…
-            </p>
-          )}
+          <PlaceSearchField
+            id="add-stay-name"
+            value={name}
+            onValueChange={(v) => {
+              setName(v);
+              setPickedCoords(null);
+              setSelectedCandidateId(null);
+            }}
+            onPick={(r) => {
+              setName(r.label);
+              setPickedCoords({ lat: r.lat, lng: r.lng });
+              setSearchResults(undefined);
+            }}
+            results={searchResults?.map(toPlaceResult)}
+            loading={isSearching}
+            error={searchError ? 'Search failed. Check your connection.' : null}
+            stale={searchStale}
+            placeholder="Search a city or region"
+            picked={!!pickedCoords}
+          />
           <LocationPicker
             value={pickedCoords}
             onChange={(coords) => setPickedCoords(coords)}
