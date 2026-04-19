@@ -477,7 +477,17 @@ a:focus-visible {
   font-weight: 700;
   color: #0f766e;
 }
-/* Selected start/end — solid pill */
+/* Selected start/end — half-band cell so the pill meets the range without a gap */
+.rdp-inline .rdp-range_start {
+  background: linear-gradient(90deg, transparent 50%, #ccfbf1 50%);
+}
+.rdp-inline .rdp-range_end {
+  background: linear-gradient(90deg, #ccfbf1 50%, transparent 50%);
+}
+/* Single-day range (start === end) — no band on either side */
+.rdp-inline .rdp-range_start.rdp-range_end {
+  background: transparent;
+}
 .rdp-inline .rdp-range_start .rdp-day_button,
 .rdp-inline .rdp-range_end .rdp-day_button {
   background: #0f766e !important;
