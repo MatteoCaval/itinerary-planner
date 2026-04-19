@@ -7,6 +7,9 @@ import { createStayMarkerIcon, getPointAt, getAngleAt } from './markerFactories'
 import { useRouteGeometry } from '../../hooks/useRouteGeometry';
 import type { TravelMode as TransportType } from '../../domain/types';
 
+// Memoize the arrow SVG string — renderToStaticMarkup is pure so compute once at module load
+const CHEVRON_SVG = renderToStaticMarkup(<ChevronRight size={20} strokeWidth={5} />);
+
 type TravelMode = 'train' | 'flight' | 'drive' | 'ferry' | 'bus' | 'walk';
 
 export type OverviewStay = {
@@ -108,6 +111,7 @@ export default function StayOverviewLayer({
         const chipLabel =
           expanded && stay.travelDurationToNext ? `${emoji} ${stay.travelDurationToNext}` : emoji;
 
+        const segmentLabel = `${stay.travelModeToNext} route from ${stay.name} to ${next.name}`;
         return (
           <Polyline
             key={segKey}
@@ -117,6 +121,15 @@ export default function StayOverviewLayer({
               weight: 3,
               opacity: 0.7,
               dashArray: STRAIGHT_LINE_MODES.has(stay.travelModeToNext) ? '8 6' : undefined,
+            }}
+            eventHandlers={{
+              add: (e) => {
+                const path = (e.target as L.Path).getElement();
+                if (path) {
+                  path.setAttribute('aria-description', segmentLabel);
+                  path.setAttribute('role', 'img');
+                }
+              },
             }}
           >
             {stay.travelDurationToNext && (
@@ -135,7 +148,7 @@ export default function StayOverviewLayer({
                   position={point}
                   icon={L.divIcon({
                     className: 'route-arrow-icon',
-                    html: `<div style="transform:rotate(${-angle}deg);color:${color};display:flex;align-items:center;justify-content:center;opacity:0.85;">${renderToStaticMarkup(<ChevronRight size={20} strokeWidth={5} />)}</div>`,
+                    html: `<div style="transform:rotate(${-angle}deg);color:${color};display:flex;align-items:center;justify-content:center;opacity:0.85;">${CHEVRON_SVG}</div>`,
                     iconSize: [24, 24],
                     iconAnchor: [12, 12],
                   })}
@@ -166,7 +179,7 @@ export default function StayOverviewLayer({
           icon={createStayMarkerIcon(stay.name, stay.color, highlightedStayId === stay.id)}
           eventHandlers={{
             click: () => {
-              map.flyTo([stay.centerLat, stay.centerLng], 11, { duration: 0.5 });
+              map.flyTo([stay.centerLat, stay.centerLng], 11, { duration: 0.4 });
               onSelectStay(stay.id);
             },
           }}
@@ -185,7 +198,7 @@ export default function StayOverviewLayer({
           })}
           eventHandlers={{
             click: () => {
-              map.flyTo([c.centerLat, c.centerLng], 11, { duration: 0.5 });
+              map.flyTo([c.centerLat, c.centerLng], 11, { duration: 0.4 });
               onSelectCandidate?.(c.id);
             },
           }}

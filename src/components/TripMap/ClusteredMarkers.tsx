@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Marker, Popup, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import { createIcon, createClusterIcon } from './markerFactories';
@@ -36,12 +36,28 @@ export function ClusteredMarkers({
   onSelectVisit,
   enableClustering = true,
 }: ClusteredMarkersProps) {
+  const pendingRef = useRef<number | null>(null);
+
   const map = useMapEvents({
     zoomend: () => setZoom(map.getZoom()),
-    moveend: () => setViewportTick((v) => v + 1),
   });
   const [zoom, setZoom] = useState(map.getZoom());
   const [viewportTick, setViewportTick] = useState(0);
+
+  useEffect(() => {
+    const fire = () => {
+      if (pendingRef.current) window.clearTimeout(pendingRef.current);
+      pendingRef.current = window.setTimeout(() => {
+        pendingRef.current = null;
+        setViewportTick((v) => v + 1);
+      }, 120);
+    };
+    map.on('moveend', fire);
+    return () => {
+      map.off('moveend', fire);
+      if (pendingRef.current) window.clearTimeout(pendingRef.current);
+    };
+  }, [map]);
 
   const indexedVisits = useMemo<IndexedVisit[]>(
     () => visits.map((visit, index) => ({ visit, index })),

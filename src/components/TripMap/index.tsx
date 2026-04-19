@@ -44,21 +44,27 @@ type Stay = {
 };
 
 interface TripMapProps {
-  visits: VisitItem[];
-  selectedVisitId: string | null;
-  highlightedVisitId?: string | null;
-  onSelectVisit: (id: string | null) => void;
-  expanded: boolean;
-  stay: Stay | null;
+  data: {
+    visits: VisitItem[];
+    stay: Stay | null;
+    overviewStays?: OverviewStay[];
+    overviewCandidates?: OverviewCandidate[];
+  };
+  selection: {
+    selectedVisitId: string | null;
+    highlightedVisitId?: string | null;
+    selectedDayOffset?: number | null;
+    highlightedStayId?: string | null;
+    highlightedCandidateId?: string | null;
+  };
   mode: 'overview' | 'stay' | 'detail';
-  overviewStays?: OverviewStay[];
-  overviewCandidates?: OverviewCandidate[];
-  onSelectStay?: (stayId: string) => void;
-  onSelectCandidate?: (candidateId: string) => void;
-  selectedDayOffset?: number | null;
-  highlightedStayId?: string | null;
-  highlightedCandidateId?: string | null;
-  onBackToOverview?: () => void;
+  expanded: boolean;
+  callbacks: {
+    onSelectVisit: (id: string | null) => void;
+    onSelectStay?: (stayId: string) => void;
+    onSelectCandidate?: (candidateId: string) => void;
+    onBackToOverview?: () => void;
+  };
 }
 
 const BASEMAPS: Record<BasemapMode, { url: string; attribution: string; maxZoom?: number }> = {
@@ -85,23 +91,11 @@ const BASEMAPS: Record<BasemapMode, { url: string; attribution: string; maxZoom?
   },
 };
 
-export default function TripMap({
-  visits,
-  selectedVisitId,
-  highlightedVisitId,
-  onSelectVisit,
-  expanded,
-  stay,
-  mode,
-  overviewStays,
-  overviewCandidates,
-  onSelectStay,
-  onSelectCandidate,
-  selectedDayOffset,
-  highlightedStayId,
-  highlightedCandidateId,
-  onBackToOverview,
-}: TripMapProps) {
+export default function TripMap({ data, selection, mode, expanded, callbacks }: TripMapProps) {
+  const { visits, stay, overviewStays, overviewCandidates } = data;
+  const { selectedVisitId, highlightedVisitId, selectedDayOffset, highlightedStayId, highlightedCandidateId } =
+    selection;
+  const { onSelectVisit, onSelectStay, onSelectCandidate, onBackToOverview } = callbacks;
   const [basemap, setBasemap] = useBasemapState();
   const [showArrows, setShowArrows] = useState(true);
   const [showRouteIcons, setShowRouteIcons] = useState(false);

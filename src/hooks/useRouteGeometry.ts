@@ -29,30 +29,33 @@ export function useRouteGeometry(routeSegments: RouteSegmentInput[]) {
     setRouteShapes(next);
   }, [routeSegments]);
 
-  // Fetch missing geometries
+  // Fetch missing geometries (debounced 150ms so rapid dep changes don't fire stacked requests)
   useEffect(() => {
     let cancelled = false;
     const controller = new AbortController();
 
-    const fetchRoutes = async () => {
-      for (const segment of routeSegments) {
-        if (routeShapesRef.current[segment.key]) continue;
-        const geometry = await fetchRouteGeometry(
-          [segment.from.lat, segment.from.lng],
-          [segment.to.lat, segment.to.lng],
-          segment.transportType,
-          { signal: controller.signal },
-        );
-        if (cancelled || !geometry) continue;
-        const updated = { ...routeShapesRef.current, [segment.key]: geometry };
-        routeShapesRef.current = updated;
-        if (!cancelled) setRouteShapes(updated);
-      }
-    };
+    const t = window.setTimeout(() => {
+      const fetchRoutes = async () => {
+        for (const segment of routeSegments) {
+          if (routeShapesRef.current[segment.key]) continue;
+          const geometry = await fetchRouteGeometry(
+            [segment.from.lat, segment.from.lng],
+            [segment.to.lat, segment.to.lng],
+            segment.transportType,
+            { signal: controller.signal },
+          );
+          if (cancelled || !geometry) continue;
+          const updated = { ...routeShapesRef.current, [segment.key]: geometry };
+          routeShapesRef.current = updated;
+          if (!cancelled) setRouteShapes(updated);
+        }
+      };
 
-    fetchRoutes();
+      fetchRoutes();
+    }, 150);
 
     return () => {
+      window.clearTimeout(t);
       cancelled = true;
       controller.abort();
     };
