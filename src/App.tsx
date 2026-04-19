@@ -98,6 +98,7 @@ import {
   SheetDescription,
 } from '@/components/ui/sheet';
 import { Toaster } from '@/components/ui/sonner';
+import { toast } from 'sonner';
 import 'leaflet/dist/leaflet.css';
 
 // ─── Extracted components ─────────────────────────────────────────────────────
@@ -195,6 +196,20 @@ function ChronosApp() {
 
   // Sync with history
   const hist = useHistory(trip);
+
+  const notifyReversible = useCallback(
+    (label: string, revert: () => void, description?: string) => {
+      toast(label, {
+        description,
+        duration: 5000,
+        action: {
+          label: 'Undo',
+          onClick: () => revert(),
+        },
+      });
+    },
+    [],
+  );
 
   const setTrip = useCallback(
     (fn: ((t: HybridTrip) => HybridTrip) | HybridTrip) => {
@@ -3256,6 +3271,7 @@ function ChronosApp() {
             onSwitch={handleSwitchTrip}
             onNew={handleNewTrip}
             onClose={() => setShowTripSwitcher(false)}
+            notifyReversible={notifyReversible}
           />
         )}
 
@@ -3269,6 +3285,7 @@ function ChronosApp() {
               if (snap) updateTrip(() => snap.trip);
             }}
             onClose={() => setShowHistory(false)}
+            notifyReversible={notifyReversible}
           />
         )}
 

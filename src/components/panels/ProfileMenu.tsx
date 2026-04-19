@@ -21,6 +21,16 @@ import {
   DropdownMenuSeparator,
   DropdownMenuLabel,
 } from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 function ProfileMenu({
   trip,
@@ -38,6 +48,7 @@ function ProfileMenu({
   onSignOut: () => void;
 }) {
   const [showAuth, setShowAuth] = useState(false);
+  const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const { user, signOutUser } = useAuth();
 
@@ -212,10 +223,7 @@ function ProfileMenu({
               <Button
                 variant="destructive"
                 size="sm"
-                onClick={async () => {
-                  await signOutUser();
-                  onSignOut();
-                }}
+                onClick={() => setShowSignOutConfirm(true)}
                 className="w-full text-[11px] font-bold gap-2"
               >
                 <LogOut className="w-3.5 h-3.5" />
@@ -236,6 +244,27 @@ function ProfileMenu({
         </DropdownMenuContent>
       </DropdownMenu>
       {showAuth && <AuthModalSimple onClose={() => setShowAuth(false)} />}
+      <AlertDialog open={showSignOutConfirm} onOpenChange={setShowSignOutConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Sign out of {user?.email}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You&apos;ll need to sign back in to resume cloud sync.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                await signOutUser();
+                onSignOut();
+              }}
+            >
+              Sign out
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

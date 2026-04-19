@@ -49,7 +49,7 @@ function DeleteDialog({ name, onDelete, onClose }: { name: string; onDelete: () 
         <AlertDialogHeader>
           <AlertDialogTitle>Delete &ldquo;{name}&rdquo;?</AlertDialogTitle>
           <AlertDialogDescription>
-            This place will be permanently removed. This action cannot be undone.
+            Delete &ldquo;{name}&rdquo; from your itinerary? This cannot be undone.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

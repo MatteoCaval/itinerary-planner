@@ -37,6 +37,9 @@ function TripEditorModal({
   const [totalDays, setTotalDays] = useState(trip.totalDays);
   const [confirmShrink, setConfirmShrink] = useState(false);
 
+  const stayCount = trip.stays.length;
+  const visitCount = trip.visits?.length ?? 0;
+
   const endDateStr =
     startDate && totalDays > 0
       ? fnsFormat(
@@ -121,8 +124,8 @@ function TripEditorModal({
               <AlertDialogHeader>
                 <AlertDialogTitle>Delete &ldquo;{trip.name}&rdquo;?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  This will permanently delete the trip and all its stays and places. This action
-                  cannot be undone.
+                  This will remove {stayCount} {stayCount === 1 ? 'stay' : 'stays'} and {visitCount}{' '}
+                  {visitCount === 1 ? 'place' : 'places'}. This cannot be undone.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>

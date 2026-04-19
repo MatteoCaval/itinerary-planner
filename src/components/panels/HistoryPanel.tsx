@@ -1,3 +1,4 @@
+import React from 'react';
 import { Redo2 } from 'lucide-react';
 import ModalBase from '@/components/ui/ModalBase';
 import type { HistorySnapshot } from '@/hooks/useHistory';
@@ -9,12 +10,16 @@ function HistoryPanel({
   index,
   onNavigate,
   onClose,
+  notifyReversible,
 }: {
   history: HistorySnapshot[];
   index: number;
   onNavigate: (i: number) => void;
   onClose: () => void;
+  notifyReversible: (label: string, revert: () => void, description?: string) => void;
 }) {
+  const reversed = React.useMemo(() => [...history].reverse(), [history]);
+
   return (
     <ModalBase title="History" onClose={onClose}>
       {history.length <= 1 ? (
@@ -23,7 +28,7 @@ function HistoryPanel({
         </p>
       ) : (
         <div className="space-y-0.5 max-h-[min(24rem,calc(100vh-12rem))] overflow-y-auto -mx-1 px-1">
-          {[...history].reverse().map((snap, ri) => {
+          {reversed.map((snap, ri) => {
             const i = history.length - 1 - ri;
             const isCurrent = i === index;
             const isFuture = i > index;
@@ -34,8 +39,13 @@ function HistoryPanel({
               <button
                 key={i}
                 onClick={() => {
+                  const previousIndex = index;
                   onNavigate(i);
                   onClose();
+                  notifyReversible(
+                    `Switched to snapshot ${i + 1}`,
+                    () => onNavigate(previousIndex),
+                  );
                 }}
                 className={`w-full text-left px-3 py-2.5 rounded-lg transition-all flex items-center justify-between gap-3 focus-visible:ring-2 focus-visible:ring-ring ${
                   isCurrent
