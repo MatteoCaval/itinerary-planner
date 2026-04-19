@@ -97,6 +97,7 @@ import {
   SheetTitle,
   SheetDescription,
 } from '@/components/ui/sheet';
+import { Toaster } from '@/components/ui/sonner';
 import 'leaflet/dist/leaflet.css';
 
 // ─── Extracted components ─────────────────────────────────────────────────────
@@ -3390,6 +3391,7 @@ export default function App() {
       <AuthProvider>
         <TooltipProvider delayDuration={300}>
           <ChronosApp />
+          <Toaster />
         </TooltipProvider>
       </AuthProvider>
     </ChronosErrorBoundary>
