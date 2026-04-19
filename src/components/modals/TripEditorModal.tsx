@@ -106,8 +106,57 @@ function TripEditorModal({
     }
   };
 
+  const footer = confirmShrink
+    ? undefined
+    : {
+        destructive: onDelete ? (
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive" size="sm">
+                <Trash2 data-icon="inline-start" className="w-3 h-3" /> Delete trip
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete &ldquo;{trip.name}&rdquo;?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will permanently delete the trip and all its stays and places. This action
+                  cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Keep</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => {
+                    onDelete();
+                    onClose();
+                  }}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  Delete Trip
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        ) : undefined,
+        cancel: (
+          <Button variant="outline" size="sm" onClick={onClose}>
+            Cancel
+          </Button>
+        ),
+        primary: (
+          <Button
+            size="sm"
+            onClick={handleSave}
+            disabled={!startDate || totalDays < 1}
+          >
+            Save changes
+          </Button>
+        ),
+      };
+
   return (
-    <ModalBase title="Edit Trip" onClose={onClose}>
+    <ModalBase title="Edit Trip" onClose={onClose} footer={footer}>
       <div className="space-y-4">
         <div>
           <label className="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground mb-2 block">
@@ -152,7 +201,7 @@ function TripEditorModal({
           </div>
         )}
 
-        {confirmShrink ? (
+        {confirmShrink && (
           <div
             className={`${fullyOutsideStays.length > 0 ? 'bg-destructive/10 border-destructive/30' : 'bg-warning/10 border-warning/30'} border rounded-lg p-3`}
           >
@@ -194,45 +243,6 @@ function TripEditorModal({
                 {fullyOutsideStays.length > 0 ? 'Remove & Shorten' : 'Confirm & Shorten'}
               </Button>
             </div>
-          </div>
-        ) : (
-          <div className="flex gap-3 pt-2">
-            {onDelete && (
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="destructive" size="sm">
-                    <Trash2 data-icon="inline-start" className="w-3 h-3" /> Delete
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Delete &ldquo;{trip.name}&rdquo;?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This will permanently delete the trip and all its stays and places. This
-                      action cannot be undone.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Keep</AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={() => {
-                        onDelete();
-                        onClose();
-                      }}
-                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                    >
-                      Delete Trip
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            )}
-            <Button variant="outline" className="flex-1" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button className="flex-1" onClick={handleSave} disabled={!startDate || totalDays < 1}>
-              Save
-            </Button>
           </div>
         )}
       </div>

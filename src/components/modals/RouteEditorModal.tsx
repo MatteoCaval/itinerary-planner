@@ -35,13 +35,30 @@ function RouteEditorModal({
     walk: { label: 'Walk', color: '#60713a' },
   };
 
+  const handleSave = () => {
+    onSave(mode, duration, notes);
+    onClose();
+  };
+
+  const footer = {
+    cancel: (
+      <Button variant="outline" size="sm" onClick={onClose}>
+        Cancel
+      </Button>
+    ),
+    primary: (
+      <Button size="sm" onClick={handleSave}>
+        Save Route
+      </Button>
+    ),
+  };
+
   return (
-    <ModalBase title="Edit Route" onClose={onClose}>
+    <ModalBase title="Edit Route" onClose={onClose} footer={footer}>
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          onSave(mode, duration, notes);
-          onClose();
+          handleSave();
         }}
       >
         <div className="space-y-5">
@@ -117,14 +134,6 @@ function RouteEditorModal({
             />
           </div>
 
-          <div className="flex gap-3 pt-1">
-            <Button type="button" variant="outline" size="sm" className="flex-1" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button type="submit" size="sm" className="flex-1">
-              Save Route
-            </Button>
-          </div>
         </div>
       </form>
     </ModalBase>

@@ -98,11 +98,37 @@ function AccommodationEditorModal({
     onClose();
   };
 
+  const footer = {
+    destructive: onRemove ? (
+      <Button
+        variant="destructive"
+        size="sm"
+        onClick={() => {
+          onRemove();
+          onClose();
+        }}
+      >
+        <Trash2 data-icon="inline-start" className="w-3.5 h-3.5" /> Remove
+      </Button>
+    ) : undefined,
+    cancel: (
+      <Button variant="outline" size="sm" onClick={onClose}>
+        Cancel
+      </Button>
+    ),
+    primary: (
+      <Button size="sm" onClick={handleSave} disabled={!name.trim() || nightCount === 0}>
+        Save accommodation
+      </Button>
+    ),
+  };
+
   return (
     <ModalBase
       title={initial?.name ? 'Edit Accommodation' : 'Set Accommodation'}
       onClose={onClose}
       width="max-w-sm"
+      footer={footer}
     >
       <div className="space-y-4">
         {/* Night count badge */}
@@ -255,31 +281,6 @@ function AccommodationEditorModal({
           </div>
         )}
 
-        {/* Actions */}
-        <div className="flex items-center justify-between pt-2 border-t border-border">
-          {onRemove ? (
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={() => {
-                onRemove();
-                onClose();
-              }}
-            >
-              <Trash2 data-icon="inline-start" className="w-3.5 h-3.5" /> Remove
-            </Button>
-          ) : (
-            <div />
-          )}
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button size="sm" onClick={handleSave} disabled={!name.trim() || nightCount === 0}>
-              Save
-            </Button>
-          </div>
-        </div>
       </div>
     </ModalBase>
   );

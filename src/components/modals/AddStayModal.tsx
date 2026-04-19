@@ -150,8 +150,21 @@ function AddStayModal({
   const saveLabel = isCandidateMode ? 'Save to Inbox' : 'Add to Timeline';
   const modalTitle = isCandidateMode ? 'Save Destination' : 'Add Destination';
 
+  const footer = {
+    cancel: (
+      <Button variant="outline" size="sm" onClick={onClose}>
+        Cancel
+      </Button>
+    ),
+    primary: (
+      <Button size="sm" onClick={handleSave} disabled={!canSave}>
+        {saveLabel}
+      </Button>
+    ),
+  };
+
   return (
-    <ModalBase title={modalTitle} onClose={onClose}>
+    <ModalBase title={modalTitle} onClose={onClose} footer={footer}>
       <div className="space-y-5">
         {showChipRow && (
           <div>
@@ -313,14 +326,6 @@ function AddStayModal({
           )}
         </div>
 
-        <div className="flex gap-2.5 pt-1">
-          <Button variant="outline" size="sm" className="flex-1" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button size="sm" className="flex-1" onClick={handleSave} disabled={!canSave}>
-            {saveLabel}
-          </Button>
-        </div>
       </div>
     </ModalBase>
   );

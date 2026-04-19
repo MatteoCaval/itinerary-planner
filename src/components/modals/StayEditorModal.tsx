@@ -35,9 +35,60 @@ function StayEditorModal({
   const [name, setName] = useState(stay.name);
   const [color, setColor] = useState(stay.color);
   const [confirmingDemote, setConfirmingDemote] = useState(false);
+  const canSave = name.trim().length > 0;
+
+  const footer = {
+    destructive: (
+      <AlertDialog>
+        <AlertDialogTrigger asChild>
+          <Button variant="destructive" size="sm">
+            <Trash2 data-icon="inline-start" className="w-3.5 h-3.5" /> Delete
+          </Button>
+        </AlertDialogTrigger>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete &ldquo;{stay.name}&rdquo;?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This removes all {visitCount} scheduled {visitCount === 1 ? 'place' : 'places'}.
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                onDelete();
+                onClose();
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete Stay
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    ),
+    cancel: (
+      <Button variant="outline" size="sm" onClick={onClose}>
+        Cancel
+      </Button>
+    ),
+    primary: (
+      <Button
+        size="sm"
+        disabled={!canSave}
+        onClick={() => {
+          onSave({ name, color });
+          onClose();
+        }}
+      >
+        Save
+      </Button>
+    ),
+  };
 
   return (
-    <ModalBase title="Edit Stay" onClose={onClose}>
+    <ModalBase title="Edit Stay" onClose={onClose} footer={footer}>
       <div className="space-y-4">
         <div>
           <label className="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground mb-2 block">
@@ -77,80 +128,37 @@ function StayEditorModal({
             </div>
           </div>
         </div>
-        <div className="flex gap-3 pt-2">
-          <AlertDialog>
+        {onDemote && (
+          <AlertDialog open={confirmingDemote} onOpenChange={setConfirmingDemote}>
             <AlertDialogTrigger asChild>
-              <Button variant="destructive" size="sm">
-                <Trash2 data-icon="inline-start" className="w-3.5 h-3.5" /> Delete
+              <Button variant="outline" size="sm">
+                <Inbox data-icon="inline-start" className="w-3.5 h-3.5" /> Move to Inbox
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Delete &ldquo;{stay.name}&rdquo;?</AlertDialogTitle>
+                <AlertDialogTitle>Move &ldquo;{stay.name}&rdquo; to inbox?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  This removes all {visitCount} scheduled {visitCount === 1 ? 'place' : 'places'}.
-                  This action cannot be undone.
+                  The destination moves out of the timeline. Its {visitCount} scheduled{' '}
+                  {visitCount === 1 ? 'place' : 'places'} will be unscheduled and stay attached to
+                  the destination — they&apos;ll reappear when you promote it back to the
+                  timeline.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel>Keep</AlertDialogCancel>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
                 <AlertDialogAction
                   onClick={() => {
-                    onDelete();
+                    onDemote();
                     onClose();
                   }}
-                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                 >
-                  Delete Stay
+                  Move to Inbox
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
-          {onDemote && (
-            <AlertDialog open={confirmingDemote} onOpenChange={setConfirmingDemote}>
-              <AlertDialogTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <Inbox data-icon="inline-start" className="w-3.5 h-3.5" /> Move to Inbox
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Move &ldquo;{stay.name}&rdquo; to inbox?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    The destination moves out of the timeline. Its {visitCount} scheduled{' '}
-                    {visitCount === 1 ? 'place' : 'places'} will be unscheduled and stay attached to
-                    the destination — they&apos;ll reappear when you promote it back to the
-                    timeline.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={() => {
-                      onDemote();
-                      onClose();
-                    }}
-                  >
-                    Move to Inbox
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          )}
-          <Button variant="outline" size="sm" className="flex-1" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button
-            size="sm"
-            className="flex-1"
-            onClick={() => {
-              onSave({ name, color });
-              onClose();
-            }}
-          >
-            Save
-          </Button>
-        </div>
+        )}
       </div>
     </ModalBase>
   );

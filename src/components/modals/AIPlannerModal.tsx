@@ -186,8 +186,41 @@ function AIPlannerModal({
     }
   };
 
+  const generateFooter =
+    tab === 'generate'
+      ? {
+          cancel: (
+            <Button variant="outline" size="sm" onClick={onClose} disabled={loading}>
+              Cancel
+            </Button>
+          ),
+          primary: explanation ? (
+            <Button size="sm" onClick={handleApply}>
+              <Check data-icon="inline-start" className="w-4 h-4" /> Apply to Timeline
+            </Button>
+          ) : (
+            <Button
+              size="sm"
+              onClick={handleGenerate}
+              disabled={loading || !prompt.trim()}
+            >
+              {loading ? (
+                <span className="flex items-center gap-2">
+                  <span className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />{' '}
+                  Generating…
+                </span>
+              ) : (
+                <>
+                  <Sparkles data-icon="inline-start" className="w-4 h-4" /> Generate
+                </>
+              )}
+            </Button>
+          ),
+        }
+      : undefined;
+
   return (
-    <ModalBase title="AI Planner" onClose={onClose} width="max-w-lg">
+    <ModalBase title="AI Planner" onClose={onClose} width="max-w-lg" footer={generateFooter}>
       {/* Tabs */}
       <div className="flex border-b border-border mb-5 gap-4">
         {(['generate', 'settings'] as const).map((t) => (
@@ -301,33 +334,6 @@ function AIPlannerModal({
             </div>
           )}
 
-          <div className="flex gap-3 pt-1">
-            <Button variant="outline" className="flex-1" onClick={onClose} disabled={loading}>
-              Cancel
-            </Button>
-            {explanation ? (
-              <Button className="flex-1" onClick={handleApply}>
-                <Check data-icon="inline-start" className="w-4 h-4" /> Apply to Timeline
-              </Button>
-            ) : (
-              <Button
-                className="flex-1"
-                onClick={handleGenerate}
-                disabled={loading || !prompt.trim()}
-              >
-                {loading ? (
-                  <span className="flex items-center gap-2">
-                    <span className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />{' '}
-                    Generating…
-                  </span>
-                ) : (
-                  <>
-                    <Sparkles data-icon="inline-start" className="w-4 h-4" /> Generate
-                  </>
-                )}
-              </Button>
-            )}
-          </div>
         </div>
       )}
 

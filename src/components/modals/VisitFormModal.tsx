@@ -81,6 +81,63 @@ function VisitFormModal({
   const [searchError, setSearchError] = useState(false);
   const isEditing = !!initial?.id;
 
+  const handleSave = () => {
+    if (!name.trim()) return;
+    onSave({
+      name: name.trim(),
+      type,
+      durationHint: duration,
+      notes,
+      lat: pickedCoords?.lat,
+      lng: pickedCoords?.lng,
+      checklist,
+      links,
+    });
+    onClose();
+  };
+
+  const footer = {
+    destructive: onDelete ? (
+      <AlertDialog>
+        <AlertDialogTrigger asChild>
+          <Button variant="destructive" size="sm">
+            <Trash2 data-icon="inline-start" className="w-3 h-3" /> Delete
+          </Button>
+        </AlertDialogTrigger>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete &ldquo;{name || initial?.name}&rdquo;?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This place will be permanently removed. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                onDelete();
+                onClose();
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    ) : undefined,
+    cancel: (
+      <Button type="button" variant="outline" size="sm" onClick={onClose}>
+        Cancel
+      </Button>
+    ),
+    primary: (
+      <Button size="sm" onClick={handleSave} disabled={!name.trim()}>
+        {isEditing ? 'Save' : 'Add'}
+      </Button>
+    ),
+  };
+
   // Checklist
   const [checklist, setChecklist] = useState<ChecklistItem[]>(initial?.checklist ?? []);
   const [newChecklistText, setNewChecklistText] = useState('');
@@ -150,23 +207,11 @@ function VisitFormModal({
   };
 
   return (
-    <ModalBase title={title} onClose={onClose}>
+    <ModalBase title={title} onClose={onClose} footer={footer}>
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          if (name.trim()) {
-            onSave({
-              name: name.trim(),
-              type,
-              durationHint: duration,
-              notes,
-              lat: pickedCoords?.lat,
-              lng: pickedCoords?.lng,
-              checklist,
-              links,
-            });
-            onClose();
-          }
+          handleSave();
         }}
       >
         <div className="space-y-4">
@@ -464,66 +509,21 @@ function VisitFormModal({
             </div>
           )}
 
-          {/* Delete / unschedule */}
-          {(onDelete || onUnschedule) && (
-            <div className="flex gap-2">
-              {onUnschedule && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="flex-1 border-info/30 text-info hover:bg-info/10"
-                  onClick={() => {
-                    onUnschedule();
-                    onClose();
-                  }}
-                >
-                  <ArrowLeftRight data-icon="inline-start" className="w-3 h-3" /> Move to Unplanned
-                </Button>
-              )}
-              {onDelete && (
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="destructive" size="sm" className="flex-1">
-                      <Trash2 data-icon="inline-start" className="w-3 h-3" /> Delete
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>
-                        Delete &ldquo;{name || initial?.name}&rdquo;?
-                      </AlertDialogTitle>
-                      <AlertDialogDescription>
-                        This place will be permanently removed. This action cannot be undone.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Keep</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={() => {
-                          onDelete();
-                          onClose();
-                        }}
-                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                      >
-                        Delete
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              )}
-            </div>
+          {/* Unschedule — secondary action, stays in body */}
+          {onUnschedule && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="w-full border-info/30 text-info hover:bg-info/10"
+              onClick={() => {
+                onUnschedule();
+                onClose();
+              }}
+            >
+              <ArrowLeftRight data-icon="inline-start" className="w-3 h-3" /> Move to Unplanned
+            </Button>
           )}
-
-          {/* Save / cancel */}
-          <div className="flex gap-2.5 pt-1">
-            <Button type="button" variant="outline" className="flex-1" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button type="submit" className="flex-1" disabled={!name.trim()}>
-              {isEditing ? 'Save changes' : 'Add place'}
-            </Button>
-          </div>
         </div>
       </form>
     </ModalBase>
