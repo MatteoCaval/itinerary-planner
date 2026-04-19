@@ -18,6 +18,15 @@ Petrol Teal (`#0f766e`) primary, reserved for chrome (brand, CTA, active state, 
 
 ---
 
+## UX conventions
+
+- **Button ordering:** destructive far-left, Cancel and primary CTA right.
+- **Destructive actions:** reversible ones (history navigation, trip switch) show a toast with Undo (5s); permanent ones (delete, revoke, sign out) gate with an AlertDialog that names the impact.
+- **Errors:** surfaced via the shared `<ErrorMessage>` primitive with `tone="destructive|warning|info"`.
+- **Motion:** respects `prefers-reduced-motion` globally and via the `useReducedMotion()` hook on JS-driven animations.
+
+---
+
 ## Features
 
 ### Timeline
