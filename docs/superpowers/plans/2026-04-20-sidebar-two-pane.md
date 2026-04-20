@@ -15,11 +15,13 @@
 ## File structure
 
 **New files:**
+
 - `src/hooks/useLocalStorage.ts` + `.test.tsx`
 - `src/hooks/useMediaQuery.ts` + `.test.tsx`
 - `src/components/layout/SidebarSplit.tsx` + `.test.tsx`
 
 **Modified:**
+
 - `src/App.tsx` — gate sidebar rendering by media query; render `SidebarSplit` on desktop, existing `<Tabs>` on mobile.
 
 ---
@@ -33,6 +35,7 @@ Hooks first (independent primitives, TDD-able in isolation). Then `SidebarSplit`
 ## Task 1 — `useLocalStorage` hook (if not already present)
 
 **Files:**
+
 - Create (or skip if exists): `src/hooks/useLocalStorage.ts`
 - Create (or skip): `src/hooks/__tests__/useLocalStorage.test.tsx`
 
@@ -100,10 +103,7 @@ Create `src/hooks/useLocalStorage.ts`:
 ```ts
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-export function useLocalStorage<T>(
-  key: string,
-  defaultValue: T,
-): [T, (next: T) => void] {
+export function useLocalStorage<T>(key: string, defaultValue: T): [T, (next: T) => void] {
   const [value, setValue] = useState<T>(() => {
     if (typeof window === 'undefined') return defaultValue;
     try {
@@ -120,18 +120,15 @@ export function useLocalStorage<T>(
     keyRef.current = key;
   }, [key]);
 
-  const update = useCallback(
-    (next: T) => {
-      setValue(next);
-      if (typeof window === 'undefined') return;
-      try {
-        window.localStorage.setItem(keyRef.current, JSON.stringify(next));
-      } catch {
-        // quota exceeded / disabled — fail silently
-      }
-    },
-    [],
-  );
+  const update = useCallback((next: T) => {
+    setValue(next);
+    if (typeof window === 'undefined') return;
+    try {
+      window.localStorage.setItem(keyRef.current, JSON.stringify(next));
+    } catch {
+      // quota exceeded / disabled — fail silently
+    }
+  }, []);
 
   return [value, update];
 }
@@ -165,6 +162,7 @@ git commit -m "feat(hooks): add useLocalStorage"
 ## Task 2 — `useMediaQuery` hook
 
 **Files:**
+
 - Create: `src/hooks/useMediaQuery.ts`
 - Create: `src/hooks/__tests__/useMediaQuery.test.tsx`
 
@@ -191,7 +189,9 @@ function stub(matches: boolean) {
   let listener: MqlListener | null = null;
   const mql = {
     matches,
-    addEventListener: (_: string, l: MqlListener) => { listener = l; },
+    addEventListener: (_: string, l: MqlListener) => {
+      listener = l;
+    },
     removeEventListener: vi.fn(),
   };
   vi.stubGlobal('matchMedia', () => mql);
@@ -268,6 +268,7 @@ git commit -m "feat(hooks): add useMediaQuery"
 ## Task 3 — `SidebarSplit` component (TDD)
 
 **Files:**
+
 - Create: `src/components/layout/SidebarSplit.tsx`
 - Create: `src/components/layout/SidebarSplit.test.tsx`
 
@@ -453,10 +454,7 @@ export function SidebarSplit({
       data-collapsed={collapsed ? 'true' : 'false'}
       className={cn('h-full flex flex-col', className)}
     >
-      <div
-        style={{ flex: effectiveRatio }}
-        className="min-h-0 overflow-y-auto"
-      >
+      <div style={{ flex: effectiveRatio }} className="min-h-0 overflow-y-auto">
         {top}
       </div>
 
@@ -489,23 +487,15 @@ export function SidebarSplit({
           className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 size-4 rounded-sm bg-card border border-border flex items-center justify-center hover:bg-muted"
         >
           <ChevronDown
-            className={cn(
-              'size-3 transition-transform',
-              collapsed ? 'rotate-180' : 'rotate-0',
-            )}
+            className={cn('size-3 transition-transform', collapsed ? 'rotate-180' : 'rotate-0')}
           />
         </button>
       </div>
 
       {!collapsed && (
-        <div
-          style={{ flex: 1 - effectiveRatio }}
-          className="min-h-0 flex flex-col"
-        >
+        <div style={{ flex: 1 - effectiveRatio }} className="min-h-0 flex flex-col">
           {bottomHeader && (
-            <div className="flex-shrink-0 border-b border-border">
-              {bottomHeader}
-            </div>
+            <div className="flex-shrink-0 border-b border-border">{bottomHeader}</div>
           )}
           <div className="min-h-0 overflow-y-auto flex-1">{bottom}</div>
         </div>
@@ -543,6 +533,7 @@ git commit -m "feat(layout): add SidebarSplit two-pane component"
 ## Task 4 — Wire `SidebarSplit` into `App.tsx`
 
 **Files:**
+
 - Modify: `src/App.tsx`
 
 This is the main integration. The current `<aside>` contains a `<Tabs>` with two branches. At desktop widths, render `<SidebarSplit>` with the same branches' contents in top/bottom slots. At mobile widths, keep the current `<Tabs>` markup.
@@ -571,27 +562,31 @@ Inside the existing sidebar `<aside>` block, today the Details (overview) conten
 ```tsx
 const detailsPane = (
   <>
-    {selectedStay && selectedVisitId && (() => {
-      const visit = trip.visits.find((v) => v.id === selectedVisitId);
-      if (!visit) return null;
-      const dayLabel =
-        visit.dayOffset !== null
-          ? `Day ${visit.dayOffset + 1}${visit.dayPart ? ', ' + visit.dayPart.charAt(0).toUpperCase() + visit.dayPart.slice(1) : ''}`
-          : 'Unplanned';
-      return (
-        <VisitDetailDrawer
-          key={visit.id}
-          visit={visit}
-          dayLabel={dayLabel}
-          onClose={() => setSelectedVisitId(null)}
-          onEdit={() => { /* existing body — copy verbatim from the current block */ }}
-          /* copy remaining props verbatim */
-        />
-      );
-    })()}
+    {selectedStay &&
+      selectedVisitId &&
+      (() => {
+        const visit = trip.visits.find((v) => v.id === selectedVisitId);
+        if (!visit) return null;
+        const dayLabel =
+          visit.dayOffset !== null
+            ? `Day ${visit.dayOffset + 1}${visit.dayPart ? ', ' + visit.dayPart.charAt(0).toUpperCase() + visit.dayPart.slice(1) : ''}`
+            : 'Unplanned';
+        return (
+          <VisitDetailDrawer
+            key={visit.id}
+            visit={visit}
+            dayLabel={dayLabel}
+            onClose={() => setSelectedVisitId(null)}
+            onEdit={() => {
+              /* existing body — copy verbatim from the current block */
+            }}
+            /* copy remaining props verbatim */
+          />
+        );
+      })()}
     {selectedStay && !selectedVisitId && (
       <StayOverviewPanel
-        /* copy props verbatim from the existing block */
+      /* copy props verbatim from the existing block */
       />
     )}
     {!selectedStay && (
@@ -623,10 +618,7 @@ const inboxHeader = (
         Inbox
       </span>
       {inboxVisits.length > 0 && (
-        <Badge
-          variant="secondary"
-          className="h-4 px-1.5 rounded-full text-[9px] font-bold"
-        >
+        <Badge variant="secondary" className="h-4 px-1.5 rounded-full text-[9px] font-bold">
           {inboxVisits.length}
         </Badge>
       )}
@@ -663,9 +655,7 @@ Replace the existing Tab-based body of the `<aside>` with:
       bottom={<div className="p-4 space-y-3 scroll-hide">{inboxPane}</div>}
     />
   ) : (
-    <>
-      {/* existing Tabs + old body, unchanged */}
-    </>
+    <>{/* existing Tabs + old body, unchanged */}</>
   )}
 </aside>
 ```
@@ -709,6 +699,7 @@ docker compose restart
 Wait for `VITE ready`. Open http://localhost:5173/itinerary-planner/.
 
 Walk every flow:
+
 - Select a stay — Details pane shows `StayOverviewPanel`. Inbox pane shows unplanned visits or "All scheduled" empty state.
 - Deselect — Details shows welcome. Inbox shows candidate stays.
 - Drag an inbox item into a day column (across the splitter boundary — dnd-kit should still work since the drag overlay is portal-based).

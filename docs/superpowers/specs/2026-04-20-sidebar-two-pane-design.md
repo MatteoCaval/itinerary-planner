@@ -12,6 +12,7 @@
 Replace the current Details/Inbox tab switcher with a two-pane sidebar where both are visible at once. Details pane on top, Inbox pane pinned below, separated by a resizable horizontal splitter. Mobile keeps the current tab pattern — two-pane doesn't make sense at phone width.
 
 **Non-goals**
+
 - No changes to what each pane shows internally — Details still renders `StayOverviewPanel` / `VisitDetailDrawer` / welcome prompt; Inbox still renders `DraggableInventoryCard` list / candidate stays list / empty state.
 - No refactor of the inbox data model or drag-drop plumbing.
 - Not touching the right-side map panel.
@@ -97,7 +98,10 @@ New state (in `src/App.tsx` or a dedicated `useSidebarSplit` hook):
 
 ```ts
 const [splitRatio, setSplitRatio] = useLocalStorage<number>('sidebar-split-ratio', 0.6);
-const [inboxCollapsed, setInboxCollapsed] = useLocalStorage<boolean>('sidebar-inbox-collapsed', false);
+const [inboxCollapsed, setInboxCollapsed] = useLocalStorage<boolean>(
+  'sidebar-inbox-collapsed',
+  false,
+);
 ```
 
 Existing state:

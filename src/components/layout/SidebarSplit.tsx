@@ -78,10 +78,7 @@ export function SidebarSplit({
       data-collapsed={collapsed ? 'true' : 'false'}
       className={cn('h-full flex flex-col', className)}
     >
-      <div
-        style={{ flex: effectiveRatio }}
-        className="min-h-0 overflow-y-auto"
-      >
+      <div style={{ flex: effectiveRatio }} className="min-h-0 overflow-y-auto">
         {top}
       </div>
 
@@ -114,23 +111,15 @@ export function SidebarSplit({
           className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 size-4 rounded-sm bg-card border border-border flex items-center justify-center hover:bg-muted"
         >
           <ChevronDown
-            className={cn(
-              'size-3 transition-transform',
-              collapsed ? 'rotate-180' : 'rotate-0',
-            )}
+            className={cn('size-3 transition-transform', collapsed ? 'rotate-180' : 'rotate-0')}
           />
         </button>
       </div>
 
       {!collapsed && (
-        <div
-          style={{ flex: 1 - effectiveRatio }}
-          className="min-h-0 flex flex-col"
-        >
+        <div style={{ flex: 1 - effectiveRatio }} className="min-h-0 flex flex-col">
           {bottomHeader && (
-            <div className="flex-shrink-0 border-b border-border">
-              {bottomHeader}
-            </div>
+            <div className="flex-shrink-0 border-b border-border">{bottomHeader}</div>
           )}
           <div className="min-h-0 overflow-y-auto flex-1">{bottom}</div>
         </div>

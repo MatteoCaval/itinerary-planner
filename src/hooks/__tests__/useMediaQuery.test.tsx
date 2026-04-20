@@ -8,7 +8,9 @@ function stub(matches: boolean) {
   let listener: MqlListener | null = null;
   const mql = {
     matches,
-    addEventListener: (_: string, l: MqlListener) => { listener = l; },
+    addEventListener: (_: string, l: MqlListener) => {
+      listener = l;
+    },
     removeEventListener: vi.fn(),
   };
   vi.stubGlobal('matchMedia', () => mql);

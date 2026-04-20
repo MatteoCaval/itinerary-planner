@@ -884,9 +884,7 @@ function ChronosApp() {
               onUpdateVisit={(updates) => {
                 setTrip((t) => ({
                   ...t,
-                  visits: t.visits.map((v) =>
-                    v.id === visit.id ? { ...v, ...updates } : v,
-                  ),
+                  visits: t.visits.map((v) => (v.id === visit.id ? { ...v, ...updates } : v)),
                 }));
               }}
             />
@@ -1025,8 +1023,7 @@ function ChronosApp() {
                 No destinations in inbox yet
               </p>
               <p className="text-[11px] text-muted-foreground text-center max-w-[220px]">
-                Add places you&apos;re considering, then move them to the timeline when
-                ready.
+                Add places you&apos;re considering, then move them to the timeline when ready.
               </p>
             </div>
           )}
@@ -1042,10 +1039,7 @@ function ChronosApp() {
           Inbox
         </span>
         {inboxVisits.length > 0 && (
-          <Badge
-            variant="secondary"
-            className="h-4 px-1.5 rounded-full text-[9px] font-bold"
-          >
+          <Badge variant="secondary" className="h-4 px-1.5 rounded-full text-[9px] font-bold">
             {inboxVisits.length}
           </Badge>
         )}
@@ -1970,11 +1964,7 @@ function ChronosApp() {
             <aside
               className={`border-r border-border-neutral flex flex-col bg-white transition-all duration-300 ${mapExpanded ? 'w-0 overflow-hidden opacity-0' : 'w-64 hidden md:flex'}`}
             >
-              <SidebarSplit
-                top={detailsPane}
-                bottomHeader={inboxHeader}
-                bottom={inboxPane}
-              />
+              <SidebarSplit top={detailsPane} bottomHeader={inboxHeader} bottom={inboxPane} />
             </aside>
 
             {/* Day columns */}

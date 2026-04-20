@@ -1,9 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-export function useLocalStorage<T>(
-  key: string,
-  defaultValue: T,
-): [T, (next: T) => void] {
+export function useLocalStorage<T>(key: string, defaultValue: T): [T, (next: T) => void] {
   const [value, setValue] = useState<T>(() => {
     if (typeof window === 'undefined') return defaultValue;
     try {

@@ -136,7 +136,7 @@ On desktop:
 On mobile:
 
 - Sidebar = tab-swappable
-- Bottom drawer = visit detail (*different from desktop!*)
+- Bottom drawer = visit detail (_different from desktop!_)
 - Map = hidden behind a button
 
 The VisitDetailDrawer behaves like a right-slide sheet on desktop and a bottom sheet on mobile. That inconsistency makes the two experiences feel like different products. Users on a desktop who then pick up their phone have to re-learn where the visit drawer lives.
@@ -173,15 +173,15 @@ Option 3 is the cheapest to implement and the closest to industry standard. The 
 
 Features that exist but users won't find unaided:
 
-| Feature | Current entry point | Gap |
-|---|---|---|
-| AI Planner | Kebab menu | Buried under 1 click + scroll |
-| Import from code | Kebab menu / Welcome | Two entry points, both hidden |
-| Route editing | Transit chip between stays | Easy to miss — chips are tiny |
-| Accommodation editing | Chip inside day column | Discoverable only by hovering |
-| History navigation | "History" button (header) | Decent, but toast-undo only shows for recent |
-| Sync status | Dot in header | Desktop-only |
-| Keyboard shortcuts | None documented | Undo/Redo wired but users won't know |
+| Feature               | Current entry point        | Gap                                          |
+| --------------------- | -------------------------- | -------------------------------------------- |
+| AI Planner            | Kebab menu                 | Buried under 1 click + scroll                |
+| Import from code      | Kebab menu / Welcome       | Two entry points, both hidden                |
+| Route editing         | Transit chip between stays | Easy to miss — chips are tiny                |
+| Accommodation editing | Chip inside day column     | Discoverable only by hovering                |
+| History navigation    | "History" button (header)  | Decent, but toast-undo only shows for recent |
+| Sync status           | Dot in header              | Desktop-only                                 |
+| Keyboard shortcuts    | None documented            | Undo/Redo wired but users won't know         |
 
 The pattern: **most of the app's power is hidden behind icons without labels, or menus of menus**. A dedicated `?` help sheet with the feature list and keyboard shortcuts would cover a lot of this.
 
@@ -199,16 +199,19 @@ The pattern: **most of the app's power is hidden behind icons without labels, or
 ## Priority matrix
 
 **Ship-now (small, high leverage)**
+
 - Promote AI Planner, Share, Import out of the kebab menu into the toolbar.
 - Add a `?` help sheet with features + keyboard shortcuts.
 - First-run overlay or templated starter trip.
 
 **Worth-a-spec (medium redesigns)**
+
 - Inline popovers for Route / Accommodation / Stay editing (un-modal the small stuff).
 - Unify desktop + mobile to bottom-sheet pattern for transient selections.
 - Sidebar split: details + inbox visible simultaneously (two-column or backlog-rail).
 
 **Question-the-premise (big conversations)**
+
 - Is the always-visible map the right default?
 - Is the morning/afternoon/evening slot model the right granularity?
 - Should timeline and day columns be unified or separated into two tabs?
