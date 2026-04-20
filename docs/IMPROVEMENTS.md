@@ -262,10 +262,7 @@ Each of these changes how the app fundamentally works. Not to be shipped without
   - _Collapsed by default, expands on first map-relevant action;_
   - _Tabbed workspace ("Plan" / "Map" mutually exclusive);_
   - _Context-aware auto-appear (once visits have coords)._
-- [ ] **B. Sidebar split.** Tab-switching between stay details and inbox means you can't feed the plan while working on it. Options:
-  - _Two-pane sidebar (details on top, inbox on bottom, resizable);_
-  - _Backlog rail (inbox as a horizontal strip under the day columns, kanban-style);_
-  - _Keep tabs, add a pending-count badge._
+- [x] **B. Sidebar split.** Shipped as two-pane (details on top, inbox pinned below, resizable splitter with keyboard + collapse). Mobile keeps tabs. Backlog rail option kept on file as a possible future upgrade.
 - [ ] **C. Desktop/mobile drawer paradigm.** Visit detail is a right-drawer on desktop, a bottom-sheet on mobile. Unify on bottom-sheet everywhere (Google Maps / Airbnb pattern) or keep divergence behind a preference.
 - [ ] **D. Timeline vs day columns.** Both always visible; both time-ordered. Options:
   - _Auto-collapse timeline to a 32px strip when working in day columns;_
