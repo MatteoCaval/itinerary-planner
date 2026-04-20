@@ -240,3 +240,53 @@ A **parking lot for destinations** — mirrors how visits have an unplanned inbo
 ## Data Model v2 Migration ✅
 
 Implemented. See PR description for full rationale.
+
+---
+
+## IA & Layout Critique — 2026-04-19
+
+Follow-up to the component polish PR. This section is about **whether each surface earns its place** and whether the app's information architecture could be better, rather than code quality. Full analysis in `docs/superpowers/audits/2026-04-19-ia-critique.md`.
+
+### Littles — actionable, low-risk, one PR
+
+- [ ] **Toolbar reshuffle.** AI Planner + Share + Import promoted out of the kebab menu into the top bar. Kebab retains Export/Import-JSON/History as utility overflow. Account moves to a persistent avatar.
+- [ ] **`?` help sheet.** Keyboard shortcuts, feature list, one-line descriptions of non-obvious features (AI planner, share code, day filters, undo/redo). New component, one button.
+- [ ] **Route edit → inline popover.** Clicking a transit chip opens a Popover right there with mode/duration/notes. `RouteEditorModal` deleted.
+- [ ] **Accommodation inline edit.** Tap a grouped block in `StayOverviewPanel`'s Sleeping section → expands in place. `AccommodationEditorModal` retained only for "add new" from the day chip.
+
+### Bigs — need a decision before speccing
+
+Each of these changes how the app fundamentally works. Not to be shipped without a dedicated conversation.
+
+- [ ] **A. Map default visibility.** Today the map claims ~500px of the right side always. Options:
+  - _Collapsed by default, expands on first map-relevant action;_
+  - _Tabbed workspace ("Plan" / "Map" mutually exclusive);_
+  - _Context-aware auto-appear (once visits have coords)._
+- [ ] **B. Sidebar split.** Tab-switching between stay details and inbox means you can't feed the plan while working on it. Options:
+  - _Two-pane sidebar (details on top, inbox on bottom, resizable);_
+  - _Backlog rail (inbox as a horizontal strip under the day columns, kanban-style);_
+  - _Keep tabs, add a pending-count badge._
+- [ ] **C. Desktop/mobile drawer paradigm.** Visit detail is a right-drawer on desktop, a bottom-sheet on mobile. Unify on bottom-sheet everywhere (Google Maps / Airbnb pattern) or keep divergence behind a preference.
+- [ ] **D. Timeline vs day columns.** Both always visible; both time-ordered. Options:
+  - _Auto-collapse timeline to a 32px strip when working in day columns;_
+  - _Two tabs (Timeline / Days) as mutually exclusive views;_
+  - _Status quo._
+- [ ] **E. M/A/E slot model.** Morning/afternoon/evening slots enforce a structure real trips often blur. Options:
+  - _Add "all-day" as a fourth bucket;_
+  - _Switch to free-form time ranges (start/end with proportional rendering);_
+  - _Progressive disclosure — keep slots as default, allow per-visit precise time as opt-in._
+- [ ] **F. Trip summary page.** No overview today — opening a trip drops you into planning. Add a "Summary" tab: total days/places/hotels, accommodation cost total, % days planned vs empty, first/last dates, transport breakdown.
+
+### Discoverability and polish bits
+
+- [ ] **Visit type list is western-tourist-coded** (food/landmark/museum/walk/shopping). Missing: hotels-as-stops, hikes, meetings, shopping districts. Either expand or switch to free-form tags.
+- [ ] **Day cards have no headline field.** Users think "the museum day," "the onsen day" — the app doesn't have a slot for that per-day label.
+- [ ] **Checklist and Links features are invisible** unless you open a visit's detail. No onboarding hint, no count badge in card views.
+- [ ] **Sync status hidden on mobile** — the existing footer sync dot doesn't appear on small screens (noted in CLAUDE.md but still open).
+- [ ] **Keyboard shortcuts undocumented.** Undo/redo wired, no user-facing mention.
+
+### Redundant / overlapping surfaces
+
+- [ ] **Three entry points to edit a stay** (timeline pencil, sidebar edit button, StayEditorModal). Consolidate.
+- [ ] **Two inboxes conceptually** — sidebar inbox tab + mobile bottom drawer inventory. Works, but makes "inbox" feel ambiguous (stay-scoped vs global).
+- [ ] **Share and Import are sibling flows in different modals.** Could be one "Collaborate" surface with tabs.
