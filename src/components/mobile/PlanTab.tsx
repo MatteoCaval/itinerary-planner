@@ -67,20 +67,37 @@ export function PlanTab({
 
       <div className="flex-shrink-0 border-b border-border px-2 py-2 overflow-x-auto scroll-hide">
         <div className="flex items-center gap-1.5">
-          {sortedStays.map((s) => (
-            <button
-              key={s.id}
-              type="button"
-              onClick={() => onSelectStay(s.id)}
-              className={cn(
-                'flex-shrink-0 px-3 h-7 rounded-md text-xs font-semibold text-white',
-                s.id === selectedStay?.id ? 'ring-2 ring-primary/40' : '',
-              )}
-              style={{ background: s.color }}
-            >
-              {s.name}
-            </button>
-          ))}
+          <button
+            type="button"
+            onClick={() => onSelectStay('')}
+            className={cn(
+              'flex-shrink-0 px-3 h-7 rounded-md text-xs font-semibold border',
+              selectedStay
+                ? 'border-border bg-background text-muted-foreground hover:bg-muted'
+                : 'border-primary bg-primary/10 text-primary',
+            )}
+            aria-pressed={!selectedStay}
+          >
+            All
+          </button>
+          {sortedStays.map((s) => {
+            const isSelected = s.id === selectedStay?.id;
+            return (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => onSelectStay(isSelected ? '' : s.id)}
+                className={cn(
+                  'flex-shrink-0 px-3 h-7 rounded-md text-xs font-semibold text-white',
+                  isSelected ? 'ring-2 ring-primary/40' : '',
+                )}
+                style={{ background: s.color }}
+                aria-pressed={isSelected}
+              >
+                {s.name}
+              </button>
+            );
+          })}
         </div>
       </div>
 

@@ -1277,6 +1277,10 @@ function ChronosApp() {
                       subtitle: 'Destination',
                     });
                   },
+                  onBackToOverview: () => {
+                    setSelectedStayId('');
+                    setMobilePeek(null);
+                  },
                 }}
               />
             )}
