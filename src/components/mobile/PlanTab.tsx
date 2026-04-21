@@ -131,22 +131,27 @@ export function PlanTab({
 
               {DAY_PARTS.map((period) => {
                 const periodVisits = dayVisits.filter((v) => v.dayPart === period);
-                if (periodVisits.length === 0) return null;
                 return (
                   <React.Fragment key={period}>
                     <div className="text-[9px] uppercase tracking-widest text-muted-foreground font-semibold pt-2 pb-1">
                       {period}
                     </div>
-                    {periodVisits.map((visit) => (
-                      <VisitRow key={visit.id} visit={visit} onOpen={() => onOpenVisit(visit.id)} />
-                    ))}
+                    {periodVisits.length === 0 ? (
+                      <div className="text-[10px] text-muted-foreground/60 italic px-2 py-1">
+                        —
+                      </div>
+                    ) : (
+                      periodVisits.map((visit) => (
+                        <VisitRow
+                          key={visit.id}
+                          visit={visit}
+                          onOpen={() => onOpenVisit(visit.id)}
+                        />
+                      ))
+                    )}
                   </React.Fragment>
                 );
               })}
-
-              {dayVisits.length === 0 && (
-                <div className="text-xs text-muted-foreground text-center py-4">No activities</div>
-              )}
             </div>
           );
         })}

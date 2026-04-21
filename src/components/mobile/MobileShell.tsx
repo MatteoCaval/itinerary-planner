@@ -1,3 +1,4 @@
+import * as React from 'react';
 import { useMobileNav, type MobileNavApi } from '@/hooks/useMobileNav';
 import { BottomTabBar } from './BottomTabBar';
 import { PlanTab } from './PlanTab';
@@ -28,6 +29,19 @@ interface MobileShellProps {
 export function MobileShell(props: MobileShellProps) {
   const nav = useMobileNav();
   const currentPageNode = nav.currentPage ? props.renderCurrentPage(nav) : null;
+
+  // Auto-select the first stay on first mount if none is selected — without
+  // a selection the stay chip is hidden and the user has no entry point to
+  // the stay overview page.
+  const { selectedStay, sortedStays, onSelectStay } = props;
+  const didAutoSelect = React.useRef(false);
+  React.useEffect(() => {
+    if (didAutoSelect.current) return;
+    if (!selectedStay && sortedStays.length > 0) {
+      onSelectStay(sortedStays[0].id);
+      didAutoSelect.current = true;
+    }
+  }, [selectedStay, sortedStays, onSelectStay]);
 
   return (
     <div className="flex flex-col h-[100dvh] bg-background">
