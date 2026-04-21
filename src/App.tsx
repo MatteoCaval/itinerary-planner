@@ -97,13 +97,6 @@ import { Input } from '@/components/ui/input';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Kbd } from '@/components/ui/kbd';
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-} from '@/components/ui/sheet';
 import { Toaster } from '@/components/ui/sonner';
 import { toast } from 'sonner';
 import 'leaflet/dist/leaflet.css';
@@ -134,7 +127,6 @@ import {
 import TripSwitcherPanel from './components/panels/TripSwitcherPanel';
 import HistoryPanel from './components/panels/HistoryPanel';
 import StayOverviewPanel from './components/panels/StayOverviewPanel';
-import { StayTodoSection } from './components/panels/StayOverviewPanel';
 import VisitDetailDrawer from './components/panels/VisitDetailDrawer';
 import ProfileMenu from './components/panels/ProfileMenu';
 import DraggableInventoryCard from './components/cards/DraggableInventoryCard';
@@ -351,7 +343,6 @@ function ChronosApp() {
     days: number;
   } | null>(null);
   const timelineZoneRef = useRef<HTMLDivElement>(null);
-  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [mobilePeek, setMobilePeek] = useState<
     ({ kind: 'visit' | 'stay'; id: string } & MapTabPeek) | null
@@ -2439,10 +2430,6 @@ function ChronosApp() {
                           onSelectVisit={(id) => {
                             const next = id === selectedVisitId ? null : id;
                             setSelectedVisitId(next);
-                            if (next) {
-                              // On mobile, open the bottom drawer to show visit detail
-                              if (window.innerWidth < 768) setMobileDrawerOpen(true);
-                            }
                           }}
                           onEditVisit={(v) => setEditingVisit(v)}
                           onAddVisit={(d, p) => setAddingVisitToSlot({ dayOffset: d, part: p })}
@@ -2996,150 +2983,7 @@ function ChronosApp() {
           </section>
         </main>
 
-        {/* ── Mobile FAB for unplanned items ── */}
-        {!mobileDrawerOpen && (
-          <button
-            onClick={() => setMobileDrawerOpen(true)}
-            className="md:hidden fixed right-5 z-50 size-14 rounded-full bg-primary text-white shadow-lg shadow-primary/30 flex items-center justify-center hover:bg-primary/90 active:scale-95 transition-all"
-            style={{ bottom: 'calc(1.25rem + env(safe-area-inset-bottom, 0px))' }}
-            aria-label="Open unplanned items"
-          >
-            <Layers className="w-6 h-6" />
-            {inboxVisits.length > 0 && (
-              <span className="absolute -top-1 -right-1 size-5 rounded-full bg-white text-primary text-[11px] font-extrabold flex items-center justify-center shadow-sm border border-primary/20">
-                {inboxVisits.length}
-              </span>
-            )}
-          </button>
-        )}
 
-        {/* ── Mobile overlay panel ── */}
-        <Sheet
-          open={mobileDrawerOpen}
-          onOpenChange={(open) => {
-            setMobileDrawerOpen(open);
-            if (!open && selectedVisitId) setSelectedVisitId(null);
-          }}
-        >
-          <SheetContent
-            side="bottom"
-            className="h-[85vh] md:hidden flex flex-col p-0"
-            showCloseButton={false}
-          >
-            <SheetHeader className="flex-shrink-0 border-b border-border-neutral px-4 py-3">
-              <SheetTitle className="text-[11px] font-bold text-foreground">
-                {selectedVisitId ? 'Place Details' : 'Inbox'}
-              </SheetTitle>
-              <SheetDescription className="sr-only">
-                {selectedVisitId
-                  ? 'View and manage place details'
-                  : 'View and manage unplanned items'}
-              </SheetDescription>
-            </SheetHeader>
-            {/* Mobile visit detail — shown when a visit is selected */}
-            {selectedVisitId &&
-              selectedStay &&
-              (() => {
-                const visit = trip.visits.find((v) => v.id === selectedVisitId);
-                if (!visit) return null;
-                const dayLabel =
-                  visit.dayOffset !== null
-                    ? `Day ${visit.dayOffset + 1}${visit.dayPart ? ', ' + visit.dayPart.charAt(0).toUpperCase() + visit.dayPart.slice(1) : ''}`
-                    : 'Unplanned';
-                return (
-                  <VisitDetailDrawer
-                    key={visit.id}
-                    visit={visit}
-                    dayLabel={dayLabel}
-                    onClose={() => {
-                      setSelectedVisitId(null);
-                      setMobileDrawerOpen(false);
-                    }}
-                    onEdit={() => {
-                      setEditingVisit(visit);
-                      setSelectedVisitId(null);
-                      setMobileDrawerOpen(false);
-                    }}
-                    onUnschedule={() => {
-                      setTrip((t) => ({
-                        ...t,
-                        visits: t.visits.map((v) =>
-                          v.id === visit.id ? { ...v, dayOffset: null, dayPart: null } : v,
-                        ),
-                      }));
-                      setSelectedVisitId(null);
-                      setMobileDrawerOpen(false);
-                    }}
-                    onDelete={() => {
-                      setTrip((t) => ({
-                        ...t,
-                        visits: t.visits.filter((v) => v.id !== visit.id),
-                      }));
-                      setSelectedVisitId(null);
-                      setMobileDrawerOpen(false);
-                    }}
-                    onUpdateVisit={(updates) => {
-                      setTrip((t) => ({
-                        ...t,
-                        visits: t.visits.map((v) => (v.id === visit.id ? { ...v, ...updates } : v)),
-                      }));
-                    }}
-                  />
-                );
-              })()}
-            {/* Unplanned list — shown when no visit is selected */}
-            {!selectedVisitId && (
-              <>
-                {/* Stay to-do */}
-                {selectedStay && (
-                  <StayTodoSection
-                    key={selectedStay.id}
-                    stay={selectedStay}
-                    onUpdate={(cl) =>
-                      updateSelectedStay((s) => ({
-                        ...s,
-                        checklist: cl.length > 0 ? cl : undefined,
-                      }))
-                    }
-                  />
-                )}
-                {/* Items */}
-                <div className="flex-1 overflow-y-auto p-4 pb-safe space-y-3 scroll-hide">
-                  {inboxVisits.map((v) => (
-                    <DraggableInventoryCard
-                      key={v.id}
-                      visit={v}
-                      onEdit={() => setEditingVisit(v)}
-                      onLocate={() => {
-                        setLocatedVisitId(v.id);
-                        setSelectedVisitId(v.id);
-                      }}
-                    />
-                  ))}
-                  {inboxVisits.length === 0 && (
-                    <div className="flex flex-col items-center justify-center py-8 gap-2">
-                      <div className="size-9 rounded-xl bg-muted flex items-center justify-center">
-                        {selectedStay ? (
-                          <Check className="w-4 h-4 text-success" />
-                        ) : (
-                          <Compass className="w-4 h-4 text-muted-foreground" />
-                        )}
-                      </div>
-                      <p className="text-[11px] font-bold text-muted-foreground">
-                        {selectedStay ? 'All scheduled!' : 'No stay selected'}
-                      </p>
-                      <p className="text-[11px] text-muted-foreground text-center">
-                        {selectedStay
-                          ? 'Add more with the + button.'
-                          : 'Tap a destination on the timeline.'}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </>
-            )}
-          </SheetContent>
-        </Sheet>
 
         {/* ── Footer ── */}
         <footer className="hidden md:flex bg-white text-muted-foreground px-6 py-1.5 text-[11px] font-bold justify-between items-center border-t border-border-neutral flex-shrink-0">
