@@ -137,6 +137,7 @@ These should use shadcn `Button` for consistent styling, focus states, and acces
 
 - [x] **No sync status visible on mobile** — added sync dot indicator in header (`md:hidden`)
 - [x] **Sheet height `h-[85dvh]`** — changed to `h-[85vh]` for universal support
+- [x] **Mobile tab bar shipped.** 3 tabs (Plan / Map / More), push-page stack for visit and stay detail, header stay chip on Plan. Edit affordance asymmetric — visits editable, trip structure read-only. Deferred for follow-up: map controls stripping, `map.invalidateSize()` on tab return, help sheet, trip summary page.
 
 ### Labeling & copy
 
@@ -262,7 +263,7 @@ Each of these changes how the app fundamentally works. Not to be shipped without
   - _Collapsed by default, expands on first map-relevant action;_
   - _Tabbed workspace ("Plan" / "Map" mutually exclusive);_
   - _Context-aware auto-appear (once visits have coords)._
-- [x] **B. Sidebar split.** Shipped as two-pane (details on top, inbox pinned below, resizable splitter with keyboard + collapse). Mobile keeps tabs. Backlog rail option kept on file as a possible future upgrade.
+- [x] **B. Sidebar split.** Shipped as two-pane (details on top, inbox pinned below, resizable splitter with keyboard + collapse). Mobile tab-bar shell ships separately (Plan / Map / More tabs, push-page stack, asymmetric edit). Backlog rail option kept on file as a possible future upgrade.
 - [ ] **C. Desktop/mobile drawer paradigm.** Visit detail is a right-drawer on desktop, a bottom-sheet on mobile. Unify on bottom-sheet everywhere (Google Maps / Airbnb pattern) or keep divergence behind a preference.
 - [ ] **D. Timeline vs day columns.** Both always visible; both time-ordered. Options:
   - _Auto-collapse timeline to a 32px strip when working in day columns;_

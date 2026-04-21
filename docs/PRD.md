@@ -56,6 +56,18 @@ Per-night hotel records (`NightAccommodation`) separate from the stay's default 
 
 On desktop, the sidebar is a **two-pane split**: stay details (or visit detail) on top, Inbox (unscheduled destinations / visits) pinned below. Panes are separated by a resizable horizontal splitter with keyboard support (`↑` / `↓` to resize, `Enter` to collapse). Ratio and collapsed state persist in localStorage. Mobile keeps the existing bottom-drawer pattern.
 
+### Mobile layout (tab-bar shell)
+
+At `<768px` the app renders a bottom tab bar (Plan / Map / More) instead of the desktop sidebar layout.
+
+- **Plan** — timeline strip + day cards. Header stay chip links to the selected stay's overview. Auto-scrolls to today on first mount.
+- **Map** — full-screen `TripMap` with marker peek drawer. Tapping a marker surfaces the peek; tapping Open pushes to visit or stay detail.
+- **More** — grouped action rows: Switch trip, Edit trip, Inbox (inline expand), History, Import/Export, AI Planner, Share, Account, Sync status, Version.
+
+Push-page stack handles drill-in: Plan → Visit detail, Plan → Stay overview, Map → Visit detail, Inbox → Visit detail. Browser back pops the stack.
+
+Edit affordance on mobile is asymmetric: visits fully editable (checklist, notes, links, rename, delete). Trip structure (new stays, new visits, accommodations, routes, unschedule, move-to-stay) is read-only on mobile — use desktop for structural edits.
+
 ### Stay Overview Panel
 
 Clicking a stay in the timeline opens its **Overview** in the top pane of the left sidebar (desktop) or bottom drawer (mobile):
