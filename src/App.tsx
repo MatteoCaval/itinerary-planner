@@ -457,6 +457,17 @@ function ChronosApp() {
     [stayDays],
   );
   const accommodationGroups = useMemo(() => deriveAccommodationGroups(stayDays), [stayDays]);
+  const todayOffset = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const start = safeDate(trip.startDate);
+    start.setHours(0, 0, 0, 0);
+    const diffDays = Math.floor(
+      (today.getTime() - start.getTime()) / (1000 * 60 * 60 * 24),
+    );
+    if (diffDays < 0 || diffDays >= trip.totalDays) return null;
+    return diffDays;
+  }, [trip.startDate, trip.totalDays]);
   const existingAccommodationNames = useMemo(() => {
     const names = new Set<string>();
     trip.stays.forEach((s) => {
@@ -1067,7 +1078,25 @@ function ChronosApp() {
 
   // ── Mobile shell ─────────────────────────────────────────────────────────
   if (isMobile) {
-    return <MobileShell inboxCount={inboxVisits.length} />;
+    return (
+      <MobileShell
+        trip={trip}
+        sortedStays={sortedStays}
+        selectedStay={selectedStay}
+        stayDays={stayDays}
+        accommodationGroups={accommodationGroups}
+        todayOffset={todayOffset}
+        inboxCount={inboxVisits.length}
+        onSelectStay={(id) => setSelectedStayId(id)}
+        onOpenStay={() => {
+          // Task 9 wires this to nav.push; for now no-op
+        }}
+        onOpenVisit={(id) => {
+          // Task 9 wires this to nav.push; for now just selects visit
+          setSelectedVisitId(id);
+        }}
+      />
+    );
   }
 
   // ── JSX ───────────────────────────────────────────────────────────────────
