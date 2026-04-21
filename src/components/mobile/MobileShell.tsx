@@ -19,6 +19,8 @@ interface MobileShellProps {
   onOpenVisit: (id: string, nav: MobileNavApi) => void;
   /** Render the currently-pushed page (Visit or Stay). Return null when stack is empty. */
   renderCurrentPage: (nav: MobileNavApi) => React.ReactNode;
+  /** Render the map tab content. Receives the current nav instance. */
+  renderMapTab: (nav: MobileNavApi) => React.ReactNode;
 }
 
 export function MobileShell(props: MobileShellProps) {
@@ -50,7 +52,7 @@ export function MobileShell(props: MobileShellProps) {
           style={{ display: nav.tab === 'map' && !currentPageNode ? 'flex' : 'none' }}
           className="absolute inset-0 flex-col"
         >
-          <div className="p-4 text-sm text-muted-foreground">Map tab — coming</div>
+          {props.renderMapTab(nav)}
         </div>
         <div
           data-testid="more-tab-content"

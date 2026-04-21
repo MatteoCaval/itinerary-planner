@@ -135,6 +135,7 @@ import WelcomeScreen from './components/WelcomeScreen';
 import ChronosErrorBoundary from './components/ChronosErrorBoundary';
 import { SidebarSplit } from '@/components/layout/SidebarSplit';
 import { MobileShell } from '@/components/mobile/MobileShell';
+import { MapTab, type MapTabPeek } from '@/components/mobile/MapTab';
 import { VisitPage } from '@/components/mobile/VisitPage';
 import { StayPage } from '@/components/mobile/StayPage';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
@@ -343,6 +344,9 @@ function ChronosApp() {
   const timelineZoneRef = useRef<HTMLDivElement>(null);
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+  const [mobilePeek, setMobilePeek] = useState<
+    ({ kind: 'visit' | 'stay'; id: string } & MapTabPeek) | null
+  >(null);
   const mobileSearchRef = useRef<HTMLInputElement>(null);
   const [showAIPlanner, setShowAIPlanner] = useState(false);
   const [showImportCode, setShowImportCode] = useState(false);
@@ -1164,6 +1168,78 @@ function ChronosApp() {
           }
           return null;
         }}
+        renderMapTab={(nav) => (
+          <MapTab
+            renderMap={() => (
+              <TripMap
+                data={{
+                  visits: mapVisits,
+                  stay: selectedStay,
+                  overviewStays,
+                  overviewCandidates: trip.candidateStays.map((c) => ({
+                    id: c.id,
+                    name: c.name,
+                    color: c.color,
+                    centerLat: c.centerLat,
+                    centerLng: c.centerLng,
+                  })),
+                }}
+                selection={{
+                  selectedVisitId,
+                  highlightedVisitId: null,
+                  selectedDayOffset: null,
+                  highlightedStayId: null,
+                  highlightedCandidateId: null,
+                }}
+                mode={selectedStay ? 'stay' : 'overview'}
+                expanded={false}
+                callbacks={{
+                  onSelectVisit: (id) => {
+                    if (!id) {
+                      setMobilePeek(null);
+                      return;
+                    }
+                    const v = trip.visits.find((x) => x.id === id);
+                    if (!v) return;
+                    setMobilePeek({
+                      kind: 'visit',
+                      id,
+                      name: v.name,
+                      subtitle: v.type ? v.type : undefined,
+                    });
+                  },
+                  onSelectStay: (stayId) => {
+                    const s = sortedStays.find((x) => x.id === stayId);
+                    if (!s) return;
+                    setMobilePeek({
+                      kind: 'stay',
+                      id: stayId,
+                      name: s.name,
+                      subtitle: 'Destination',
+                    });
+                  },
+                }}
+              />
+            )}
+            peek={
+              mobilePeek
+                ? { name: mobilePeek.name, subtitle: mobilePeek.subtitle, openLabel: 'Open' }
+                : null
+            }
+            onOpenPeek={() => {
+              if (!mobilePeek) return;
+              if (mobilePeek.kind === 'visit') {
+                setSelectedVisitId(mobilePeek.id);
+                nav.push({ kind: 'visit', id: mobilePeek.id });
+              } else {
+                setSelectedStayId(mobilePeek.id);
+                nav.push({ kind: 'stay', id: mobilePeek.id });
+              }
+              setMobilePeek(null);
+            }}
+            onDismissPeek={() => setMobilePeek(null)}
+          />
+        )}
       />
     );
   }

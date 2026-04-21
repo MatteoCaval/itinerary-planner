@@ -38,6 +38,7 @@ function mount() {
       onOpenStay={() => {}}
       onOpenVisit={() => {}}
       renderCurrentPage={() => null}
+      renderMapTab={() => <div />}
     />,
   );
 }
