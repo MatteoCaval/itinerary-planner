@@ -37,6 +37,7 @@ function mount() {
       onSelectStay={() => {}}
       onOpenStay={() => {}}
       onOpenVisit={() => {}}
+      renderCurrentPage={() => null}
     />,
   );
 }

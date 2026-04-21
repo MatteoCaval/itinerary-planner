@@ -135,6 +135,8 @@ import WelcomeScreen from './components/WelcomeScreen';
 import ChronosErrorBoundary from './components/ChronosErrorBoundary';
 import { SidebarSplit } from '@/components/layout/SidebarSplit';
 import { MobileShell } from '@/components/mobile/MobileShell';
+import { VisitPage } from '@/components/mobile/VisitPage';
+import { StayPage } from '@/components/mobile/StayPage';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -1088,12 +1090,79 @@ function ChronosApp() {
         todayOffset={todayOffset}
         inboxCount={inboxVisits.length}
         onSelectStay={(id) => setSelectedStayId(id)}
-        onOpenStay={() => {
-          // Task 9 wires this to nav.push; for now no-op
+        onOpenStay={(nav) => {
+          if (selectedStay) nav.push({ kind: 'stay', id: selectedStay.id });
         }}
-        onOpenVisit={(id) => {
-          // Task 9 wires this to nav.push; for now just selects visit
+        onOpenVisit={(id, nav) => {
           setSelectedVisitId(id);
+          nav.push({ kind: 'visit', id });
+        }}
+        renderCurrentPage={(nav) => {
+          const page = nav.currentPage;
+          if (!page) return null;
+          if (page.kind === 'visit') {
+            const visit = trip.visits.find((v) => v.id === page.id);
+            const parentStay = visit
+              ? sortedStays.find((s) => s.id === visit.stayId)
+              : null;
+            if (!visit || !parentStay) return null;
+            const dayLabel =
+              visit.dayOffset !== null
+                ? `Day ${visit.dayOffset + 1}${
+                    visit.dayPart
+                      ? ' · ' + visit.dayPart[0].toUpperCase() + visit.dayPart.slice(1)
+                      : ''
+                  }`
+                : 'Unplanned';
+            return (
+              <VisitPage
+                visit={visit}
+                stayName={parentStay.name}
+                dayLabel={dayLabel}
+                onBack={() => nav.pop()}
+                onUpdateVisit={(updates) => {
+                  setTrip((t) => ({
+                    ...t,
+                    visits: t.visits.map((v) =>
+                      v.id === visit.id ? { ...v, ...updates } : v,
+                    ),
+                  }));
+                }}
+                onDelete={() => {
+                  setTrip((t) => ({
+                    ...t,
+                    visits: t.visits.filter((v) => v.id !== visit.id),
+                  }));
+                  nav.pop();
+                }}
+              />
+            );
+          }
+          if (page.kind === 'stay') {
+            const stay = sortedStays.find((s) => s.id === page.id);
+            if (!stay) return null;
+            const visitCount = trip.visits.filter((v) => v.stayId === stay.id).length;
+            const totalDays = Math.ceil((stay.endSlot - stay.startSlot) / 3);
+            return (
+              <StayPage
+                stay={stay}
+                visitCount={visitCount}
+                totalDays={totalDays}
+                totalNights={Math.max(0, totalDays - 1)}
+                accommodationGroups={accommodationGroups}
+                onBack={() => nav.pop()}
+                onUpdateStay={(updates) => {
+                  setTrip((t) => ({
+                    ...t,
+                    stays: t.stays.map((s) =>
+                      s.id === stay.id ? { ...s, ...updates } : s,
+                    ),
+                  }));
+                }}
+              />
+            );
+          }
+          return null;
         }}
       />
     );
