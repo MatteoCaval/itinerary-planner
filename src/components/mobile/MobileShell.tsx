@@ -21,6 +21,8 @@ interface MobileShellProps {
   renderCurrentPage: (nav: MobileNavApi) => React.ReactNode;
   /** Render the map tab content. Receives the current nav instance. */
   renderMapTab: (nav: MobileNavApi) => React.ReactNode;
+  /** Render the more tab content. Receives the current nav instance. */
+  renderMoreTab: (nav: MobileNavApi) => React.ReactNode;
 }
 
 export function MobileShell(props: MobileShellProps) {
@@ -59,7 +61,7 @@ export function MobileShell(props: MobileShellProps) {
           style={{ display: nav.tab === 'more' && !currentPageNode ? 'flex' : 'none' }}
           className="absolute inset-0 flex-col"
         >
-          <div className="p-4 text-sm text-muted-foreground">More tab — coming</div>
+          {props.renderMoreTab(nav)}
         </div>
 
         {/* Push page overlay */}

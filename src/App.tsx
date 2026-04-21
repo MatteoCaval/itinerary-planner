@@ -54,6 +54,7 @@ import type {
   ShareCodeMode,
   Stay,
   TripStore,
+  V1HybridTrip,
   VisitItem,
 } from './domain/types';
 import { createEmptyTrip, DAY_PARTS, STAY_COLORS, TRANSPORT_LABELS } from './domain/constants';
@@ -77,6 +78,13 @@ import {
   shrinkTripAfter,
   shrinkTripBefore,
 } from './domain/tripMutations';
+import {
+  hybridTripToLegacy,
+  migrateV1toV2,
+  needsMigrationToV2,
+  normalizeTrip,
+} from './domain/migration';
+import { generateMarkdown, downloadMarkdown } from './markdownExporter';
 import TripMap from './components/TripMap';
 import DayFilterPills from './components/TripMap/DayFilterPills';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -138,6 +146,7 @@ import { MobileShell } from '@/components/mobile/MobileShell';
 import { MapTab, type MapTabPeek } from '@/components/mobile/MapTab';
 import { VisitPage } from '@/components/mobile/VisitPage';
 import { StayPage } from '@/components/mobile/StayPage';
+import { MoreTab } from '@/components/mobile/MoreTab';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -352,6 +361,8 @@ function ChronosApp() {
   const [showImportCode, setShowImportCode] = useState(false);
   const [showShareTrip, setShowShareTrip] = useState(false);
   const [showPullConfirm, setShowPullConfirm] = useState(false);
+  const [showMobileAuth, setShowMobileAuth] = useState(false);
+  const mobileImportJsonRef = useRef<HTMLInputElement>(null);
   const [aiSettings, setAiSettings] = useState<{ apiKey: string; model: string }>(() => {
     const saved = localStorage.getItem('chronos-ai-settings');
     return saved ? JSON.parse(saved) : { apiKey: '', model: 'gemini-2.0-flash' };
@@ -746,6 +757,68 @@ function ChronosApp() {
     });
     setSelectedStayId('');
   };
+
+  // ── Mobile export/import helpers ──────────────────────────────────────────
+  const handleMobileExportJson = useCallback(() => {
+    const blob = new Blob([JSON.stringify(trip, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${trip.name.toLowerCase().replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, [trip]);
+
+  const handleMobileExportMarkdown = useCallback(() => {
+    const start = trip.startDate || new Date().toISOString().split('T')[0];
+    const legacy = hybridTripToLegacy({ ...trip, startDate: start });
+    const endDate = addDaysTo(new Date(start), trip.totalDays - 1).toISOString().split('T')[0];
+    const md = generateMarkdown(
+      legacy.days,
+      legacy.locations as unknown as Parameters<typeof generateMarkdown>[1],
+      legacy.routes,
+      start,
+      endDate,
+    );
+    downloadMarkdown(
+      md,
+      `${trip.name.toLowerCase().replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.md`,
+    );
+  }, [trip]);
+
+  const handleMobileImportJsonFile = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        try {
+          const parsed = JSON.parse(String(ev.target?.result || '{}'));
+          if (!parsed.stays || !parsed.name) return;
+          let imported = normalizeTrip({
+            ...parsed,
+            id: parsed.id || `trip-${Date.now()}`,
+            startDate: parsed.startDate || '',
+            totalDays: parsed.totalDays || 1,
+          } as HybridTrip);
+          if (needsMigrationToV2(imported)) imported = migrateV1toV2(imported as unknown as V1HybridTrip);
+          setStore((s) => {
+            const next = { trips: [...s.trips, imported], activeTripId: imported.id };
+            saveStore(next);
+            return next;
+          });
+          setSelectedStayId('');
+        } catch {
+          // silently ignore parse errors on mobile
+        }
+      };
+      reader.readAsText(file);
+      e.target.value = '';
+    },
+    [setStore],
+  );
 
   // ── Render helpers ────────────────────────────────────────────────────────
   const numDays = trip.totalDays;
@@ -1239,6 +1312,70 @@ function ChronosApp() {
             }}
             onDismissPeek={() => setMobilePeek(null)}
           />
+        )}
+        renderMoreTab={(_nav) => (
+          <>
+            <input
+              ref={mobileImportJsonRef}
+              type="file"
+              accept=".json"
+              className="hidden"
+              onChange={handleMobileImportJsonFile}
+            />
+            <MoreTab
+              inboxCount={inboxVisits.length}
+              onSwitchTrip={() => setShowTripSwitcher(true)}
+              onEditTrip={() => setShowTripEditor(true)}
+              onOpenHistory={() => setShowHistory(true)}
+              onImportCode={() => setShowImportCode(true)}
+              onExportMarkdown={handleMobileExportMarkdown}
+              onExportJson={handleMobileExportJson}
+              onImportJson={() => mobileImportJsonRef.current?.click()}
+              onOpenAIPlanner={() => setShowAIPlanner(true)}
+              onOpenShare={() => setShowShareTrip(true)}
+              onOpenAuth={() => setShowMobileAuth(true)}
+              isAuthenticated={!!user}
+              authEmail={user?.email ?? null}
+              syncStatus={syncStatus}
+              version="v1.0.0"
+              renderInbox={() => (
+                <div className="flex flex-col gap-2 p-3">
+                  {inboxVisits.length === 0 && trip.candidateStays.length === 0 && (
+                    <div className="text-xs text-muted-foreground text-center py-4">
+                      No unscheduled items.
+                    </div>
+                  )}
+                  {inboxVisits.map((v) => (
+                    <button
+                      key={v.id}
+                      type="button"
+                      onClick={() => {
+                        setSelectedVisitId(v.id);
+                        _nav.push({ kind: 'visit', id: v.id });
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-2 bg-white border border-border rounded-md text-left hover:bg-muted/50"
+                    >
+                      <span className="text-sm font-medium truncate">{v.name}</span>
+                    </button>
+                  ))}
+                  {trip.candidateStays.map((c) => (
+                    <div
+                      key={c.id}
+                      className="w-full flex items-center gap-2 px-3 py-2 bg-white border border-border border-dashed rounded-md"
+                    >
+                      <span
+                        className="w-2 h-2 rounded-full flex-shrink-0"
+                        style={{ background: c.color }}
+                      />
+                      <span className="text-sm font-medium truncate">{c.name}</span>
+                      <span className="ml-auto text-[10px] text-muted-foreground">candidate</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            />
+            {showMobileAuth && <AuthModalSimple onClose={() => setShowMobileAuth(false)} />}
+          </>
         )}
       />
     );

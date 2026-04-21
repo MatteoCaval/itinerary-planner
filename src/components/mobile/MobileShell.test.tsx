@@ -39,6 +39,7 @@ function mount() {
       onOpenVisit={() => {}}
       renderCurrentPage={() => null}
       renderMapTab={() => <div />}
+      renderMoreTab={() => <div />}
     />,
   );
 }
