@@ -134,12 +134,17 @@ import DroppablePeriodSlot from './components/timeline/DroppablePeriodSlot';
 import WelcomeScreen from './components/WelcomeScreen';
 import ChronosErrorBoundary from './components/ChronosErrorBoundary';
 import { SidebarSplit } from '@/components/layout/SidebarSplit';
+import { MobileShell } from '@/components/mobile/MobileShell';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const EMPTY_TRIP = createEmptyTrip();
 
 // ─── CHRONOS App ──────────────────────────────────────────────────────────────
 function ChronosApp() {
+  // ── Responsive breakpoint ─────────────────────────────────────────────────
+  const isMobile = useMediaQuery('(max-width: 767px)');
+
   // ── Store (multi-trip) ───────────────────────────────────────────────────
   const [store, setStore] = useState<TripStore>(() => loadStore());
   const [isDemoMode, setIsDemoMode] = useState(false);
@@ -1059,6 +1064,11 @@ function ChronosApp() {
       </button>
     </div>
   );
+
+  // ── Mobile shell ─────────────────────────────────────────────────────────
+  if (isMobile) {
+    return <MobileShell inboxCount={inboxVisits.length} />;
+  }
 
   // ── JSX ───────────────────────────────────────────────────────────────────
   return (
