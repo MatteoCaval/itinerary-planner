@@ -86,7 +86,6 @@ import { searchPhoto } from './unsplash';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Kbd } from '@/components/ui/kbd';
@@ -134,6 +133,7 @@ import DraggableInventoryCard from './components/cards/DraggableInventoryCard';
 import DroppablePeriodSlot from './components/timeline/DroppablePeriodSlot';
 import WelcomeScreen from './components/WelcomeScreen';
 import ChronosErrorBoundary from './components/ChronosErrorBoundary';
+import { SidebarSplit } from '@/components/layout/SidebarSplit';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const EMPTY_TRIP = createEmptyTrip();
@@ -222,7 +222,6 @@ function ChronosApp() {
 
   // ── UI state ──────────────────────────────────────────────────────────────
   const [selectedStayId, setSelectedStayId] = useState<string>(trip.stays[0]?.id ?? '');
-  const [sidebarTab, setSidebarTab] = useState<'overview' | 'unplanned'>('unplanned');
   const [hoveredStayId, setHoveredStayId] = useState<string | null>(null);
   const [selectedVisitId, setSelectedVisitId] = useState<string | null>(null);
   const [hoveredVisitId, setHoveredVisitId] = useState<string | null>(null);
@@ -843,6 +842,223 @@ function ChronosApp() {
       </>
     );
   }
+
+  // ── Sidebar pane content ─────────────────────────────────────────────────
+  const detailsPane = (
+    <>
+      {selectedStay &&
+        selectedVisitId &&
+        (() => {
+          const visit = trip.visits.find((v) => v.id === selectedVisitId);
+          if (!visit) return null;
+          const dayLabel =
+            visit.dayOffset !== null
+              ? `Day ${visit.dayOffset + 1}${visit.dayPart ? ', ' + visit.dayPart.charAt(0).toUpperCase() + visit.dayPart.slice(1) : ''}`
+              : 'Unplanned';
+          return (
+            <VisitDetailDrawer
+              key={visit.id}
+              visit={visit}
+              dayLabel={dayLabel}
+              onClose={() => setSelectedVisitId(null)}
+              onEdit={() => {
+                setEditingVisit(visit);
+                setSelectedVisitId(null);
+              }}
+              onUnschedule={() => {
+                setTrip((t) => ({
+                  ...t,
+                  visits: t.visits.map((v) =>
+                    v.id === visit.id ? { ...v, dayOffset: null, dayPart: null } : v,
+                  ),
+                }));
+                setSelectedVisitId(null);
+              }}
+              onDelete={() => {
+                setTrip((t) => ({
+                  ...t,
+                  visits: t.visits.filter((v) => v.id !== visit.id),
+                }));
+                setSelectedVisitId(null);
+              }}
+              onUpdateVisit={(updates) => {
+                setTrip((t) => ({
+                  ...t,
+                  visits: t.visits.map((v) => (v.id === visit.id ? { ...v, ...updates } : v)),
+                }));
+              }}
+            />
+          );
+        })()}
+      {selectedStay && !selectedVisitId && (
+        <StayOverviewPanel
+          key={selectedStay.id}
+          stay={selectedStay}
+          visitCount={trip.visits.filter((v) => v.stayId === selectedStay.id).length}
+          stayDays={stayDays}
+          accommodationGroups={accommodationGroups}
+          onUpdate={(updates) => updateSelectedStay((s) => ({ ...s, ...updates }))}
+        />
+      )}
+      {!selectedStay && (
+        <div className="flex-1 flex flex-col items-center justify-center p-6 gap-3">
+          <div className="size-10 rounded-xl bg-primary/8 flex items-center justify-center">
+            <Navigation className="w-5 h-5 text-primary/40" />
+          </div>
+          <div className="text-center">
+            <p className="text-[11px] font-bold text-foreground">Trip Overview</p>
+            <p className="text-[11px] text-muted-foreground mt-1">
+              {sortedStays.length} destination{sortedStays.length !== 1 ? 's' : ''} ·{' '}
+              {trip.totalDays} days
+            </p>
+          </div>
+          <p className="text-[9px] text-muted-foreground text-center leading-relaxed">
+            Click a destination on the timeline to see its details and plan activities.
+          </p>
+        </div>
+      )}
+    </>
+  );
+
+  const inboxPane = (
+    <div className="flex-1 overflow-y-auto p-4 space-y-3 scroll-hide">
+      {selectedStay ? (
+        <>
+          {inboxVisits.map((v) => (
+            <DraggableInventoryCard
+              key={v.id}
+              visit={v}
+              onEdit={() => setEditingVisit(v)}
+              onLocate={() => {
+                setLocatedVisitId(v.id);
+                setSelectedVisitId(v.id);
+              }}
+            />
+          ))}
+          {inboxVisits.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-8 gap-2">
+              <div className="size-9 rounded-xl bg-muted flex items-center justify-center">
+                {searchTerm ? (
+                  <Search className="w-4 h-4 text-muted-foreground" />
+                ) : selectedStay ? (
+                  <Check className="w-4 h-4 text-success" />
+                ) : (
+                  <Compass className="w-4 h-4 text-muted-foreground" />
+                )}
+              </div>
+              <p className="text-[11px] font-bold text-muted-foreground">
+                {searchTerm
+                  ? 'No matching places'
+                  : selectedStay
+                    ? 'All scheduled!'
+                    : 'No stay selected'}
+              </p>
+              <p className="text-[9px] text-muted-foreground text-center leading-relaxed">
+                {searchTerm
+                  ? 'Try a different search term.'
+                  : selectedStay
+                    ? 'Add more with the + button above.'
+                    : 'Click a destination on the timeline.'}
+              </p>
+            </div>
+          )}
+        </>
+      ) : (
+        <>
+          {trip.candidateStays.map((c) => (
+            <div
+              key={c.id}
+              className="group rounded-xl border border-border bg-white p-3 cursor-pointer hover:shadow-sm transition-shadow"
+              onClick={() => setSelectedCandidateId(c.id)}
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span
+                    className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                    style={{ background: c.color }}
+                  />
+                  <p className="text-xs font-bold text-foreground truncate">{c.name}</p>
+                </div>
+                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label={`Promote ${c.name} to timeline`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setPromotingCandidateId(c.id);
+                      setAddingStay(true);
+                    }}
+                  >
+                    <CalendarPlus className="w-3.5 h-3.5" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label={`Delete ${c.name} from inbox`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setTrip((t) => ({
+                        ...t,
+                        candidateStays: t.candidateStays.filter((s) => s.id !== c.id),
+                        visits: t.visits.filter((v) => v.stayId !== c.id),
+                      }));
+                      if (selectedCandidateId === c.id) {
+                        setSelectedCandidateId(null);
+                      }
+                    }}
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          ))}
+          {trip.candidateStays.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-8 gap-2">
+              <div className="size-9 rounded-xl bg-muted flex items-center justify-center">
+                <Compass className="w-4 h-4 text-muted-foreground" />
+              </div>
+              <p className="text-[11px] font-bold text-muted-foreground">
+                No destinations in inbox yet
+              </p>
+              <p className="text-[11px] text-muted-foreground text-center max-w-[220px]">
+                Add places you&apos;re considering, then move them to the timeline when ready.
+              </p>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+
+  const inboxHeader = (
+    <div className="flex items-center justify-between px-4 py-2.5 bg-muted/40">
+      <div className="flex items-center gap-1.5">
+        <span className="text-[11px] font-semibold tracking-wide uppercase text-muted-foreground">
+          Inbox
+        </span>
+        {inboxVisits.length > 0 && (
+          <Badge variant="secondary" className="h-4 px-1.5 rounded-full text-[9px] font-bold">
+            {inboxVisits.length}
+          </Badge>
+        )}
+      </div>
+      <button
+        onClick={() => {
+          if (selectedStay) {
+            setAddingToInbox(true);
+          } else {
+            setAddingCandidate(true);
+          }
+        }}
+        className="p-1 rounded text-muted-foreground hover:text-primary hover:bg-white transition-colors"
+        aria-label="Add new place"
+      >
+        <Plus className="w-3.5 h-3.5" />
+      </button>
+    </div>
+  );
 
   // ── JSX ───────────────────────────────────────────────────────────────────
   return (
@@ -1500,7 +1716,6 @@ function ChronosApp() {
                                     setSelectedStayId('');
                                   } else {
                                     setSelectedStayId(stay.id);
-                                    setSidebarTab('overview');
                                   }
                                 }}
                                 onMouseEnter={() => setHoveredStayId(stay.id)}
@@ -1509,7 +1724,6 @@ function ChronosApp() {
                                   if (e.key === 'Enter' || e.key === ' ') {
                                     e.preventDefault();
                                     setSelectedStayId(stay.id);
-                                    setSidebarTab('overview');
                                   }
                                 }}
                                 onMouseDown={(e) => {
@@ -1750,244 +1964,7 @@ function ChronosApp() {
             <aside
               className={`border-r border-border-neutral flex flex-col bg-white transition-all duration-300 ${mapExpanded ? 'w-0 overflow-hidden opacity-0' : 'w-64 hidden md:flex'}`}
             >
-              {/* Tab bar */}
-              <div className="flex-shrink-0 flex items-stretch">
-                <Tabs
-                  value={sidebarTab}
-                  onValueChange={(v) => setSidebarTab(v as 'overview' | 'unplanned')}
-                  className="flex-1 gap-0"
-                >
-                  <TabsList className="h-9 w-full rounded-none border-b border-border-neutral bg-muted p-0">
-                    <TabsTrigger
-                      value="overview"
-                      className="flex-1 h-full rounded-none text-[11px] font-semibold data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-none"
-                    >
-                      Details
-                    </TabsTrigger>
-                    <TabsTrigger
-                      value="unplanned"
-                      className="flex-1 h-full rounded-none text-[11px] font-semibold data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-none"
-                    >
-                      {inboxVisits.length > 0 ? (
-                        <>
-                          Inbox{' '}
-                          <Badge
-                            variant="secondary"
-                            className="ml-1 h-4 w-4 rounded-full p-0 text-[9px] font-bold justify-center"
-                          >
-                            {inboxVisits.length}
-                          </Badge>
-                        </>
-                      ) : (
-                        'Inbox'
-                      )}
-                    </TabsTrigger>
-                  </TabsList>
-                </Tabs>
-                <button
-                  onClick={() => {
-                    if (selectedStay) {
-                      setAddingToInbox(true);
-                    } else {
-                      setAddingCandidate(true);
-                    }
-                  }}
-                  className={`px-2.5 flex items-center justify-center border-b border-l border-border-neutral bg-muted text-muted-foreground hover:text-primary hover:bg-white transition-colors ${sidebarTab === 'unplanned' ? '' : 'invisible pointer-events-none'}`}
-                  aria-label="Add new place"
-                >
-                  <Plus className="w-3 h-3" />
-                </button>
-              </div>
-
-              {/* Overview tab — visit detail or stay overview */}
-              {sidebarTab === 'overview' &&
-                selectedStay &&
-                selectedVisitId &&
-                (() => {
-                  const visit = trip.visits.find((v) => v.id === selectedVisitId);
-                  if (!visit) return null;
-                  const dayLabel =
-                    visit.dayOffset !== null
-                      ? `Day ${visit.dayOffset + 1}${visit.dayPart ? ', ' + visit.dayPart.charAt(0).toUpperCase() + visit.dayPart.slice(1) : ''}`
-                      : 'Unplanned';
-                  return (
-                    <VisitDetailDrawer
-                      key={visit.id}
-                      visit={visit}
-                      dayLabel={dayLabel}
-                      onClose={() => setSelectedVisitId(null)}
-                      onEdit={() => {
-                        setEditingVisit(visit);
-                        setSelectedVisitId(null);
-                      }}
-                      onUnschedule={() => {
-                        setTrip((t) => ({
-                          ...t,
-                          visits: t.visits.map((v) =>
-                            v.id === visit.id ? { ...v, dayOffset: null, dayPart: null } : v,
-                          ),
-                        }));
-                        setSelectedVisitId(null);
-                      }}
-                      onDelete={() => {
-                        setTrip((t) => ({
-                          ...t,
-                          visits: t.visits.filter((v) => v.id !== visit.id),
-                        }));
-                        setSelectedVisitId(null);
-                      }}
-                      onUpdateVisit={(updates) => {
-                        setTrip((t) => ({
-                          ...t,
-                          visits: t.visits.map((v) =>
-                            v.id === visit.id ? { ...v, ...updates } : v,
-                          ),
-                        }));
-                      }}
-                    />
-                  );
-                })()}
-              {sidebarTab === 'overview' && selectedStay && !selectedVisitId && (
-                <StayOverviewPanel
-                  key={selectedStay.id}
-                  stay={selectedStay}
-                  visitCount={trip.visits.filter((v) => v.stayId === selectedStay.id).length}
-                  stayDays={stayDays}
-                  accommodationGroups={accommodationGroups}
-                  onUpdate={(updates) => updateSelectedStay((s) => ({ ...s, ...updates }))}
-                />
-              )}
-              {sidebarTab === 'overview' && !selectedStay && (
-                <div className="flex-1 flex flex-col items-center justify-center p-6 gap-3">
-                  <div className="size-10 rounded-xl bg-primary/8 flex items-center justify-center">
-                    <Navigation className="w-5 h-5 text-primary/40" />
-                  </div>
-                  <div className="text-center">
-                    <p className="text-[11px] font-bold text-foreground">Trip Overview</p>
-                    <p className="text-[11px] text-muted-foreground mt-1">
-                      {sortedStays.length} destination{sortedStays.length !== 1 ? 's' : ''} ·{' '}
-                      {trip.totalDays} days
-                    </p>
-                  </div>
-                  <p className="text-[9px] text-muted-foreground text-center leading-relaxed">
-                    Click a destination on the timeline to see its details and plan activities.
-                  </p>
-                </div>
-              )}
-
-              {/* Unplanned tab */}
-              {sidebarTab === 'unplanned' && (
-                <div className="flex-1 overflow-y-auto p-4 space-y-3 scroll-hide">
-                  {selectedStay ? (
-                    <>
-                      {inboxVisits.map((v) => (
-                        <DraggableInventoryCard
-                          key={v.id}
-                          visit={v}
-                          onEdit={() => setEditingVisit(v)}
-                          onLocate={() => {
-                            setLocatedVisitId(v.id);
-                            setSelectedVisitId(v.id);
-                          }}
-                        />
-                      ))}
-                      {inboxVisits.length === 0 && (
-                        <div className="flex flex-col items-center justify-center py-8 gap-2">
-                          <div className="size-9 rounded-xl bg-muted flex items-center justify-center">
-                            {searchTerm ? (
-                              <Search className="w-4 h-4 text-muted-foreground" />
-                            ) : selectedStay ? (
-                              <Check className="w-4 h-4 text-success" />
-                            ) : (
-                              <Compass className="w-4 h-4 text-muted-foreground" />
-                            )}
-                          </div>
-                          <p className="text-[11px] font-bold text-muted-foreground">
-                            {searchTerm
-                              ? 'No matching places'
-                              : selectedStay
-                                ? 'All scheduled!'
-                                : 'No stay selected'}
-                          </p>
-                          <p className="text-[9px] text-muted-foreground text-center leading-relaxed">
-                            {searchTerm
-                              ? 'Try a different search term.'
-                              : selectedStay
-                                ? 'Add more with the + button above.'
-                                : 'Click a destination on the timeline.'}
-                          </p>
-                        </div>
-                      )}
-                    </>
-                  ) : (
-                    <>
-                      {trip.candidateStays.map((c) => (
-                        <div
-                          key={c.id}
-                          className="group rounded-xl border border-border bg-white p-3 cursor-pointer hover:shadow-sm transition-shadow"
-                          onClick={() => setSelectedCandidateId(c.id)}
-                        >
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="flex items-center gap-2 min-w-0">
-                              <span
-                                className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                                style={{ background: c.color }}
-                              />
-                              <p className="text-xs font-bold text-foreground truncate">{c.name}</p>
-                            </div>
-                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <Button
-                                variant="ghost"
-                                size="icon-sm"
-                                aria-label={`Promote ${c.name} to timeline`}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setPromotingCandidateId(c.id);
-                                  setAddingStay(true);
-                                }}
-                              >
-                                <CalendarPlus className="w-3.5 h-3.5" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon-sm"
-                                aria-label={`Delete ${c.name} from inbox`}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setTrip((t) => ({
-                                    ...t,
-                                    candidateStays: t.candidateStays.filter((s) => s.id !== c.id),
-                                    visits: t.visits.filter((v) => v.stayId !== c.id),
-                                  }));
-                                  if (selectedCandidateId === c.id) {
-                                    setSelectedCandidateId(null);
-                                  }
-                                }}
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                      {trip.candidateStays.length === 0 && (
-                        <div className="flex flex-col items-center justify-center py-8 gap-2">
-                          <div className="size-9 rounded-xl bg-muted flex items-center justify-center">
-                            <Compass className="w-4 h-4 text-muted-foreground" />
-                          </div>
-                          <p className="text-[11px] font-bold text-muted-foreground">
-                            No destinations in inbox yet
-                          </p>
-                          <p className="text-[11px] text-muted-foreground text-center max-w-[220px]">
-                            Add places you&apos;re considering, then move them to the timeline when
-                            ready.
-                          </p>
-                        </div>
-                      )}
-                    </>
-                  )}
-                </div>
-              )}
+              <SidebarSplit top={detailsPane} bottomHeader={inboxHeader} bottom={inboxPane} />
             </aside>
 
             {/* Day columns */}
@@ -2142,7 +2119,6 @@ function ChronosApp() {
                             const next = id === selectedVisitId ? null : id;
                             setSelectedVisitId(next);
                             if (next) {
-                              setSidebarTab('overview');
                               // On mobile, open the bottom drawer to show visit detail
                               if (window.innerWidth < 768) setMobileDrawerOpen(true);
                             }
@@ -2174,7 +2150,6 @@ function ChronosApp() {
                           <button
                             onClick={() => {
                               setSelectedStayId(stay.id);
-                              setSidebarTab('overview');
                             }}
                             className="text-[11px] font-extrabold text-foreground hover:text-primary transition-colors writing-mode-vertical"
                             style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}
@@ -2198,7 +2173,6 @@ function ChronosApp() {
                                 className="flex items-center justify-between w-full cursor-pointer group rounded-lg px-2 py-1 -mx-2 transition-colors hover:bg-muted"
                                 onClick={() => {
                                   setSelectedStayId(stay.id);
-                                  setSidebarTab('overview');
                                 }}
                                 title="Click to view this stay"
                               >
@@ -2252,7 +2226,6 @@ function ChronosApp() {
                                               key={v.id}
                                               onClick={() => {
                                                 setSelectedStayId(stay.id);
-                                                setSidebarTab('overview');
                                                 setSelectedVisitId(v.id);
                                               }}
                                               className="relative w-full text-left pl-[18px] pr-3.5 py-2.5 bg-white rounded-lg border border-border hover:border-primary/30 hover:shadow-sm transition-all group/visit"

@@ -52,9 +52,13 @@ Each visit supports:
 
 Per-night hotel records (`NightAccommodation`) separate from the stay's default lodging. Geocoded, with cost/notes/link fields. Consecutive nights at the same hotel are collapsed into a grouped chip in the day column header. Night range is editable (select which nights within the stay the accommodation applies to). Removal correctly clears the `lodging` fallback field.
 
+### Sidebar layout
+
+On desktop, the sidebar is a **two-pane split**: stay details (or visit detail) on top, Inbox (unscheduled destinations / visits) pinned below. Panes are separated by a resizable horizontal splitter with keyboard support (`↑` / `↓` to resize, `Enter` to collapse). Ratio and collapsed state persist in localStorage. Mobile keeps the existing bottom-drawer pattern.
+
 ### Stay Overview Panel
 
-Clicking a stay in the timeline opens its **Overview** tab in the left sidebar (desktop) or bottom drawer (mobile):
+Clicking a stay in the timeline opens its **Overview** in the top pane of the left sidebar (desktop) or bottom drawer (mobile):
 
 - **Hero image** — destination photo (Unsplash) with color dot + name + date range overlay
 - **Stats grid** — days / nights / places count
