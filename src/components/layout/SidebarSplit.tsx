@@ -104,11 +104,12 @@ export function SidebarSplit({
         <button
           type="button"
           aria-label={collapsed ? 'Expand inbox' : 'Collapse inbox'}
+          onPointerDown={(e) => e.stopPropagation()}
           onClick={(e) => {
             e.stopPropagation();
             setCollapsed(!collapsed);
           }}
-          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 size-4 rounded-sm bg-card border border-border flex items-center justify-center hover:bg-muted"
+          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 size-5 rounded-sm bg-card border border-border flex items-center justify-center hover:bg-muted cursor-pointer"
         >
           <ChevronDown
             className={cn('size-3 transition-transform', collapsed ? 'rotate-180' : 'rotate-0')}

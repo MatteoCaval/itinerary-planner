@@ -63,6 +63,17 @@ describe('SidebarSplit', () => {
     expect(root).toHaveAttribute('data-collapsed', 'true');
   });
 
+  it('toggles collapsed when the chevron button is clicked', async () => {
+    renderSplit({ defaultRatio: 0.6 });
+    const btn = screen.getByRole('button', { name: /collapse inbox/i });
+    await userEvent.click(btn);
+    const sep = screen.getByRole('separator');
+    expect(sep.parentElement).toHaveAttribute('data-collapsed', 'true');
+    const btn2 = screen.getByRole('button', { name: /expand inbox/i });
+    await userEvent.click(btn2);
+    expect(sep.parentElement).toHaveAttribute('data-collapsed', 'false');
+  });
+
   it('clamps ratio to [0.15, 0.85]', async () => {
     renderSplit({ defaultRatio: 0.15 });
     const sep = screen.getByRole('separator');
