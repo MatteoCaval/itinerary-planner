@@ -25,15 +25,15 @@ Replace the current mobile UI — a teal FAB that opens an 85%-height bottom she
 
 ## Decisions (all locked through Q&A)
 
-| # | Question | Answer |
-|---|---|---|
-| 1 | Primary use case | **Review during travel.** Reading, marking done, checking directions. |
-| 2 | Tab structure | **3 tabs: Plan / Map / More.** Inbox tucks into More. |
-| 3 | Plan tab landing | **Auto-scroll to today** if today ∈ trip range; else day 1. |
-| 4 | Visit detail | **Push full-screen page** with back button. |
-| 5 | Stay overview entry | **Header stay chip** on Plan tab. Tap → push stay page. |
-| 6 | Edit affordance | **Asymmetric** — visits fully editable (checklist, notes, rename, delete). Trip structure (new stay, new visit, accommodations, routes) read-only on mobile. |
-| 7 | Navigation state | **State machine hook** (`useMobileNav`). Tab + push stack. No routing dep. |
+| #   | Question            | Answer                                                                                                                                                       |
+| --- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 1   | Primary use case    | **Review during travel.** Reading, marking done, checking directions.                                                                                        |
+| 2   | Tab structure       | **3 tabs: Plan / Map / More.** Inbox tucks into More.                                                                                                        |
+| 3   | Plan tab landing    | **Auto-scroll to today** if today ∈ trip range; else day 1.                                                                                                  |
+| 4   | Visit detail        | **Push full-screen page** with back button.                                                                                                                  |
+| 5   | Stay overview entry | **Header stay chip** on Plan tab. Tap → push stay page.                                                                                                      |
+| 6   | Edit affordance     | **Asymmetric** — visits fully editable (checklist, notes, rename, delete). Trip structure (new stay, new visit, accommodations, routes) read-only on mobile. |
+| 7   | Navigation state    | **State machine hook** (`useMobileNav`). Tab + push stack. No routing dep.                                                                                   |
 
 Secondary decisions locked during section walkthrough:
 
@@ -83,24 +83,23 @@ src/components/mobile/
 ```ts
 export type Tab = 'plan' | 'map' | 'more';
 
-export type MobilePage =
-  | { kind: 'visit'; id: string }
-  | { kind: 'stay'; id: string };
+export type MobilePage = { kind: 'visit'; id: string } | { kind: 'stay'; id: string };
 
 export interface MobileNavApi {
   tab: Tab;
   setTab: (t: Tab) => void;
   stack: MobilePage[];
-  currentPage: MobilePage | null;  // top of stack, or null
+  currentPage: MobilePage | null; // top of stack, or null
   push: (page: MobilePage) => void;
   pop: () => void;
-  reset: () => void;               // clears stack (used by tab taps)
+  reset: () => void; // clears stack (used by tab taps)
 }
 
 export function useMobileNav(): MobileNavApi;
 ```
 
 Behavior:
+
 - `setTab(t)` — if current stack is non-empty, pops the whole stack and switches tab. If target tab is already active and stack is empty, fires a `scrollToTop` custom event that active tab content listens for.
 - `push(page)` — appends to stack, calls `history.pushState(null, '')`.
 - `pop()` — removes last stack entry. If stack becomes empty, calls `history.replaceState` to avoid mid-stack browser history pollution.
@@ -206,6 +205,7 @@ APP
 ### Push pages
 
 **Shared chrome:**
+
 - Header (44px): `[←] [title] [⋯]`. Back label optional (can be just arrow). Kebab opens page-specific actions.
 - Body (scrollable).
 - Tab bar below (unchanged).
@@ -246,23 +246,23 @@ APP
 
 ## Edit affordance matrix
 
-| Action | Desktop | Mobile |
-|---|---|---|
-| Rename visit | ✅ | ✅ (tap title in push page) |
-| Edit visit notes / checklist / links | ✅ | ✅ |
-| Delete visit | ✅ | ✅ (AlertDialog in kebab) |
-| Unschedule visit | ✅ | ❌ hidden |
-| Move visit to another stay | ✅ | ❌ hidden |
-| Reorder visits (drag) | ✅ | ❌ disabled |
-| Add new visit | ✅ | ❌ no `+` buttons |
-| Edit stay notes / stay-checklist / links | ✅ | ✅ |
-| Rename stay / change color / delete stay | ✅ | ❌ hidden |
-| Move stay to inbox | ✅ | ❌ hidden |
-| Add new stay | ✅ | ❌ hidden |
-| Edit accommodation | ✅ | ❌ read-only list |
-| Add accommodation | ✅ | ❌ hidden |
-| Edit route (transport) | ✅ | ❌ hidden |
-| Schedule candidate / promote from inbox | ✅ | ❌ disabled in inbox list |
+| Action                                   | Desktop | Mobile                      |
+| ---------------------------------------- | ------- | --------------------------- |
+| Rename visit                             | ✅      | ✅ (tap title in push page) |
+| Edit visit notes / checklist / links     | ✅      | ✅                          |
+| Delete visit                             | ✅      | ✅ (AlertDialog in kebab)   |
+| Unschedule visit                         | ✅      | ❌ hidden                   |
+| Move visit to another stay               | ✅      | ❌ hidden                   |
+| Reorder visits (drag)                    | ✅      | ❌ disabled                 |
+| Add new visit                            | ✅      | ❌ no `+` buttons           |
+| Edit stay notes / stay-checklist / links | ✅      | ✅                          |
+| Rename stay / change color / delete stay | ✅      | ❌ hidden                   |
+| Move stay to inbox                       | ✅      | ❌ hidden                   |
+| Add new stay                             | ✅      | ❌ hidden                   |
+| Edit accommodation                       | ✅      | ❌ read-only list           |
+| Add accommodation                        | ✅      | ❌ hidden                   |
+| Edit route (transport)                   | ✅      | ❌ hidden                   |
+| Schedule candidate / promote from inbox  | ✅      | ❌ disabled in inbox list   |
 
 ---
 

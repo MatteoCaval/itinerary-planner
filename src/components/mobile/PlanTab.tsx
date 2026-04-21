@@ -1,10 +1,5 @@
 import * as React from 'react';
-import type {
-  AccommodationGroup,
-  HybridTrip,
-  Stay,
-  VisitItem,
-} from '@/domain/types';
+import type { AccommodationGroup, HybridTrip, Stay, VisitItem } from '@/domain/types';
 import type { deriveStayDays } from '@/domain/stayLogic';
 import { fmt, safeDate, addDaysTo } from '@/domain/dateUtils';
 import { DAY_PARTS } from '@/domain/constants';
@@ -109,9 +104,7 @@ export function PlanTab({
           const dayVisits = trip.visits.filter(
             (v) => v.stayId === selectedStay?.id && v.dayOffset === day.dayOffset,
           );
-          const dayAccom = accommodationGroups.find(
-            (g) => g.startDayOffset === day.dayOffset,
-          );
+          const dayAccom = accommodationGroups.find((g) => g.startDayOffset === day.dayOffset);
 
           return (
             <div
@@ -123,9 +116,7 @@ export function PlanTab({
               )}
             >
               <div className="flex items-baseline justify-between pb-2 border-b border-border mb-2">
-                <span className="font-num text-sm font-semibold">
-                  Day {day.dayOffset + 1}
-                </span>
+                <span className="font-num text-sm font-semibold">Day {day.dayOffset + 1}</span>
                 <span className="font-num text-xs text-muted-foreground">
                   {fmt(dayDate, { month: 'short', day: 'numeric' })}
                 </span>
@@ -147,20 +138,14 @@ export function PlanTab({
                       {period}
                     </div>
                     {periodVisits.map((visit) => (
-                      <VisitRow
-                        key={visit.id}
-                        visit={visit}
-                        onOpen={() => onOpenVisit(visit.id)}
-                      />
+                      <VisitRow key={visit.id} visit={visit} onOpen={() => onOpenVisit(visit.id)} />
                     ))}
                   </React.Fragment>
                 );
               })}
 
               {dayVisits.length === 0 && (
-                <div className="text-xs text-muted-foreground text-center py-4">
-                  No activities
-                </div>
+                <div className="text-xs text-muted-foreground text-center py-4">No activities</div>
               )}
             </div>
           );
@@ -170,13 +155,7 @@ export function PlanTab({
   );
 }
 
-function VisitRow({
-  visit,
-  onOpen,
-}: {
-  visit: VisitItem;
-  onOpen: () => void;
-}) {
+function VisitRow({ visit, onOpen }: { visit: VisitItem; onOpen: () => void }) {
   const bg = getVisitTypeBg(visit.type);
   const checkDone = visit.checklist?.filter((c) => c.done).length ?? 0;
   const checkTotal = visit.checklist?.length ?? 0;

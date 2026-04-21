@@ -9,11 +9,12 @@ interface BottomTabBarProps {
   inboxCount?: number;
 }
 
-const tabs: Array<{ key: Tab; label: string; icon: React.ComponentType<{ className?: string }> }> = [
-  { key: 'plan', label: 'Plan', icon: Calendar },
-  { key: 'map', label: 'Map', icon: MapIcon },
-  { key: 'more', label: 'More', icon: Menu },
-];
+const tabs: Array<{ key: Tab; label: string; icon: React.ComponentType<{ className?: string }> }> =
+  [
+    { key: 'plan', label: 'Plan', icon: Calendar },
+    { key: 'map', label: 'Map', icon: MapIcon },
+    { key: 'more', label: 'More', icon: Menu },
+  ];
 
 export function BottomTabBar({ tab, onTabChange, inboxCount = 0 }: BottomTabBarProps) {
   return (

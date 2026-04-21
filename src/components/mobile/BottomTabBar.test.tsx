@@ -4,14 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { BottomTabBar } from './BottomTabBar';
 
 function renderBar(overrides: Partial<React.ComponentProps<typeof BottomTabBar>> = {}) {
-  return render(
-    <BottomTabBar
-      tab="plan"
-      onTabChange={() => {}}
-      inboxCount={0}
-      {...overrides}
-    />,
-  );
+  return render(<BottomTabBar tab="plan" onTabChange={() => {}} inboxCount={0} {...overrides} />);
 }
 
 describe('BottomTabBar', () => {

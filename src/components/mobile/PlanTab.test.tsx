@@ -54,17 +54,13 @@ describe('PlanTab', () => {
 
   it('renders the stay chip when a stay is selected', () => {
     renderTab();
-    expect(
-      screen.getByRole('button', { name: /view kyoto stay details/i }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /view kyoto stay details/i })).toBeInTheDocument();
   });
 
   it('calls onOpenStay when the stay chip is tapped', async () => {
     const onOpenStay = vi.fn();
     renderTab({ onOpenStay });
-    await userEvent.click(
-      screen.getByRole('button', { name: /view kyoto stay details/i }),
-    );
+    await userEvent.click(screen.getByRole('button', { name: /view kyoto stay details/i }));
     expect(onOpenStay).toHaveBeenCalled();
   });
 

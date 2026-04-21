@@ -470,9 +470,7 @@ function ChronosApp() {
     today.setHours(0, 0, 0, 0);
     const start = safeDate(trip.startDate);
     start.setHours(0, 0, 0, 0);
-    const diffDays = Math.floor(
-      (today.getTime() - start.getTime()) / (1000 * 60 * 60 * 24),
-    );
+    const diffDays = Math.floor((today.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
     if (diffDays < 0 || diffDays >= trip.totalDays) return null;
     return diffDays;
   }, [trip.startDate, trip.totalDays]);
@@ -765,7 +763,9 @@ function ChronosApp() {
   const handleMobileExportMarkdown = useCallback(() => {
     const start = trip.startDate || new Date().toISOString().split('T')[0];
     const legacy = hybridTripToLegacy({ ...trip, startDate: start });
-    const endDate = addDaysTo(new Date(start), trip.totalDays - 1).toISOString().split('T')[0];
+    const endDate = addDaysTo(new Date(start), trip.totalDays - 1)
+      .toISOString()
+      .split('T')[0];
     const md = generateMarkdown(
       legacy.days,
       legacy.locations as unknown as Parameters<typeof generateMarkdown>[1],
@@ -794,7 +794,8 @@ function ChronosApp() {
             startDate: parsed.startDate || '',
             totalDays: parsed.totalDays || 1,
           } as HybridTrip);
-          if (needsMigrationToV2(imported)) imported = migrateV1toV2(imported as unknown as V1HybridTrip);
+          if (needsMigrationToV2(imported))
+            imported = migrateV1toV2(imported as unknown as V1HybridTrip);
           setStore((s) => {
             const next = { trips: [...s.trips, imported], activeTripId: imported.id };
             saveStore(next);
@@ -1170,9 +1171,7 @@ function ChronosApp() {
           if (!page) return null;
           if (page.kind === 'visit') {
             const visit = trip.visits.find((v) => v.id === page.id);
-            const parentStay = visit
-              ? sortedStays.find((s) => s.id === visit.stayId)
-              : null;
+            const parentStay = visit ? sortedStays.find((s) => s.id === visit.stayId) : null;
             if (!visit || !parentStay) return null;
             const dayLabel =
               visit.dayOffset !== null
@@ -1191,9 +1190,7 @@ function ChronosApp() {
                 onUpdateVisit={(updates) => {
                   setTrip((t) => ({
                     ...t,
-                    visits: t.visits.map((v) =>
-                      v.id === visit.id ? { ...v, ...updates } : v,
-                    ),
+                    visits: t.visits.map((v) => (v.id === visit.id ? { ...v, ...updates } : v)),
                   }));
                 }}
                 onDelete={() => {
@@ -1222,9 +1219,7 @@ function ChronosApp() {
                 onUpdateStay={(updates) => {
                   setTrip((t) => ({
                     ...t,
-                    stays: t.stays.map((s) =>
-                      s.id === stay.id ? { ...s, ...updates } : s,
-                    ),
+                    stays: t.stays.map((s) => (s.id === stay.id ? { ...s, ...updates } : s)),
                   }));
                 }}
               />
@@ -2982,8 +2977,6 @@ function ChronosApp() {
             </aside>
           </section>
         </main>
-
-
 
         {/* ── Footer ── */}
         <footer className="hidden md:flex bg-white text-muted-foreground px-6 py-1.5 text-[11px] font-bold justify-between items-center border-t border-border-neutral flex-shrink-0">

@@ -2,9 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 export type Tab = 'plan' | 'map' | 'more';
 
-export type MobilePage =
-  | { kind: 'visit'; id: string }
-  | { kind: 'stay'; id: string };
+export type MobilePage = { kind: 'visit'; id: string } | { kind: 'stay'; id: string };
 
 export interface MobileNavApi {
   tab: Tab;

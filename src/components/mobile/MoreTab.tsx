@@ -69,9 +69,7 @@ function Row({
       <span className="flex-1 text-sm font-medium text-foreground truncate">{label}</span>
       {badge}
       {trailing ??
-        (onClick && !disabled ? (
-          <ChevronRight className="size-4 text-muted-foreground" />
-        ) : null)}
+        (onClick && !disabled ? <ChevronRight className="size-4 text-muted-foreground" /> : null)}
     </button>
   );
 }
@@ -149,9 +147,7 @@ export function MoreTab(props: MoreTabProps) {
         label="Help & shortcuts"
         trailing={<span className="text-[10px] text-muted-foreground">Soon</span>}
       />
-      <div className="px-4 py-3 text-[10px] text-muted-foreground">
-        Version {props.version}
-      </div>
+      <div className="px-4 py-3 text-[10px] text-muted-foreground">Version {props.version}</div>
     </div>
   );
 }

@@ -41,6 +41,7 @@ src/components/mobile/
 ```
 
 **Modified:**
+
 - `src/App.tsx` — at mobile widths render `<MobileShell>`; delete the FAB + 85% Sheet code.
 
 Pipeline gate after every task: `npm run lint && npm run test && npm run build`. Commits pre-authorized.
@@ -56,6 +57,7 @@ Hook first (testable in isolation, no UI deps). Primitives next (TabBar, StayChi
 ## Task 1 — `useMobileNav` hook (TDD)
 
 **Files:**
+
 - Create: `src/hooks/useMobileNav.ts`
 - Create: `src/hooks/__tests__/useMobileNav.test.tsx`
 
@@ -167,9 +169,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 export type Tab = 'plan' | 'map' | 'more';
 
-export type MobilePage =
-  | { kind: 'visit'; id: string }
-  | { kind: 'stay'; id: string };
+export type MobilePage = { kind: 'visit'; id: string } | { kind: 'stay'; id: string };
 
 export interface MobileNavApi {
   tab: Tab;
@@ -256,6 +256,7 @@ git commit -m "feat(hooks): add useMobileNav state machine"
 ## Task 2 — `BottomTabBar` primitive (TDD)
 
 **Files:**
+
 - Create: `src/components/mobile/BottomTabBar.tsx`
 - Create: `src/components/mobile/BottomTabBar.test.tsx`
 
@@ -270,14 +271,7 @@ import userEvent from '@testing-library/user-event';
 import { BottomTabBar } from './BottomTabBar';
 
 function renderBar(overrides: Partial<React.ComponentProps<typeof BottomTabBar>> = {}) {
-  return render(
-    <BottomTabBar
-      tab="plan"
-      onTabChange={() => {}}
-      inboxCount={0}
-      {...overrides}
-    />,
-  );
+  return render(<BottomTabBar tab="plan" onTabChange={() => {}} inboxCount={0} {...overrides} />);
 }
 
 describe('BottomTabBar', () => {
@@ -290,14 +284,8 @@ describe('BottomTabBar', () => {
 
   it('marks the active tab with aria-selected=true', () => {
     renderBar({ tab: 'map' });
-    expect(screen.getByRole('tab', { name: /map/i })).toHaveAttribute(
-      'aria-selected',
-      'true',
-    );
-    expect(screen.getByRole('tab', { name: /plan/i })).toHaveAttribute(
-      'aria-selected',
-      'false',
-    );
+    expect(screen.getByRole('tab', { name: /map/i })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tab', { name: /plan/i })).toHaveAttribute('aria-selected', 'false');
   });
 
   it('calls onTabChange with the tapped tab', async () => {
@@ -341,11 +329,12 @@ interface BottomTabBarProps {
   inboxCount?: number;
 }
 
-const tabs: Array<{ key: Tab; label: string; icon: React.ComponentType<{ className?: string }> }> = [
-  { key: 'plan', label: 'Plan', icon: Calendar },
-  { key: 'map', label: 'Map', icon: MapIcon },
-  { key: 'more', label: 'More', icon: Menu },
-];
+const tabs: Array<{ key: Tab; label: string; icon: React.ComponentType<{ className?: string }> }> =
+  [
+    { key: 'plan', label: 'Plan', icon: Calendar },
+    { key: 'map', label: 'Map', icon: MapIcon },
+    { key: 'more', label: 'More', icon: Menu },
+  ];
 
 export function BottomTabBar({ tab, onTabChange, inboxCount = 0 }: BottomTabBarProps) {
   return (
@@ -412,6 +401,7 @@ git commit -m "feat(mobile): add BottomTabBar primitive"
 ## Task 3 — `StayChip` component
 
 **Files:**
+
 - Create: `src/components/mobile/StayChip.tsx`
 
 No test file — this is a thin visual component; covered by `PlanTab` integration tests later.
@@ -427,7 +417,7 @@ import { cn } from '@/lib/utils';
 interface StayChipProps {
   name: string;
   color: string;
-  dayOfStay: number;   // 1-based
+  dayOfStay: number; // 1-based
   totalDays: number;
   onClick: () => void;
 }
@@ -478,6 +468,7 @@ git commit -m "feat(mobile): add StayChip header component"
 ## Task 4 — `MarkerPeekSheet` component
 
 **Files:**
+
 - Create: `src/components/mobile/MarkerPeekSheet.tsx`
 
 - [ ] **Step 1: Create the component.**
@@ -522,9 +513,7 @@ export function MarkerPeekSheet({
     >
       <div className="flex-1 min-w-0">
         <div className="text-sm font-semibold text-foreground truncate">{name}</div>
-        {subtitle && (
-          <div className="text-xs text-muted-foreground truncate">{subtitle}</div>
-        )}
+        {subtitle && <div className="text-xs text-muted-foreground truncate">{subtitle}</div>}
       </div>
       <Button size="sm" onClick={onOpen}>
         {openLabel}
@@ -563,6 +552,7 @@ git commit -m "feat(mobile): add MarkerPeekSheet for map marker taps"
 ## Task 5 — `MobileShell` skeleton + `App.tsx` integration (gates at mobile width)
 
 **Files:**
+
 - Create: `src/components/mobile/MobileShell.tsx`
 - Create: `src/components/mobile/MobileShell.test.tsx`
 - Modify: `src/App.tsx`
@@ -710,6 +700,7 @@ git commit -m "feat(mobile): MobileShell skeleton + App.tsx integration"
 ## Task 6 — `PlanTab` — timeline strip, stay chip, day cards, auto-scroll
 
 **Files:**
+
 - Create: `src/components/mobile/PlanTab.tsx`
 - Create: `src/components/mobile/PlanTab.test.tsx`
 - Modify: `src/components/mobile/MobileShell.tsx`
@@ -720,6 +711,7 @@ The Plan tab renders the same timeline + day content as desktop but without drag
 - [ ] **Step 1: Define the PlanTab prop interface.**
 
 `PlanTab` receives:
+
 - `trip: HybridTrip` — the current trip.
 - `sortedStays: Stay[]` — stays ordered by `startSlot`.
 - `selectedStay: Stay | null` — the active stay.
@@ -835,13 +827,7 @@ Create `src/components/mobile/PlanTab.tsx`:
 
 ```tsx
 import * as React from 'react';
-import type {
-  AccommodationGroup,
-  HybridTrip,
-  Stay,
-  StayDay,
-  VisitItem,
-} from '@/domain/types';
+import type { AccommodationGroup, HybridTrip, Stay, StayDay, VisitItem } from '@/domain/types';
 import { fmt, safeDate, addDaysTo } from '@/domain/dateUtils';
 import { DAY_PARTS } from '@/domain/constants';
 import { getVisitTypeBg } from '@/domain/visitTypeDisplay';
@@ -885,9 +871,7 @@ export function PlanTab({
   }, [todayOffset]);
 
   // Day-of-stay computation for the chip label
-  const stayStartDay = selectedStay
-    ? Math.floor(selectedStay.startSlot / 3)
-    : 0;
+  const stayStartDay = selectedStay ? Math.floor(selectedStay.startSlot / 3) : 0;
   const stayTotalDays = selectedStay
     ? Math.ceil((selectedStay.endSlot - selectedStay.startSlot) / 3)
     : 0;
@@ -950,9 +934,7 @@ export function PlanTab({
           const dayVisits = trip.visits.filter(
             (v) => v.stayId === selectedStay?.id && v.dayOffset === day.dayIndexWithinStay,
           );
-          const dayAccom = accommodationGroups.find(
-            (g) => g.dayIndex === day.dayIndexWithinStay,
-          );
+          const dayAccom = accommodationGroups.find((g) => g.dayIndex === day.dayIndexWithinStay);
 
           return (
             <div
@@ -988,20 +970,14 @@ export function PlanTab({
                       {period}
                     </div>
                     {periodVisits.map((visit) => (
-                      <VisitRow
-                        key={visit.id}
-                        visit={visit}
-                        onOpen={() => onOpenVisit(visit.id)}
-                      />
+                      <VisitRow key={visit.id} visit={visit} onOpen={() => onOpenVisit(visit.id)} />
                     ))}
                   </React.Fragment>
                 );
               })}
 
               {dayVisits.length === 0 && (
-                <div className="text-xs text-muted-foreground text-center py-4">
-                  No activities
-                </div>
+                <div className="text-xs text-muted-foreground text-center py-4">No activities</div>
               )}
             </div>
           );
@@ -1011,13 +987,7 @@ export function PlanTab({
   );
 }
 
-function VisitRow({
-  visit,
-  onOpen,
-}: {
-  visit: VisitItem;
-  onOpen: () => void;
-}) {
+function VisitRow({ visit, onOpen }: { visit: VisitItem; onOpen: () => void }) {
   const bg = getVisitTypeBg(visit.type);
   const checkDone = visit.checklist?.filter((c) => c.done).length ?? 0;
   const checkTotal = visit.checklist?.length ?? 0;
@@ -1028,10 +998,7 @@ function VisitRow({
       onClick={onOpen}
       className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md bg-muted/50 hover:bg-muted active:bg-muted/70 text-left"
     >
-      <span
-        aria-hidden="true"
-        className={cn('w-1.5 h-1.5 rounded-full flex-shrink-0', bg)}
-      />
+      <span aria-hidden="true" className={cn('w-1.5 h-1.5 rounded-full flex-shrink-0', bg)} />
       <span className="text-xs font-medium flex-1 truncate">{visit.name}</span>
       {checkTotal > 0 && (
         <span className="font-num text-[10px] text-muted-foreground flex-shrink-0">
@@ -1069,12 +1036,7 @@ Replace the current body of `MobileShell.tsx` with:
 import { useMobileNav } from '@/hooks/useMobileNav';
 import { BottomTabBar } from './BottomTabBar';
 import { PlanTab } from './PlanTab';
-import type {
-  AccommodationGroup,
-  HybridTrip,
-  Stay,
-  StayDay,
-} from '@/domain/types';
+import type { AccommodationGroup, HybridTrip, Stay, StayDay } from '@/domain/types';
 
 interface MobileShellProps {
   trip: HybridTrip;
@@ -1252,6 +1214,7 @@ git commit -m "feat(mobile): PlanTab with timeline strip, stay chip, day cards, 
 ## Task 7 — `VisitPage` push page
 
 **Files:**
+
 - Create: `src/components/mobile/VisitPage.tsx`
 - Create: `src/components/mobile/VisitPage.test.tsx`
 
@@ -1260,6 +1223,7 @@ Editable visit detail page. Reuses `ChecklistSection` and `LinksSection` primiti
 - [ ] **Step 1: Define prop interface.**
 
 `VisitPage` receives:
+
 - `visit: VisitItem`
 - `stayName: string`
 - `dayLabel: string` (e.g., `"Day 2 · Afternoon"` or `"Unplanned"`)
@@ -1413,19 +1377,12 @@ export function VisitPage({
     <div className="flex flex-col flex-1 min-h-0 bg-background">
       {/* Header */}
       <div className="flex-shrink-0 flex items-center gap-2 px-3 py-2 border-b border-border bg-white">
-        <Button
-          size="icon-sm"
-          variant="ghost"
-          onClick={onBack}
-          aria-label="Back"
-        >
+        <Button size="icon-sm" variant="ghost" onClick={onBack} aria-label="Back">
           <ArrowLeft className="size-5" />
         </Button>
         <div className="flex-1 min-w-0">
           <div className="text-xs text-muted-foreground truncate">{stayName}</div>
-          <div className="text-sm font-semibold text-foreground truncate">
-            {visit.name}
-          </div>
+          <div className="text-sm font-semibold text-foreground truncate">{visit.name}</div>
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -1615,6 +1572,7 @@ git commit -m "feat(mobile): VisitPage editable push page"
 ## Task 8 — `StayPage` push page
 
 **Files:**
+
 - Create: `src/components/mobile/StayPage.tsx`
 - Create: `src/components/mobile/StayPage.test.tsx`
 
@@ -1741,9 +1699,7 @@ export function StayPage({
           <ArrowLeft className="size-5" />
         </Button>
         <div className="flex-1 min-w-0">
-          <div className="text-sm font-semibold text-foreground truncate">
-            {stay.name}
-          </div>
+          <div className="text-sm font-semibold text-foreground truncate">{stay.name}</div>
         </div>
       </div>
 
@@ -1774,25 +1730,19 @@ export function StayPage({
           {/* Stats */}
           <div className="grid grid-cols-3 gap-2">
             <div className="bg-muted/50 rounded-lg p-3 text-center">
-              <div className="font-num text-lg font-semibold text-primary">
-                {totalDays}
-              </div>
+              <div className="font-num text-lg font-semibold text-primary">{totalDays}</div>
               <div className="text-[9px] uppercase tracking-widest text-muted-foreground font-semibold">
                 Days
               </div>
             </div>
             <div className="bg-muted/50 rounded-lg p-3 text-center">
-              <div className="font-num text-lg font-semibold text-primary">
-                {totalNights}
-              </div>
+              <div className="font-num text-lg font-semibold text-primary">{totalNights}</div>
               <div className="text-[9px] uppercase tracking-widest text-muted-foreground font-semibold">
                 Nights
               </div>
             </div>
             <div className="bg-muted/50 rounded-lg p-3 text-center">
-              <div className="font-num text-lg font-semibold text-primary">
-                {visitCount}
-              </div>
+              <div className="font-num text-lg font-semibold text-primary">{visitCount}</div>
               <div className="text-[9px] uppercase tracking-widest text-muted-foreground font-semibold">
                 Places
               </div>
@@ -1904,6 +1854,7 @@ git commit -m "feat(mobile): StayPage push page with read-only sleeping list"
 ## Task 9 — Wire push pages into `MobileShell` + `App.tsx`
 
 **Files:**
+
 - Modify: `src/components/mobile/MobileShell.tsx`
 - Modify: `src/App.tsx`
 
@@ -1917,12 +1868,7 @@ Replace the file contents with:
 import { useMobileNav, type MobileNavApi } from '@/hooks/useMobileNav';
 import { BottomTabBar } from './BottomTabBar';
 import { PlanTab } from './PlanTab';
-import type {
-  AccommodationGroup,
-  HybridTrip,
-  Stay,
-  StayDay,
-} from '@/domain/types';
+import type { AccommodationGroup, HybridTrip, Stay, StayDay } from '@/domain/types';
 
 interface MobileShellProps {
   trip: HybridTrip;
@@ -1981,9 +1927,7 @@ export function MobileShell(props: MobileShellProps) {
 
         {/* Push page overlay */}
         {currentPageNode && (
-          <div className="absolute inset-0 flex flex-col bg-background">
-            {currentPageNode}
-          </div>
+          <div className="absolute inset-0 flex flex-col bg-background">{currentPageNode}</div>
         )}
       </div>
       <BottomTabBar tab={nav.tab} onTabChange={nav.setTab} inboxCount={props.inboxCount} />
@@ -2063,9 +2007,7 @@ if (isMobile) {
                 onUpdateVisit={(updates) => {
                   setTrip((t) => ({
                     ...t,
-                    visits: t.visits.map((v) =>
-                      v.id === visit.id ? { ...v, ...updates } : v,
-                    ),
+                    visits: t.visits.map((v) => (v.id === visit.id ? { ...v, ...updates } : v)),
                   }));
                 }}
                 onDelete={() => {
@@ -2094,9 +2036,7 @@ if (isMobile) {
                 onUpdateStay={(updates) => {
                   setTrip((t) => ({
                     ...t,
-                    stays: t.stays.map((s) =>
-                      s.id === stay.id ? { ...s, ...updates } : s,
-                    ),
+                    stays: t.stays.map((s) => (s.id === stay.id ? { ...s, ...updates } : s)),
                   }));
                 }}
               />
@@ -2136,6 +2076,7 @@ git commit -m "feat(mobile): wire VisitPage and StayPage via push stack"
 ## Task 10 — `MapTab`
 
 **Files:**
+
 - Create: `src/components/mobile/MapTab.tsx`
 - Create: `src/components/mobile/MapTab.test.tsx`
 - Modify: `src/components/mobile/MobileShell.tsx`
@@ -2296,6 +2237,7 @@ const [mobilePeek, setMobilePeek] = useState<{
 ```
 
 **Important:** `TripMap` does not currently expose `onMarkerTap` with this signature. Adapt — either add the callback to `TripMap` or wire the existing visit-selection callback (`onSelectVisit`) to set the peek. The cleanest path:
+
 - When `onSelectVisit(id)` fires, look up the visit in `trip.visits`, set `mobilePeek` with its name.
 - Same for stay selection.
 
@@ -2323,6 +2265,7 @@ git commit -m "feat(mobile): MapTab with marker peek drawer"
 ## Task 11 — `MoreTab`
 
 **Files:**
+
 - Create: `src/components/mobile/MoreTab.tsx`
 - Create: `src/components/mobile/MoreTab.test.tsx`
 - Modify: `src/components/mobile/MobileShell.tsx`
@@ -2468,15 +2411,11 @@ function Row({
       className={cn(
         'w-full flex items-center gap-3 px-4 py-3 bg-white border-b border-border',
         'text-left',
-        onClick
-          ? 'hover:bg-muted/50 active:bg-muted'
-          : 'cursor-default',
+        onClick ? 'hover:bg-muted/50 active:bg-muted' : 'cursor-default',
       )}
     >
       <Icon className="size-4 text-muted-foreground flex-shrink-0" />
-      <span className="flex-1 text-sm font-medium text-foreground truncate">
-        {label}
-      </span>
+      <span className="flex-1 text-sm font-medium text-foreground truncate">{label}</span>
       {badge}
       {trailing ?? (onClick && <ChevronRight className="size-4 text-muted-foreground" />)}
     </button>
@@ -2532,18 +2471,11 @@ export function MoreTab(props: MoreTabProps) {
 
       <SectionHeader>Account</SectionHeader>
       {props.isAuthenticated && props.authEmail ? (
-        <Row
-          icon={UserCircle2}
-          label={props.authEmail}
-          onClick={props.onOpenAuth}
-        />
+        <Row icon={UserCircle2} label={props.authEmail} onClick={props.onOpenAuth} />
       ) : (
         <Row icon={UserCircle2} label="Sign in" onClick={props.onOpenAuth} />
       )}
-      <Row
-        icon={Cloud}
-        label={syncLabel}
-      />
+      <Row icon={Cloud} label={syncLabel} />
 
       <SectionHeader>App</SectionHeader>
       <Row
@@ -2551,9 +2483,7 @@ export function MoreTab(props: MoreTabProps) {
         label="Help & shortcuts"
         trailing={<span className="text-[10px] text-muted-foreground">Soon</span>}
       />
-      <div className="px-4 py-3 text-[10px] text-muted-foreground">
-        Version {props.version}
-      </div>
+      <div className="px-4 py-3 text-[10px] text-muted-foreground">Version {props.version}</div>
     </div>
   );
 }
@@ -2659,6 +2589,7 @@ git commit -m "feat(mobile): MoreTab with grouped actions + inline inbox"
 ## Task 12 — Remove legacy FAB + 85% Sheet
 
 **Files:**
+
 - Modify: `src/App.tsx`
 
 The mobile shell now fully replaces the old mobile surface. Delete the dead code.
@@ -2709,6 +2640,7 @@ git commit -m "chore(mobile): remove legacy FAB and 85% bottom sheet"
 ## Task 13 — Desktop regression check + manual QA + docs
 
 **Files:**
+
 - Modify: `docs/PRD.md`
 - Modify: `docs/IMPROVEMENTS.md`
 

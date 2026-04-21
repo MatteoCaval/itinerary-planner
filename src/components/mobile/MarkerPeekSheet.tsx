@@ -35,9 +35,7 @@ export function MarkerPeekSheet({
     >
       <div className="flex-1 min-w-0">
         <div className="text-sm font-semibold text-foreground truncate">{name}</div>
-        {subtitle && (
-          <div className="text-xs text-muted-foreground truncate">{subtitle}</div>
-        )}
+        {subtitle && <div className="text-xs text-muted-foreground truncate">{subtitle}</div>}
       </div>
       <Button size="sm" onClick={onOpen}>
         {openLabel}

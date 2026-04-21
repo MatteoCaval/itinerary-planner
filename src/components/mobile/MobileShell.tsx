@@ -66,9 +66,7 @@ export function MobileShell(props: MobileShellProps) {
 
         {/* Push page overlay */}
         {currentPageNode && (
-          <div className="absolute inset-0 flex flex-col bg-background">
-            {currentPageNode}
-          </div>
+          <div className="absolute inset-0 flex flex-col bg-background">{currentPageNode}</div>
         )}
       </div>
       <BottomTabBar tab={nav.tab} onTabChange={nav.setTab} inboxCount={props.inboxCount} />
