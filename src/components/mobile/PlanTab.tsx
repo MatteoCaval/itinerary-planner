@@ -61,7 +61,7 @@ export function PlanTab({
   return (
     <div className="flex flex-col flex-1 min-h-0">
       {/* Trip header */}
-      <div className="flex-shrink-0 bg-background px-4 py-3 border-b border-border pt-safe">
+      <div className="flex-shrink-0 bg-background px-4 py-3 border-b border-border">
         <h1 className="text-base font-bold tracking-tight text-foreground leading-tight truncate">
           {tripName}
         </h1>

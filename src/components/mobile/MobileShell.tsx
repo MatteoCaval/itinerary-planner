@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { useMobileNav, type MobileNavApi } from '@/hooks/useMobileNav';
 import { BottomTabBar } from './BottomTabBar';
+import { MobileAppBar } from './MobileAppBar';
 import { PlanTab } from './PlanTab';
 import type { AccommodationGroup, HybridTrip, Stay } from '@/domain/types';
 import type { deriveStayDays } from '@/domain/stayLogic';
@@ -47,6 +48,7 @@ export function MobileShell(props: MobileShellProps) {
 
   return (
     <div className="flex flex-col h-[100dvh] bg-background">
+      {!currentPageNode && <MobileAppBar />}
       <div className="flex-1 min-h-0 relative">
         <div
           data-testid="plan-tab-content"
