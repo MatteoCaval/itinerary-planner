@@ -21,7 +21,7 @@ import {
 import { ChecklistSection } from '@/components/ui/ChecklistSection';
 import { LinksSection } from '@/components/ui/LinksSection';
 import type { LinkItem } from '@/components/ui/LinksSection';
-import { getVisitTypeBg, getVisitLabel } from '@/domain/visitTypeDisplay';
+import { getVisitTypeBg, getVisitLabel, getVisitTypeIcon } from '@/domain/visitTypeDisplay';
 import type { VisitItem } from '@/domain/types';
 import { cn } from '@/lib/utils';
 
@@ -62,74 +62,115 @@ export function VisitPage({
 
   return (
     <div className="flex flex-col flex-1 min-h-0 bg-background">
-      {/* Header */}
-      <div className="flex-shrink-0 flex items-center gap-2 px-3 py-2 border-b border-border bg-white">
-        <Button size="icon-sm" variant="ghost" onClick={onBack} aria-label="Back">
-          <ArrowLeft className="size-5" />
-        </Button>
-        <div className="flex-1 min-w-0">
-          <div className="text-xs text-muted-foreground truncate">{stayName}</div>
-          <div className="text-sm font-semibold text-foreground truncate">{visit.name}</div>
+      {/* Hero */}
+      <div className="flex-shrink-0 relative h-[180px] overflow-hidden">
+        {/* Solid type color background */}
+        <div
+          aria-hidden="true"
+          className={cn('absolute inset-0', getVisitTypeBg(visit.type))}
+        />
+        {/* Grain overlay */}
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 opacity-[0.15] mix-blend-overlay pointer-events-none"
+          style={{
+            backgroundImage:
+              "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>\")",
+          }}
+        />
+        {/* Dark-to-transparent overlay for text legibility */}
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/10 to-transparent pointer-events-none"
+        />
+
+        {/* Top chrome: back + kebab */}
+        <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-2 py-2 pt-safe">
+          <Button
+            size="icon-sm"
+            variant="ghost"
+            onClick={onBack}
+            aria-label="Back"
+            className="bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white"
+          >
+            <ArrowLeft className="size-5" />
+          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                size="icon-sm"
+                variant="ghost"
+                aria-label="More actions"
+                className="bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white"
+              >
+                <MoreVertical className="size-5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem asChild>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <button className="flex items-center gap-2 w-full px-2 py-1.5 text-destructive hover:bg-destructive/10 rounded-sm text-sm">
+                      <Trash2 className="size-4" /> Delete visit
+                    </button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete "{visit.name}"?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This removes the place from your itinerary. You can undo from history.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={onDelete}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      >
+                        Delete
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button size="icon-sm" variant="ghost" aria-label="More actions">
-              <MoreVertical className="size-5" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem asChild>
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <button className="flex items-center gap-2 w-full px-2 py-1.5 text-destructive hover:bg-destructive/10 rounded-sm text-sm">
-                    <Trash2 className="size-4" /> Delete visit
-                  </button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Delete "{visit.name}"?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This removes the place from your itinerary. You can undo from history.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={onDelete}
-                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                    >
-                      Delete
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+
+        {/* Top-left: type badge */}
+        <div className="absolute top-12 left-3">
+          <span className="inline-flex items-center gap-1.5 bg-white/90 backdrop-blur-sm text-foreground px-2 py-1 rounded-md text-[10px] font-semibold uppercase tracking-widest shadow-sm">
+            {(() => {
+              const Icon = getVisitTypeIcon(visit.type);
+              return <Icon className="size-3" aria-hidden="true" />;
+            })()}
+            {getVisitLabel(visit.type)}
+          </span>
+        </div>
+
+        {/* Bottom: stay/day meta + serif italic name */}
+        <div className="absolute bottom-0 left-0 right-0 px-4 pb-3">
+          <div className="text-[10px] uppercase tracking-widest text-white/80 font-semibold drop-shadow">
+            {stayName} · {dayLabel}
+          </div>
+          <h1
+            className="font-serif italic text-3xl leading-tight text-white drop-shadow-md mt-0.5"
+            style={{ textShadow: '0 2px 6px rgba(0,0,0,0.35)' }}
+          >
+            {visit.name}
+          </h1>
+        </div>
       </div>
 
       {/* Body */}
       <div className="flex-1 overflow-y-auto pb-safe">
         <div className="p-4 space-y-4">
-          {/* Meta row */}
-          <div className="flex flex-wrap gap-2">
-            <span
-              className={cn(
-                'px-2 py-1 rounded-md text-[10px] font-semibold uppercase',
-                getVisitTypeBg(visit.type),
-              )}
-            >
-              {getVisitLabel(visit.type)}
-            </span>
-            <span className="px-2 py-1 rounded-md text-[10px] font-semibold uppercase bg-muted text-muted-foreground">
-              {dayLabel}
-            </span>
-            {hasCoords && (
-              <span className="px-2 py-1 rounded-md font-num text-[10px] bg-muted text-muted-foreground">
-                {visit.lat!.toFixed(4)}°N · {visit.lng!.toFixed(4)}°E
-              </span>
-            )}
-          </div>
+          {/* Coords (type + day now shown in hero) */}
+          {hasCoords && (
+            <div className="font-num text-[11px] text-muted-foreground">
+              {visit.lat!.toFixed(4)}°N · {visit.lng!.toFixed(4)}°E
+            </div>
+          )}
 
           {/* CTAs */}
           {hasCoords && (
