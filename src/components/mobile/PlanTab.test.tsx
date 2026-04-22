@@ -33,6 +33,8 @@ function renderTab(overrides: Partial<React.ComponentProps<typeof PlanTab>> = {}
     ...render(
       <PlanTab
         trip={mockTrip}
+        tripName="Test Trip"
+        tripDateRange="Oct 14 → Oct 28"
         sortedStays={[mockStay]}
         selectedStay={mockStay}
         stayDays={[]}

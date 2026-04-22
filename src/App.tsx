@@ -1152,6 +1152,8 @@ function ChronosApp() {
     return (
       <MobileShell
         trip={trip}
+        tripName={trip.name}
+        tripDateRange={`${fmt(safeDate(trip.startDate), { month: 'short', day: 'numeric' })} → ${fmt(addDaysTo(safeDate(trip.startDate), trip.totalDays - 1), { month: 'short', day: 'numeric' })}`}
         sortedStays={sortedStays}
         selectedStay={selectedStay}
         stayDays={stayDays}

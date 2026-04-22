@@ -9,6 +9,8 @@ type StayDay = ReturnType<typeof deriveStayDays>[number];
 
 interface MobileShellProps {
   trip: HybridTrip;
+  tripName: string;
+  tripDateRange: string;
   sortedStays: Stay[];
   selectedStay: Stay | null;
   stayDays: StayDay[];
@@ -53,6 +55,8 @@ export function MobileShell(props: MobileShellProps) {
         >
           <PlanTab
             trip={props.trip}
+            tripName={props.tripName}
+            tripDateRange={props.tripDateRange}
             sortedStays={props.sortedStays}
             selectedStay={props.selectedStay}
             stayDays={props.stayDays}

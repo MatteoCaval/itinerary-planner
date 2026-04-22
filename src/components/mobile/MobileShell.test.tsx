@@ -28,6 +28,8 @@ function mount() {
   return render(
     <MobileShell
       trip={mockTrip}
+      tripName="Test Trip"
+      tripDateRange="Oct 14 → Oct 28"
       sortedStays={[mockStay]}
       selectedStay={mockStay}
       stayDays={[]}

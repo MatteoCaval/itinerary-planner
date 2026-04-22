@@ -12,6 +12,8 @@ type StayDay = ReturnType<typeof deriveStayDays>[number];
 
 interface PlanTabProps {
   trip: HybridTrip;
+  tripName: string;
+  tripDateRange: string;
   sortedStays: Stay[];
   selectedStay: Stay | null;
   stayDays: StayDay[];
@@ -24,6 +26,8 @@ interface PlanTabProps {
 
 export function PlanTab({
   trip,
+  tripName,
+  tripDateRange,
   sortedStays,
   selectedStay,
   stayDays,
@@ -56,6 +60,16 @@ export function PlanTab({
 
   return (
     <div className="flex flex-col flex-1 min-h-0">
+      {/* Trip header */}
+      <div className="flex-shrink-0 bg-background px-4 py-3 border-b border-border pt-safe">
+        <h1 className="font-serif italic text-lg text-foreground leading-tight truncate">
+          {tripName}
+        </h1>
+        <div className="font-num text-[10px] uppercase tracking-widest text-muted-foreground mt-0.5">
+          {tripDateRange}
+        </div>
+      </div>
+
       {selectedStay && (
         <StayChip
           name={selectedStay.name}
