@@ -85,7 +85,7 @@ export function VisitPage({
         />
 
         {/* Top chrome: back + kebab */}
-        <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-2 py-2 pt-safe">
+        <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-2 pb-2 pt-safe">
           <Button
             size="icon-sm"
             variant="ghost"
