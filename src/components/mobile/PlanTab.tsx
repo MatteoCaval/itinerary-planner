@@ -1,9 +1,10 @@
 import * as React from 'react';
+import { Sunrise, Sun, Moon } from 'lucide-react';
 import type { AccommodationGroup, HybridTrip, Stay, VisitItem } from '@/domain/types';
 import type { deriveStayDays } from '@/domain/stayLogic';
 import { fmt, safeDate, addDaysTo } from '@/domain/dateUtils';
 import { DAY_PARTS } from '@/domain/constants';
-import { getVisitTypeBg } from '@/domain/visitTypeDisplay';
+import { getVisitTypeBg, getVisitTypeColor, getVisitTypeIcon } from '@/domain/visitTypeDisplay';
 import { StayChip } from './StayChip';
 import { cn } from '@/lib/utils';
 
@@ -132,11 +133,42 @@ export function PlanTab({
                 isToday && 'ring-1 ring-primary/40',
               )}
             >
-              <div className="flex items-baseline justify-between pb-2 border-b border-border mb-2">
-                <span className="font-num text-sm font-semibold">Day {day.dayOffset + 1}</span>
-                <span className="font-num text-xs text-muted-foreground">
-                  {fmt(dayDate, { month: 'short', day: 'numeric' })}
-                </span>
+              <div className="flex items-center pb-2 border-b border-border mb-2 gap-3">
+                {/* Left gutter: big serif date */}
+                <div className="flex flex-col items-center leading-none">
+                  <span
+                    className={cn(
+                      'text-[10px] uppercase tracking-widest font-semibold',
+                      isToday ? 'text-primary' : 'text-muted-foreground',
+                    )}
+                  >
+                    {fmt(dayDate, { month: 'short' })}
+                  </span>
+                  <span
+                    className={cn(
+                      'text-3xl font-serif italic leading-none mt-0.5',
+                      isToday ? 'text-primary' : 'text-foreground',
+                    )}
+                  >
+                    {dayDate.getDate()}
+                  </span>
+                </div>
+
+                {/* Right column: Day number + weekday */}
+                <div className="flex flex-col gap-0.5 flex-1 min-w-0">
+                  <span className="font-num text-sm font-semibold text-foreground">
+                    Day {day.dayOffset + 1}
+                  </span>
+                  <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">
+                    {fmt(dayDate, { weekday: 'long' })}
+                  </span>
+                </div>
+
+                {isToday && (
+                  <span className="flex-shrink-0 text-[9px] uppercase tracking-widest font-bold text-primary bg-primary/10 px-2 py-0.5 rounded">
+                    Today
+                  </span>
+                )}
               </div>
 
               {dayAccom && (
@@ -150,8 +182,14 @@ export function PlanTab({
                 const periodVisits = dayVisits.filter((v) => v.dayPart === period);
                 return (
                   <React.Fragment key={period}>
-                    <div className="text-[9px] uppercase tracking-widest text-muted-foreground font-semibold pt-2 pb-1">
-                      {period}
+                    <div className="flex items-center gap-2 pt-3 pb-1.5">
+                      {period === 'morning' && <Sunrise className="size-3 text-amber-500/70" aria-hidden="true" />}
+                      {period === 'afternoon' && <Sun className="size-3 text-amber-500/70" aria-hidden="true" />}
+                      {period === 'evening' && <Moon className="size-3 text-indigo-400/70" aria-hidden="true" />}
+                      <span className="text-[9px] uppercase tracking-widest text-muted-foreground font-semibold">
+                        {period}
+                      </span>
+                      <div className="flex-1 h-px bg-border" />
                     </div>
                     {periodVisits.length === 0 ? (
                       <div className="text-[10px] text-muted-foreground/60 italic px-2 py-1">
@@ -178,7 +216,8 @@ export function PlanTab({
 }
 
 function VisitRow({ visit, onOpen }: { visit: VisitItem; onOpen: () => void }) {
-  const bg = getVisitTypeBg(visit.type);
+  const Icon = getVisitTypeIcon(visit.type);
+  const colorClass = getVisitTypeColor(visit.type); // for the icon
   const checkDone = visit.checklist?.filter((c) => c.done).length ?? 0;
   const checkTotal = visit.checklist?.length ?? 0;
 
@@ -186,9 +225,20 @@ function VisitRow({ visit, onOpen }: { visit: VisitItem; onOpen: () => void }) {
     <button
       type="button"
       onClick={onOpen}
-      className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md bg-muted/50 hover:bg-muted active:bg-muted/70 text-left"
+      className={cn(
+        'w-full relative flex items-center gap-2.5 pl-3 pr-2 py-2 rounded-md',
+        'bg-muted/40 hover:bg-muted active:bg-muted/70 text-left overflow-hidden',
+      )}
     >
-      <span aria-hidden="true" className={cn('w-1.5 h-1.5 rounded-full flex-shrink-0', bg)} />
+      {/* Type-colored left stripe */}
+      <span
+        aria-hidden="true"
+        className={cn(
+          'absolute left-0 top-0 bottom-0 w-[3px] rounded-l-md',
+          getVisitTypeBg(visit.type),
+        )}
+      />
+      <Icon aria-hidden="true" className={cn('size-3.5 flex-shrink-0', colorClass)} />
       <span className="text-xs font-medium flex-1 truncate">{visit.name}</span>
       {checkTotal > 0 && (
         <span className="font-num text-[10px] text-muted-foreground flex-shrink-0">
