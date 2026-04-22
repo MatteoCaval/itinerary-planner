@@ -54,6 +54,7 @@ import type {
   ShareCodeMode,
   Stay,
   TripStore,
+  V1HybridTrip,
   VisitItem,
 } from './domain/types';
 import { createEmptyTrip, DAY_PARTS, STAY_COLORS, TRANSPORT_LABELS } from './domain/constants';
@@ -77,6 +78,13 @@ import {
   shrinkTripAfter,
   shrinkTripBefore,
 } from './domain/tripMutations';
+import {
+  hybridTripToLegacy,
+  migrateV1toV2,
+  needsMigrationToV2,
+  normalizeTrip,
+} from './domain/migration';
+import { generateMarkdown, downloadMarkdown } from './markdownExporter';
 import TripMap from './components/TripMap';
 import DayFilterPills from './components/TripMap/DayFilterPills';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -89,13 +97,6 @@ import { Input } from '@/components/ui/input';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Kbd } from '@/components/ui/kbd';
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-} from '@/components/ui/sheet';
 import { Toaster } from '@/components/ui/sonner';
 import { toast } from 'sonner';
 import 'leaflet/dist/leaflet.css';
@@ -126,7 +127,6 @@ import {
 import TripSwitcherPanel from './components/panels/TripSwitcherPanel';
 import HistoryPanel from './components/panels/HistoryPanel';
 import StayOverviewPanel from './components/panels/StayOverviewPanel';
-import { StayTodoSection } from './components/panels/StayOverviewPanel';
 import VisitDetailDrawer from './components/panels/VisitDetailDrawer';
 import ProfileMenu from './components/panels/ProfileMenu';
 import DraggableInventoryCard from './components/cards/DraggableInventoryCard';
@@ -134,12 +134,21 @@ import DroppablePeriodSlot from './components/timeline/DroppablePeriodSlot';
 import WelcomeScreen from './components/WelcomeScreen';
 import ChronosErrorBoundary from './components/ChronosErrorBoundary';
 import { SidebarSplit } from '@/components/layout/SidebarSplit';
+import { MobileShell } from '@/components/mobile/MobileShell';
+import { MapTab, type MapTabPeek } from '@/components/mobile/MapTab';
+import { VisitPage } from '@/components/mobile/VisitPage';
+import { StayPage } from '@/components/mobile/StayPage';
+import { MoreTab } from '@/components/mobile/MoreTab';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const EMPTY_TRIP = createEmptyTrip();
 
 // ─── CHRONOS App ──────────────────────────────────────────────────────────────
 function ChronosApp() {
+  // ── Responsive breakpoint ─────────────────────────────────────────────────
+  const isMobile = useMediaQuery('(max-width: 767px)');
+
   // ── Store (multi-trip) ───────────────────────────────────────────────────
   const [store, setStore] = useState<TripStore>(() => loadStore());
   const [isDemoMode, setIsDemoMode] = useState(false);
@@ -334,13 +343,17 @@ function ChronosApp() {
     days: number;
   } | null>(null);
   const timelineZoneRef = useRef<HTMLDivElement>(null);
-  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+  const [mobilePeek, setMobilePeek] = useState<
+    ({ kind: 'visit' | 'stay'; id: string } & MapTabPeek) | null
+  >(null);
   const mobileSearchRef = useRef<HTMLInputElement>(null);
   const [showAIPlanner, setShowAIPlanner] = useState(false);
   const [showImportCode, setShowImportCode] = useState(false);
   const [showShareTrip, setShowShareTrip] = useState(false);
   const [showPullConfirm, setShowPullConfirm] = useState(false);
+  const [showMobileAuth, setShowMobileAuth] = useState(false);
+  const mobileImportJsonRef = useRef<HTMLInputElement>(null);
   const [aiSettings, setAiSettings] = useState<{ apiKey: string; model: string }>(() => {
     const saved = localStorage.getItem('chronos-ai-settings');
     return saved ? JSON.parse(saved) : { apiKey: '', model: 'gemini-2.0-flash' };
@@ -452,6 +465,15 @@ function ChronosApp() {
     [stayDays],
   );
   const accommodationGroups = useMemo(() => deriveAccommodationGroups(stayDays), [stayDays]);
+  const todayOffset = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const start = safeDate(trip.startDate);
+    start.setHours(0, 0, 0, 0);
+    const diffDays = Math.floor((today.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+    if (diffDays < 0 || diffDays >= trip.totalDays) return null;
+    return diffDays;
+  }, [trip.startDate, trip.totalDays]);
   const existingAccommodationNames = useMemo(() => {
     const names = new Set<string>();
     trip.stays.forEach((s) => {
@@ -724,6 +746,71 @@ function ChronosApp() {
     });
     setSelectedStayId('');
   };
+
+  // ── Mobile export/import helpers ──────────────────────────────────────────
+  const handleMobileExportJson = useCallback(() => {
+    const blob = new Blob([JSON.stringify(trip, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${trip.name.toLowerCase().replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, [trip]);
+
+  const handleMobileExportMarkdown = useCallback(() => {
+    const start = trip.startDate || new Date().toISOString().split('T')[0];
+    const legacy = hybridTripToLegacy({ ...trip, startDate: start });
+    const endDate = addDaysTo(new Date(start), trip.totalDays - 1)
+      .toISOString()
+      .split('T')[0];
+    const md = generateMarkdown(
+      legacy.days,
+      legacy.locations as unknown as Parameters<typeof generateMarkdown>[1],
+      legacy.routes,
+      start,
+      endDate,
+    );
+    downloadMarkdown(
+      md,
+      `${trip.name.toLowerCase().replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.md`,
+    );
+  }, [trip]);
+
+  const handleMobileImportJsonFile = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        try {
+          const parsed = JSON.parse(String(ev.target?.result || '{}'));
+          if (!parsed.stays || !parsed.name) return;
+          let imported = normalizeTrip({
+            ...parsed,
+            id: parsed.id || `trip-${Date.now()}`,
+            startDate: parsed.startDate || '',
+            totalDays: parsed.totalDays || 1,
+          } as HybridTrip);
+          if (needsMigrationToV2(imported))
+            imported = migrateV1toV2(imported as unknown as V1HybridTrip);
+          setStore((s) => {
+            const next = { trips: [...s.trips, imported], activeTripId: imported.id };
+            saveStore(next);
+            return next;
+          });
+          setSelectedStayId('');
+        } catch {
+          // silently ignore parse errors on mobile
+        }
+      };
+      reader.readAsText(file);
+      e.target.value = '';
+    },
+    [setStore],
+  );
 
   // ── Render helpers ────────────────────────────────────────────────────────
   const numDays = trip.totalDays;
@@ -1059,6 +1146,242 @@ function ChronosApp() {
       </button>
     </div>
   );
+
+  // ── Mobile shell ─────────────────────────────────────────────────────────
+  if (isMobile) {
+    return (
+      <MobileShell
+        trip={trip}
+        tripName={trip.name}
+        tripDateRange={`${fmt(safeDate(trip.startDate), { month: 'short', day: 'numeric' })} → ${fmt(addDaysTo(safeDate(trip.startDate), trip.totalDays - 1), { month: 'short', day: 'numeric' })}`}
+        sortedStays={sortedStays}
+        selectedStay={selectedStay}
+        stayDays={stayDays}
+        accommodationGroups={accommodationGroups}
+        todayOffset={todayOffset}
+        inboxCount={inboxVisits.length}
+        onSelectStay={(id) => setSelectedStayId(id)}
+        onOpenStay={(nav) => {
+          if (selectedStay) nav.push({ kind: 'stay', id: selectedStay.id });
+        }}
+        onOpenVisit={(id, nav) => {
+          setSelectedVisitId(id);
+          nav.push({ kind: 'visit', id });
+        }}
+        renderCurrentPage={(nav) => {
+          const page = nav.currentPage;
+          if (!page) return null;
+          if (page.kind === 'visit') {
+            const visit = trip.visits.find((v) => v.id === page.id);
+            const parentStay = visit ? sortedStays.find((s) => s.id === visit.stayId) : null;
+            if (!visit || !parentStay) return null;
+            const dayLabel =
+              visit.dayOffset !== null
+                ? `Day ${visit.dayOffset + 1}${
+                    visit.dayPart
+                      ? ' · ' + visit.dayPart[0].toUpperCase() + visit.dayPart.slice(1)
+                      : ''
+                  }`
+                : 'Unplanned';
+            return (
+              <VisitPage
+                visit={visit}
+                stayName={parentStay.name}
+                dayLabel={dayLabel}
+                onBack={() => nav.pop()}
+                onUpdateVisit={(updates) => {
+                  setTrip((t) => ({
+                    ...t,
+                    visits: t.visits.map((v) => (v.id === visit.id ? { ...v, ...updates } : v)),
+                  }));
+                }}
+                onDelete={() => {
+                  setTrip((t) => ({
+                    ...t,
+                    visits: t.visits.filter((v) => v.id !== visit.id),
+                  }));
+                  nav.pop();
+                }}
+              />
+            );
+          }
+          if (page.kind === 'stay') {
+            const stay = sortedStays.find((s) => s.id === page.id);
+            if (!stay) return null;
+            const visitCount = trip.visits.filter((v) => v.stayId === stay.id).length;
+            const totalDays = Math.ceil((stay.endSlot - stay.startSlot) / 3);
+            return (
+              <StayPage
+                stay={stay}
+                visitCount={visitCount}
+                totalDays={totalDays}
+                totalNights={Math.max(0, totalDays - 1)}
+                accommodationGroups={accommodationGroups}
+                onBack={() => nav.pop()}
+                onUpdateStay={(updates) => {
+                  setTrip((t) => ({
+                    ...t,
+                    stays: t.stays.map((s) => (s.id === stay.id ? { ...s, ...updates } : s)),
+                  }));
+                }}
+              />
+            );
+          }
+          return null;
+        }}
+        renderMapTab={(nav) => (
+          <MapTab
+            renderMap={() => (
+              <TripMap
+                data={{
+                  visits: mapVisits,
+                  stay: selectedStay,
+                  overviewStays,
+                  overviewCandidates: trip.candidateStays.map((c) => ({
+                    id: c.id,
+                    name: c.name,
+                    color: c.color,
+                    centerLat: c.centerLat,
+                    centerLng: c.centerLng,
+                  })),
+                }}
+                selection={{
+                  selectedVisitId,
+                  highlightedVisitId: null,
+                  selectedDayOffset: null,
+                  highlightedStayId: null,
+                  highlightedCandidateId: null,
+                }}
+                mode={selectedStay ? 'stay' : 'overview'}
+                expanded={false}
+                callbacks={{
+                  onSelectVisit: (id) => {
+                    if (!id) {
+                      setMobilePeek(null);
+                      return;
+                    }
+                    const v = trip.visits.find((x) => x.id === id);
+                    if (!v) return;
+                    const parentStay = sortedStays.find((s) => s.id === v.stayId);
+                    setMobilePeek({
+                      kind: 'visit',
+                      id,
+                      name: v.name,
+                      subtitle: v.type ? v.type : undefined,
+                      stripeColor: parentStay?.color,
+                    });
+                  },
+                  onSelectStay: (stayId) => {
+                    const s = sortedStays.find((x) => x.id === stayId);
+                    if (!s) return;
+                    setMobilePeek({
+                      kind: 'stay',
+                      id: stayId,
+                      name: s.name,
+                      subtitle: 'Destination',
+                      stripeColor: s.color,
+                    });
+                  },
+                  onBackToOverview: () => {
+                    setSelectedStayId('');
+                    setMobilePeek(null);
+                  },
+                }}
+              />
+            )}
+            peek={
+              mobilePeek
+                ? {
+                    name: mobilePeek.name,
+                    subtitle: mobilePeek.subtitle,
+                    stripeColor: mobilePeek.stripeColor,
+                    openLabel: 'Open',
+                  }
+                : null
+            }
+            onOpenPeek={() => {
+              if (!mobilePeek) return;
+              if (mobilePeek.kind === 'visit') {
+                setSelectedVisitId(mobilePeek.id);
+                nav.push({ kind: 'visit', id: mobilePeek.id });
+              } else {
+                setSelectedStayId(mobilePeek.id);
+                nav.push({ kind: 'stay', id: mobilePeek.id });
+              }
+              setMobilePeek(null);
+            }}
+            onDismissPeek={() => setMobilePeek(null)}
+          />
+        )}
+        renderMoreTab={(_nav) => (
+          <>
+            <input
+              ref={mobileImportJsonRef}
+              type="file"
+              accept=".json"
+              className="hidden"
+              onChange={handleMobileImportJsonFile}
+            />
+            <MoreTab
+              activeTripName={trip.name}
+              activeTripDates={`${fmt(safeDate(trip.startDate), { month: 'short', day: 'numeric' })} → ${fmt(addDaysTo(safeDate(trip.startDate), trip.totalDays - 1), { month: 'short', day: 'numeric' })} · ${trip.totalDays} ${trip.totalDays === 1 ? 'day' : 'days'}`}
+              inboxCount={inboxVisits.length}
+              onSwitchTrip={() => setShowTripSwitcher(true)}
+              onEditTrip={() => setShowTripEditor(true)}
+              onOpenHistory={() => setShowHistory(true)}
+              onImportCode={() => setShowImportCode(true)}
+              onExportMarkdown={handleMobileExportMarkdown}
+              onExportJson={handleMobileExportJson}
+              onImportJson={() => mobileImportJsonRef.current?.click()}
+              onOpenAIPlanner={() => setShowAIPlanner(true)}
+              onOpenShare={() => setShowShareTrip(true)}
+              onOpenAuth={() => setShowMobileAuth(true)}
+              isAuthenticated={!!user}
+              authEmail={user?.email ?? null}
+              syncStatus={syncStatus}
+              version="v1.0.0"
+              renderInbox={() => (
+                <div className="flex flex-col gap-2 p-3">
+                  {inboxVisits.length === 0 && trip.candidateStays.length === 0 && (
+                    <div className="text-xs text-muted-foreground text-center py-4">
+                      No unscheduled items.
+                    </div>
+                  )}
+                  {inboxVisits.map((v) => (
+                    <button
+                      key={v.id}
+                      type="button"
+                      onClick={() => {
+                        setSelectedVisitId(v.id);
+                        _nav.push({ kind: 'visit', id: v.id });
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-2 bg-white border border-border rounded-md text-left hover:bg-muted/50"
+                    >
+                      <span className="text-sm font-medium truncate">{v.name}</span>
+                    </button>
+                  ))}
+                  {trip.candidateStays.map((c) => (
+                    <div
+                      key={c.id}
+                      className="w-full flex items-center gap-2 px-3 py-2 bg-white border border-border border-dashed rounded-md"
+                    >
+                      <span
+                        className="w-2 h-2 rounded-full flex-shrink-0"
+                        style={{ background: c.color }}
+                      />
+                      <span className="text-sm font-medium truncate">{c.name}</span>
+                      <span className="ml-auto text-[10px] text-muted-foreground">candidate</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            />
+            {showMobileAuth && <AuthModalSimple onClose={() => setShowMobileAuth(false)} />}
+          </>
+        )}
+      />
+    );
+  }
 
   // ── JSX ───────────────────────────────────────────────────────────────────
   return (
@@ -2118,10 +2441,6 @@ function ChronosApp() {
                           onSelectVisit={(id) => {
                             const next = id === selectedVisitId ? null : id;
                             setSelectedVisitId(next);
-                            if (next) {
-                              // On mobile, open the bottom drawer to show visit detail
-                              if (window.innerWidth < 768) setMobileDrawerOpen(true);
-                            }
                           }}
                           onEditVisit={(v) => setEditingVisit(v)}
                           onAddVisit={(d, p) => setAddingVisitToSlot({ dayOffset: d, part: p })}
@@ -2674,151 +2993,6 @@ function ChronosApp() {
             </aside>
           </section>
         </main>
-
-        {/* ── Mobile FAB for unplanned items ── */}
-        {!mobileDrawerOpen && (
-          <button
-            onClick={() => setMobileDrawerOpen(true)}
-            className="md:hidden fixed right-5 z-50 size-14 rounded-full bg-primary text-white shadow-lg shadow-primary/30 flex items-center justify-center hover:bg-primary/90 active:scale-95 transition-all"
-            style={{ bottom: 'calc(1.25rem + env(safe-area-inset-bottom, 0px))' }}
-            aria-label="Open unplanned items"
-          >
-            <Layers className="w-6 h-6" />
-            {inboxVisits.length > 0 && (
-              <span className="absolute -top-1 -right-1 size-5 rounded-full bg-white text-primary text-[11px] font-extrabold flex items-center justify-center shadow-sm border border-primary/20">
-                {inboxVisits.length}
-              </span>
-            )}
-          </button>
-        )}
-
-        {/* ── Mobile overlay panel ── */}
-        <Sheet
-          open={mobileDrawerOpen}
-          onOpenChange={(open) => {
-            setMobileDrawerOpen(open);
-            if (!open && selectedVisitId) setSelectedVisitId(null);
-          }}
-        >
-          <SheetContent
-            side="bottom"
-            className="h-[85vh] md:hidden flex flex-col p-0"
-            showCloseButton={false}
-          >
-            <SheetHeader className="flex-shrink-0 border-b border-border-neutral px-4 py-3">
-              <SheetTitle className="text-[11px] font-bold text-foreground">
-                {selectedVisitId ? 'Place Details' : 'Inbox'}
-              </SheetTitle>
-              <SheetDescription className="sr-only">
-                {selectedVisitId
-                  ? 'View and manage place details'
-                  : 'View and manage unplanned items'}
-              </SheetDescription>
-            </SheetHeader>
-            {/* Mobile visit detail — shown when a visit is selected */}
-            {selectedVisitId &&
-              selectedStay &&
-              (() => {
-                const visit = trip.visits.find((v) => v.id === selectedVisitId);
-                if (!visit) return null;
-                const dayLabel =
-                  visit.dayOffset !== null
-                    ? `Day ${visit.dayOffset + 1}${visit.dayPart ? ', ' + visit.dayPart.charAt(0).toUpperCase() + visit.dayPart.slice(1) : ''}`
-                    : 'Unplanned';
-                return (
-                  <VisitDetailDrawer
-                    key={visit.id}
-                    visit={visit}
-                    dayLabel={dayLabel}
-                    onClose={() => {
-                      setSelectedVisitId(null);
-                      setMobileDrawerOpen(false);
-                    }}
-                    onEdit={() => {
-                      setEditingVisit(visit);
-                      setSelectedVisitId(null);
-                      setMobileDrawerOpen(false);
-                    }}
-                    onUnschedule={() => {
-                      setTrip((t) => ({
-                        ...t,
-                        visits: t.visits.map((v) =>
-                          v.id === visit.id ? { ...v, dayOffset: null, dayPart: null } : v,
-                        ),
-                      }));
-                      setSelectedVisitId(null);
-                      setMobileDrawerOpen(false);
-                    }}
-                    onDelete={() => {
-                      setTrip((t) => ({
-                        ...t,
-                        visits: t.visits.filter((v) => v.id !== visit.id),
-                      }));
-                      setSelectedVisitId(null);
-                      setMobileDrawerOpen(false);
-                    }}
-                    onUpdateVisit={(updates) => {
-                      setTrip((t) => ({
-                        ...t,
-                        visits: t.visits.map((v) => (v.id === visit.id ? { ...v, ...updates } : v)),
-                      }));
-                    }}
-                  />
-                );
-              })()}
-            {/* Unplanned list — shown when no visit is selected */}
-            {!selectedVisitId && (
-              <>
-                {/* Stay to-do */}
-                {selectedStay && (
-                  <StayTodoSection
-                    key={selectedStay.id}
-                    stay={selectedStay}
-                    onUpdate={(cl) =>
-                      updateSelectedStay((s) => ({
-                        ...s,
-                        checklist: cl.length > 0 ? cl : undefined,
-                      }))
-                    }
-                  />
-                )}
-                {/* Items */}
-                <div className="flex-1 overflow-y-auto p-4 pb-safe space-y-3 scroll-hide">
-                  {inboxVisits.map((v) => (
-                    <DraggableInventoryCard
-                      key={v.id}
-                      visit={v}
-                      onEdit={() => setEditingVisit(v)}
-                      onLocate={() => {
-                        setLocatedVisitId(v.id);
-                        setSelectedVisitId(v.id);
-                      }}
-                    />
-                  ))}
-                  {inboxVisits.length === 0 && (
-                    <div className="flex flex-col items-center justify-center py-8 gap-2">
-                      <div className="size-9 rounded-xl bg-muted flex items-center justify-center">
-                        {selectedStay ? (
-                          <Check className="w-4 h-4 text-success" />
-                        ) : (
-                          <Compass className="w-4 h-4 text-muted-foreground" />
-                        )}
-                      </div>
-                      <p className="text-[11px] font-bold text-muted-foreground">
-                        {selectedStay ? 'All scheduled!' : 'No stay selected'}
-                      </p>
-                      <p className="text-[11px] text-muted-foreground text-center">
-                        {selectedStay
-                          ? 'Add more with the + button.'
-                          : 'Tap a destination on the timeline.'}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </>
-            )}
-          </SheetContent>
-        </Sheet>
 
         {/* ── Footer ── */}
         <footer className="hidden md:flex bg-white text-muted-foreground px-6 py-1.5 text-[11px] font-bold justify-between items-center border-t border-border-neutral flex-shrink-0">

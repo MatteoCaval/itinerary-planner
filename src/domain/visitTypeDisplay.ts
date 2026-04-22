@@ -1,3 +1,11 @@
+import {
+  Utensils,
+  Landmark,
+  Building2,
+  Footprints,
+  ShoppingBag,
+  type LucideIcon,
+} from 'lucide-react';
 import type { VisitType } from './types';
 
 /** Returns a Tailwind background class for a visit type. */
@@ -51,5 +59,23 @@ export function getVisitLabel(type: VisitType) {
       return 'Shopping';
     default:
       return 'Place';
+  }
+}
+
+/** Returns a Lucide icon component for a visit type. */
+export function getVisitTypeIcon(type: VisitType): LucideIcon {
+  switch (type) {
+    case 'food':
+      return Utensils;
+    case 'landmark':
+      return Landmark;
+    case 'museum':
+      return Building2;
+    case 'walk':
+      return Footprints;
+    case 'shopping':
+      return ShoppingBag;
+    default:
+      return Landmark;
   }
 }
