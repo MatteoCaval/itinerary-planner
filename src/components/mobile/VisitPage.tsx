@@ -148,13 +148,13 @@ export function VisitPage({
           </span>
         </div>
 
-        {/* Bottom: stay/day meta + serif italic name */}
+        {/* Bottom: stay/day meta + visit name */}
         <div className="absolute bottom-0 left-0 right-0 px-4 pb-3">
           <div className="text-[10px] uppercase tracking-widest text-white/80 font-semibold drop-shadow">
             {stayName} · {dayLabel}
           </div>
           <h1
-            className="font-serif italic text-3xl leading-tight text-white drop-shadow-md mt-0.5"
+            className="text-2xl font-bold tracking-tight leading-tight text-white mt-0.5"
             style={{ textShadow: '0 2px 6px rgba(0,0,0,0.35)' }}
           >
             {visit.name}

@@ -76,10 +76,9 @@ function Row({
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
-    <div className="px-4 pt-5 pb-2">
-      <h3 className="font-serif italic text-base text-foreground">{children}</h3>
-      <div className="mt-1.5 h-px bg-border" />
-    </div>
+    <h3 className="px-4 pt-5 pb-1.5 text-[11px] uppercase tracking-widest text-muted-foreground font-semibold">
+      {children}
+    </h3>
   );
 }
 
@@ -131,7 +130,7 @@ export function MoreTab(props: MoreTabProps) {
               <div className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">
                 Active trip
               </div>
-              <div className="font-serif italic text-xl text-foreground leading-tight truncate mt-0.5">
+              <div className="text-lg font-bold tracking-tight text-foreground leading-tight truncate mt-0.5">
                 {props.activeTripName}
               </div>
               <div className="font-num text-[11px] text-muted-foreground mt-1">

@@ -62,7 +62,7 @@ export function PlanTab({
     <div className="flex flex-col flex-1 min-h-0">
       {/* Trip header */}
       <div className="flex-shrink-0 bg-background px-4 py-3 border-b border-border pt-safe">
-        <h1 className="font-serif italic text-lg text-foreground leading-tight truncate">
+        <h1 className="text-base font-bold tracking-tight text-foreground leading-tight truncate">
           {tripName}
         </h1>
         <div className="font-num text-[10px] uppercase tracking-widest text-muted-foreground mt-0.5">
@@ -161,7 +161,7 @@ export function PlanTab({
                   </span>
                   <span
                     className={cn(
-                      'text-3xl font-serif italic leading-none mt-0.5',
+                      'font-num text-3xl font-bold leading-none mt-0.5 tabular-nums',
                       isToday ? 'text-primary' : 'text-foreground',
                     )}
                   >
@@ -198,9 +198,15 @@ export function PlanTab({
                 return (
                   <React.Fragment key={period}>
                     <div className="flex items-center gap-2 pt-3 pb-1.5">
-                      {period === 'morning' && <Sunrise className="size-3 text-amber-500/70" aria-hidden="true" />}
-                      {period === 'afternoon' && <Sun className="size-3 text-amber-500/70" aria-hidden="true" />}
-                      {period === 'evening' && <Moon className="size-3 text-indigo-400/70" aria-hidden="true" />}
+                      {period === 'morning' && (
+                        <Sunrise className="size-3 text-muted-foreground" aria-hidden="true" />
+                      )}
+                      {period === 'afternoon' && (
+                        <Sun className="size-3 text-muted-foreground" aria-hidden="true" />
+                      )}
+                      {period === 'evening' && (
+                        <Moon className="size-3 text-muted-foreground" aria-hidden="true" />
+                      )}
                       <span className="text-[9px] uppercase tracking-widest text-muted-foreground font-semibold">
                         {period}
                       </span>
