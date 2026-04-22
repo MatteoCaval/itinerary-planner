@@ -2,7 +2,6 @@ import * as React from 'react';
 import {
   ChevronRight,
   ChevronUp,
-  FolderKanban,
   Calendar,
   Inbox,
   History,
@@ -12,7 +11,6 @@ import {
   Sparkles,
   Share2,
   UserCircle2,
-  Cloud,
   HelpCircle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -20,6 +18,8 @@ import { cn } from '@/lib/utils';
 export type MobileSyncStatus = 'saved' | 'saving' | 'error' | 'local';
 
 interface MoreTabProps {
+  activeTripName: string;
+  activeTripDates: string;
   inboxCount: number;
   onSwitchTrip: () => void;
   onEditTrip: () => void;
@@ -60,7 +60,7 @@ function Row({
       onClick={onClick}
       disabled={disabled || !onClick}
       className={cn(
-        'w-full flex items-center gap-3 px-4 py-3 bg-white border-b border-border',
+        'w-full flex items-center gap-3 px-4 py-3 bg-white border-b border-border last:border-b-0',
         'text-left',
         onClick && !disabled ? 'hover:bg-muted/50 active:bg-muted' : 'cursor-default',
       )}
@@ -74,11 +74,36 @@ function Row({
   );
 }
 
-function SectionHeader({ children }: { children: React.ReactNode }) {
+function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
-    <div className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold px-4 pt-4 pb-1.5">
-      {children}
+    <div className="px-4 pt-5 pb-2">
+      <h3 className="font-serif italic text-base text-foreground">{children}</h3>
+      <div className="mt-1.5 h-px bg-border" />
     </div>
+  );
+}
+
+interface LeadCardProps {
+  onClick?: () => void;
+  className?: string;
+  children: React.ReactNode;
+  ariaLabel?: string;
+}
+
+function LeadCard({ onClick, className, children, ariaLabel }: LeadCardProps) {
+  const base = 'w-full bg-white border border-border rounded-xl p-4 text-left shadow-sm';
+  if (!onClick) {
+    return <div className={cn(base, className)}>{children}</div>;
+  }
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={ariaLabel}
+      className={cn(base, 'hover:bg-muted/30 active:bg-muted/50 transition-colors', className)}
+    >
+      {children}
+    </button>
   );
 }
 
@@ -94,59 +119,134 @@ export function MoreTab(props: MoreTabProps) {
 
   return (
     <div className="flex-1 overflow-y-auto pb-safe bg-background">
-      <SectionHeader>Trip</SectionHeader>
-      <Row icon={FolderKanban} label="Switch trip" onClick={props.onSwitchTrip} />
-      <Row icon={Calendar} label="Edit trip" onClick={props.onEditTrip} />
+      {/* ── Trip ── */}
+      <SectionTitle>Trip</SectionTitle>
+      <div className="mx-4">
+        <LeadCard
+          onClick={props.onSwitchTrip}
+          ariaLabel={`Switch trip. Active: ${props.activeTripName}`}
+        >
+          <div className="flex items-center gap-3">
+            <div className="flex-1 min-w-0">
+              <div className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">
+                Active trip
+              </div>
+              <div className="font-serif italic text-xl text-foreground leading-tight truncate mt-0.5">
+                {props.activeTripName}
+              </div>
+              <div className="font-num text-[11px] text-muted-foreground mt-1">
+                {props.activeTripDates}
+              </div>
+            </div>
+            <ChevronRight className="size-5 text-muted-foreground flex-shrink-0" aria-hidden="true" />
+          </div>
+        </LeadCard>
+      </div>
+      <div className="mt-2 bg-white border-y border-border">
+        <Row icon={Calendar} label="Edit trip" onClick={props.onEditTrip} />
+      </div>
 
-      <SectionHeader>Destinations</SectionHeader>
-      <Row
-        icon={Inbox}
-        label="Inbox"
-        onClick={() => setInboxOpen((o) => !o)}
-        badge={
-          props.inboxCount > 0 ? (
-            <span className="font-num text-[11px] font-bold text-primary min-w-[18px] text-center">
-              {props.inboxCount}
-            </span>
-          ) : undefined
-        }
-        trailing={
-          inboxOpen ? (
-            <ChevronUp className="size-4 text-muted-foreground" />
-          ) : (
-            <ChevronRight className="size-4 text-muted-foreground" />
-          )
-        }
-      />
-      {inboxOpen && props.renderInbox && (
-        <div className="bg-muted/30 border-b border-border">{props.renderInbox()}</div>
-      )}
-      <Row icon={History} label="History" onClick={props.onOpenHistory} />
+      {/* ── Destinations ── */}
+      <SectionTitle>Destinations</SectionTitle>
+      <div className="bg-white border-y border-border">
+        <Row
+          icon={Inbox}
+          label="Inbox"
+          onClick={() => setInboxOpen((o) => !o)}
+          badge={
+            props.inboxCount > 0 ? (
+              <span className="font-num text-[11px] font-bold text-primary min-w-[18px] text-center">
+                {props.inboxCount}
+              </span>
+            ) : undefined
+          }
+          trailing={
+            inboxOpen ? (
+              <ChevronUp className="size-4 text-muted-foreground" />
+            ) : (
+              <ChevronRight className="size-4 text-muted-foreground" />
+            )
+          }
+        />
+        {inboxOpen && props.renderInbox && (
+          <div className="bg-muted/30 border-b border-border">{props.renderInbox()}</div>
+        )}
+        <Row icon={History} label="History" onClick={props.onOpenHistory} />
+      </div>
 
-      <SectionHeader>Data</SectionHeader>
-      <Row icon={Upload} label="Import from code" onClick={props.onImportCode} />
-      <Row icon={FileText} label="Export markdown" onClick={props.onExportMarkdown} />
-      <Row icon={Download} label="Export JSON" onClick={props.onExportJson} />
-      <Row icon={Upload} label="Import JSON" onClick={props.onImportJson} />
+      {/* ── Data ── */}
+      <SectionTitle>Data</SectionTitle>
+      <div className="bg-white border-y border-border">
+        <Row icon={Upload} label="Import from code" onClick={props.onImportCode} />
+        <Row icon={FileText} label="Export markdown" onClick={props.onExportMarkdown} />
+        <Row icon={Download} label="Export JSON" onClick={props.onExportJson} />
+        <Row icon={Upload} label="Import JSON" onClick={props.onImportJson} />
+      </div>
 
-      <SectionHeader>Power</SectionHeader>
-      <Row icon={Sparkles} label="AI Planner" onClick={props.onOpenAIPlanner} />
-      <Row icon={Share2} label="Share trip" onClick={props.onOpenShare} />
+      {/* ── Power ── */}
+      <SectionTitle>Power</SectionTitle>
+      <div className="bg-white border-y border-border">
+        <Row icon={Sparkles} label="AI Planner" onClick={props.onOpenAIPlanner} />
+        <Row icon={Share2} label="Share trip" onClick={props.onOpenShare} />
+      </div>
 
-      <SectionHeader>Account</SectionHeader>
-      {props.isAuthenticated && props.authEmail ? (
-        <Row icon={UserCircle2} label={props.authEmail} onClick={props.onOpenAuth} />
-      ) : (
-        <Row icon={UserCircle2} label="Sign in" onClick={props.onOpenAuth} />
-      )}
-      <Row icon={Cloud} label={syncLabel} />
+      {/* ── Account ── */}
+      <SectionTitle>Account</SectionTitle>
+      <div className="mx-4">
+        {props.isAuthenticated && props.authEmail ? (
+          <LeadCard onClick={props.onOpenAuth} ariaLabel="Account settings">
+            <div className="flex items-center gap-3">
+              <div className="size-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                <UserCircle2 className="size-6 text-primary" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-sm font-semibold text-foreground truncate">
+                  {props.authEmail}
+                </div>
+                <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground mt-0.5">
+                  <span
+                    aria-hidden="true"
+                    className={cn(
+                      'size-1.5 rounded-full',
+                      props.syncStatus === 'saved' && 'bg-success',
+                      props.syncStatus === 'saving' && 'bg-amber-500 animate-pulse',
+                      props.syncStatus === 'error' && 'bg-destructive',
+                      props.syncStatus === 'local' && 'bg-muted-foreground',
+                    )}
+                  />
+                  {syncLabel.replace('● ', '')}
+                </div>
+              </div>
+              <ChevronRight className="size-5 text-muted-foreground flex-shrink-0" aria-hidden="true" />
+            </div>
+          </LeadCard>
+        ) : (
+          <LeadCard onClick={props.onOpenAuth} ariaLabel="Sign in">
+            <div className="flex items-center gap-3">
+              <div className="size-10 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
+                <UserCircle2 className="size-6 text-muted-foreground" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-sm font-semibold text-foreground">Sign in</div>
+                <div className="text-[11px] text-muted-foreground mt-0.5">
+                  Sync your trip across devices
+                </div>
+              </div>
+              <ChevronRight className="size-5 text-muted-foreground flex-shrink-0" aria-hidden="true" />
+            </div>
+          </LeadCard>
+        )}
+      </div>
 
-      <SectionHeader>App</SectionHeader>
-      <Row
-        icon={HelpCircle}
-        label="Help & shortcuts"
-        trailing={<span className="text-[10px] text-muted-foreground">Soon</span>}
-      />
+      {/* ── App ── */}
+      <SectionTitle>App</SectionTitle>
+      <div className="bg-white border-y border-border">
+        <Row
+          icon={HelpCircle}
+          label="Help & shortcuts"
+          trailing={<span className="text-[10px] text-muted-foreground">Soon</span>}
+        />
+      </div>
       <div className="px-4 py-3 text-[10px] text-muted-foreground">Version {props.version}</div>
     </div>
   );

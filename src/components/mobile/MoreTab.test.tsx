@@ -6,6 +6,8 @@ import { MoreTab } from './MoreTab';
 function mount(overrides: Partial<React.ComponentProps<typeof MoreTab>> = {}) {
   return render(
     <MoreTab
+      activeTripName="Test Trip"
+      activeTripDates="Oct 14 → Oct 28 · 14 days"
       inboxCount={0}
       onSwitchTrip={() => {}}
       onEditTrip={() => {}}

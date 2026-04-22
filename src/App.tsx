@@ -1313,6 +1313,8 @@ function ChronosApp() {
               onChange={handleMobileImportJsonFile}
             />
             <MoreTab
+              activeTripName={trip.name}
+              activeTripDates={`${fmt(safeDate(trip.startDate), { month: 'short', day: 'numeric' })} → ${fmt(addDaysTo(safeDate(trip.startDate), trip.totalDays - 1), { month: 'short', day: 'numeric' })} · ${trip.totalDays} ${trip.totalDays === 1 ? 'day' : 'days'}`}
               inboxCount={inboxVisits.length}
               onSwitchTrip={() => setShowTripSwitcher(true)}
               onEditTrip={() => setShowTripEditor(true)}
