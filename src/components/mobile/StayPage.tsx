@@ -37,7 +37,10 @@ export function StayPage({
   return (
     <div className="flex flex-col flex-1 min-h-0 bg-background">
       {/* Header */}
-      <div className="flex-shrink-0 flex items-center gap-2 px-3 pb-2 pt-safe border-b border-border bg-white">
+      <div
+        className="flex-shrink-0 flex items-center gap-2 px-3 pb-2 border-b border-border bg-white"
+        style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 0.5rem)' }}
+      >
         <Button size="icon-sm" variant="ghost" onClick={onBack} aria-label="Back">
           <ArrowLeft className="size-5" />
         </Button>
