@@ -235,6 +235,38 @@
     animation: slide-up 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
   }
 
+  /* ── Push-page slide-in ── */
+  @keyframes page-push-in {
+    from {
+      transform: translateX(24px);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+
+  .animate-page-push {
+    animation: page-push-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  /* ── Plan-tab day-card stagger-fade ── */
+  @keyframes day-card-in {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-day-card {
+    animation: day-card-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
   /* ── Mobile search overlay fade-in ── */
   @keyframes search-reveal {
     from {

@@ -1262,11 +1262,13 @@ function ChronosApp() {
                     }
                     const v = trip.visits.find((x) => x.id === id);
                     if (!v) return;
+                    const parentStay = sortedStays.find((s) => s.id === v.stayId);
                     setMobilePeek({
                       kind: 'visit',
                       id,
                       name: v.name,
                       subtitle: v.type ? v.type : undefined,
+                      stripeColor: parentStay?.color,
                     });
                   },
                   onSelectStay: (stayId) => {
@@ -1277,6 +1279,7 @@ function ChronosApp() {
                       id: stayId,
                       name: s.name,
                       subtitle: 'Destination',
+                      stripeColor: s.color,
                     });
                   },
                   onBackToOverview: () => {
@@ -1288,7 +1291,12 @@ function ChronosApp() {
             )}
             peek={
               mobilePeek
-                ? { name: mobilePeek.name, subtitle: mobilePeek.subtitle, openLabel: 'Open' }
+                ? {
+                    name: mobilePeek.name,
+                    subtitle: mobilePeek.subtitle,
+                    stripeColor: mobilePeek.stripeColor,
+                    openLabel: 'Open',
+                  }
                 : null
             }
             onOpenPeek={() => {

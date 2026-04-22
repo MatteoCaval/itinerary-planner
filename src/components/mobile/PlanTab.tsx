@@ -130,7 +130,7 @@ export function PlanTab({
           </div>
         )}
 
-        {stayDays.map((day) => {
+        {stayDays.map((day, index) => {
           const dayDate = addDaysTo(safeDate(trip.startDate), day.absoluteDay);
           const isToday = day.absoluteDay === todayOffset;
           const dayVisits = trip.visits.filter(
@@ -143,9 +143,10 @@ export function PlanTab({
               key={day.dayOffset}
               ref={isToday ? todayRef : undefined}
               className={cn(
-                'bg-card border border-border rounded-lg p-3',
+                'bg-card border border-border rounded-lg p-3 animate-day-card',
                 isToday && 'ring-1 ring-primary/40',
               )}
+              style={{ animationDelay: `${Math.min(index * 40, 240)}ms` }}
             >
               <div className="flex items-center pb-2 border-b border-border mb-2 gap-3">
                 {/* Left gutter: big serif date */}

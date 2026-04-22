@@ -5,6 +5,7 @@ export interface MapTabPeek {
   name: string;
   subtitle?: string;
   openLabel?: string;
+  stripeColor?: string;
 }
 
 interface MapTabProps {
@@ -23,6 +24,7 @@ export function MapTab({ renderMap, peek, onOpenPeek, onDismissPeek }: MapTabPro
         name={peek?.name ?? ''}
         subtitle={peek?.subtitle}
         openLabel={peek?.openLabel}
+        stripeColor={peek?.stripeColor}
         onOpen={onOpenPeek}
         onDismiss={onDismissPeek}
       />

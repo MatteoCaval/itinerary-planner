@@ -34,21 +34,20 @@ export function BottomTabBar({ tab, onTabChange, inboxCount = 0 }: BottomTabBarP
             aria-label={label}
             onClick={() => onTabChange(key)}
             className={cn(
-              'flex-1 flex flex-col items-center justify-center gap-1 py-2 relative',
+              'flex-1 flex flex-col items-center justify-center gap-1 py-1.5 relative',
               'text-[10px] font-medium transition-colors',
               active ? 'text-primary' : 'text-muted-foreground',
             )}
           >
-            {active && (
-              <span
-                aria-hidden="true"
-                className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-[2px] bg-primary rounded-b"
-              />
-            )}
-            <span className="relative">
+            <span
+              className={cn(
+                'relative flex items-center justify-center rounded-full px-4 py-1 transition-colors',
+                active ? 'bg-primary/10' : 'bg-transparent',
+              )}
+            >
               <Icon className="size-[18px]" />
               {showBadge && (
-                <span className="absolute -top-1 -right-2 size-[14px] rounded-full bg-destructive text-[9px] font-bold text-destructive-foreground flex items-center justify-center">
+                <span className="absolute -top-1 -right-1 size-[14px] rounded-full bg-destructive text-[9px] font-bold text-destructive-foreground flex items-center justify-center">
                   {inboxCount}
                 </span>
               )}

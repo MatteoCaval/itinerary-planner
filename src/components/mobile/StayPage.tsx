@@ -51,12 +51,21 @@ export function StayPage({
         <div className="p-4 space-y-5">
           {/* Hero */}
           <div
-            className="h-32 rounded-xl flex items-end p-3"
+            className="h-32 rounded-xl flex items-end p-3 relative overflow-hidden"
             style={{
               background: `linear-gradient(135deg, ${stay.color}55 0%, ${stay.color}aa 100%)`,
             }}
           >
-            <div>
+            {/* Grain overlay */}
+            <div
+              aria-hidden="true"
+              className="absolute inset-0 opacity-[0.18] mix-blend-overlay pointer-events-none"
+              style={{
+                backgroundImage:
+                  "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>\")",
+              }}
+            />
+            <div className="relative">
               <div className="flex items-center gap-2 mb-1">
                 <span
                   aria-hidden="true"

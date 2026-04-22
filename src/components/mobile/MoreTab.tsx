@@ -168,9 +168,17 @@ export function MoreTab(props: MoreTabProps) {
             )
           }
         />
-        {inboxOpen && props.renderInbox && (
-          <div className="bg-muted/30 border-b border-border">{props.renderInbox()}</div>
-        )}
+        <div
+          aria-hidden={!inboxOpen}
+          className={cn(
+            'overflow-hidden transition-[max-height,opacity] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]',
+            inboxOpen ? 'max-h-[600px] opacity-100' : 'max-h-0 opacity-0',
+          )}
+        >
+          <div className="bg-muted/30 border-b border-border">
+            {props.renderInbox?.()}
+          </div>
+        </div>
         <Row icon={History} label="History" onClick={props.onOpenHistory} />
       </div>
 
