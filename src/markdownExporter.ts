@@ -171,7 +171,7 @@ export const generateMarkdown = (
     md += `--- \n\n`;
   }
 
-  md += `*Generated with Itinerary Planner*`;
+  md += `*Generated with Tappa*`;
   return md;
 };
 

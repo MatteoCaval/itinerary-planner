@@ -91,7 +91,7 @@ function ProfileMenu({
       try {
         const parsed = JSON.parse(String(ev.target?.result || '{}'));
         if (!parsed.stays || !parsed.name) {
-          toast.error('Invalid trip file — expected a Chronos trip JSON with "name" and "stays".');
+          toast.error('Invalid trip file — expected a Tappa trip JSON with "name" and "stays".');
           return;
         }
         let imported = normalizeTrip({

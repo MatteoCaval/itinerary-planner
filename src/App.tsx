@@ -1419,11 +1419,14 @@ function ChronosApp() {
 
           <div className="flex items-center gap-3 min-w-0">
             <div className="flex items-center gap-2.5 text-primary flex-shrink-0">
-              <div className="size-7 rounded-lg bg-primary/10 flex items-center justify-center">
-                <Compass className="w-4 h-4 text-primary" />
-              </div>
+              <img
+                src={`${import.meta.env.BASE_URL}logo.svg`}
+                alt=""
+                aria-hidden="true"
+                className="size-7 rounded-full shadow-sm"
+              />
               <span className="text-xs font-extrabold tracking-tight hidden sm:block">
-                Itinerary
+                Tappa
               </span>
             </div>
             <div className="h-5 w-px bg-border flex-shrink-0" />

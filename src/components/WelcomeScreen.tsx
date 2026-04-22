@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Compass, Plus, LogIn, Download } from 'lucide-react';
+import { Plus, LogIn, Download } from 'lucide-react';
 import TransportIcon from '@/components/ui/TransportIcon';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
@@ -36,10 +36,13 @@ function WelcomeScreen({
       {/* Header */}
       <header className="flex h-14 items-center justify-between border-b border-border px-6 bg-white/80 backdrop-blur-sm flex-shrink-0">
         <div className="flex items-center gap-2.5 text-primary">
-          <div className="size-7 rounded-lg bg-primary/10 flex items-center justify-center">
-            <Compass className="w-4 h-4 text-primary" />
-          </div>
-          <span className="text-sm font-extrabold tracking-tight">Itinerary</span>
+          <img
+            src={`${import.meta.env.BASE_URL}logo.svg`}
+            alt=""
+            aria-hidden="true"
+            className="size-7 rounded-full shadow-sm"
+          />
+          <span className="text-sm font-extrabold tracking-tight">Tappa</span>
         </div>
         {!user && (
           <Button
