@@ -227,6 +227,76 @@ describe('applyTimelineDrag', () => {
     });
     expect(result.removed).toEqual([]);
   });
+
+  it('boundary drag Tokyo->Kyoto does not leak accommodation across stays', () => {
+    const stays: Stay[] = [
+      {
+        id: 'tokyo',
+        name: 'Tokyo',
+        color: '#000',
+        startSlot: 0,
+        endSlot: 9,
+        centerLat: 0,
+        centerLng: 0,
+        nightAccommodations: {
+          0: { name: 'Hotel Tokyo' },
+          1: { name: 'Hotel Tokyo' },
+          2: { name: 'Hotel Tokyo' },
+        },
+      },
+      {
+        id: 'kyoto',
+        name: 'Kyoto',
+        color: '#111',
+        startSlot: 9,
+        endSlot: 18,
+        centerLat: 0,
+        centerLng: 0,
+        nightAccommodations: {
+          0: { name: 'Hotel Kyoto' },
+          1: { name: 'Hotel Kyoto' },
+          2: { name: 'Hotel Kyoto' },
+        },
+      },
+    ];
+
+    const tokyoDrag: DragState = {
+      stayId: 'tokyo',
+      mode: 'resize-end',
+      originX: 0,
+      originalStart: 0,
+      originalEnd: 9,
+      originalNightAccommodations: stays[0].nightAccommodations,
+    };
+    const afterTokyoShrink = applyTimelineDrag(stays, tokyoDrag, -3, 18);
+    expect(afterTokyoShrink.stays[0].endSlot).toBe(6);
+    expect(afterTokyoShrink.stays[0].nightAccommodations).toEqual({
+      0: { name: 'Hotel Tokyo' },
+      1: { name: 'Hotel Tokyo' },
+    });
+    expect(afterTokyoShrink.removed).toEqual([]);
+
+    const kyotoDrag: DragState = {
+      stayId: 'kyoto',
+      mode: 'resize-start',
+      originX: 0,
+      originalStart: 9,
+      originalEnd: 18,
+      originalNightAccommodations: stays[1].nightAccommodations,
+    };
+    const afterKyotoGrow = applyTimelineDrag(afterTokyoShrink.stays, kyotoDrag, -3, 18);
+    expect(afterKyotoGrow.stays[1].startSlot).toBe(6);
+    expect(afterKyotoGrow.stays[1].nightAccommodations).toEqual({
+      0: { name: 'Hotel Kyoto' },
+      1: { name: 'Hotel Kyoto' },
+      2: { name: 'Hotel Kyoto' },
+      3: { name: 'Hotel Kyoto' },
+    });
+    expect(afterKyotoGrow.removed).toEqual([]);
+
+    const kyotoAccoms = Object.values(afterKyotoGrow.stays[1].nightAccommodations ?? {});
+    expect(kyotoAccoms.every((a) => a.name === 'Hotel Kyoto')).toBe(true);
+  });
 });
 
 describe('adjustStaysForDateChange', () => {
