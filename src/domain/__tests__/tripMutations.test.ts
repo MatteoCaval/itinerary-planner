@@ -243,6 +243,7 @@ describe('adjustStaysForDateChange', () => {
     // Stay 'b' was at 3-9, after shift becomes 0-6 → within range
     expect(result.stays.find((s) => s.id === 'b')).toBeDefined();
     expect(result.stays.find((s) => s.id === 'b')!.startSlot).toBe(0);
+    expect(result.removed).toEqual([]);
   });
 
   it('clamps stays partially outside at the end', () => {
@@ -252,6 +253,7 @@ describe('adjustStaysForDateChange', () => {
     const result = adjustStaysForDateChange(stays, visits, 0, 9);
     expect(result.stays[0].endSlot).toBe(9);
     expect(result.stays[0].startSlot).toBe(3);
+    expect(result.removed).toEqual([]);
   });
 
   it('unschedules visits that overflow after clamping', () => {
@@ -286,6 +288,7 @@ describe('adjustStaysForDateChange', () => {
     const v2 = result.visits.find((v) => v.id === 'v2')!;
     expect(v1.dayOffset).toBe(0); // still fits
     expect(v2.dayOffset).toBeNull(); // day 2 is gone → unscheduled
+    expect(result.removed).toEqual([]);
   });
 
   it('unschedules visits belonging to removed stays', () => {
@@ -323,6 +326,7 @@ describe('adjustStaysForDateChange', () => {
     const v2 = result.visits.find((v) => v.id === 'v2')!;
     expect(v1.dayOffset).toBeNull(); // stay 'a' removed → unscheduled
     expect(v2.dayOffset).toBe(0); // stay 'b' survived
+    expect(result.removed).toEqual([]);
   });
 
   it('handles combined start shift + end shrink', () => {
@@ -338,6 +342,34 @@ describe('adjustStaysForDateChange', () => {
     // 'b': shifted to 3..9 → fits
     expect(result.stays.find((s) => s.id === 'b')!.startSlot).toBe(3);
     expect(result.stays.find((s) => s.id === 'b')!.endSlot).toBe(9);
+    expect(result.removed).toEqual([]);
+  });
+
+  it('reports removed singleton accommodations when a stay is clamped', () => {
+    const stays: Stay[] = [
+      {
+        id: 's1',
+        name: 'Tokyo',
+        color: '#000',
+        startSlot: 0,
+        endSlot: 9,
+        centerLat: 0,
+        centerLng: 0,
+        nightAccommodations: {
+          0: { name: 'Hotel A' },
+          1: { name: 'Hotel A' },
+          2: { name: 'Hotel B' },
+        },
+      },
+    ];
+    const visits: VisitItem[] = [];
+    const result = adjustStaysForDateChange(stays, visits, 0, 6);
+    expect(result.stays[0].endSlot).toBe(6);
+    expect(result.stays[0].nightAccommodations).toEqual({
+      0: { name: 'Hotel A' },
+      1: { name: 'Hotel A' },
+    });
+    expect(result.removed).toEqual([{ name: 'Hotel B', stayLabel: 'Tokyo' }]);
   });
 });
 

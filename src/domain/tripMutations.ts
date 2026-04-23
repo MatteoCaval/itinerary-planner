@@ -113,14 +113,16 @@ export function applyTimelineDrag(
  * Adjust stays and visits after a date range change (start date shift and/or totalDays decrease).
  * - Shifts all stays by `-slotShift` to account for start date moving.
  * - Removes stays fully outside the new range.
- * - Clamps partially outside stays and unschedules overflowing visits.
+ * - Clamps partially outside stays, rekeys their accommodations, and unschedules overflowing visits.
  */
 export function adjustStaysForDateChange(
   stays: Stay[],
   visits: VisitItem[],
   slotShift: number,
   newMaxSlot: number,
-): { stays: Stay[]; visits: VisitItem[] } {
+): { stays: Stay[]; visits: VisitItem[]; removed: AccommodationRemoval[] } {
+  const removed: AccommodationRemoval[] = [];
+
   const shifted = stays.map((s) => ({
     ...s,
     startSlot: s.startSlot - slotShift,
@@ -133,28 +135,53 @@ export function adjustStaysForDateChange(
 
   const clampedStays = shifted
     .filter((s) => !removedStayIds.has(s.id))
-    .map((s) => ({
-      ...s,
-      startSlot: Math.max(0, s.startSlot),
-      endSlot: Math.min(newMaxSlot, s.endSlot),
-    }));
+    .map((s) => {
+      const clampedStart = Math.max(0, s.startSlot);
+      const clampedEnd = Math.min(newMaxSlot, s.endSlot);
 
-  // Build a map of original shifted stays (before clamping) for day-shift calculation
+      if (clampedStart === s.startSlot && clampedEnd === s.endSlot) {
+        return { ...s, startSlot: clampedStart, endSlot: clampedEnd };
+      }
+
+      const oldDayCount = Math.ceil((s.endSlot - s.startSlot) / 3);
+      const newDayCount = Math.ceil((clampedEnd - clampedStart) / 3);
+      const startShift = Math.floor((clampedStart - s.startSlot) / 3);
+      const endShift = Math.floor((s.endSlot - clampedEnd) / 3);
+
+      const accomResult = adjustAccommodationsForResize(
+        s.nightAccommodations,
+        oldDayCount,
+        newDayCount,
+        startShift,
+        endShift,
+        s.name,
+      );
+      removed.push(...accomResult.removed);
+
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { nightAccommodations: _dropped, ...rest } = s;
+      return {
+        ...rest,
+        startSlot: clampedStart,
+        endSlot: clampedEnd,
+        ...(accomResult.nightAccommodations !== undefined
+          ? { nightAccommodations: accomResult.nightAccommodations }
+          : {}),
+      };
+    });
+
   const shiftedMap = new Map(shifted.map((s) => [s.id, s]));
 
   const adjustedVisits = visits.map((v) => {
-    // Visits belonging to removed stays get unscheduled
     if (removedStayIds.has(v.stayId)) {
       return { ...v, dayOffset: null, dayPart: null };
     }
-
     if (v.dayOffset === null) return v;
 
     const clamped = clampedStays.find((s) => s.id === v.stayId);
     const original = shiftedMap.get(v.stayId);
     if (!clamped || !original) return v;
 
-    // If stay wasn't clamped, visit is fine as-is
     if (clamped.startSlot === original.startSlot && clamped.endSlot === original.endSlot) return v;
 
     const newDayCount = Math.ceil((clamped.endSlot - clamped.startSlot) / 3);
@@ -168,7 +195,7 @@ export function adjustStaysForDateChange(
       : { ...v, dayOffset: null, dayPart: null };
   });
 
-  return { stays: clampedStays, visits: adjustedVisits };
+  return { stays: clampedStays, visits: adjustedVisits, removed };
 }
 
 // ─── Candidate stay promotion / demotion ─────────────────────────────────────
