@@ -19,6 +19,7 @@ import InlineDateRangePicker from '@/components/InlineDateRangePicker';
 import { HybridTrip } from '@/domain/types';
 import { fmt, addDaysTo } from '@/domain/dateUtils';
 import { adjustStaysForDateChange } from '@/domain/tripMutations';
+import type { AccommodationRemoval } from '@/domain/accommodationAdjust';
 import { addDays, format as fnsFormat, parse as fnsParse } from 'date-fns';
 
 function TripEditorModal({
@@ -26,11 +27,13 @@ function TripEditorModal({
   onClose,
   onSave,
   onDelete,
+  onAccommodationsRemoved,
 }: {
   trip: HybridTrip;
   onClose: () => void;
   onSave: (updates: Partial<HybridTrip>) => void;
   onDelete?: () => void;
+  onAccommodationsRemoved?: (removed: AccommodationRemoval[]) => void;
 }) {
   const [name, setName] = useState(trip.name);
   const [startDate, setStartDate] = useState(trip.startDate);
@@ -96,6 +99,9 @@ function TripEditorModal({
         newMaxSlot,
       );
       onSave({ name, startDate, totalDays, stays: adjusted.stays, visits: adjusted.visits });
+      if (adjusted.removed.length > 0) {
+        onAccommodationsRemoved?.(adjusted.removed);
+      }
     } else {
       onSave({ name, startDate, totalDays });
     }

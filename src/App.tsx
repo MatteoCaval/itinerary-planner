@@ -3419,6 +3419,17 @@ function ChronosApp() {
             trip={trip}
             onClose={() => setShowTripEditor(false)}
             onSave={(updates) => setTrip((t) => ({ ...t, ...updates }))}
+            onAccommodationsRemoved={(removed) => {
+              const preEditTrip = trip; // captured before React flushes the setTrip from onSave
+              const uniqueStays = Array.from(new Set(removed.map((r) => r.stayLabel)));
+              const label =
+                removed.length === 1
+                  ? `${removed[0].name} removed from ${removed[0].stayLabel}`
+                  : uniqueStays.length === 1
+                    ? `${removed.length} accommodations removed from ${uniqueStays[0]}`
+                    : `${removed.length} accommodations removed`;
+              notifyReversible(label, () => setTrip(preEditTrip));
+            }}
             onDelete={() => {
               if (store.trips.length > 1) {
                 setStore((s) => {
