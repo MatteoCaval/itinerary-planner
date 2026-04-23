@@ -1426,7 +1426,7 @@ function ChronosApp() {
                 className="size-7 rounded-full shadow-sm"
               />
               <span className="text-xs font-extrabold tracking-tight hidden sm:block">
-                Tappa
+                Viaz
               </span>
             </div>
             <div className="h-5 w-px bg-border flex-shrink-0" />

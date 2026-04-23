@@ -171,7 +171,7 @@ export const generateMarkdown = (
     md += `--- \n\n`;
   }
 
-  md += `*Generated with Tappa*`;
+  md += `*Generated with Viaz*`;
   return md;
 };
 

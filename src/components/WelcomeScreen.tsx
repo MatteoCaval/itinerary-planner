@@ -42,7 +42,7 @@ function WelcomeScreen({
             aria-hidden="true"
             className="size-7 rounded-full shadow-sm"
           />
-          <span className="text-sm font-extrabold tracking-tight">Tappa</span>
+          <span className="text-sm font-extrabold tracking-tight">Viaz</span>
         </div>
         {!user && (
           <Button

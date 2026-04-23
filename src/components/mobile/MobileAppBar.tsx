@@ -10,7 +10,7 @@ export function MobileAppBar() {
         aria-hidden="true"
         className="size-6 rounded-full shadow-sm"
       />
-      <span className="text-sm font-bold tracking-tight text-foreground">Tappa</span>
+      <span className="text-sm font-bold tracking-tight text-foreground">Viaz</span>
     </div>
   );
 }
