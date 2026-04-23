@@ -538,18 +538,19 @@ function ChronosApp() {
       e.preventDefault();
       applyDelta(e.touches[0].clientX);
     };
+    const preDragTrip = trip;
     const onUp = () => {
       // Push a single history snapshot for the entire drag operation
       hist.push(trip);
       if (lastRemoved.length > 0) {
+        const uniqueStays = Array.from(new Set(lastRemoved.map((r) => r.stayLabel)));
         const label =
           lastRemoved.length === 1
             ? `${lastRemoved[0].name} removed from ${lastRemoved[0].stayLabel}`
-            : `${lastRemoved.length} accommodations removed`;
-        notifyReversible(label, () => {
-          const prev = hist.undo();
-          if (prev) updateTrip(() => prev);
-        });
+            : uniqueStays.length === 1
+              ? `${lastRemoved.length} accommodations removed from ${uniqueStays[0]}`
+              : `${lastRemoved.length} accommodations removed`;
+        notifyReversible(label, () => setTrip(preDragTrip));
       }
       setDragState(null);
     };
@@ -563,7 +564,7 @@ function ChronosApp() {
       window.removeEventListener('touchmove', onTouchMove);
       window.removeEventListener('touchend', onUp);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- updateTrip/hist change on every trip update; including them would break mid-drag
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- updateTrip/hist/setTrip/notifyReversible change on every trip update; including them would break mid-drag
   }, [dragState, zoomDays, trip.totalDays]);
 
   // ── Auto-fetch visit photos for selected stay ─────────────────────────────
