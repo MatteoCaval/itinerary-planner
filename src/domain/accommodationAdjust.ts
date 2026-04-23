@@ -34,6 +34,8 @@ export function adjustAccommodationsForResize(
 
   const removed: AccommodationRemoval[] = [];
 
+  // Group identity is name-only, matching deriveAccommodationGroups in stayLogic.ts.
+  // If that ever changes, update both together.
   const isSingleton = (day: number): boolean => {
     const target = oldAccoms[day];
     if (!target) return false;
@@ -86,6 +88,7 @@ export function adjustAccommodationsForResize(
     const lastOldDay = oldDayCount - 1;
     const seedAccom = oldAccoms[lastOldDay];
     if (seedAccom) {
+      // firstNewDay accounts for the -startShift reindex already applied to surviving keys.
       const firstNewDay = lastOldDay - startShift + 1;
       const lastNewDay = newDayCount - 1;
       for (let d = firstNewDay; d <= lastNewDay; d++) {
