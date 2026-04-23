@@ -78,6 +78,7 @@ import {
   shrinkTripAfter,
   shrinkTripBefore,
 } from './domain/tripMutations';
+import type { AccommodationRemoval } from './domain/accommodationAdjust';
 import {
   hybridTripToLegacy,
   migrateV1toV2,
@@ -522,12 +523,15 @@ function ChronosApp() {
     const visibleDays = zoomDays > 0 ? zoomDays : trip.totalDays;
     const slotWidth = (zone?.clientWidth ?? visibleDays * 42) / (visibleDays * 3);
 
+    let lastRemoved: AccommodationRemoval[] = [];
+
     const applyDelta = (clientX: number) => {
       const delta = Math.round((clientX - dragState.originX) / slotWidth);
-      updateTrip((curr) => ({
-        ...curr,
-        stays: applyTimelineDrag(curr.stays, dragState, delta, curr.totalDays * 3).stays,
-      }));
+      updateTrip((curr) => {
+        const result = applyTimelineDrag(curr.stays, dragState, delta, curr.totalDays * 3);
+        lastRemoved = result.removed;
+        return { ...curr, stays: result.stays };
+      });
     };
     const onMove = (e: MouseEvent) => applyDelta(e.clientX);
     const onTouchMove = (e: TouchEvent) => {
@@ -537,6 +541,16 @@ function ChronosApp() {
     const onUp = () => {
       // Push a single history snapshot for the entire drag operation
       hist.push(trip);
+      if (lastRemoved.length > 0) {
+        const label =
+          lastRemoved.length === 1
+            ? `${lastRemoved[0].name} removed from ${lastRemoved[0].stayLabel}`
+            : `${lastRemoved.length} accommodations removed`;
+        notifyReversible(label, () => {
+          const prev = hist.undo();
+          if (prev) updateTrip(() => prev);
+        });
+      }
       setDragState(null);
     };
     window.addEventListener('mousemove', onMove);
@@ -2061,6 +2075,7 @@ function ChronosApp() {
                                     originX: e.clientX,
                                     originalStart: stay.startSlot,
                                     originalEnd: stay.endSlot,
+                                    originalNightAccommodations: stay.nightAccommodations,
                                   });
                                 }}
                               >
@@ -2093,6 +2108,7 @@ function ChronosApp() {
                                       originX: e.clientX,
                                       originalStart: stay.startSlot,
                                       originalEnd: stay.endSlot,
+                                      originalNightAccommodations: stay.nightAccommodations,
                                     });
                                   }}
                                 >
@@ -2182,6 +2198,7 @@ function ChronosApp() {
                                       originX: e.clientX,
                                       originalStart: stay.startSlot,
                                       originalEnd: stay.endSlot,
+                                      originalNightAccommodations: stay.nightAccommodations,
                                     });
                                   }}
                                 >
