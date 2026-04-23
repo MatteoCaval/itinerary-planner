@@ -526,7 +526,7 @@ function ChronosApp() {
       const delta = Math.round((clientX - dragState.originX) / slotWidth);
       updateTrip((curr) => ({
         ...curr,
-        stays: applyTimelineDrag(curr.stays, dragState, delta, curr.totalDays * 3),
+        stays: applyTimelineDrag(curr.stays, dragState, delta, curr.totalDays * 3).stays,
       }));
     };
     const onMove = (e: MouseEvent) => applyDelta(e.clientX);

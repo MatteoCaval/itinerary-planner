@@ -1,6 +1,10 @@
 import type { DragState, HybridTrip, Stay, VisitItem } from './types';
 import { addDaysTo, safeDate } from './dateUtils';
 import { clamp } from './geoUtils';
+import {
+  adjustAccommodationsForResize,
+  type AccommodationRemoval,
+} from './accommodationAdjust';
 
 // ─── Trip extension ──────────────────────────────────────────────────────────
 
@@ -45,31 +49,62 @@ export function shrinkTripAfter(trip: HybridTrip): HybridTrip | null {
 
 // ─── Timeline drag ───────────────────────────────────────────────────────────
 
-/** Apply a slot delta to a stay during timeline drag (move/resize). Returns updated stays array. */
+/** Apply a slot delta to a stay during timeline drag (move/resize). Returns updated stays and any removed singleton accommodations. */
 export function applyTimelineDrag(
   stays: Stay[],
   dragState: NonNullable<DragState>,
   delta: number,
   totalSlots: number,
-): Stay[] {
-  return stays.map((s) => {
+): { stays: Stay[]; removed: AccommodationRemoval[] } {
+  const removed: AccommodationRemoval[] = [];
+  const nextStays = stays.map((s) => {
     if (s.id !== dragState.stayId) return s;
+
     const len = dragState.originalEnd - dragState.originalStart;
+
     if (dragState.mode === 'move') {
       const next = clamp(dragState.originalStart + delta, 0, totalSlots - len);
       return { ...s, startSlot: next, endSlot: next + len };
     }
+
+    let newStart = s.startSlot;
+    let newEnd = s.endSlot;
     if (dragState.mode === 'resize-start') {
-      return {
-        ...s,
-        startSlot: clamp(dragState.originalStart + delta, 0, dragState.originalEnd - 1),
-      };
+      newStart = clamp(dragState.originalStart + delta, 0, dragState.originalEnd - 1);
+      newEnd = dragState.originalEnd;
+    } else {
+      newStart = dragState.originalStart;
+      newEnd = clamp(dragState.originalEnd + delta, dragState.originalStart + 1, totalSlots);
     }
+
+    const oldDayCount = Math.ceil((dragState.originalEnd - dragState.originalStart) / 3);
+    const newDayCount = Math.ceil((newEnd - newStart) / 3);
+    const startShift = Math.floor((newStart - dragState.originalStart) / 3);
+    const endShift = Math.floor((dragState.originalEnd - newEnd) / 3);
+
+    const accomResult = adjustAccommodationsForResize(
+      dragState.originalNightAccommodations,
+      oldDayCount,
+      newDayCount,
+      startShift,
+      endShift,
+      s.name,
+    );
+    removed.push(...accomResult.removed);
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { nightAccommodations: _dropped, ...rest } = s;
     return {
-      ...s,
-      endSlot: clamp(dragState.originalEnd + delta, dragState.originalStart + 1, totalSlots),
+      ...rest,
+      startSlot: newStart,
+      endSlot: newEnd,
+      ...(accomResult.nightAccommodations !== undefined
+        ? { nightAccommodations: accomResult.nightAccommodations }
+        : {}),
     };
   });
+
+  return { stays: nextStays, removed };
 }
 
 // ─── Date range shrink/shift ─────────────────────────────────────────────────
