@@ -19,6 +19,7 @@ import {
   Hash,
   Compass,
   Database,
+  ExternalLink,
   History,
   Hotel,
   Layers,
@@ -2419,9 +2420,17 @@ function ChronosApp() {
                               width: `calc(${group.nights} * var(--day-col-width, 288px) + ${group.nights - 1} * var(--day-col-gap, 20px))`,
                             }}
                           >
-                            <button
+                            <div
+                              role="button"
+                              tabIndex={0}
                               onClick={() => setEditingAccommodation({ group })}
-                              className="group/accom h-full w-full bg-white border border-primary/30 rounded-lg shadow-sm flex items-center px-4 gap-3 hover:border-primary/50 hover:shadow-md transition-all cursor-pointer text-left"
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                  e.preventDefault();
+                                  setEditingAccommodation({ group });
+                                }
+                              }}
+                              className="group/accom h-full w-full bg-white border border-primary/30 rounded-lg shadow-sm flex items-center px-4 gap-3 hover:border-primary/50 hover:shadow-md transition-all cursor-pointer text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                             >
                               <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary flex-shrink-0">
                                 <Hotel className="w-4 h-4" />
@@ -2445,8 +2454,21 @@ function ChronosApp() {
                                   {group.accommodation.notes}
                                 </span>
                               )}
+                              {group.accommodation.link && (
+                                <a
+                                  href={group.accommodation.link}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  onClick={(e) => e.stopPropagation()}
+                                  aria-label={`Open link for ${group.name}`}
+                                  title="Open link"
+                                  className="flex-shrink-0 text-muted-foreground hover:text-primary transition-colors p-1 -m-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
+                                >
+                                  <ExternalLink className="w-3.5 h-3.5" />
+                                </a>
+                              )}
                               <Pencil className="w-3.5 h-3.5 text-border group-hover/accom:text-primary/60 transition-colors flex-shrink-0" />
-                            </button>
+                            </div>
                           </div>
                         </div>
                       );

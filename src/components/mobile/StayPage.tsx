@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ChecklistSection } from '@/components/ui/ChecklistSection';
 import { LinksSection } from '@/components/ui/LinksSection';
@@ -120,9 +120,22 @@ export function StayPage({
                       <span>🛏</span>
                       <span className="text-sm font-medium truncate">{g.name}</span>
                     </div>
-                    <span className="font-num text-xs text-muted-foreground flex-shrink-0">
-                      {g.nights} night{g.nights !== 1 ? 's' : ''}
-                    </span>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <span className="font-num text-xs text-muted-foreground">
+                        {g.nights} night{g.nights !== 1 ? 's' : ''}
+                      </span>
+                      {g.accommodation.link && (
+                        <a
+                          href={g.accommodation.link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-muted-foreground hover:text-primary transition-colors"
+                          aria-label={`Open link for ${g.name}`}
+                        >
+                          <ExternalLink className="w-4 h-4" />
+                        </a>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>

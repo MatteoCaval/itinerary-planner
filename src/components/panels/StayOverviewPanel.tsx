@@ -132,6 +132,18 @@ function StayOverviewPanel({
                     {g.nights === 1 ? 'night' : 'nights'}
                   </p>
                 </div>
+                {g.accommodation.link && (
+                  <a
+                    href={g.accommodation.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-shrink-0 text-muted-foreground hover:text-primary transition-colors focus-visible:ring-2 focus-visible:ring-ring rounded"
+                    title="Open link"
+                    aria-label={`Open link for ${g.name}`}
+                  >
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                )}
               </div>
             ))}
           </div>
