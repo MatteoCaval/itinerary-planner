@@ -1,5 +1,15 @@
 {
   "rules": {
+    "users": {
+      "$uid": {
+        ".read": "auth !== null && auth.uid === $uid",
+        ".write": "auth !== null && auth.uid === $uid"
+      }
+    },
+    "itineraries": {
+      ".read": true,
+      ".write": true
+    },
     "feedback": {
       ".read": false,
       "$id": {
