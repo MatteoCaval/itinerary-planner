@@ -93,6 +93,7 @@ export type DragState = {
   originX: number;
   originalStart: number;
   originalEnd: number;
+  originalNightAccommodations?: Record<number, NightAccommodation>;
 } | null;
 
 export type AccommodationGroup = {

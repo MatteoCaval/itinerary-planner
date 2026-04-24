@@ -122,31 +122,180 @@ describe('applyTimelineDrag', () => {
   it('moves a stay by delta slots', () => {
     const stays = [makeStay({ startSlot: 0, endSlot: 6 })];
     const result = applyTimelineDrag(stays, drag, 3, 15);
-    expect(result[0].startSlot).toBe(3);
-    expect(result[0].endSlot).toBe(9);
+    expect(result.stays[0].startSlot).toBe(3);
+    expect(result.stays[0].endSlot).toBe(9);
+    expect(result.removed).toEqual([]);
   });
 
   it('clamps move to not exceed total slots', () => {
     const stays = [makeStay({ startSlot: 0, endSlot: 6 })];
     const result = applyTimelineDrag(stays, drag, 100, 15);
-    expect(result[0].startSlot).toBe(9); // 15 - 6 = 9
-    expect(result[0].endSlot).toBe(15);
+    expect(result.stays[0].startSlot).toBe(9); // 15 - 6 = 9
+    expect(result.stays[0].endSlot).toBe(15);
+    expect(result.removed).toEqual([]);
   });
 
   it('resizes end by delta', () => {
     const resizeDrag: NonNullable<DragState> = { ...drag, mode: 'resize-end' };
     const stays = [makeStay({ startSlot: 0, endSlot: 6 })];
     const result = applyTimelineDrag(stays, resizeDrag, 3, 15);
-    expect(result[0].startSlot).toBe(0);
-    expect(result[0].endSlot).toBe(9);
+    expect(result.stays[0].startSlot).toBe(0);
+    expect(result.stays[0].endSlot).toBe(9);
+    expect(result.removed).toEqual([]);
   });
 
   it('resizes start by delta', () => {
     const resizeDrag: NonNullable<DragState> = { ...drag, mode: 'resize-start' };
     const stays = [makeStay({ startSlot: 0, endSlot: 6 })];
     const result = applyTimelineDrag(stays, resizeDrag, 2, 15);
-    expect(result[0].startSlot).toBe(2);
-    expect(result[0].endSlot).toBe(6);
+    expect(result.stays[0].startSlot).toBe(2);
+    expect(result.stays[0].endSlot).toBe(6);
+    expect(result.removed).toEqual([]);
+  });
+
+  it('reports singleton accommodations removed on resize-end shrink', () => {
+    const stays: Stay[] = [
+      {
+        id: 's1',
+        name: 'Tokyo',
+        color: '#000',
+        startSlot: 0,
+        endSlot: 9,
+        centerLat: 0,
+        centerLng: 0,
+        nightAccommodations: {
+          0: { name: 'Hotel A' },
+          1: { name: 'Hotel A' },
+          2: { name: 'Hotel B' },
+        },
+      },
+    ];
+    const drag: DragState = {
+      stayId: 's1',
+      mode: 'resize-end',
+      originX: 0,
+      originalStart: 0,
+      originalEnd: 9,
+      originalNightAccommodations: {
+        0: { name: 'Hotel A' },
+        1: { name: 'Hotel A' },
+        2: { name: 'Hotel B' },
+      },
+    };
+    const result = applyTimelineDrag(stays, drag, -3, 15);
+    expect(result.stays[0].endSlot).toBe(6);
+    expect(result.stays[0].nightAccommodations).toEqual({
+      0: { name: 'Hotel A' },
+      1: { name: 'Hotel A' },
+    });
+    expect(result.removed).toEqual([{ name: 'Hotel B', stayLabel: 'Tokyo' }]);
+  });
+
+  it('extends last accommodation group on resize-end grow', () => {
+    const stays: Stay[] = [
+      {
+        id: 's1',
+        name: 'Tokyo',
+        color: '#000',
+        startSlot: 0,
+        endSlot: 6,
+        centerLat: 0,
+        centerLng: 0,
+        nightAccommodations: {
+          0: { name: 'Hotel A' },
+          1: { name: 'Hotel A' },
+        },
+      },
+    ];
+    const drag: DragState = {
+      stayId: 's1',
+      mode: 'resize-end',
+      originX: 0,
+      originalStart: 0,
+      originalEnd: 6,
+      originalNightAccommodations: {
+        0: { name: 'Hotel A' },
+        1: { name: 'Hotel A' },
+      },
+    };
+    const result = applyTimelineDrag(stays, drag, 3, 15);
+    expect(result.stays[0].endSlot).toBe(9);
+    expect(result.stays[0].nightAccommodations).toEqual({
+      0: { name: 'Hotel A' },
+      1: { name: 'Hotel A' },
+      2: { name: 'Hotel A' },
+    });
+    expect(result.removed).toEqual([]);
+  });
+
+  it('boundary drag Tokyo->Kyoto does not leak accommodation across stays', () => {
+    const stays: Stay[] = [
+      {
+        id: 'tokyo',
+        name: 'Tokyo',
+        color: '#000',
+        startSlot: 0,
+        endSlot: 9,
+        centerLat: 0,
+        centerLng: 0,
+        nightAccommodations: {
+          0: { name: 'Hotel Tokyo' },
+          1: { name: 'Hotel Tokyo' },
+          2: { name: 'Hotel Tokyo' },
+        },
+      },
+      {
+        id: 'kyoto',
+        name: 'Kyoto',
+        color: '#111',
+        startSlot: 9,
+        endSlot: 18,
+        centerLat: 0,
+        centerLng: 0,
+        nightAccommodations: {
+          0: { name: 'Hotel Kyoto' },
+          1: { name: 'Hotel Kyoto' },
+          2: { name: 'Hotel Kyoto' },
+        },
+      },
+    ];
+
+    const tokyoDrag: DragState = {
+      stayId: 'tokyo',
+      mode: 'resize-end',
+      originX: 0,
+      originalStart: 0,
+      originalEnd: 9,
+      originalNightAccommodations: stays[0].nightAccommodations,
+    };
+    const afterTokyoShrink = applyTimelineDrag(stays, tokyoDrag, -3, 18);
+    expect(afterTokyoShrink.stays[0].endSlot).toBe(6);
+    expect(afterTokyoShrink.stays[0].nightAccommodations).toEqual({
+      0: { name: 'Hotel Tokyo' },
+      1: { name: 'Hotel Tokyo' },
+    });
+    expect(afterTokyoShrink.removed).toEqual([]);
+
+    const kyotoDrag: DragState = {
+      stayId: 'kyoto',
+      mode: 'resize-start',
+      originX: 0,
+      originalStart: 9,
+      originalEnd: 18,
+      originalNightAccommodations: stays[1].nightAccommodations,
+    };
+    const afterKyotoGrow = applyTimelineDrag(afterTokyoShrink.stays, kyotoDrag, -3, 18);
+    expect(afterKyotoGrow.stays[1].startSlot).toBe(6);
+    expect(afterKyotoGrow.stays[1].nightAccommodations).toEqual({
+      0: { name: 'Hotel Kyoto' },
+      1: { name: 'Hotel Kyoto' },
+      2: { name: 'Hotel Kyoto' },
+      3: { name: 'Hotel Kyoto' },
+    });
+    expect(afterKyotoGrow.removed).toEqual([]);
+
+    const kyotoAccoms = Object.values(afterKyotoGrow.stays[1].nightAccommodations ?? {});
+    expect(kyotoAccoms.every((a) => a.name === 'Hotel Kyoto')).toBe(true);
   });
 });
 
@@ -164,6 +313,7 @@ describe('adjustStaysForDateChange', () => {
     // Stay 'b' was at 3-9, after shift becomes 0-6 → within range
     expect(result.stays.find((s) => s.id === 'b')).toBeDefined();
     expect(result.stays.find((s) => s.id === 'b')!.startSlot).toBe(0);
+    expect(result.removed).toEqual([]);
   });
 
   it('clamps stays partially outside at the end', () => {
@@ -173,6 +323,7 @@ describe('adjustStaysForDateChange', () => {
     const result = adjustStaysForDateChange(stays, visits, 0, 9);
     expect(result.stays[0].endSlot).toBe(9);
     expect(result.stays[0].startSlot).toBe(3);
+    expect(result.removed).toEqual([]);
   });
 
   it('unschedules visits that overflow after clamping', () => {
@@ -207,6 +358,7 @@ describe('adjustStaysForDateChange', () => {
     const v2 = result.visits.find((v) => v.id === 'v2')!;
     expect(v1.dayOffset).toBe(0); // still fits
     expect(v2.dayOffset).toBeNull(); // day 2 is gone → unscheduled
+    expect(result.removed).toEqual([]);
   });
 
   it('unschedules visits belonging to removed stays', () => {
@@ -244,6 +396,7 @@ describe('adjustStaysForDateChange', () => {
     const v2 = result.visits.find((v) => v.id === 'v2')!;
     expect(v1.dayOffset).toBeNull(); // stay 'a' removed → unscheduled
     expect(v2.dayOffset).toBe(0); // stay 'b' survived
+    expect(result.removed).toEqual([]);
   });
 
   it('handles combined start shift + end shrink', () => {
@@ -259,6 +412,34 @@ describe('adjustStaysForDateChange', () => {
     // 'b': shifted to 3..9 → fits
     expect(result.stays.find((s) => s.id === 'b')!.startSlot).toBe(3);
     expect(result.stays.find((s) => s.id === 'b')!.endSlot).toBe(9);
+    expect(result.removed).toEqual([]);
+  });
+
+  it('reports removed singleton accommodations when a stay is clamped', () => {
+    const stays: Stay[] = [
+      {
+        id: 's1',
+        name: 'Tokyo',
+        color: '#000',
+        startSlot: 0,
+        endSlot: 9,
+        centerLat: 0,
+        centerLng: 0,
+        nightAccommodations: {
+          0: { name: 'Hotel A' },
+          1: { name: 'Hotel A' },
+          2: { name: 'Hotel B' },
+        },
+      },
+    ];
+    const visits: VisitItem[] = [];
+    const result = adjustStaysForDateChange(stays, visits, 0, 6);
+    expect(result.stays[0].endSlot).toBe(6);
+    expect(result.stays[0].nightAccommodations).toEqual({
+      0: { name: 'Hotel A' },
+      1: { name: 'Hotel A' },
+    });
+    expect(result.removed).toEqual([{ name: 'Hotel B', stayLabel: 'Tokyo' }]);
   });
 });
 

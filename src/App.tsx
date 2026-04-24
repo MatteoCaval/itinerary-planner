@@ -78,6 +78,7 @@ import {
   shrinkTripAfter,
   shrinkTripBefore,
 } from './domain/tripMutations';
+import type { AccommodationRemoval } from './domain/accommodationAdjust';
 import {
   hybridTripToLegacy,
   migrateV1toV2,
@@ -522,21 +523,35 @@ function ChronosApp() {
     const visibleDays = zoomDays > 0 ? zoomDays : trip.totalDays;
     const slotWidth = (zone?.clientWidth ?? visibleDays * 42) / (visibleDays * 3);
 
+    let lastRemoved: AccommodationRemoval[] = [];
+
     const applyDelta = (clientX: number) => {
       const delta = Math.round((clientX - dragState.originX) / slotWidth);
-      updateTrip((curr) => ({
-        ...curr,
-        stays: applyTimelineDrag(curr.stays, dragState, delta, curr.totalDays * 3),
-      }));
+      updateTrip((curr) => {
+        const result = applyTimelineDrag(curr.stays, dragState, delta, curr.totalDays * 3);
+        lastRemoved = result.removed;
+        return { ...curr, stays: result.stays };
+      });
     };
     const onMove = (e: MouseEvent) => applyDelta(e.clientX);
     const onTouchMove = (e: TouchEvent) => {
       e.preventDefault();
       applyDelta(e.touches[0].clientX);
     };
+    const preDragTrip = trip;
     const onUp = () => {
       // Push a single history snapshot for the entire drag operation
       hist.push(trip);
+      if (lastRemoved.length > 0) {
+        const uniqueStays = Array.from(new Set(lastRemoved.map((r) => r.stayLabel)));
+        const label =
+          lastRemoved.length === 1
+            ? `${lastRemoved[0].name} removed from ${lastRemoved[0].stayLabel}`
+            : uniqueStays.length === 1
+              ? `${lastRemoved.length} accommodations removed from ${uniqueStays[0]}`
+              : `${lastRemoved.length} accommodations removed`;
+        notifyReversible(label, () => setTrip(preDragTrip));
+      }
       setDragState(null);
     };
     window.addEventListener('mousemove', onMove);
@@ -549,7 +564,7 @@ function ChronosApp() {
       window.removeEventListener('touchmove', onTouchMove);
       window.removeEventListener('touchend', onUp);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- updateTrip/hist change on every trip update; including them would break mid-drag
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- updateTrip/hist/setTrip/notifyReversible change on every trip update; including them would break mid-drag
   }, [dragState, zoomDays, trip.totalDays]);
 
   // ── Auto-fetch visit photos for selected stay ─────────────────────────────
@@ -2061,6 +2076,7 @@ function ChronosApp() {
                                     originX: e.clientX,
                                     originalStart: stay.startSlot,
                                     originalEnd: stay.endSlot,
+                                    originalNightAccommodations: stay.nightAccommodations,
                                   });
                                 }}
                               >
@@ -2093,6 +2109,7 @@ function ChronosApp() {
                                       originX: e.clientX,
                                       originalStart: stay.startSlot,
                                       originalEnd: stay.endSlot,
+                                      originalNightAccommodations: stay.nightAccommodations,
                                     });
                                   }}
                                 >
@@ -2182,6 +2199,7 @@ function ChronosApp() {
                                       originX: e.clientX,
                                       originalStart: stay.startSlot,
                                       originalEnd: stay.endSlot,
+                                      originalNightAccommodations: stay.nightAccommodations,
                                     });
                                   }}
                                 >
@@ -3401,6 +3419,17 @@ function ChronosApp() {
             trip={trip}
             onClose={() => setShowTripEditor(false)}
             onSave={(updates) => setTrip((t) => ({ ...t, ...updates }))}
+            onAccommodationsRemoved={(removed) => {
+              const preEditTrip = trip; // captured before React flushes the setTrip from onSave
+              const uniqueStays = Array.from(new Set(removed.map((r) => r.stayLabel)));
+              const label =
+                removed.length === 1
+                  ? `${removed[0].name} removed from ${removed[0].stayLabel}`
+                  : uniqueStays.length === 1
+                    ? `${removed.length} accommodations removed from ${uniqueStays[0]}`
+                    : `${removed.length} accommodations removed`;
+              notifyReversible(label, () => setTrip(preEditTrip));
+            }}
             onDelete={() => {
               if (store.trips.length > 1) {
                 setStore((s) => {
