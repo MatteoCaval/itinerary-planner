@@ -189,3 +189,27 @@ export const getShareCodeMeta = async (
     return { success: false, error: formatErrorMessage(error) };
   }
 };
+
+export const submitFeedback = async (
+  text: string,
+): Promise<{ success: boolean; error?: string }> => {
+  const trimmed = text.trim();
+  if (trimmed.length === 0) {
+    return { success: false, error: 'Feedback cannot be empty.' };
+  }
+  if (trimmed.length > 2000) {
+    return { success: false, error: 'Feedback is too long (max 2000 characters).' };
+  }
+  try {
+    const { ref, push, serverTimestamp } = await import('firebase/database');
+    const db = await getDb();
+    await push(ref(db, 'feedback'), {
+      text: trimmed,
+      timestamp: serverTimestamp(),
+    });
+    return { success: true };
+  } catch (error) {
+    trackError('feedback_submit_failed', error);
+    return { success: false, error: formatErrorMessage(error) };
+  }
+};

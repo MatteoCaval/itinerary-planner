@@ -1,7 +1,19 @@
 import React, { useState } from 'react';
-import { Download, Upload, User, LogIn, LogOut, Lock, Check, Compass, Share2 } from 'lucide-react';
+import {
+  Download,
+  Upload,
+  User,
+  LogIn,
+  LogOut,
+  Lock,
+  Check,
+  Compass,
+  Share2,
+  MessageSquare,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import AuthModalSimple from '@/components/modals/AuthModalSimple';
+import FeedbackModal from '@/components/modals/FeedbackModal';
 import type { HybridTrip, V1HybridTrip } from '@/domain/types';
 import { useAuth } from '@/context/AuthContext';
 import {
@@ -48,6 +60,7 @@ function ProfileMenu({
   onSignOut: () => void;
 }) {
   const [showAuth, setShowAuth] = useState(false);
+  const [showFeedback, setShowFeedback] = useState(false);
   const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const { user, signOutUser } = useAuth();
@@ -216,6 +229,18 @@ function ProfileMenu({
             Back to start
           </DropdownMenuItem>
 
+          {/* Help section */}
+          <DropdownMenuSeparator />
+          <DropdownMenuLabel className="text-[9px] font-extrabold uppercase tracking-widest text-muted-foreground">
+            Help
+          </DropdownMenuLabel>
+          <DropdownMenuItem onClick={() => setShowFeedback(true)}>
+            <div className="size-6 rounded-md bg-primary/10 flex items-center justify-center flex-shrink-0">
+              <MessageSquare className="w-3 h-3 text-primary" />
+            </div>
+            Send feedback
+          </DropdownMenuItem>
+
           {/* Auth footer */}
           <DropdownMenuSeparator />
           <div className="px-3 pb-3 pt-1">
@@ -244,6 +269,7 @@ function ProfileMenu({
         </DropdownMenuContent>
       </DropdownMenu>
       {showAuth && <AuthModalSimple onClose={() => setShowAuth(false)} />}
+      {showFeedback && <FeedbackModal onClose={() => setShowFeedback(false)} />}
       <AlertDialog open={showSignOutConfirm} onOpenChange={setShowSignOutConfirm}>
         <AlertDialogContent>
           <AlertDialogHeader>
