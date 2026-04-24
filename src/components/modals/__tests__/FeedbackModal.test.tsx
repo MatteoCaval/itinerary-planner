@@ -25,12 +25,12 @@ describe('FeedbackModal', () => {
     render(<FeedbackModal onClose={() => {}} />);
     const sendBtn = screen.getByRole('button', { name: /send/i });
     expect(sendBtn).toBeDisabled();
-    expect(screen.getByLabelText(/feedback/i)).toBeInTheDocument();
+    expect(screen.getByLabelText('Feedback')).toBeInTheDocument();
   });
 
   it('enables Send once the user types non-whitespace text', () => {
     render(<FeedbackModal onClose={() => {}} />);
-    const textarea = screen.getByLabelText(/feedback/i) as HTMLTextAreaElement;
+    const textarea = screen.getByLabelText('Feedback') as HTMLTextAreaElement;
     fireEvent.change(textarea, { target: { value: 'Love this app!' } });
     const sendBtn = screen.getByRole('button', { name: /send/i });
     expect(sendBtn).toBeEnabled();
@@ -38,21 +38,21 @@ describe('FeedbackModal', () => {
 
   it('keeps Send disabled for whitespace-only input', () => {
     render(<FeedbackModal onClose={() => {}} />);
-    const textarea = screen.getByLabelText(/feedback/i) as HTMLTextAreaElement;
+    const textarea = screen.getByLabelText('Feedback') as HTMLTextAreaElement;
     fireEvent.change(textarea, { target: { value: '     ' } });
     expect(screen.getByRole('button', { name: /send/i })).toBeDisabled();
   });
 
   it('updates the char counter as the user types', () => {
     render(<FeedbackModal onClose={() => {}} />);
-    const textarea = screen.getByLabelText(/feedback/i) as HTMLTextAreaElement;
+    const textarea = screen.getByLabelText('Feedback') as HTMLTextAreaElement;
     fireEvent.change(textarea, { target: { value: 'hello' } });
     expect(screen.getByText('5/2000')).toBeInTheDocument();
   });
 
   it('enforces a 2000 character maxLength on the textarea', () => {
     render(<FeedbackModal onClose={() => {}} />);
-    const textarea = screen.getByLabelText(/feedback/i) as HTMLTextAreaElement;
+    const textarea = screen.getByLabelText('Feedback') as HTMLTextAreaElement;
     expect(textarea.maxLength).toBe(2000);
   });
 
@@ -60,7 +60,7 @@ describe('FeedbackModal', () => {
     vi.mocked(submitFeedback).mockResolvedValueOnce({ success: true });
     const onClose = vi.fn();
     render(<FeedbackModal onClose={onClose} />);
-    const textarea = screen.getByLabelText(/feedback/i) as HTMLTextAreaElement;
+    const textarea = screen.getByLabelText('Feedback') as HTMLTextAreaElement;
     fireEvent.change(textarea, { target: { value: 'great app' } });
     fireEvent.click(screen.getByRole('button', { name: /send/i }));
     await waitFor(() => expect(submitFeedback).toHaveBeenCalledWith('great app'));
@@ -75,7 +75,7 @@ describe('FeedbackModal', () => {
     });
     const onClose = vi.fn();
     render(<FeedbackModal onClose={onClose} />);
-    const textarea = screen.getByLabelText(/feedback/i) as HTMLTextAreaElement;
+    const textarea = screen.getByLabelText('Feedback') as HTMLTextAreaElement;
     fireEvent.change(textarea, { target: { value: 'great app' } });
     fireEvent.click(screen.getByRole('button', { name: /send/i }));
     await waitFor(() => expect(submitFeedback).toHaveBeenCalled());

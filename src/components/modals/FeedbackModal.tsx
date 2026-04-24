@@ -49,7 +49,7 @@ function FeedbackModal({ onClose }: FeedbackModalProps) {
 
   return (
     <ModalBase
-      title="Share your thoughts"
+      title="Send feedback"
       description="Got an idea, a bug, or general thoughts? Drop it below — we read everything."
       onClose={onClose}
       footer={footer}
