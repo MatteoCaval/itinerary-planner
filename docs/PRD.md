@@ -52,6 +52,8 @@ Each visit supports:
 
 Per-night hotel records (`NightAccommodation`) separate from the stay's default lodging. Geocoded, with cost/notes/link fields. Consecutive nights at the same hotel are collapsed into a grouped chip in the day column header. Night range is editable (select which nights within the stay the accommodation applies to). Removal correctly clears the `lodging` fallback field.
 
+When a stay is resized (timeline drag or trip date shrink), accommodations follow the stay: multi-night groups extend or shrink silently with the edge, while a singleton night that gets dropped surfaces a sonner toast with an Undo action that restores the pre-resize trip.
+
 ### Sidebar layout
 
 On desktop, the sidebar is a **two-pane split**: stay details (or visit detail) on top, Inbox (unscheduled destinations / visits) pinned below. Panes are separated by a resizable horizontal splitter with keyboard support (`↑` / `↓` to resize, `Enter` to collapse). Ratio and collapsed state persist in localStorage. Mobile keeps the existing bottom-drawer pattern.
