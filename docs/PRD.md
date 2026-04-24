@@ -126,6 +126,10 @@ Trip dates edited via an inline calendar (react-day-picker v9). When shortening 
 
 50-step in-memory history. Cmd/Ctrl+Z · Cmd/Ctrl+Y. Toolbar buttons. History browser modal shows snapshot diffs.
 
+### User Feedback
+
+Anonymous free-text feedback from any user (signed in or guest). Entry point is the `ProfileMenu` → "Help" → "Send feedback". Submissions are persisted to Firebase Realtime Database at `/feedback/{autoId}` with only `{ text, timestamp }` — no user identity, user agent, or trip context is attached. Client-side cap is 2000 characters; the RTDB rules reject reads and re-enforce the length cap server-side.
+
 ---
 
 ## Data Model (v3)
@@ -195,6 +199,7 @@ ShareCodeNode   { code: string, tripId: string, userId: string, writable: boolea
 | Multi-trip + welcome screen | ✅     | Demo mode                                                                                                                                                                                                                                                              |
 | Mobile layout               | ✅     | Adaptive layout: map hidden <768px, sidebar → Sheet bottom drawer via FAB, snap-scroll day columns (85vw), footer hidden (sync dot in header), touch DnD (long-press), responsive header; safe-area insets on FAB + drawer; conflict/demo banners visible on all sizes |
 | Share via Code              | ✅     | Generate code, push/pull, toggle mode, revoke; importers don't need auth; writable mode (future: auth-optional)                                                                                                                                                        |
+| User feedback               | ✅     | Anonymous free-text submissions from ProfileMenu → Firebase RTDB `/feedback`; no identity attached                                                                                                                                                                     |
 | Passcode sharing            | ⚠️     | Firebase functions exist; not exposed in UI                                                                                                                                                                                                                            |
 | Cost/budget dashboard       | ❌     | `cost` field exists, no aggregate display                                                                                                                                                                                                                              |
 | Markdown import             | ❌     |                                                                                                                                                                                                                                                                        |
@@ -215,3 +220,4 @@ ShareCodeNode   { code: string, tripId: string, userId: string, writable: boolea
 - **Dark mode not implemented** — light mode only for now.
 - **Writable share mode requires creator login** — future improvement is to allow auth-optional pushes for writable shares.
 - **One active share code per trip** — revoking and re-sharing generates a new code; old importers lose access.
+- **No in-app feedback reader** — feedback submissions are viewable only via the Firebase console; no admin UI, no reply workflow, and no rate limiting beyond the RTDB length validation.
