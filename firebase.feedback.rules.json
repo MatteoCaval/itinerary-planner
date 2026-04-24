@@ -1,0 +1,17 @@
+{
+  "rules": {
+    "feedback": {
+      ".read": false,
+      "$id": {
+        ".write": "!data.exists()",
+        ".validate": "newData.hasChildren(['text', 'timestamp'])",
+        "text": {
+          ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 2000"
+        },
+        "timestamp": {
+          ".validate": "newData.val() == now"
+        }
+      }
+    }
+  }
+}
