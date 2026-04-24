@@ -40,6 +40,7 @@ function AccommodationEditorModal({
   const [name, setName] = useState(initial?.name ?? '');
   const [notes, setNotes] = useState(initial?.notes ?? '');
   const [cost, setCost] = useState(initial?.cost?.toString() ?? '');
+  const [link, setLink] = useState(initial?.link ?? '');
   const [selectedNights, setSelectedNights] = useState<Set<number>>(() => new Set(initialNights));
   const toggleNight = (dayOffset: number) => {
     setSelectedNights((prev) => {
@@ -99,6 +100,7 @@ function AccommodationEditorModal({
         name: name.trim(),
         notes: notes.trim() || undefined,
         cost: cost ? parseFloat(cost) || undefined : undefined,
+        link: link.trim() || undefined,
         lat,
         lng,
       },
@@ -215,6 +217,24 @@ function AccommodationEditorModal({
                 setCost(val);
               }
             }}
+          />
+        </div>
+
+        {/* Link */}
+        <div>
+          <label
+            htmlFor="accom-link"
+            className="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground mb-1.5 block"
+          >
+            Link
+          </label>
+          <Input
+            id="accom-link"
+            className="text-xs"
+            type="url"
+            placeholder="Booking or map URL"
+            value={link}
+            onChange={(e) => setLink(e.target.value)}
           />
         </div>
 

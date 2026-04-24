@@ -50,7 +50,7 @@ Each visit supports:
 
 ### Accommodations
 
-Per-night hotel records (`NightAccommodation`) separate from the stay's default lodging. Geocoded, with cost/notes/link fields. Consecutive nights at the same hotel are collapsed into a grouped chip in the day column header. Night range is editable (select which nights within the stay the accommodation applies to). Removal correctly clears the `lodging` fallback field.
+Per-night hotel records (`NightAccommodation`) separate from the stay's default lodging. Geocoded, with cost/notes/link fields. Consecutive nights at the same hotel are collapsed into a grouped chip in the day column header. Night range is editable (select which nights within the stay the accommodation applies to). Removal correctly clears the `lodging` fallback field. When a booking or map link is set, it surfaces as an external-link icon beside the hotel name in the Sleeping section (desktop sidebar and mobile StayPage).
 
 When a stay is resized (timeline drag or trip date shrink), accommodations follow the stay: multi-night groups extend or shrink silently with the edge, while a singleton night that gets dropped surfaces a sonner toast with an Undo action that restores the pre-resize trip.
 
