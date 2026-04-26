@@ -754,6 +754,42 @@ function ChronosApp() {
     setSelectedStayId('');
   };
 
+  const handleDeleteTrip = (tripId: string) => {
+    let shouldResetSelectedStay = false;
+    let shouldExitToHome = false;
+
+    setStore((s) => {
+      const tripToDelete = s.trips.find((t) => t.id === tripId);
+      if (!tripToDelete) return s;
+
+      if (s.trips.length === 1) {
+        shouldResetSelectedStay = true;
+        shouldExitToHome = true;
+        const empty: TripStore = { trips: [], activeTripId: '' };
+        saveStore(empty);
+        return empty;
+      }
+
+      const remaining = s.trips.filter((t) => t.id !== tripId);
+      const deletingActiveTrip = s.activeTripId === tripId;
+      shouldResetSelectedStay = deletingActiveTrip;
+
+      const next = {
+        trips: remaining,
+        activeTripId: deletingActiveTrip ? remaining[0].id : s.activeTripId,
+      };
+      saveStore(next);
+      return next;
+    });
+
+    if (shouldResetSelectedStay) {
+      setSelectedStayId('');
+    }
+    if (shouldExitToHome) {
+      setIsDemoMode(false);
+    }
+  };
+
   const handleImportFromCode = (importedTrip: HybridTrip) => {
     setStore((s) => {
       const next = { trips: [...s.trips, importedTrip], activeTripId: importedTrip.id };
@@ -1441,9 +1477,7 @@ function ChronosApp() {
                 aria-hidden="true"
                 className="size-7 rounded-full shadow-sm"
               />
-              <span className="text-xs font-extrabold tracking-tight hidden sm:block">
-                Viaz
-              </span>
+              <span className="text-xs font-extrabold tracking-tight hidden sm:block">Viaz</span>
             </div>
             <div className="h-5 w-px bg-border flex-shrink-0" />
             {/* Trip selector */}
@@ -3452,20 +3486,7 @@ function ChronosApp() {
                     : `${removed.length} accommodations removed`;
               notifyReversible(label, () => setTrip(preEditTrip));
             }}
-            onDelete={() => {
-              if (store.trips.length > 1) {
-                setStore((s) => {
-                  const remaining = s.trips.filter((t) => t.id !== trip.id);
-                  const next = { trips: remaining, activeTripId: remaining[0].id };
-                  saveStore(next);
-                  return next;
-                });
-                setSelectedStayId('');
-              } else {
-                handleGoHome();
-              }
-              setShowTripEditor(false);
-            }}
+            onDelete={() => handleDeleteTrip(trip.id)}
           />
         )}
 
@@ -3474,6 +3495,7 @@ function ChronosApp() {
           <TripSwitcherPanel
             store={store}
             onSwitch={handleSwitchTrip}
+            onDeleteTrip={handleDeleteTrip}
             onNew={handleNewTrip}
             onClose={() => setShowTripSwitcher(false)}
             notifyReversible={notifyReversible}
