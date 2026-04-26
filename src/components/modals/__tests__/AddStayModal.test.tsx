@@ -13,17 +13,17 @@ const kyoto: Stay = {
   centerLng: 135.77,
 };
 
-describe('AddStayModal — pick from inbox', () => {
+describe('AddStayModal — pick from unplanned', () => {
   it('hides the chip row when candidates is empty', () => {
     render(<AddStayModal onClose={() => {}} onSave={() => {}} stayColor="#111" candidates={[]} />);
-    expect(screen.queryByText(/From inbox/i)).toBeNull();
+    expect(screen.queryByText(/From unplanned/i)).toBeNull();
   });
 
   it('shows candidate chips and pre-fills name on click', () => {
     render(
       <AddStayModal onClose={() => {}} onSave={() => {}} stayColor="#111" candidates={[kyoto]} />,
     );
-    expect(screen.getByText(/From inbox/i)).toBeInTheDocument();
+    expect(screen.getByText(/From unplanned/i)).toBeInTheDocument();
     const chip = screen.getByRole('button', { name: /Kyoto/i });
     fireEvent.click(chip);
     const nameInput = screen.getByPlaceholderText(/Search a city or region/i) as HTMLInputElement;
@@ -55,7 +55,7 @@ describe('AddStayModal — pick from inbox', () => {
     const nameInput = screen.getByPlaceholderText(/Search a city or region/i) as HTMLInputElement;
     expect(nameInput.value).toBe('Kyoto');
 
-    fireEvent.click(screen.getByRole('button', { name: /Clear inbox selection/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Clear unplanned selection/i }));
     expect(nameInput.value).toBe('');
   });
 
@@ -80,8 +80,8 @@ describe('AddStayModal — candidate mode', () => {
     expect(screen.queryByText(/Duration/i)).toBeNull();
   });
 
-  it('save button reads "Save to Inbox" in candidate mode', () => {
+  it('save button reads "Save to Unplanned" in candidate mode', () => {
     render(<AddStayModal onClose={() => {}} onSave={() => {}} stayColor="#111" mode="candidate" />);
-    expect(screen.getByRole('button', { name: /Save to Inbox/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Save to Unplanned/i })).toBeInTheDocument();
   });
 });

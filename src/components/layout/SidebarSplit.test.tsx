@@ -65,11 +65,11 @@ describe('SidebarSplit', () => {
 
   it('toggles collapsed when the chevron button is clicked', async () => {
     renderSplit({ defaultRatio: 0.6 });
-    const btn = screen.getByRole('button', { name: /collapse inbox/i });
+    const btn = screen.getByRole('button', { name: /collapse unplanned/i });
     await userEvent.click(btn);
     const sep = screen.getByRole('separator');
     expect(sep.parentElement).toHaveAttribute('data-collapsed', 'true');
-    const btn2 = screen.getByRole('button', { name: /expand inbox/i });
+    const btn2 = screen.getByRole('button', { name: /expand unplanned/i });
     await userEvent.click(btn2);
     expect(sep.parentElement).toHaveAttribute('data-collapsed', 'false');
   });

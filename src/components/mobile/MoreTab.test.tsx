@@ -41,7 +41,7 @@ describe('MoreTab', () => {
 
   it('shows inbox count when > 0', () => {
     mount({ inboxCount: 5 });
-    const inboxRow = screen.getByRole('button', { name: /inbox/i });
+    const inboxRow = screen.getByRole('button', { name: /unplanned/i });
     expect(inboxRow).toHaveTextContent('5');
   });
 
@@ -62,13 +62,13 @@ describe('MoreTab', () => {
     expect(screen.getByText('x@y.com')).toBeInTheDocument();
   });
 
-  it('expands inline inbox when Inbox row is tapped', async () => {
+  it('expands inline unplanned when Unplanned row is tapped', async () => {
     mount({ inboxCount: 2 });
     // Initially inbox content is in the DOM but aria-hidden (CSS accordion)
     const wrapper = () =>
       screen.getByTestId('inbox-content').closest('[aria-hidden]') as HTMLElement | null;
     expect(wrapper()?.getAttribute('aria-hidden')).toBe('true');
-    await userEvent.click(screen.getByRole('button', { name: /inbox/i }));
+    await userEvent.click(screen.getByRole('button', { name: /unplanned/i }));
     expect(wrapper()?.getAttribute('aria-hidden')).toBe('false');
   });
 });

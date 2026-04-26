@@ -1098,7 +1098,7 @@ function ChronosApp() {
                   <Button
                     variant="ghost"
                     size="icon-sm"
-                    aria-label={`Delete ${c.name} from inbox`}
+                    aria-label={`Delete ${c.name} from unplanned`}
                     onClick={(e) => {
                       e.stopPropagation();
                       setTrip((t) => ({
@@ -1123,7 +1123,7 @@ function ChronosApp() {
                 <Compass className="w-4 h-4 text-muted-foreground" />
               </div>
               <p className="text-[11px] font-bold text-muted-foreground">
-                No destinations in inbox yet
+                No unplanned destinations yet
               </p>
               <p className="text-[11px] text-muted-foreground text-center max-w-[220px]">
                 Add places you&apos;re considering, then move them to the timeline when ready.
@@ -1139,7 +1139,7 @@ function ChronosApp() {
     <div className="flex items-center justify-between px-4 py-2.5 bg-muted/40">
       <div className="flex items-center gap-1.5">
         <span className="text-[11px] font-semibold tracking-wide uppercase text-muted-foreground">
-          Inbox
+          Unplanned
         </span>
         {inboxVisits.length > 0 && (
           <Badge variant="secondary" className="h-4 px-1.5 rounded-full text-[9px] font-bold">

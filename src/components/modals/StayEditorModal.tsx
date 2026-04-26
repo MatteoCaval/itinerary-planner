@@ -136,12 +136,12 @@ function StayEditorModal({
           <AlertDialog open={confirmingDemote} onOpenChange={setConfirmingDemote}>
             <AlertDialogTrigger asChild>
               <Button variant="outline" size="sm">
-                <Inbox data-icon="inline-start" className="w-3.5 h-3.5" /> Move to Inbox
+                <Inbox data-icon="inline-start" className="w-3.5 h-3.5" /> Move to Unplanned
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Move &ldquo;{stay.name}&rdquo; to inbox?</AlertDialogTitle>
+                <AlertDialogTitle>Move &ldquo;{stay.name}&rdquo; to unplanned?</AlertDialogTitle>
                 <AlertDialogDescription>
                   The destination moves out of the timeline. Its {visitCount} scheduled{' '}
                   {visitCount === 1 ? 'place' : 'places'} will be unscheduled and stay attached to
@@ -156,7 +156,7 @@ function StayEditorModal({
                     onClose();
                   }}
                 >
-                  Move to Inbox
+                  Move to Unplanned
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>

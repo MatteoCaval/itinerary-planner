@@ -204,7 +204,7 @@ export default function StayOverviewLayer({
           }}
         >
           <Tooltip direction="top" offset={[0, -12]}>
-            <strong>{c.name}</strong> · in inbox
+            <strong>{c.name}</strong> · unplanned
           </Tooltip>
         </Marker>
       ))}

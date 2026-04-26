@@ -150,7 +150,7 @@ export function MoreTab(props: MoreTabProps) {
       <div className="bg-white border-y border-border">
         <Row
           icon={Inbox}
-          label="Inbox"
+          label="Unplanned"
           onClick={() => setInboxOpen((o) => !o)}
           badge={
             props.inboxCount > 0 ? (

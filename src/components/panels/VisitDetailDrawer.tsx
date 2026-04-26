@@ -260,7 +260,7 @@ function VisitDetailDrawer({
           size="icon-sm"
           onClick={onUnschedule}
           className="border-info/30 text-info hover:bg-info/10"
-          title="Move to Inbox"
+          title="Move to Unplanned"
         >
           <ArrowLeftRight className="w-3.5 h-3.5" />
         </Button>

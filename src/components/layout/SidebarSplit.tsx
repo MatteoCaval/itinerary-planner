@@ -88,7 +88,7 @@ export function SidebarSplit({
         aria-valuemin={Math.round(RATIO_MIN * 100)}
         aria-valuemax={Math.round(RATIO_MAX * 100)}
         aria-valuenow={percent}
-        aria-label="Resize inbox panel"
+        aria-label="Resize unplanned panel"
         tabIndex={0}
         onKeyDown={handleKeyDown}
         onPointerDown={handlePointerDown}
@@ -103,7 +103,7 @@ export function SidebarSplit({
       >
         <button
           type="button"
-          aria-label={collapsed ? 'Expand inbox' : 'Collapse inbox'}
+          aria-label={collapsed ? 'Expand unplanned' : 'Collapse unplanned'}
           onPointerDown={(e) => e.stopPropagation()}
           onClick={(e) => {
             e.stopPropagation();

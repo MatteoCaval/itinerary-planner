@@ -148,7 +148,7 @@ function AddStayModal({
     onSave({ name: name.trim(), days, lat: pickedCoords?.lat, lng: pickedCoords?.lng });
   };
 
-  const saveLabel = isCandidateMode ? 'Save to Inbox' : 'Add to Timeline';
+  const saveLabel = isCandidateMode ? 'Save to Unplanned' : 'Add to Timeline';
   const modalTitle = isCandidateMode ? 'Save Destination' : 'Add Destination';
 
   const footer = {
@@ -170,7 +170,7 @@ function AddStayModal({
         {showChipRow && (
           <div>
             <label className="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground mb-2 block">
-              From inbox
+              From unplanned
             </label>
             <div className="flex gap-2 overflow-x-auto pb-1 scroll-hide">
               {candidates.map((c) => {
@@ -198,7 +198,7 @@ function AddStayModal({
               {selectedCandidateId && (
                 <button
                   onClick={clearCandidate}
-                  aria-label="Clear inbox selection"
+                  aria-label="Clear unplanned selection"
                   className="flex items-center gap-1 px-2 py-1.5 rounded-full text-muted-foreground hover:text-foreground text-[11px] font-medium"
                 >
                   <X className="w-3 h-3" aria-hidden /> Clear
@@ -290,7 +290,7 @@ function AddStayModal({
             </p>
             <p className="text-[11px] text-muted-foreground font-medium mt-0.5">
               {isCandidateMode
-                ? 'Saved to inbox — no dates yet'
+                ? 'Saved to unplanned — no dates yet'
                 : `${days} ${days === 1 ? 'day' : 'days'} on the timeline`}
             </p>
           </div>
