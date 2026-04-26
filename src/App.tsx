@@ -1692,7 +1692,7 @@ function ChronosApp() {
               className="text-xs font-semibold h-6 px-2"
             >
               <Upload className="w-3 h-3 mr-1" />
-              Push changes
+              Publish update
             </Button>
             <Button
               variant="ghost"
@@ -1747,7 +1747,7 @@ function ChronosApp() {
                 className="text-xs font-semibold h-6 px-2"
               >
                 <Upload className="w-3 h-3 mr-1" />
-                Push changes
+                Contribute changes
               </Button>
             )}
             <Button
