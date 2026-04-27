@@ -45,6 +45,11 @@ export function useCloudSync(
   // the subscriber's first fire (which replays current state, not a new change).
   const initialLoadDoneRef = useRef(false);
 
+  // Trip IDs currently being pushed to cloud. Firebase RTDB fires onValue
+  // synchronously for our own set() calls, which would otherwise look like a
+  // remote update and trigger a spurious toast.
+  const pendingPushIdsRef = useRef<Set<string>>(new Set());
+
   // Seed lastPushedRef/lastPushedAtRef for a set of trips, but only if the
   // subscriber hasn't already seeded a given trip (subscribe wins the race).
   const seedIfUnseen = useCallback((trips: HybridTrip[]) => {
@@ -66,6 +71,7 @@ export function useCloudSync(
       syncedUidRef.current = null;
       lastPushedRef.current = {};
       lastPushedAtRef.current = {};
+      pendingPushIdsRef.current.clear();
       initialLoadDoneRef.current = false;
       return;
     }
@@ -163,8 +169,13 @@ export function useCloudSync(
         lastPushedAtRef.current[trip.id] = trip.updatedAt ?? 0;
 
         // Only toast after initial load — subscriber always fires once on connect
-        // with current state, which is not a new change
-        if (trip.id === activeTripIdRef.current && initialLoadDoneRef.current) {
+        // with current state, which is not a new change. Also skip if this id is
+        // currently being pushed by us (Firebase echoes our own set() locally).
+        if (
+          trip.id === activeTripIdRef.current &&
+          initialLoadDoneRef.current &&
+          !pendingPushIdsRef.current.has(trip.id)
+        ) {
           setRemoteUpdateToast({ tripName: trip.name });
         }
       },
@@ -222,15 +233,17 @@ export function useCloudSync(
     hasPendingSaveRef.current = true;
 
     const timer = setTimeout(async () => {
-      try {
-        const now = Date.now();
+      const stamped = changedTrips.map((t) => ({ ...t, updatedAt: Date.now() }));
+      // Mark before saveTrip — Firebase fires onValue during set(), so the
+      // subscriber must see the id as "ours" before that callback runs.
+      stamped.forEach((t) => pendingPushIdsRef.current.add(t.id));
 
+      try {
         // Save changed trips
-        if (changedTrips.length > 0) {
-          const stamped = changedTrips.map((t) => ({ ...t, updatedAt: now }));
+        if (stamped.length > 0) {
           await Promise.all(stamped.map((t) => service.saveTrip(user.uid, t)));
           stamped.forEach((t) => {
-            lastPushedAtRef.current[t.id] = now;
+            lastPushedAtRef.current[t.id] = t.updatedAt!;
           });
         }
 
@@ -251,6 +264,7 @@ export function useCloudSync(
       } catch {
         setSyncStatus('error');
       } finally {
+        stamped.forEach((t) => pendingPushIdsRef.current.delete(t.id));
         hasPendingSaveRef.current = false;
       }
     }, 2000);

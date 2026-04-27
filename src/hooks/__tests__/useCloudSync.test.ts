@@ -156,6 +156,80 @@ describe('useCloudSync', () => {
     expect(service.deleteTrip).toHaveBeenCalledWith('user-1', 'trip-b');
   });
 
+  it('does not toast when our own local write echoes back through subscriber', async () => {
+    const trip = makeTrip('trip-1');
+    const store: TripStore = { trips: [trip], activeTripId: 'trip-1' };
+
+    let subscribedCallbacks: any = null;
+    const service = makeMockService({
+      loadTrips: vi.fn().mockResolvedValue({ trips: [], activeTripId: '', source: 'empty' }),
+      subscribe: vi.fn().mockImplementation((_uid, callbacks) => {
+        subscribedCallbacks = callbacks;
+        return () => {};
+      }),
+      // Simulate Firebase RTDB optimistic local fire: onValue fires synchronously
+      // with the written value during set()
+      saveTrip: vi.fn().mockImplementation(async (_uid: string, t: HybridTrip) => {
+        subscribedCallbacks?.onTripUpdated(t);
+      }),
+    });
+    const setStore = vi.fn();
+    const user = { uid: 'user-1' } as any;
+
+    const { result, rerender } = renderHook(
+      ({ store }) => useCloudSync(service, store, setStore, user),
+      { initialProps: { store } },
+    );
+
+    // Flush initial load — initialLoadDoneRef becomes true, seeds tracking refs
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    // Local edit: new trip object reference triggers auto-save effect
+    const editedTrip: HybridTrip = { ...trip, name: 'Edited' };
+    rerender({ store: { trips: [editedTrip], activeTripId: 'trip-1' } });
+
+    // Advance debounce + flush saveTrip's async chain
+    await act(async () => {
+      vi.advanceTimersByTime(3000);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(service.saveTrip).toHaveBeenCalled();
+    expect(result.current.remoteUpdateToast).toBeNull();
+  });
+
+  it('still toasts when a remote write arrives for the active trip', async () => {
+    const trip = makeTrip('trip-1', 1000);
+    const store: TripStore = { trips: [trip], activeTripId: 'trip-1' };
+
+    let subscribedCallbacks: any = null;
+    const service = makeMockService({
+      loadTrips: vi.fn().mockResolvedValue({ trips: [], activeTripId: '', source: 'empty' }),
+      subscribe: vi.fn().mockImplementation((_uid, callbacks) => {
+        subscribedCallbacks = callbacks;
+        return () => {};
+      }),
+    });
+    const setStore = vi.fn();
+    const user = { uid: 'user-1' } as any;
+
+    const { result } = renderHook(() => useCloudSync(service, store, setStore, user));
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    // Remote update arrives with newer updatedAt — not from our own save
+    act(() => {
+      subscribedCallbacks.onTripUpdated({ ...trip, name: 'Remote', updatedAt: 5000 });
+    });
+
+    expect(result.current.remoteUpdateToast).toEqual({ tripName: 'Remote' });
+  });
+
   it('onTripDeleted from listener removes trip and persists to localStorage', async () => {
     const tripA = makeTrip('trip-a');
     const tripB = makeTrip('trip-b');
